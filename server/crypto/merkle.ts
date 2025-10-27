@@ -122,7 +122,6 @@ export class MerkleTree {
 export function computeLeafHash(data: {
   endorser: string;
   endorsee: string;
-  level: number;
   epoch: bigint;
   nonce: bigint;
   sig: string;
@@ -130,12 +129,11 @@ export function computeLeafHash(data: {
   const encoder = new TextEncoder();
   const endorserHex = data.endorser.slice(2);
   const endorseeHex = data.endorsee.slice(2);
-  const levelHex = data.level.toString(16).padStart(2, '0');
   const epochHex = data.epoch.toString(16).padStart(16, '0');
   const nonceHex = data.nonce.toString(16).padStart(16, '0');
   const sigHex = data.sig.slice(2);
 
-  const combined = `0x${endorserHex}${endorseeHex}${levelHex}${epochHex}${nonceHex}${sigHex}` as `0x${string}`;
+  const combined = `0x${endorserHex}${endorseeHex}${epochHex}${nonceHex}${sigHex}` as `0x${string}`;
 
   return keccak256(combined);
 }
