@@ -117,17 +117,9 @@ export default function Overview() {
           />
         </div>
 
-        <Card data-testid="card-endorse-form">
-          <CardHeader>
-            <CardTitle>Vouch for Someone</CardTitle>
-            <CardDescription>
-              Vouch for people you trust in the network
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EndorseForm onEndorse={handleEndorse} />
-          </CardContent>
-        </Card>
+        <div>
+          <EndorseForm onEndorse={handleEndorse} />
+        </div>
       </div>
 
       <Card data-testid="card-endorsements">
