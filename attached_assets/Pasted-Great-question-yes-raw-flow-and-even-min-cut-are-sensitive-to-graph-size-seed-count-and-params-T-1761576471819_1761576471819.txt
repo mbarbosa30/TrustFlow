@@ -1,0 +1,96 @@
+Great question—yes, raw flow and even min-cut are sensitive to graph size, seed count, and params. To make scores comparable across epochs and communities, use a standardized score that (a) normalizes within each epoch, (b) anchors to a stable reference, and (c) blends flow with robustness signals.
+
+Here’s a simple, production-ready recipe.
+
+Standardized Trust Score (STS) ∈ [0, 100]
+
+Let for a given epoch E:
+	•	f_i: max-flow reaching user i’s u_{in}
+	•	c_i: min-cut size for i (integer ≥ 0)
+	•	d_i: shortest hop distance from any seed (0,1,2,…)
+	•	\Delta_i: worst relative drop if the single most-influential inbound edge to i is removed
+\displaystyle \Delta_i = \max_{e \in \text{in}(i)} \frac{f_i - f_i^{(-e)}}{\max(1, f_i)}  (stability proxy)
+
+1) Epoch-robust normalization (graph-size aware)
+
+Compute robust per-epoch anchors on the accepted set:
+	•	F_{95}: 95th percentile of \{f_j\}
+	•	C_{95}: 95th percentile of \{c_j\} (or clamp at 5)
+
+Then map to bounded [0,1] scales with a saturating (log) transform:
+
+F_i = \min\!\left(1,\ \frac{\log(1+f_i)}{\log(1+F_{95})}\right),
+\quad
+C_i = \min\!\left(1,\ \frac{c_i}{\max(3,\ C_{95})}\right),
+\quad
+D_i = e^{-\lambda d_i}\ (\text{e.g., }\lambda=0.35),\quad
+S_i = 1 - \min(1,\ \Delta_i)
+	•	F_i keeps flow comparable even if the graph doubles; it’s insensitive to outliers.
+	•	C_i rewards path redundancy (resilience).
+	•	D_i softly favors being closer to seeds without dominating.
+	•	S_i rewards stability (redundancy of evidence).
+
+2) Blend (weights you can explain)
+
+\text{STS}_i = 100 \times \big( 0.55\,F_i\ +\ 0.25\,C_i\ +\ 0.10\,S_i\ +\ 0.10\,D_i \big)
+	•	Flow carries most meaning (55%), cut adds robustness (25%), then stability (10%) and seed-proximity (10%).
+	•	Round to an integer 0–100 for UX; keep the raw components in the API for audits.
+
+3) Global comparability across epochs/communities
+
+To avoid “score drift” when the network grows:
+	•	Maintain EMA anchors across epochs:
+\widetilde{F}{95} \leftarrow \alpha F{95}^{(E)} + (1-\alpha)\widetilde{F}{95} (e.g., \alpha=0.2).
+When computing F_i, use \max(F{95}^{(E)}, \widetilde{F}{95}).
+Same trick for C{95}.
+	•	Pin a policy id (same params, same seed-cap schedule). Only compare STS across scopes that share the same policy id.
+	•	Also publish a Percentile Rank PR_i\in[0,100] within the epoch (simple rank among accepted). This gives a size-free, instantly comparable number alongside STS.
+
+4) Compact acceptance tiers (optional)
+
+Use the standardized components to define transparent tiers:
+	•	Accepted: f_i \ge 1 (or c_i \ge 1)
+	•	Apprentice: STS ≥ 40
+	•	Journeyer: STS ≥ 60 and c_i \ge 2
+	•	Master: STS ≥ 80 and c_i \ge 3 and S_i \ge 0.8
+
+5) Implementation sketch (compute step)
+
+# After max-flow + residual computations:
+flows = [f_i for i in accepted]
+cuts  = [c_i for i in accepted]
+
+F95 = quantile(flows, 0.95);  C95 = max(3, quantile(cuts, 0.95))
+
+def norm_flow(f):   return min(1.0, math.log1p(f) / math.log1p(max(F95, F95_ema)))
+def norm_cut(c):    return min(1.0, c / max(C95, C95_ema))
+def norm_depth(d):  return math.exp(-0.35*d)
+def stability(i):   return 1.0 - min(1.0, worst_relative_drop(i))  # needs small local recompute
+
+for i in users:
+    F = norm_flow(flow[i])
+    C = norm_cut(cut[i])
+    D = norm_depth(depth[i])
+    S = stability(i)
+    STS = round(100 * (0.55*F + 0.25*C + 0.10*S + 0.10*D))
+    write_score(i, flow=flow[i], cut=cut[i], depth=depth[i], stability=S, sts=STS,
+                percentile=percentile_rank(flow[i], flows))
+
+6) Dashboard & API
+	•	Expose: flow, cut, depth, stability, STS, and percentile.
+	•	Charts to monitor calibration:
+	•	Time series of F_{95}, C_{95}, EMA values (shows stability).
+	•	Histogram of STS (should be well-spread; not pegged at 0/100).
+	•	Cut distribution and average stability by STS deciles.
+
+⸻
+
+Why this is “standardized”
+	•	Graph-size aware: per-epoch quantile anchors + log mapping remove linear dependence on crowd growth.
+	•	Robust: clipping at [0,1] and EMA anchors prevent spikes from a few whales/seeds.
+	•	Explainable: each component has a clear meaning you can show in UI.
+	•	Portable: STS ∈ [0,100] + Percentile give two interpretable axes usable for gating or allocations.
+
+If you prefer a single-number invariant to everything, you can also report a z-score vs. degree-preserving randomizations (advanced): z_i = (f_i-\mu_i^\text{rand})/\sigma_i^\text{rand}. That’s heavier to compute but excellent for audits. Most apps won’t need it—STS + Percentile is usually enough.
+
+Want me to drop this straight into your Replit prompt (API fields, DB columns, and dashboard widgets)?
