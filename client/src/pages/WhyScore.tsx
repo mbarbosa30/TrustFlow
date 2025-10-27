@@ -48,7 +48,11 @@ export default function WhyScore() {
       weight: 0.55,
       contribution: 50.6,
       description: "Max-flow reaching you from seeds, normalized with log scaling against the 95th percentile to handle graph growth",
-      formula: "F = min(1, log(1+flow) / log(1+F₉₅))",
+      formula: (
+        <span>
+          F = min(1, log(1+flow) / log(1+F<sub>95</sub>))
+        </span>
+      ),
     },
     {
       name: "Cut (C)",
@@ -56,7 +60,11 @@ export default function WhyScore() {
       weight: 0.25,
       contribution: 18.8,
       description: "Min-cut size (path redundancy) normalized against the 95th percentile. Higher = more resilient to edge loss",
-      formula: "C = min(1, minCut / max(3, C₉₅))",
+      formula: (
+        <span>
+          C = min(1, minCut / max(3, C<sub>95</sub>))
+        </span>
+      ),
     },
     {
       name: "Stability (S)",
@@ -64,7 +72,11 @@ export default function WhyScore() {
       weight: 0.10,
       contribution: 8.5,
       description: "Resistance to single-edge removal. 1 minus the worst relative flow drop if any single inbound edge is removed",
-      formula: "S = 1 - max(Δᵢ) where Δ = (f - f⁻ᵉ) / f",
+      formula: (
+        <span>
+          S = 1 − max(Δ<sub>i</sub>) where Δ = (f − f<sup>−e</sup>) / f
+        </span>
+      ),
     },
     {
       name: "Depth (D)",
@@ -72,7 +84,11 @@ export default function WhyScore() {
       weight: 0.10,
       contribution: 7.0,
       description: "Proximity to seeds with exponential decay. Rewards being closer to the trust roots without dominating the score",
-      formula: "D = e^(-0.35 × hops)",
+      formula: (
+        <span>
+          D = e<sup>−0.35×hops</sup>
+        </span>
+      ),
     },
   ];
 

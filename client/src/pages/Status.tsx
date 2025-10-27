@@ -36,7 +36,11 @@ export default function Status() {
       key: "sizeN",
       description: "Measures the number of accepted users in the trust network",
       why: "Larger networks are more resilient to manipulation and provide better coverage. Size is log-scaled to prevent dominance over other metrics.",
-      formula: "min(1, log(1+|A|)/log(1+target))"
+      formulaText: (
+        <span>
+          min(1, log(1+|A|) / log(1+target))
+        </span>
+      )
     },
     {
       icon: Network,
@@ -44,7 +48,11 @@ export default function Status() {
       key: "cutN",
       description: "Average minimum cut between users and the seed set",
       why: "Higher min-cut means more independent paths exist between users and seeds, making the network resistant to collusion and Sybil attacks.",
-      formula: "min(1, avgMinCut/3)"
+      formulaText: (
+        <span>
+          min(1, avgMinCut / 3)
+        </span>
+      )
     },
     {
       icon: Shuffle,
@@ -52,7 +60,11 @@ export default function Status() {
       key: "churnN",
       description: "Measures how stable the accepted user set is between epochs",
       why: "Low churn indicates a mature, stable network. High churn may signal manipulation attempts or network instability.",
-      formula: "1 − |A_t △ A_{t−1}| / |A_t ∪ A_{t−1}|"
+      formulaText: (
+        <span>
+          1 − |A<sub>t</sub> △ A<sub>t−1</sub>| / |A<sub>t</sub> ∪ A<sub>t−1</sub>|
+        </span>
+      )
     }
   ];
 
@@ -268,9 +280,9 @@ export default function Status() {
                           <p className="text-sm">
                             <span className="font-medium">Why it matters:</span> {metric.why}
                           </p>
-                          <p className="text-xs text-muted-foreground font-mono">
-                            Formula: {metric.formula}
-                          </p>
+                          <div className="text-xs text-muted-foreground font-mono">
+                            Formula: {metric.formulaText}
+                          </div>
                         </div>
                       </div>
                     </div>

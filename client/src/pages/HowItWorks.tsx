@@ -54,17 +54,17 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <ul>
-              <li>Split each user <code>u</code> into <code>u<sup>−</sup> → u<sup>+</sup></code> with node capacity <code>c(d)</code> based on BFS distance <code>d</code> from any seed:
-                <ul className="text-xs mt-2">
+              <li>Split each user <span className="font-mono">u</span> into <span className="font-mono">u<sup>−</sup> → u<sup>+</sup></span> with node capacity <span className="font-mono">c(d)</span> based on BFS distance <span className="font-mono">d</span> from any seed:
+                <ul className="font-mono text-xs mt-2 space-y-1">
                   <li>c(0) = 800 (seeds)</li>
                   <li>c(1) = 200 (1 hop)</li>
                   <li>c(2) = 50 (2 hops)</li>
                   <li>c(≥3) = 20 (3+ hops)</li>
                 </ul>
               </li>
-              <li>Add <code>u<sup>−</sup> → SINK</code> with capacity 1 (first unit = acceptance)</li>
-              <li>An endorsement <code>a → b</code> becomes <code>a<sup>+</sup> → b<sup>−</sup></code> with capacity equal to the level weight</li>
-              <li>Connect <code>SOURCE → seed_in</code> with large capacity</li>
+              <li>Add <span className="font-mono">u<sup>−</sup> → SINK</span> with capacity 1 (first unit = acceptance)</li>
+              <li>An endorsement <span className="font-mono">a → b</span> becomes <span className="font-mono">a<sup>+</sup> → b<sup>−</sup></span> with capacity equal to the level weight</li>
+              <li>Connect <span className="font-mono">SOURCE → seed_in</span> with large capacity</li>
               <li>Run Dinic / preflow-push to compute max-flow and min-cut</li>
             </ul>
           </CardContent>
@@ -78,7 +78,7 @@ export default function HowItWorks() {
             <div className="space-y-3">
               <div>
                 <div className="font-semibold mb-2">Accepted</div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-mono">
                   flow to u<sup>−</sup> ≥ 1 (or min-cut ≥ 1)
                 </p>
               </div>
@@ -113,7 +113,7 @@ export default function HowItWorks() {
             
             <div className="my-4 p-4 rounded-lg bg-muted/30 font-mono text-sm">
               <div className="mb-2"><strong>Let:</strong></div>
-              <ul className="list-none space-y-1">
+              <ul className="list-none space-y-1 pl-4">
                 <li>f<sub>i</sub> = flow to user i</li>
                 <li>c<sub>i</sub> = min-cut for i</li>
                 <li>d<sub>i</sub> = hop distance from seeds</li>
@@ -122,21 +122,21 @@ export default function HowItWorks() {
             </div>
 
             <p><strong>Per epoch</strong> (accepted set only), compute anchors:</p>
-            <ul>
+            <ul className="font-mono text-sm pl-4">
               <li>F<sub>95</sub> = 95th percentile of flow</li>
               <li>C<sub>95</sub> = 95th percentile of min-cut (min 3)</li>
             </ul>
 
             <p><strong>Normalize</strong> (bounded, robust):</p>
-            <div className="my-4 p-4 rounded-lg bg-muted/30 font-mono text-xs overflow-x-auto">
-              F<sub>i</sub> = min(1, log(1+f<sub>i</sub>) / log(1+max(F<sub>95</sub>, F̃<sub>95</sub>)))<br/>
-              C<sub>i</sub> = min(1, c<sub>i</sub> / max(3, max(C<sub>95</sub>, C̃<sub>95</sub>)))<br/>
-              D<sub>i</sub> = e<sup>-λd<sub>i</sub></sup> (λ ≈ 0.35)<br/>
-              S<sub>i</sub> = 1 - min(1, Δ<sub>i</sub>)
+            <div className="my-4 p-4 rounded-lg bg-muted/30 font-mono text-sm overflow-x-auto space-y-1">
+              <div>F<sub>i</sub> = min(1, log(1+f<sub>i</sub>) / log(1+max(F<sub>95</sub>, F̃<sub>95</sub>)))</div>
+              <div>C<sub>i</sub> = min(1, c<sub>i</sub> / max(3, max(C<sub>95</sub>, C̃<sub>95</sub>)))</div>
+              <div>D<sub>i</sub> = e<sup>−λd<sub>i</sub></sup> (λ ≈ 0.35)</div>
+              <div>S<sub>i</sub> = 1 − min(1, Δ<sub>i</sub>)</div>
             </div>
 
             <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
-              <p className="text-center text-lg font-bold mb-2">
+              <p className="text-center text-lg font-bold font-mono mb-2">
                 STS<sub>i</sub> = 100 × (0.55F<sub>i</sub> + 0.25C<sub>i</sub> + 0.10S<sub>i</sub> + 0.10D<sub>i</sub>)
               </p>
               <p className="text-center text-sm text-muted-foreground">
@@ -167,7 +167,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <ul>
-              <li>Endorsements stored as commitments: <code>H(endorser DID ∥ endorsee DID ∥ type ∥ salt)</code></li>
+              <li>Endorsements stored as commitments: <span className="font-mono text-sm">H(endorser DID ∥ endorsee DID ∥ type ∥ salt)</span></li>
               <li>Mutual reveal requires both parties' consent</li>
               <li>Profiles are optional and never used in scoring</li>
             </ul>
@@ -181,9 +181,9 @@ export default function HowItWorks() {
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>Each epoch publishes:</p>
             <ul>
-              <li><code>params.json</code> (policy id, weights, capacity schedule)</li>
-              <li><code>seed_root</code>, <code>graph_root</code> (Merkle roots)</li>
-              <li><code>scores.jsonl</code> (flow, min-cut, STS) + signature</li>
+              <li><span className="font-mono text-sm">params.json</span> (policy id, weights, capacity schedule)</li>
+              <li><span className="font-mono text-sm">seed_root</span>, <span className="font-mono text-sm">graph_root</span> (Merkle roots)</li>
+              <li><span className="font-mono text-sm">scores.jsonl</span> (flow, min-cut, STS) + signature</li>
             </ul>
             <p>Anyone can recompute and confirm byte-exact results.</p>
           </CardContent>

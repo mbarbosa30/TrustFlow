@@ -13,7 +13,7 @@ interface STSComponent {
   weight: number;
   contribution: number;
   description: string;
-  formula?: string;
+  formula?: React.ReactNode;
 }
 
 interface STSBreakdownProps {
@@ -37,7 +37,7 @@ export function STSBreakdown({ components, totalSTS }: STSBreakdownProps) {
           <div className="text-4xl font-bold mb-1" data-testid="text-total-sts">
             {totalSTS}
           </div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground font-mono">
             = 100 × (0.55F + 0.25C + 0.10S + 0.10D)
           </div>
         </div>
@@ -55,9 +55,9 @@ export function STSBreakdown({ components, totalSTS }: STSBreakdownProps) {
                     <TooltipContent className="max-w-xs">
                       <p className="text-xs mb-2">{component.description}</p>
                       {component.formula && (
-                        <code className="text-xs bg-muted px-2 py-1 rounded block">
+                        <div className="text-xs font-mono bg-muted px-2 py-1 rounded">
                           {component.formula}
-                        </code>
+                        </div>
                       )}
                     </TooltipContent>
                   </Tooltip>
@@ -79,18 +79,18 @@ export function STSBreakdown({ components, totalSTS }: STSBreakdownProps) {
           ))}
         </div>
 
-        <div className="text-xs text-muted-foreground pt-4 border-t">
-          <p className="mb-2">
+        <div className="text-xs text-muted-foreground pt-4 border-t space-y-2">
+          <p>
             <strong>F:</strong> Normalized flow (log-scaled against 95th percentile)
           </p>
-          <p className="mb-2">
+          <p>
             <strong>C:</strong> Normalized min-cut (path redundancy)
           </p>
-          <p className="mb-2">
-            <strong>S:</strong> Stability (1 - worst single-edge impact)
-          </p>
           <p>
-            <strong>D:</strong> Distance decay from seeds (e^(-0.35×hops))
+            <strong>S:</strong> Stability (1 − worst single-edge impact)
+          </p>
+          <p className="font-mono">
+            <strong>D:</strong> Distance decay from seeds (e<sup>−0.35×hops</sup>)
           </p>
         </div>
       </CardContent>

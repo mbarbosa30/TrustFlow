@@ -53,7 +53,11 @@ export default function FAQs() {
             How is my score computed?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Trust Score (STS) from 0–100. The formula is: STS = 100 × (0.55F + 0.25C + 0.10S + 0.10D). See "How it Works" for detailed formulas.
+            <p className="mb-2">We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Trust Score (STS) from 0–100.</p>
+            <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
+              STS = 100 × (0.55F + 0.25C + 0.10S + 0.10D)
+            </div>
+            <p>See "How it Works" for detailed formulas.</p>
           </AccordionContent>
         </AccordionItem>
 
