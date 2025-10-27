@@ -20,24 +20,18 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm">Learn</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/faqs">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-faqs">
-                    FAQs
-                  </a>
+                <Link href="/faqs" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-faqs">
+                  FAQs
                 </Link>
               </li>
               <li>
-                <Link href="/how-it-works">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-how-it-works">
-                    How it Works
-                  </a>
+                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-how-it-works">
+                  How it Works
                 </Link>
               </li>
               <li>
-                <Link href="/use-cases">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-use-cases">
-                    Use Cases
-                  </a>
+                <Link href="/use-cases" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-use-cases">
+                  Use Cases
                 </Link>
               </li>
             </ul>
@@ -47,17 +41,13 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm">Network</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors">
-                    Global Dashboard
-                  </a>
+                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Global Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/verify">
-                  <a className="text-muted-foreground hover:text-foreground transition-colors">
-                    Verify Attestations
-                  </a>
+                <Link href="/verify" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Verify Attestations
                 </Link>
               </li>
               <li>

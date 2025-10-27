@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TrustLevelBadge, type TrustLevel } from "./TrustLevelBadge";
+import { TierBadge, type Tier } from "./TierBadge";
 
 interface DistributionData {
-  level: TrustLevel;
+  level: Tier;
   count: number;
   percentage: number;
 }
@@ -16,16 +16,16 @@ export function TrustDistribution({ distribution }: TrustDistributionProps) {
   return (
     <Card data-testid="card-trust-distribution">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Trust Level Distribution</CardTitle>
+        <CardTitle className="text-lg font-semibold">Tier Distribution</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Network breakdown by trust level
+          Network breakdown by achievement tier
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {distribution.map((item) => (
           <div key={item.level} className="space-y-2">
             <div className="flex items-center justify-between">
-              <TrustLevelBadge level={item.level} />
+              <TierBadge tier={item.level} />
               <div className="text-right">
                 <div className="text-sm font-semibold">{item.count.toLocaleString()}</div>
                 <div className="text-xs text-muted-foreground">{item.percentage}%</div>

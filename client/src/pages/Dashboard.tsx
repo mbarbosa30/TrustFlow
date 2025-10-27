@@ -15,6 +15,8 @@ export default function Dashboard() {
     avgScore: 0.87,
   };
 
+  // Note: endorsement activities show endorsement type (Human/Known/Trusted)
+  // User achievement tiers (Apprentice/Journeyer/Master) are shown in distribution
   const mockActivities = [
     {
       id: "1",
@@ -28,7 +30,7 @@ export default function Dashboard() {
       id: "2",
       type: "score_update" as const,
       user: "bob.eth",
-      newScore: 2.15,
+      newScore: 78,
       timestamp: "2025-10-27T14:15:00Z",
     },
     {
@@ -51,15 +53,15 @@ export default function Dashboard() {
       id: "5",
       type: "score_update" as const,
       user: "emma.eth",
-      newScore: 1.42,
+      newScore: 65,
       timestamp: "2025-10-27T13:30:00Z",
     },
   ];
 
   const mockDistribution = [
-    { level: "Trusted" as const, count: 1842, percentage: 15 },
-    { level: "Known" as const, count: 4361, percentage: 35 },
-    { level: "Human" as const, count: 6250, percentage: 50 },
+    { level: "Master" as const, count: 1842, percentage: 15 },
+    { level: "Journeyer" as const, count: 4361, percentage: 35 },
+    { level: "Apprentice" as const, count: 6250, percentage: 50 },
   ];
 
   const mockAcceptedUsers = [

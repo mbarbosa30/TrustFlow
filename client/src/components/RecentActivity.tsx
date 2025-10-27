@@ -23,7 +23,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Latest network endorsements and updates
+          Latest endorsements (Human/Known/Trusted) and score updates
         </p>
       </CardHeader>
       <CardContent>
@@ -55,10 +55,10 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                 <div className="flex-1">
                   <div className="text-sm">
                     <span className="font-mono">{activity.user}</span>
-                    <span className="text-muted-foreground"> score updated</span>
+                    <span className="text-muted-foreground"> STS updated</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-lg font-bold">{activity.newScore?.toFixed(2)}</span>
+                    <span className="text-lg font-bold">{activity.newScore}</span>
                     <span className="text-xs text-muted-foreground">
                       {new Date(activity.timestamp).toLocaleString()}
                     </span>

@@ -1,11 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrustLevelBadge, type TrustLevel } from "./TrustLevelBadge";
+import { TierBadge, type Tier } from "./TierBadge";
 import { Copy, Download, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ScoreCardProps {
-  level: TrustLevel;
+  tier: Tier;
   sts: number;
   percentile: number;
   minCutSize: number;
@@ -14,7 +14,7 @@ interface ScoreCardProps {
 }
 
 export function ScoreCard({
-  level,
+  tier,
   sts,
   percentile,
   minCutSize,
@@ -37,7 +37,7 @@ export function ScoreCard({
     <Card className="p-8 rounded-2xl" data-testid="card-score">
       <CardContent className="p-0 space-y-6">
         <div className="flex items-start justify-between">
-          <TrustLevelBadge level={level} />
+          <TierBadge tier={tier} size="lg" />
           <span className="text-xs text-muted-foreground" data-testid="text-epoch-timestamp">
             {new Date(epochTimestamp).toLocaleString()}
           </span>

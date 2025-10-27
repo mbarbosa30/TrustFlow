@@ -4,7 +4,7 @@ export default function ScoreCardExample() {
   return (
     <div className="max-w-md">
       <ScoreCard
-        level="Trusted"
+        tier="Master"
         sts={85}
         percentile={92}
         minCutSize={3}

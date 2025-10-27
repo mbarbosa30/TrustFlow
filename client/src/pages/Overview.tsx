@@ -3,7 +3,7 @@ import { ScoreCard } from "@/components/ScoreCard";
 export default function Overview() {
   // TODO: remove mock functionality
   const mockData = {
-    level: "Trusted" as const,
+    tier: "Master" as const,
     sts: 85,
     percentile: 92,
     minCutSize: 3,
@@ -13,7 +13,7 @@ export default function Overview() {
   const handleExport = () => {
     const attestation = {
       sub: "user:0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-      level: mockData.level,
+      tier: mockData.tier,
       sts: mockData.sts,
       percentile: mockData.percentile,
       minCut: mockData.minCutSize,
@@ -43,7 +43,7 @@ export default function Overview() {
 
       <div className="max-w-md">
         <ScoreCard
-          level={mockData.level}
+          tier={mockData.tier}
           sts={mockData.sts}
           percentile={mockData.percentile}
           minCutSize={mockData.minCutSize}
