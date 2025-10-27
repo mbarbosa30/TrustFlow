@@ -101,10 +101,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   return (
     <Card data-testid="card-endorse-form">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Vouch for Someone</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Vouch for someone you trust in the network
-        </p>
+        <CardTitle className="text-lg font-semibold">Vouch for Someone in the Network</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
