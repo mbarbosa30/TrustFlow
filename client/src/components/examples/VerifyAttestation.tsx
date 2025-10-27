@@ -8,7 +8,7 @@ export default function VerifyAttestationExample() {
           await new Promise(resolve => setTimeout(resolve, 1000));
           return {
             valid: true,
-            level: "Journeyer" as const,
+            level: "Trusted" as const,
             score: 1.73,
             epochId: "2025-10-27T12:00:00Z",
             subject: "user:0xabc...",

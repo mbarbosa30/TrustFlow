@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletConnect } from "@/components/WalletConnect";
 import NotFound from "@/pages/not-found";
+import Dashboard from "@/pages/Dashboard";
 import Overview from "@/pages/Overview";
 import WhyScore from "@/pages/WhyScore";
 import Endorse from "@/pages/Endorse";
@@ -17,7 +18,8 @@ function Navigation() {
   const [location] = useLocation();
   
   const navItems = [
-    { path: "/", label: "Overview" },
+    { path: "/", label: "Dashboard" },
+    { path: "/overview", label: "Overview" },
     { path: "/why", label: "Why this score?" },
     { path: "/endorse", label: "Endorse" },
     { path: "/endorsements", label: "Endorsements" },
@@ -83,7 +85,8 @@ function Navigation() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Overview} />
+      <Route path="/" component={Dashboard} />
+      <Route path="/overview" component={Overview} />
       <Route path="/why" component={WhyScore} />
       <Route path="/endorse" component={Endorse} />
       <Route path="/endorsements" component={Endorsements} />

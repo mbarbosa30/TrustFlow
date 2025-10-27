@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Shield, Star, Award, Eye } from "lucide-react";
+import { User, Users, Shield } from "lucide-react";
 
-export type TrustLevel = "Observer" | "Apprentice" | "Journeyer" | "Master";
+export type TrustLevel = "Human" | "Known" | "Trusted";
 
 interface TrustLevelBadgeProps {
   level: TrustLevel;
@@ -9,20 +9,16 @@ interface TrustLevelBadgeProps {
 }
 
 const levelConfig = {
-  Observer: {
-    icon: Eye,
+  Human: {
+    icon: User,
     className: "bg-muted text-muted-foreground border-muted-border",
   },
-  Apprentice: {
-    icon: Shield,
+  Known: {
+    icon: Users,
     className: "bg-accent text-accent-foreground border-accent-border",
   },
-  Journeyer: {
-    icon: Star,
-    className: "bg-primary/10 text-primary border-primary/20",
-  },
-  Master: {
-    icon: Award,
+  Trusted: {
+    icon: Shield,
     className: "bg-primary text-primary-foreground border-primary-border",
   },
 };

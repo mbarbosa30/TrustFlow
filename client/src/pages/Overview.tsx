@@ -3,7 +3,7 @@ import { ScoreCard } from "@/components/ScoreCard";
 export default function Overview() {
   // TODO: remove mock functionality
   const mockData = {
-    level: "Journeyer" as const,
+    level: "Trusted" as const,
     score: 1.73,
     minCutSize: 3,
     epochTimestamp: "2025-10-27T12:00:00Z",

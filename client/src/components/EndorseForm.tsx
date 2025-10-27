@@ -18,13 +18,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [note, setNote] = useState("");
   const { toast } = useToast();
 
-  const levels: TrustLevel[] = ["Observer", "Apprentice", "Journeyer", "Master"];
+  const levels: TrustLevel[] = ["Human", "Known", "Trusted"];
   
   const levelDescriptions: Record<TrustLevel, string> = {
-    Observer: "Can view but limited participation (0.4 weight)",
-    Apprentice: "Growing trust, moderate activity (0.6 weight)",
-    Journeyer: "Established trust, active member (0.8 weight)",
-    Master: "Full trust, highly valued (1.0 weight)",
+    Human: "I believe this is a human (0.4 weight)",
+    Known: "I know that person (0.7 weight)",
+    Trusted: "I trust that person (1.0 weight)",
   };
 
   const handleSubmit = () => {
