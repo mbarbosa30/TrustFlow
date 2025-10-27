@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -15,6 +16,7 @@ interface PathDiversityOptionBProps {
 }
 
 export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   if (!data || data.length === 0) {
     return (
       <Card data-testid="card-path-diversity-b">
@@ -66,10 +68,10 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
     <Card data-testid="card-path-diversity-b">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">
-          Option B: Evolution Trend
+          Path Diversity Index
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Median progression with min/max envelope across {recentData.length} epochs
+          Share of flow from disjoint regions (higher = more collusion-resistant)
         </p>
       </CardHeader>
       <CardContent>
@@ -100,7 +102,13 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
                 </div>
               </div>
             ) : (
-              <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <svg 
+                width="100%" 
+                height="100%" 
+                viewBox="0 0 100 100" 
+                preserveAspectRatio="none"
+                onMouseLeave={() => setHoveredIndex(null)}
+              >
                 <defs>
                   <linearGradient id="envelopeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                     <stop offset="0%" stopColor="hsl(var(--muted))" stopOpacity="0.3" />
@@ -135,7 +143,49 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
                   strokeWidth="2"
                   vectorEffect="non-scaling-stroke"
                 />
+                
+                {recentData.map((d, i) => {
+                  const segmentWidth = 100 / recentData.length;
+                  const x = segmentWidth * i;
+                  
+                  return (
+                    <rect
+                      key={i}
+                      x={x}
+                      y={0}
+                      width={segmentWidth}
+                      height={100}
+                      fill="transparent"
+                      onMouseEnter={() => setHoveredIndex(i)}
+                      style={{ cursor: 'pointer' }}
+                      data-testid={`hover-zone-${i}`}
+                    />
+                  );
+                })}
               </svg>
+            )}
+            
+            {hoveredIndex !== null && !isSingleEpoch && (
+              <div 
+                className="absolute bg-popover border border-border rounded-md shadow-lg p-2 text-xs z-10 pointer-events-none"
+                style={{
+                  left: `${((hoveredIndex + 0.5) / recentData.length) * 100}%`,
+                  top: '-60px',
+                  transform: 'translateX(-50%)'
+                }}
+                data-testid="tooltip-diversity"
+              >
+                <div className="font-mono font-semibold mb-1">{recentData[hoveredIndex].epoch}</div>
+                <div className="space-y-0.5">
+                  <div>Median: <span className="font-medium">{(recentData[hoveredIndex].median * 100).toFixed(1)}%</span></div>
+                  <div className="text-muted-foreground">
+                    Range: {(recentData[hoveredIndex].min * 100).toFixed(0)}% - {(recentData[hoveredIndex].max * 100).toFixed(0)}%
+                  </div>
+                  <div className="text-muted-foreground">
+                    IQR: {(recentData[hoveredIndex].p25 * 100).toFixed(0)}% - {(recentData[hoveredIndex].p75 * 100).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
             )}
           </div>
           
