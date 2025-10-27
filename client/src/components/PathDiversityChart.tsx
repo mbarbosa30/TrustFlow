@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface EpochDiversity {
   epoch: string;
@@ -15,57 +14,57 @@ interface PathDiversityChartProps {
 }
 
 export function PathDiversityChart({ data }: PathDiversityChartProps) {
-  const latest = data[data.length - 1];
-  const previous = data.length > 1 ? data[data.length - 2] : null;
+  const recentData = data.slice(-4);
   
-  const latestMedian = (latest.median * 100).toFixed(0);
-  const trend = previous 
-    ? ((latest.median - previous.median) * 100).toFixed(1)
-    : null;
-  
-  const getTrendIcon = () => {
-    if (!trend || parseFloat(trend) === 0) {
-      return <Minus className="w-4 h-4 text-muted-foreground" />;
-    }
-    return parseFloat(trend) > 0 
-      ? <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-      : <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
-  };
-  
-  const getTrendColor = () => {
-    if (!trend || parseFloat(trend) === 0) return "text-muted-foreground";
-    return parseFloat(trend) > 0 
-      ? "text-green-600 dark:text-green-400"
-      : "text-red-600 dark:text-red-400";
-  };
-
   return (
     <Card data-testid="card-path-diversity">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">
           Path Diversity Index
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Share of flow from disjoint regions (higher = more collusion-resistant)
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="flex items-baseline justify-between">
-          <div className="text-3xl font-bold" data-testid="text-diversity-value">
-            {latestMedian}%
-          </div>
-          <div className="flex items-center gap-1">
-            {getTrendIcon()}
-            {trend && (
-              <span className={`text-sm font-medium ${getTrendColor()}`} data-testid="text-diversity-trend">
-                {parseFloat(trend) > 0 ? '+' : ''}{trend}%
-              </span>
-            )}
-          </div>
+        <div className="space-y-4">
+          {recentData.map((point, index) => (
+            <div key={index} className="space-y-2">
+              <div className="text-xs text-muted-foreground font-mono">
+                {point.epoch}
+              </div>
+              <div className="relative h-12 flex items-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full h-2 bg-muted rounded" />
+                  <div
+                    className="absolute h-2 bg-accent rounded"
+                    style={{
+                      left: `${point.p25 * 100}%`,
+                      width: `${(point.p75 - point.p25) * 100}%`,
+                    }}
+                  />
+                  <div
+                    className="absolute w-1 h-6 bg-primary rounded"
+                    style={{ left: `${point.median * 100}%` }}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">
+                  Min: {(point.min * 100).toFixed(0)}%
+                </span>
+                <span className="font-medium">
+                  Median: {(point.median * 100).toFixed(0)}%
+                </span>
+                <span className="text-muted-foreground">
+                  Max: {(point.max * 100).toFixed(0)}%
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Median diversity across network (higher = more collusion-resistant)
-        </p>
-        <div className="flex justify-between text-xs text-muted-foreground mt-3 pt-3 border-t">
-          <span>Range: {(latest.min * 100).toFixed(0)}% - {(latest.max * 100).toFixed(0)}%</span>
-          <span className="font-mono">{latest.epoch}</span>
+        <div className="mt-4 text-xs text-muted-foreground">
+          <p>Recent epochs showing distribution of path diversity. Higher diversity indicates more independent trust sources.</p>
         </div>
       </CardContent>
     </Card>
