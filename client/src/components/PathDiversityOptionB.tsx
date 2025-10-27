@@ -30,13 +30,18 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
     );
   }
 
-  const recentData = data.length >= 6 ? data.slice(-6) : data;
+  const recentData = data;
   const isSingleEpoch = recentData.length === 1;
   
   const firstMedian = recentData[0].median;
   const lastMedian = recentData[recentData.length - 1].median;
   const overallMin = Math.min(...recentData.map(d => d.min));
   const overallMax = Math.max(...recentData.map(d => d.max));
+  
+  const padding = (overallMax - overallMin) * 0.2;
+  const yMin = Math.max(0, overallMin - padding);
+  const yMax = Math.min(1, overallMax + padding);
+  const yRange = yMax - yMin;
   
   const change = isSingleEpoch ? 0 : ((lastMedian - firstMedian) * 100).toFixed(1);
   const changeNum = parseFloat(String(change));
@@ -64,7 +69,7 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
           Option B: Evolution Trend
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Median progression with min/max envelope over {recentData.length} epochs
+          Median progression with min/max envelope across {recentData.length} epochs
         </p>
       </CardHeader>
       <CardContent>
@@ -107,13 +112,13 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
                 <polygon
                   points={recentData.map((d, i) => {
                     const x = (i / (recentData.length - 1)) * 100;
-                    const yMin = (1 - d.min) * 100;
-                    return `${x},${yMin}`;
+                    const yMinScaled = ((yMax - d.min) / yRange) * 100;
+                    return `${x},${yMinScaled}`;
                   }).join(' ') + ' ' + 
                   recentData.map((d, i) => {
                     const x = ((recentData.length - 1 - i) / (recentData.length - 1)) * 100;
-                    const yMax = (1 - d.max) * 100;
-                    return `${x},${yMax}`;
+                    const yMaxScaled = ((yMax - d.max) / yRange) * 100;
+                    return `${x},${yMaxScaled}`;
                   }).join(' ')}
                   fill="url(#envelopeGradient)"
                   stroke="none"
@@ -122,8 +127,8 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
                 <polyline
                   points={recentData.map((d, i) => {
                     const x = (i / (recentData.length - 1)) * 100;
-                    const y = (1 - d.median) * 100;
-                    return `${x},${y}`;
+                    const yMedianScaled = ((yMax - d.median) / yRange) * 100;
+                    return `${x},${yMedianScaled}`;
                   }).join(' ')}
                   fill="none"
                   stroke="hsl(var(--primary))"
@@ -133,12 +138,12 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
                 
                 {recentData.map((d, i) => {
                   const x = (i / (recentData.length - 1)) * 100;
-                  const y = (1 - d.median) * 100;
+                  const yMedianScaled = ((yMax - d.median) / yRange) * 100;
                   return (
                     <circle
                       key={i}
                       cx={x}
-                      cy={y}
+                      cy={yMedianScaled}
                       r="0.8"
                       fill="hsl(var(--primary))"
                       vectorEffect="non-scaling-stroke"
