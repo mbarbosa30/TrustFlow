@@ -5,6 +5,9 @@ import { AcceptedUsersChart } from "@/components/AcceptedUsersChart";
 import { STSHistogram } from "@/components/STSHistogram";
 import { EndorsementMixChart } from "@/components/EndorsementMixChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
+import { PathDiversityOptionA } from "@/components/PathDiversityOptionA";
+import { PathDiversityOptionB } from "@/components/PathDiversityOptionB";
+import { PathDiversityOptionC } from "@/components/PathDiversityOptionC";
 import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
 import { AverageSTSChart } from "@/components/AverageSTSChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
@@ -296,10 +299,25 @@ export default function Dashboard() {
           <NetworkDensityChart data={mockNetworkDensity} />
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          <PathDiversityChart data={mockPathDiversity} />
-          <TrustDistribution distribution={mockDistribution} />
-        </div>
+        <Card data-testid="card-path-diversity-comparison">
+          <CardHeader>
+            <CardTitle>Path Diversity - Compare Options</CardTitle>
+            <CardDescription>
+              Choose your preferred visualization style for path diversity metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <PathDiversityOptionA data={mockPathDiversity} />
+            <PathDiversityOptionB data={mockPathDiversity} />
+            <PathDiversityOptionC data={mockPathDiversity} />
+            <div className="pt-4 border-t">
+              <p className="text-sm font-medium mb-2">Current Implementation:</p>
+              <PathDiversityChart data={mockPathDiversity} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <TrustDistribution distribution={mockDistribution} />
         
         <RecentActivity activities={mockActivities} />
       </div>
