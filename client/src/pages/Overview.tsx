@@ -25,6 +25,20 @@ export default function Overview() {
     epochTimestamp: "2025-10-27T12:00:00Z",
   };
 
+  const { data: confidenceData } = useQuery<{
+    did: string;
+    epoch: number;
+    trust: { sts: number; flow: number; mincut: number };
+    confidence: {
+      percent: number;
+      global: { GHI: number; sizeN: number; cutN: number; churnN: number };
+      local: { mincutN: number };
+    };
+  }>({
+    queryKey: ['/api/score', address || 'default'],
+    enabled: isConnected && !!address,
+  });
+
   const { data: givenEndorsementsData, isLoading: isLoadingGiven } = useQuery<{ endorsements: PublicEndorsement[] }>({
     queryKey: ['/api/endorsements', { endorser: address }],
     enabled: isConnected && !!address,
@@ -100,6 +114,15 @@ export default function Overview() {
             minCutSize={mockData.minCutSize}
             epochTimestamp={mockData.epochTimestamp}
             onExportAttestation={handleExport}
+            confidence={
+              confidenceData
+                ? {
+                    percent: confidenceData.confidence.percent,
+                    ghi: confidenceData.confidence.global.GHI,
+                    localMincutN: confidenceData.confidence.local.mincutN,
+                  }
+                : undefined
+            }
           />
         </div>
 

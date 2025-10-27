@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { TierBadge, type Tier } from "./TierBadge";
 import { Copy, Download, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ScoreCardProps {
   tier: Tier;
@@ -11,6 +16,11 @@ interface ScoreCardProps {
   minCutSize: number;
   epochTimestamp: string;
   onExportAttestation?: () => void;
+  confidence?: {
+    percent: number;
+    ghi: number;
+    localMincutN: number;
+  };
 }
 
 export function ScoreCard({
@@ -20,6 +30,7 @@ export function ScoreCard({
   minCutSize,
   epochTimestamp,
   onExportAttestation,
+  confidence,
 }: ScoreCardProps) {
   const { toast } = useToast();
 
@@ -52,18 +63,54 @@ export function ScoreCard({
           </div>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2" data-testid="text-percentile">
-            <span className="text-sm text-muted-foreground">Percentile:</span>
-            <span className="text-lg font-semibold">{percentile}th</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2" data-testid="text-percentile">
+              <span className="text-sm text-muted-foreground">Percentile:</span>
+              <span className="text-lg font-semibold">{percentile}th</span>
+            </div>
+            <div className="flex items-center gap-2" data-testid="text-mincut">
+              <Info className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">
+                <span className="font-medium">{minCutSize}</span>
+                <span className="text-muted-foreground"> min-cut</span>
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2" data-testid="text-mincut">
-            <Info className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">
-              <span className="font-medium">{minCutSize}</span>
-              <span className="text-muted-foreground"> min-cut</span>
-            </span>
-          </div>
+
+          {confidence && (
+            <div className="flex items-center justify-between pt-3 border-t">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 cursor-help" data-testid="text-confidence">
+                    <span className="text-sm text-muted-foreground">Confidence:</span>
+                    <span className="text-lg font-semibold">{confidence.percent}%</span>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm">Confidence Calculation</div>
+                    <div className="text-xs space-y-1">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">Global Health (GHI):</span>
+                        <span className="font-mono">{confidence.ghi}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-muted-foreground">Local Adjustment:</span>
+                        <span className="font-mono">{confidence.localMincutN}</span>
+                      </div>
+                      <div className="pt-1 border-t">
+                        <span className="text-muted-foreground">
+                          Formula: GHI × (85% + 15% × local)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
 
         <Button

@@ -5,6 +5,7 @@ import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndor
 import { validateNonce } from "./crypto/nonce";
 import { computeLeafHash } from "./crypto/merkle";
 import { insertPublicEndorsementSchema } from "@shared/schema";
+import { computeUserConfidence } from "./health/ghi";
 import type { Address, Hex } from "viem";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -110,6 +111,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching endorsements:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/epoch/:id/health", async (req, res) => {
+    try {
+      const epochId = parseInt(req.params.id);
+
+      if (isNaN(epochId)) {
+        return res.status(400).json({ error: "Invalid epoch ID" });
+      }
+
+      const health = await storage.getEpochHealth(epochId);
+
+      if (!health) {
+        return res.status(404).json({ error: "Epoch health data not found" });
+      }
+
+      return res.status(200).json({
+        epoch: epochId,
+        GHI: health.ghi,
+        metrics: {
+          sizeN: health.sizeN,
+          cutN: health.cutN,
+          churnN: health.churnN,
+        },
+        raw: {
+          acceptedCount: health.rawAcceptedCount,
+          avgMinCut: health.rawAvgMinCut,
+          churnStability: health.rawChurnStability,
+        },
+        weights: {
+          sizeN: 0.30,
+          cutN: 0.50,
+          churnN: 0.20,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching epoch health:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/score/:did", async (req, res) => {
+    try {
+      const did = req.params.did;
+
+      const latestHealth = await storage.getLatestEpochHealth();
+
+      if (!latestHealth) {
+        return res.status(404).json({ error: "No epoch health data available" });
+      }
+
+      const mockUserMinCut = 2;
+      const mockUserSTS = 75;
+      const mockUserFlow = 1.5;
+
+      const confidence = computeUserConfidence(latestHealth.ghi, mockUserMinCut);
+
+      return res.status(200).json({
+        did,
+        epoch: latestHealth.epochId,
+        trust: {
+          sts: mockUserSTS,
+          flow: mockUserFlow,
+          mincut: mockUserMinCut,
+        },
+        confidence: {
+          percent: confidence.percent,
+          global: {
+            GHI: latestHealth.ghi,
+            sizeN: latestHealth.sizeN,
+            cutN: latestHealth.cutN,
+            churnN: latestHealth.churnN,
+          },
+          local: confidence.local,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching user score:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });

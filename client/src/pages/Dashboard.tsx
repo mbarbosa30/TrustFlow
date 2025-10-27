@@ -10,8 +10,28 @@ import { AverageSTSChart } from "@/components/AverageSTSChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
 import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
 import { NetworkDensityChart } from "@/components/NetworkDensityChart";
+import { GHIGauge } from "@/components/GHIGauge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
+  const { data: healthData, isLoading: isLoadingHealth } = useQuery<{
+    epoch: number;
+    GHI: number;
+    metrics: {
+      sizeN: number;
+      cutN: number;
+      churnN: number;
+    };
+    raw: {
+      acceptedCount: number;
+      avgMinCut: number;
+      churnStability: number;
+    };
+  }>({
+    queryKey: ['/api/epoch/0/health'],
+  });
+
   // TODO: remove mock functionality
   const mockStats = {
     totalUsers: 12453,
@@ -181,6 +201,77 @@ export default function Dashboard() {
 
       <div className="space-y-6">
         <GlobalStats stats={mockStats} />
+
+        <Card data-testid="card-ghi">
+          <CardHeader>
+            <CardTitle>Global Health Index</CardTitle>
+            <CardDescription>
+              Overall network health computed from size, connectivity, and stability metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoadingHealth ? (
+              <div className="flex items-center justify-center py-12" data-testid="loading-ghi">
+                <div className="text-muted-foreground">Loading health data...</div>
+              </div>
+            ) : healthData ? (
+              <div className="grid md:grid-cols-4 gap-6">
+                <div className="flex items-center justify-center">
+                  <GHIGauge ghi={healthData.GHI} size="md" />
+                </div>
+                <Card className="flex flex-col justify-center" data-testid="card-metric-size">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Size Metric
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-size-value">
+                      {healthData.metrics.sizeN}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {healthData.raw.acceptedCount} accepted users
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="flex flex-col justify-center" data-testid="card-metric-cut">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Cut Metric
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-cut-value">
+                      {healthData.metrics.cutN}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Avg min-cut: {healthData.raw.avgMinCut.toFixed(1)}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="flex flex-col justify-center" data-testid="card-metric-churn">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      Churn Metric
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-churn-value">
+                      {healthData.metrics.churnN}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {(healthData.raw.churnStability * 100).toFixed(0)}% stability
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-12" data-testid="text-no-health-data">
+                <div className="text-muted-foreground">No health data available</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
         
         <div className="grid lg:grid-cols-2 gap-6">
           <NetworkGrowthChart data={mockNetworkGrowth} />

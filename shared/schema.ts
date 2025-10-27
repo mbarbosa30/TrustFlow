@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, bigint, integer, timestamp, bigserial, smallint, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, bigint, integer, timestamp, bigserial, smallint, boolean, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -83,3 +83,22 @@ export const insertEpochSchema = createInsertSchema(epochs).omit({
 
 export type InsertEpoch = z.infer<typeof insertEpochSchema>;
 export type Epoch = typeof epochs.$inferSelect;
+
+export const epochHealth = pgTable("epoch_health", {
+  epochId: bigint("epoch_id", { mode: "number" }).primaryKey(),
+  ghi: integer("ghi").notNull(),
+  sizeN: integer("size_n").notNull(),
+  cutN: integer("cut_n").notNull(),
+  churnN: integer("churn_n").notNull(),
+  rawAcceptedCount: integer("raw_accepted_count").notNull(),
+  rawAvgMinCut: doublePrecision("raw_avg_min_cut").notNull(),
+  rawChurnStability: doublePrecision("raw_churn_stability").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEpochHealthSchema = createInsertSchema(epochHealth).omit({
+  createdAt: true,
+});
+
+export type InsertEpochHealth = z.infer<typeof insertEpochHealthSchema>;
+export type EpochHealth = typeof epochHealth.$inferSelect;

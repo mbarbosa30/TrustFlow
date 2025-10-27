@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -17,6 +17,10 @@ export interface IStorage {
     offset?: number;
   }): Promise<PublicEndorsement[]>;
   getMaxNonce(endorser: string, epoch: number): Promise<number>;
+  
+  createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth>;
+  getEpochHealth(epochId: number): Promise<EpochHealth | undefined>;
+  getLatestEpochHealth(): Promise<EpochHealth | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -101,6 +105,35 @@ export class MemStorage implements IStorage {
     }
 
     return Number(lastEndorsement[0].nonce);
+  }
+
+  async createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth> {
+    const [dbHealth] = await db
+      .insert(epochHealth)
+      .values(health)
+      .returning();
+    
+    return dbHealth;
+  }
+
+  async getEpochHealth(epochId: number): Promise<EpochHealth | undefined> {
+    const results = await db
+      .select()
+      .from(epochHealth)
+      .where(eq(epochHealth.epochId, epochId))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getLatestEpochHealth(): Promise<EpochHealth | undefined> {
+    const results = await db
+      .select()
+      .from(epochHealth)
+      .orderBy(desc(epochHealth.epochId))
+      .limit(1);
+    
+    return results[0];
   }
 }
 
