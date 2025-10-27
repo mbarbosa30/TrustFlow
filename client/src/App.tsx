@@ -12,6 +12,10 @@ import WhyScore from "@/pages/WhyScore";
 import Endorse from "@/pages/Endorse";
 import Endorsements from "@/pages/Endorsements";
 import Verify from "@/pages/Verify";
+import FAQs from "@/pages/FAQs";
+import HowItWorks from "@/pages/HowItWorks";
+import UseCases from "@/pages/UseCases";
+import { Footer } from "@/components/Footer";
 import { Network } from "lucide-react";
 
 function Navigation() {
@@ -91,6 +95,9 @@ function Router() {
       <Route path="/endorse" component={Endorse} />
       <Route path="/endorsements" component={Endorsements} />
       <Route path="/verify" component={Verify} />
+      <Route path="/faqs" component={FAQs} />
+      <Route path="/how-it-works" component={HowItWorks} />
+      <Route path="/use-cases" component={UseCases} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -100,11 +107,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
           <Navigation />
-          <main>
+          <main className="flex-1">
             <Router />
           </main>
+          <Footer />
         </div>
         <Toaster />
       </TooltipProvider>

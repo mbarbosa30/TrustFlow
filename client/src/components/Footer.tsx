@@ -1,0 +1,106 @@
+import { Link } from "wouter";
+import { Network } from "lucide-react";
+
+export function Footer() {
+  return (
+    <footer className="border-t bg-background mt-16">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <div className="flex items-center gap-2 font-bold text-lg mb-3">
+              <Network className="w-5 h-5 text-primary" />
+              <span>TrustFlow</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Privacy-first trust network using max-flow scoring to issue verifiable attestations.
+            </p>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3 text-sm">Learn</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/faqs">
+                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-faqs">
+                    FAQs
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/how-it-works">
+                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-how-it-works">
+                    How it Works
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/use-cases">
+                  <a className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-use-cases">
+                    Use Cases
+                  </a>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3 text-sm">Network</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/">
+                  <a className="text-muted-foreground hover:text-foreground transition-colors">
+                    Global Dashboard
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <Link href="/verify">
+                  <a className="text-muted-foreground hover:text-foreground transition-colors">
+                    Verify Attestations
+                  </a>
+                </Link>
+              </li>
+              <li>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Status
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3 text-sm">Resources</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  API Docs
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Terms
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="pt-8 border-t">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            <strong>Disclaimer:</strong> TrustFlow issues portable, privacy-preserving trust attestations computed from a curated seed set. Endorsements are private by default. Scores update by epoch. Do not rely on TrustFlow for high-stakes decisions without additional checks.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
