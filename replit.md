@@ -37,10 +37,8 @@ Preferred communication style: Simple, everyday language.
 
 **Key Pages**:
 - Dashboard: Global network statistics and recent activity
-- Overview: User's personal trust score card
+- Overview: Unified personal dashboard with score card, endorsement form, and endorsements list
 - Why Score: Explainability interface showing flow paths, bottlenecks, stability
-- Endorse: Create new endorsements
-- Endorsements: Manage outbound endorsements
 - Verify: Validate trust attestations from others
 - FAQs, How It Works, Use Cases: Static documentation pages
 
