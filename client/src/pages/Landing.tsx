@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Network, Shield, GitBranch, Lock, CheckCircle2, TrendingUp, Users, ArrowRight } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { WalletConnect } from "@/components/WalletConnect";
 
 export default function Landing() {
   const mockStats = {
@@ -13,6 +15,41 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <Link 
+              href="/" 
+              className="flex items-center gap-2 font-bold text-xl hover-elevate rounded-lg px-2 py-1" 
+              data-testid="link-home"
+            >
+              <Network className="w-6 h-6 text-primary" />
+              <span>TrustFlow</span>
+            </Link>
+            
+            <div className="flex items-center gap-2">
+              <Link href="/how-it-works">
+                <Button variant="ghost" size="sm" data-testid="button-nav-how-it-works">
+                  How It Works
+                </Button>
+              </Link>
+              <Link href="/use-cases">
+                <Button variant="ghost" size="sm" data-testid="button-nav-use-cases">
+                  Use Cases
+                </Button>
+              </Link>
+              <Link href="/faqs">
+                <Button variant="ghost" size="sm" data-testid="button-nav-faqs">
+                  FAQs
+                </Button>
+              </Link>
+              <WalletConnect onConnect={(address) => console.log('Wallet connected:', address)} />
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      </header>
+
       <section className="relative py-20 md:py-32 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">

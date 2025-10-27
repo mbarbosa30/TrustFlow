@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletConnect } from "@/components/WalletConnect";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Overview from "@/pages/Overview";
 import WhyScore from "@/pages/WhyScore";
@@ -20,7 +21,7 @@ function Navigation() {
   const [location] = useLocation();
   
   const navItems = [
-    { path: "/", label: "Dashboard" },
+    { path: "/dashboard", label: "Dashboard" },
     { path: "/overview", label: "Overview" },
     { path: "/why", label: "Why this score?" },
     { path: "/verify", label: "Verify" },
@@ -87,7 +88,8 @@ function Navigation() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={Landing} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
@@ -100,11 +102,14 @@ function Router() {
 }
 
 function App() {
+  const [location] = useLocation();
+  const showNavigation = location !== "/";
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="min-h-screen bg-background flex flex-col">
-          <Navigation />
+          {showNavigation && <Navigation />}
           <main className="flex-1">
             <Router />
           </main>
