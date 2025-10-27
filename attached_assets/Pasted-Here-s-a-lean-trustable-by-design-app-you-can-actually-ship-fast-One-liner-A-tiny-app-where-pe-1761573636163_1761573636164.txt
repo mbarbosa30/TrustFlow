@@ -1,0 +1,127 @@
+Here’s a lean, “trustable-by-design” app you can actually ship fast.
+
+One-liner
+
+A tiny app where people privately endorse who they trust; every few hours the server recomputes max-flow/min-cut from a small seed set and issues a portable Trust Badge you can use to gate actions elsewhere—without exposing your social graph.
+
+What makes it trustable (principles)
+	1.	Minimal data: store only salted commitments of endorsements, not raw edges.
+	2.	Deterministic computation: every epoch publishes inputs + params as hashes so anyone can recompute the result.
+	3.	Clear attack model: show the min-cut intuition in UI (“3 independent paths from seeds”).
+	4.	Revocability: you can revoke endorsements; epochs supersede old results.
+	5.	Open source: backend + flow runner are public; one-click local replay.
+	6.	Portable proof: signed “Trust Attestation” you can present to any app.
+
+UX (3 screens + 1 admin action)
+
+A) Home / Badge
+	•	Shows your current level (Apprentice/Journeyer/Master) and numeric score.
+	•	“Why?” explainer: tiny graph sketch + “min-cut = 3” note.
+	•	Button: Export Proof (copy a signed JSON attestation).
+
+B) Endorse
+	•	Search handle → pick level (Apprentice/Journeyer/Master) → “Endorse”.
+	•	Locally generates salt, sends only commitment; optional private note.
+
+C) Verify (for integrators)
+	•	Paste a Trust Attestation to check signature & epoch recency.
+	•	Shows: level, score, epoch id, seed policy.
+
+Admin: Recompute
+	•	Triggers the epoch job. On completion, publishes epoch artifacts.
+
+Epoch artifacts (public, for verifiability)
+	•	graph_root: Merkle root of all (endorser, endorsee, level, salt) commitments.
+	•	seed_root: Merkle root of the seed list.
+	•	params.json: capacities, level weights, decay schedule, algorithm version.
+	•	scores.jsonl: (user_id, level, flow, mincut_estimate).
+	•	sig: server signature over (graph_root, seed_root, params_hash, scores_hash).
+Anyone can git clone + docker run compute --epoch <id> and reproduce scores.
+
+Data model (simple)
+	•	Users(id, pubkey, human_flag)
+	•	Edges(commitment, endorser_id, endorsee_id, level, epoch_introduced, revoked_bool)
+	•	Epochs(id, graph_root, seed_root, params_hash, created_at)
+	•	Scores(user_id, epoch_id, level, flow, mincut_estimate)
+
+API (tiny, boring, reliable)
+	•	POST /endorse {endorsee, level, salt} → 201 (stores commitment)
+	•	POST /revoke {endorsee} → 200
+	•	POST /recompute (admin) → 202
+	•	GET /score/:user → {level, flow, epoch, attestation}
+	•	GET /epoch/:id/artifacts → {graph_root, seed_root, params, sig}
+	•	POST /verify {attestation} → {valid, level, score, epoch}
+
+Trust Attestation (portable)
+
+{
+  "sub":"user:0xabc...",
+  "level":"Journeyer",
+  "score": 1.73,
+  "epoch":"2025-10-27T12:00:00Z",
+  "policy":"advogato-v1",
+  "roots":{"graph":"0x..","seed":"0x..","params":"0x.."},
+  "iss":"trustflow.app",
+  "sig":"ed25519:..."
+}
+
+Flow spec (sane defaults)
+	•	Levels: Observer(0.4), Apprentice(0.6), Journeyer(0.8), Master(1.0).
+	•	Capacities: split node u→u⁺ capacity budget c(d) decays with hop distance from seeds, e.g. c(0)=800, c(1)=200, c(2)=50, c(≥3)=20.
+	•	Source connects to seeds with large capacity.
+	•	Sink edge per node limits first unit (acceptance) vs. extra flow (score).
+	•	Algorithm: Dinic (fast) or Push-Relabel (very fast).
+	•	Output: boolean acceptance (≥1 unit to sink) → tier; flow amount → score; min-cut estimate from residual graph.
+
+Privacy
+	•	Store commitments: H(endorser || endorsee || level || salt); salts stay client-side.
+	•	Optional mutual-reveal: both parties can co-sign to reveal an edge for research.
+	•	“Human check” flag (e.g., proof-of-personhood) is a boolean attribute, not PII.
+
+Abuse & safety
+	•	Endorsement budget: each user has finite outgoing capacity via u⁻→u⁺.
+	•	Rate limits: N endorsements/day; dampen edge spam.
+	•	Seeds: governed list (multisig/DAO), periodic rotation, key hygiene.
+	•	Dispute view: any user can download a small “cut witness” bundle explaining why they didn’t pass (educational, not doxxing).
+
+Governance (keep it boring)
+	•	Parameter updates (capacities/weights) are proposed, simulated on prior epochs, and only applied after a “cooldown” epoch.
+	•	Seeds added/removed via on-chain multisig or signed governance doc; new seed_root published.
+
+Integrations (how others use it)
+	•	Web2: OAuth-style callback that returns the Trust Attestation.
+	•	Web3: SIWE to bind wallet ↔ user, then present attestation in dapps to gate actions (e.g., “Journeyer+ can post,” “Master to create communities”).
+
+Implementation sketch (you can hand this to a dev)
+	•	Backend: FastAPI or NestJS; Postgres; networkx (Dinic) for v1; cron/worker for epochs.
+	•	Frontend: Next.js; 3 screens above.
+	•	Signing: ed25519 (libsodium); rotate issuer keys, publish JWKS.
+	•	Container: one API, one compute worker, one DB.
+
+Compute pseudocode
+
+# build layered capacities and split nodes
+for u in G.users:
+    add_edge(u_in, u_out, cap=node_cap(u))
+    add_edge(u_in, SINK, cap=1)  # acceptance unit
+for (a,b,level) in endorsements:
+    add_edge(a_out, b_in, cap=level_weight(level))
+for s in SEEDS:
+    add_edge(SOURCE, s_in, cap=SEED_CAP)
+flow = dinic_max_flow()
+for u in G.users:
+    accepted = flow.val(u_in, SINK) >= 1
+    score = in_flow_to(u_in)
+    level = tier_from(score or pass thresholds)
+
+Rollout plan
+	•	Week 1: scaffold, DB, endorse flow, static compute with seed fixtures.
+	•	Week 2: epoch artifacts + attestation + Verify page; open-source repo.
+	•	Week 3: rate limits, revoke, cut-witness view; publish SDKs (TS/Python).
+
+What success looks like
+	•	95% of recomputes are byte-for-byte reproducible by third parties.
+	•	Integrators adopt the Verify endpoint; <1% false-accept rate on synthetic Sybil tests.
+	•	Users understand why they passed/failed in <30 seconds.
+
+If you want, I can turn this into a copy-paste Replit MVP prompt (API + compute worker + minimal UI + verifier), or tailor the attestation format to SIWE / EIP-712.

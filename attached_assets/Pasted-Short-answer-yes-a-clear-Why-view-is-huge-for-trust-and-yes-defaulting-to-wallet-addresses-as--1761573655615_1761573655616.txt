@@ -1,0 +1,75 @@
+Short answer: yes, a clear “Why?” view is huge for trust—and yes, defaulting to wallet addresses as IDs works well if we let people (optionally) link other handles. Here’s a lean plan you can ship.
+
+Product shape
+
+Top nav: Overview · Why this score? · Improve · Endorsements · Identity
+
+Overview (scorecard)
+	•	Level + score (e.g., Journeyer · 1.73)
+	•	Min-cut size (e.g., “3 independent paths from seeds”)
+	•	Epoch timestamp + Export Attestation (JWT/VC)
+	•	Human check (boolean badge if present)
+
+Why this score? (explainability)
+
+Make it visual, but privacy-preserving by default.
+	•	Top trusted paths (k=3) from seeds to you, shown as anonymized hops (“Seed → … → You”). Let each hop reveal only if both parties opt-in.
+	•	Bottlenecks (min-cut edges): list 2–3 saturated edges that limited more flow reaching you. Copy: “Flow constrained mainly at A→B and C→D.”
+	•	Contribution breakdown (no doxx): “~62% of your flow came through 2 disjoint regions.”
+	•	Stability meter: “Removing any single neighbor would drop your score by ≤0.15.” (Computed via quick edge-removal deltas on the residual graph.)
+
+Implementation notes
+	•	Decompose max-flow into up to k path flows for display.
+	•	Compute one min s-t cut from residual; show its size and obfuscated membership.
+	•	Edge influence ≈ (score – score_without_edge) using cached residuals in a local subgraph (depth-bounded).
+
+Improve (actionable, not social spam)
+	•	Concrete suggestions (private):
+	•	“Ask endorsement from these already-trusted neighbors” (chosen from users within 2 hops who are Journeyer+).
+	•	“Verify human check” (raises endorsement budget slightly).
+	•	“Revoke weak edges” (edges that create spam patterns).
+	•	Always frame as privacy-first: no mass invites, no public graphs.
+
+Endorsements
+	•	Outbound: your endorsements (level, date, revoke).
+	•	Inbound (private): hidden by default; reveal per-relationship if both consent.
+	•	Every edge stored as a commitment; reveal = both parties sign to disclose.
+
+Identity (IDs & optional profile)
+	•	Primary subject: a DID bound to wallets (e.g., did:pkh:eip155:8453:0x…).
+	•	Link multiple wallets (SIWE/EIP-712), rotate signers safely.
+	•	Optional handles: Farcaster/ENS/email-hash/phone-hash (all opt-in).
+	•	Optional profile (not used in scoring): display name, avatar, coarse location (city only), short bio. Field-level visibility toggles (Public / Followers / Private).
+	•	Data export & delete buttons.
+
+IDs & attestations (practical defaults)
+	•	Treat wallet addresses as the default user IDs (cheap, cryptographic).
+	•	Wrap them in a DID so users can rotate keys, link multiple wallets, or add Web2 handles without changing the trust subject.
+	•	Trust Attestation = signed JSON (or W3C VC) binding {subject DID, level, score, epoch, roots, policy}. Verifiers can check it with your JWKS and optional on-chain anchor.
+
+What to store (and what not)
+	•	Graph: commitments H(endorser‖endorsee‖level‖salt) + minimal metadata; salts client-side.
+	•	Seeds / params: public.
+	•	Profile: encrypted at rest; never used in flow.
+	•	No PII in the graph; endorsements live outside profiles.
+
+API additions you’ll want
+	•	GET /explain/:user → {mincut, paths[], edge_influences[]} (all obfuscated unless mutual-reveal).
+	•	POST /id/link (SIWE/EIP-712) → link another wallet to the same DID.
+	•	POST /profile → optional fields + per-field visibility.
+	•	POST /reveal-edge → mutual consent to disclose a specific edge.
+
+Copy that makes it feel safe
+	•	“Your score is the max flow from community seeds to you. The min-cut (size 3) is the smallest number of endorsements that would need to disappear for you to lose your badge.”
+	•	“Endorsements are private by default. You can reveal specific connections by mutual consent.”
+	•	“Personal details are optional and not used to compute trust.”
+
+Minimal tech plan for this
+	•	Identifiers: DID + SIWE to bind wallets; store mapping table {did, address, active}.
+	•	Explainability: after computing max-flow, run:
+	•	k-shortest flow paths extraction (cap-aware),
+	•	one min-cut from residual,
+	•	edge delta via localized recompute. Cache per epoch.
+	•	UI: three cards (Score, Why, Improve) + two tabs (Endorsements, Identity).
+
+This gives users a clear dashboard, verifiers a portable proof, and keeps privacy intact. If you want, I’ll draft the exact JSON responses and a tiny Figma-style component spec for each card next.
