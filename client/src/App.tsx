@@ -16,6 +16,7 @@ import Verify from "@/pages/Verify";
 import FAQs from "@/pages/FAQs";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
+import Status from "@/pages/Status";
 import { Footer } from "@/components/Footer";
 import { Network } from "lucide-react";
 
@@ -95,6 +96,7 @@ function Router() {
       <Route path="/overview" component={Overview} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
+      <Route path="/status" component={Status} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/use-cases" component={UseCases} />

@@ -51,9 +51,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/status" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-status">
                   Status
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
