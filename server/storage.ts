@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { and, eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -19,11 +21,9 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
-  private endorsements: PublicEndorsement[];
 
   constructor() {
     this.users = new Map();
-    this.endorsements = [];
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -44,14 +44,12 @@ export class MemStorage implements IStorage {
   }
 
   async createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement> {
-    const id = this.endorsements.length + 1;
-    const newEndorsement: PublicEndorsement = {
-      ...endorsement,
-      id,
-      createdAt: new Date(),
-    };
-    this.endorsements.push(newEndorsement);
-    return newEndorsement;
+    const [dbEndorsement] = await db
+      .insert(publicEndorsements)
+      .values(endorsement)
+      .returning();
+    
+    return dbEndorsement;
   }
 
   async getEndorsements(filters?: {
@@ -61,34 +59,48 @@ export class MemStorage implements IStorage {
     limit?: number;
     offset?: number;
   }): Promise<PublicEndorsement[]> {
-    let filtered = this.endorsements;
-
+    let query = db.select().from(publicEndorsements);
+    
+    const conditions = [];
     if (filters?.endorser) {
-      filtered = filtered.filter(e => e.endorser.toLowerCase() === filters.endorser!.toLowerCase());
+      conditions.push(eq(publicEndorsements.endorser, filters.endorser));
     }
     if (filters?.endorsee) {
-      filtered = filtered.filter(e => e.endorsee.toLowerCase() === filters.endorsee!.toLowerCase());
+      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee));
     }
     if (filters?.epoch !== undefined) {
-      filtered = filtered.filter(e => e.epoch === filters.epoch);
+      conditions.push(eq(publicEndorsements.epoch, filters.epoch));
     }
-
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const limit = filters?.limit || 100;
     const offset = filters?.offset || 0;
-    const limit = filters?.limit || filtered.length;
-
-    return filtered.slice(offset, offset + limit);
+    
+    const results = await query.limit(limit).offset(offset);
+    return results;
   }
 
   async getMaxNonce(endorser: string, epoch: number): Promise<number> {
-    const endorsements = this.endorsements.filter(
-      e => e.endorser.toLowerCase() === endorser.toLowerCase() && e.epoch === epoch
-    );
-    
-    if (endorsements.length === 0) {
+    const lastEndorsement = await db
+      .select({ nonce: publicEndorsements.nonce })
+      .from(publicEndorsements)
+      .where(
+        and(
+          eq(publicEndorsements.endorser, endorser),
+          eq(publicEndorsements.epoch, epoch)
+        )
+      )
+      .orderBy(desc(publicEndorsements.nonce))
+      .limit(1);
+
+    if (lastEndorsement.length === 0) {
       return 0;
     }
 
-    return Math.max(...endorsements.map(e => Number(e.nonce)));
+    return Number(lastEndorsement[0].nonce);
   }
 }
 
