@@ -1,0 +1,168 @@
+Got it — let’s make **Confidence** primarily reflect **how healthy and robust the *whole graph*** is, not just a user’s local neighborhood.
+
+Below is a drop-in design:
+
+# Global-first Confidence
+
+## 1) Compute a **Global Health Index (GHI)** per epoch ∈ [0,100]
+
+This is the headline “how trustable is the system this epoch?” number. It feeds every user’s confidence.
+
+### Core global metrics (all computed on the *accepted* subgraph of the epoch)
+
+* **Size & Coverage**
+
+  * `|A|` Accepted users (log-scaled)
+  * `seedCoverage` = % of accepted reachable from ≥K seeds (e.g., K=2)
+* **Redundancy & Expansion**
+
+  * `avgMinCut` (clamped 0–5; normalize by /3)
+  * `conductance` of the largest component (higher is better)
+  * `algebraicConnectivity` (Fiedler value of Laplacian on giant component; normalize)
+* **Shape & Centralization**
+
+  * `giniInflow` of node inflows (lower is better → use 1−Gini)
+  * `seedSaturation` = 1 − maxSeedLoad (punish over-reliance on a single seed)
+* **Stability & Maturity**
+
+  * `matureEdgeShare` = fraction of edge capacity older than cooldown
+  * `epochReproRate` = % third-party recomputes that matched hashes
+  * `churnStability` = 1 − |A_t △ A_{t−1}| / |A_t ∪ A_{t−1}|
+* **Quality Mix (optional if using levels)**
+
+  * `trustMix` = weighted share of Know/Trust vs Human edges (cap at policy target)
+
+### Normalization (each → [0,1])
+
+Examples:
+
+* `sizeN = min(1, log(1+|A|)/log(1+|A|_target))` (pick target like 1,000)
+* `cutN = min(1, avgMinCut/3)`
+* `condN = clamp01(conductance / 0.25)`  (0.25 is a healthy target you can tune)
+* `fiedN = clamp01(algebraicConnectivity / τ)` (τ small, e.g., 0.01–0.05 depending on size)
+* `giniN = 1 − Gini(inflow)` (so higher = healthier)
+* `satN = 1 − maxSeedOutCapacityShare` (discourage single-seed dominance)
+* `matN = matureEdgeShare`
+* `repN = epochReproRate`
+* `churnN = churnStability`
+* `mixN = min(1, trustMix / policyTarget)` (if used)
+
+### Blend into GHI
+
+Weighted, transparent, and mostly global:
+
+```
+GHI = 100 * (
+  0.18*sizeN +
+  0.18*cutN +
+  0.14*condN +
+  0.10*fiedN +
+  0.10*giniN +
+  0.08*satN +
+  0.08*matN +
+  0.08*repN +
+  0.06*churnN +
+  0.00*mixN   # set to 0.0 unless you want to include quality mix
+)
+```
+
+(You can tweak weights; keep ≥70% of weight on redundancy/expansion/shape, not size.)
+
+Publish GHI (and each submetric) in the **epoch bundle** and on the dashboard.
+
+---
+
+## 2) User Confidence = **mostly GHI**, tiny local sanity check
+
+Return a per-user `confidence.percent` that’s dominated by the global state, with only mild local adjustments so obviously brittle cases don’t sneak through.
+
+```
+localAdj = 0.15 * min(1, user.mincut/3)
+         + 0.10 * stability_i        # small edge-perturbation stability in [0,1]
+         + 0.05 * seedCoverage_i     # fraction of seeds contributing flow to i
+
+localAdj = clamp01(localAdj)         # max +0.30 effect if perfect
+
+ConfPercent = round( clamp( GHI * (0.85 + 0.30*localAdj), 0, 100) )
+```
+
+Interpretation:
+
+* If the graph is unhealthy (low GHI), everyone’s confidence is low—by design.
+* If the graph is healthy, users with obviously brittle placement get slightly less than the headline GHI; robust users track or slightly exceed it.
+
+---
+
+## 3) API shape
+
+`GET /score/:did` returns:
+
+```json
+{
+  "did": "did:pkh:eip155:8453:0xabc...",
+  "epoch": 42,
+  "trust": { "sts": 71, "flow": 1.83, "mincut": 2 },
+  "confidence": {
+    "percent": 82,
+    "global": {
+      "GHI": 80,
+      "sizeN": 0.78, "cutN": 0.73, "condN": 0.61, "fiedN": 0.55,
+      "giniN": 0.69, "satN": 0.81, "matN": 0.74, "repN": 1.00, "churnN": 0.67
+    },
+    "local": {
+      "mincutN": 0.67,
+      "stabilityN": 0.72,
+      "seedCoverageN": 0.60
+    }
+  }
+}
+```
+
+Also add `GET /epoch/:id/health` to expose the GHI bundle:
+
+```json
+{
+  "epoch": 42,
+  "GHI": 80,
+  "metrics": {
+    "sizeN": 0.78, "cutN": 0.73, "condN": 0.61, "fiedN": 0.55,
+    "giniN": 0.69, "satN": 0.81, "matN": 0.74, "repN": 1.00, "churnN": 0.67
+  },
+  "weights": { "sizeN":0.18, "cutN":0.18, "condN":0.14, "fiedN":0.10, "giniN":0.10, "satN":0.08, "matN":0.08, "repN":0.08, "churnN":0.06 }
+}
+```
+
+---
+
+## 4) Dashboard additions (system health)
+
+* Big **GHI gauge** (0–100) + sparkline over epochs.
+* Cards: `Accepted |A|`, `Avg min-cut`, `Conductance`, `Fiedler`, `Reproducibility`, `Seed saturation`, `Churn`.
+* Charts:
+
+  * Time series of each normalized metric (so you see what drives GHI).
+  * Scatter: **STS vs Confidence** (with GHI bands).
+  * Heatmap: **min-cut vs STS** to spot brittle high-scores when GHI dips.
+
+---
+
+## 5) Implementation notes
+
+* **Conductance:** compute on the giant component; use a fast heuristic cut (e.g., sweep over second eigenvector or PPR sweep) rather than exact min-conductance.
+* **Algebraic connectivity (λ₂):** compute on normalized Laplacian of giant component; for large graphs, use Lanczos/power iteration (sparse).
+* **Gini of inflow:** compute over accepted users’ inbound flow (or indegree if you need speed), then flip to `1−Gini`.
+* **Seed saturation:** `maxSeedOutCapacity / totalSeedOutCapacity`.
+* **Mature edge share:** weight edges by effective capacity; numerator = capacity with age ≥ cooldown.
+* **Reproducibility:** % of independent replays that match `scores.jsonl` hash.
+* **Churn stability:** use Jaccard of accepted sets: `1 − (|A_t △ A_{t−1}| / |A_t ∪ A_{t−1}|)`.
+
+All of these are graph-level and can be computed once per epoch in the compute worker; store them in `epoch_health` and include in the signed manifest.
+
+---
+
+### Why this matches your intent
+
+* Confidence is **mostly a property of the system**, not each user.
+* It’s **explainable**: a single GHI, with visible drivers.
+* It’s **hard to game** locally when the network is small or brittle.
+* It scales: as the graph matures (conductance, λ₂, min-cut rise), everyone’s confidence rises.
