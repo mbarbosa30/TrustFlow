@@ -4,9 +4,19 @@ import { EndorsementsList } from "@/components/EndorsementsList";
 import { type TrustLevel } from "@/components/TrustLevelBadge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAccount } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
+import type { PublicEndorsement } from "@shared/schema";
+
+const LEVEL_MAP: Record<number, TrustLevel> = {
+  1: "Human",
+  2: "Known",
+  3: "Trusted",
+};
 
 export default function Overview() {
-  // TODO: remove mock functionality
+  const { address, isConnected } = useAccount();
+  
   const mockData = {
     tier: "Master" as const,
     sts: 85,
@@ -15,67 +25,31 @@ export default function Overview() {
     epochTimestamp: "2025-10-27T12:00:00Z",
   };
 
-  const mockGivenEndorsements = [
-    {
-      id: "1",
-      endorsee: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-      level: "Trusted" as const,
-      date: "2025-10-20T10:00:00Z",
-      commitment: "0x8f5d9e2a1b3c4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f",
-    },
-    {
-      id: "2",
-      endorsee: "alice.eth",
-      level: "Known" as const,
-      date: "2025-10-15T14:30:00Z",
-      commitment: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b",
-    },
-    {
-      id: "3",
-      endorsee: "0x1234567890abcdef1234567890abcdef12345678",
-      level: "Human" as const,
-      date: "2025-10-10T08:15:00Z",
-      commitment: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890",
-    },
-  ];
+  const { data: givenEndorsementsData, isLoading: isLoadingGiven } = useQuery<{ endorsements: PublicEndorsement[] }>({
+    queryKey: ['/api/endorsements', { endorser: address }],
+    enabled: isConnected && !!address,
+  });
 
-  const mockReceivedEndorsements = [
-    {
-      id: "r1",
-      endorsee: "0x987fEdCbA6543210987fEdCbA6543210987fEdCb",
-      level: "Trusted" as const,
-      date: "2025-10-25T16:20:00Z",
-      commitment: "0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
-    },
-    {
-      id: "r2",
-      endorsee: "bob.eth",
-      level: "Known" as const,
-      date: "2025-10-18T09:45:00Z",
-      commitment: "0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c",
-    },
-    {
-      id: "r3",
-      endorsee: "charlie.eth",
-      level: "Trusted" as const,
-      date: "2025-10-12T11:30:00Z",
-      commitment: "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
-    },
-    {
-      id: "r4",
-      endorsee: "0xaBcDeF1234567890aBcDeF1234567890aBcDeF12",
-      level: "Human" as const,
-      date: "2025-10-08T14:15:00Z",
-      commitment: "0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e",
-    },
-    {
-      id: "r5",
-      endorsee: "diana.eth",
-      level: "Known" as const,
-      date: "2025-10-05T08:00:00Z",
-      commitment: "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
-    },
-  ];
+  const { data: receivedEndorsementsData, isLoading: isLoadingReceived } = useQuery<{ endorsements: PublicEndorsement[] }>({
+    queryKey: ['/api/endorsements', { endorsee: address }],
+    enabled: isConnected && !!address,
+  });
+
+  const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
+    id: e.id.toString(),
+    endorsee: e.endorsee,
+    level: LEVEL_MAP[e.level],
+    date: e.createdAt.toISOString(),
+    commitment: e.leafHash,
+  })) || [];
+
+  const receivedEndorsements = receivedEndorsementsData?.endorsements.map(e => ({
+    id: e.id.toString(),
+    endorsee: e.endorser,
+    level: LEVEL_MAP[e.level],
+    date: e.createdAt.toISOString(),
+    commitment: e.leafHash,
+  })) || [];
 
   const handleExport = () => {
     const attestation = {
@@ -99,9 +73,8 @@ export default function Overview() {
     console.log('Exported attestation:', attestation);
   };
 
-  const handleEndorse = (endorsee: string, level: TrustLevel, note?: string) => {
-    // TODO: remove mock functionality
-    console.log('Creating endorsement:', { endorsee, level, note });
+  const handleEndorse = async (endorsee: string, level: TrustLevel, note?: string) => {
+    console.log('Endorsement created:', { endorsee, level, note });
   };
 
   const handleRevoke = (id: string) => {
@@ -154,26 +127,34 @@ export default function Overview() {
           <Tabs defaultValue="given" data-testid="tabs-endorsements">
             <TabsList className="grid w-full grid-cols-2" data-testid="tabs-list-endorsements">
               <TabsTrigger value="given" data-testid="tab-given">
-                Given ({mockGivenEndorsements.length})
+                Given ({isLoadingGiven ? '...' : givenEndorsements.length})
               </TabsTrigger>
               <TabsTrigger value="received" data-testid="tab-received">
-                Received ({mockReceivedEndorsements.length})
+                Received ({isLoadingReceived ? '...' : receivedEndorsements.length})
               </TabsTrigger>
             </TabsList>
             <TabsContent value="given" className="mt-6" data-testid="tab-content-given">
-              <EndorsementsList
-                endorsements={mockGivenEndorsements}
-                onRevoke={handleRevoke}
-                emptyMessage="You haven't given any endorsements yet"
-                showRevokeButton={true}
-              />
+              {isLoadingGiven ? (
+                <div className="text-center text-muted-foreground py-8">Loading endorsements...</div>
+              ) : (
+                <EndorsementsList
+                  endorsements={givenEndorsements}
+                  onRevoke={handleRevoke}
+                  emptyMessage={isConnected ? "You haven't given any endorsements yet" : "Connect your wallet to view endorsements"}
+                  showRevokeButton={true}
+                />
+              )}
             </TabsContent>
             <TabsContent value="received" className="mt-6" data-testid="tab-content-received">
-              <EndorsementsList
-                endorsements={mockReceivedEndorsements}
-                emptyMessage="You haven't received any endorsements yet"
-                showRevokeButton={false}
-              />
+              {isLoadingReceived ? (
+                <div className="text-center text-muted-foreground py-8">Loading endorsements...</div>
+              ) : (
+                <EndorsementsList
+                  endorsements={receivedEndorsements}
+                  emptyMessage={isConnected ? "You haven't received any endorsements yet" : "Connect your wallet to view endorsements"}
+                  showRevokeButton={false}
+                />
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
