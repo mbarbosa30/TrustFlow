@@ -1,13 +1,13 @@
-# TrustFlow - Privacy-First Trust Network
+# TrustFlow - Public Verifiable Trust Network
 
 ## Overview
 
-TrustFlow is a Sybil-resistant trust scoring system that converts private endorsements into verifiable trust attestations using max-flow/min-cut graph algorithms. The application computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) that users can present to third-party applications.
+TrustFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. The application computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) that users can present to third-party applications.
 
-**Core Concept**: Users endorse others at three levels (Human, Known, Trusted), which are stored as cryptographic commitments to preserve privacy. Periodically, the system runs graph flow algorithms to calculate trust scores, path redundancy (min-cut), and stability metrics. Users receive tier badges (Apprentice, Journeyer, Master) based on their scores and can export signed attestations for use in external systems.
+**Core Concept**: Users vouch for others using a simple binary endorsement system. All vouches are publicly visible and stored on-chain in a Merkle transparency log for complete auditability. Periodically, the system runs graph flow algorithms to calculate trust scores, path redundancy (min-cut), and stability metrics. Users receive tier badges (Apprentice, Journeyer, Master) based on their scores and can export signed attestations for use in external systems.
 
 **Key Features**:
-- Privacy-preserving endorsement storage (commitments only, not raw edges)
+- Fully public, verifiable vouch graph with Merkle transparency log
 - Deterministic, reproducible epoch-based scoring
 - Portable trust attestations with cryptographic signatures
 - Explainability tools showing trust paths and score breakdowns
@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 
 **Key Pages**:
 - Dashboard: Global network statistics and recent activity
-- Overview: Unified personal dashboard with score card, endorsement form, and endorsements list
+- Overview: Unified personal dashboard with score card, vouch form, and vouches list
 - Why Score: Explainability interface showing flow paths, bottlenecks, stability
 - Verify: Validate trust attestations from others
 - FAQs, How It Works, Use Cases: Static documentation pages
@@ -63,11 +63,11 @@ Preferred communication style: Simple, everyday language.
 
 **Planned Schema** (based on design documents):
 - **Users**: id, pubkey/DID, wallet addresses, optional profile fields
-- **Edges**: commitment hash, endorser_id, endorsee_id, level (Human/Known/Trusted), epoch_introduced, revoked flag
+- **Edges**: commitment hash, endorser_id, endorsee_id, epoch_introduced, revoked flag (binary vouch, no levels)
 - **Epochs**: id, graph_root (Merkle), seed_root (Merkle), params_hash, created_at, scores_hash, signature
 - **Scores**: user_id, epoch_id, tier, STS, flow, min_cut, stability, percentile
 
-**Privacy Model**: Endorsements stored as salted commitments, not raw edges. Mutual reveal requires both parties' consent.
+**Transparency Model**: Vouches are fully public and stored on-chain in a Merkle transparency log. All endorsements are visible and auditable, enabling complete verification of trust score computations.
 
 ### Authentication and Authorization
 
@@ -120,6 +120,17 @@ Preferred communication style: Simple, everyday language.
 **Component-First UI**: Reusable, tested components with example implementations in `client/src/components/examples/`
 
 **Privacy by Default**: Endorsement graph is opaque; only aggregated scores and opted-in reveals are public
+
+**ARCHITECTURAL CHANGE (October 2025)**: System redesigned from three-level endorsement system (Human 0.4, Known 0.7, Trusted 1.0) to single binary vouch model. Key changes:
+- **Endorsement Model**: Changed from weighted three-level system to simple binary vouches
+- **Privacy Model**: Changed from privacy-preserving commitments to fully public, verifiable vouches on-chain
+- **Rationale**: 
+  - Max-flow/min-cut works the same with binary edges + node capacity budgets
+  - Transparent connection weights create social friction between friends/communities
+  - No clear incentive to signal human vs. known status
+  - Aligns with Levien/Advogato trust metric systems
+- **Schema Impact**: Removed `level` field from `publicEndorsements` table
+- **UI Impact**: Simplified vouch form, removed level selector, updated all explanation pages
 
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 

@@ -21,7 +21,6 @@ export const publicEndorsements = pgTable("public_endorsements", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   endorser: text("endorser").notNull(),
   endorsee: text("endorsee").notNull(),
-  level: smallint("level").notNull(),
   epoch: bigint("epoch", { mode: "number" }).notNull(),
   nonce: bigint("nonce", { mode: "number" }).notNull(),
   sig: text("sig").notNull(),

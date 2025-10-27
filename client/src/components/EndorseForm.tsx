@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { TrustLevel } from "./TrustLevelBadge";
 import { Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Address } from 'viem';
 
 interface EndorseFormProps {
-  onEndorse?: (endorsee: string, level: TrustLevel, note?: string) => void;
+  onEndorse?: (endorsee: string, note?: string) => void;
 }
 
 const ENDORSEMENT_DOMAIN = {
@@ -26,37 +25,21 @@ const ENDORSEMENT_TYPES = {
   Endorsement: [
     { name: "endorser", type: "address" },
     { name: "endorsee", type: "address" },
-    { name: "level", type: "uint8" },
     { name: "epoch", type: "uint64" },
     { name: "nonce", type: "uint64" },
   ],
 } as const;
 
-const LEVEL_MAP: Record<TrustLevel, number> = {
-  Human: 1,
-  Known: 2,
-  Trusted: 3,
-};
-
 export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLevel, setSelectedLevel] = useState<TrustLevel | null>(null);
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
 
-  const levels: TrustLevel[] = ["Human", "Known", "Trusted"];
-  
-  const levelDescriptions: Record<TrustLevel, string> = {
-    Human: "I believe this is a human (0.4 weight)",
-    Known: "I know that person (0.7 weight)",
-    Trusted: "I trust that person (1.0 weight)",
-  };
-
   const handleSubmit = async () => {
-    if (!searchQuery || !selectedLevel || !address || !isConnected) return;
+    if (!searchQuery || !address || !isConnected) return;
     
     setIsSubmitting(true);
     
@@ -66,7 +49,6 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         : searchQuery as Address;
 
       const epoch = BigInt(0);
-      const level = LEVEL_MAP[selectedLevel];
 
       const nonceResponse = await fetch(`/api/endorsements?endorser=${address}&epoch=${epoch}`);
       const nonceData = await nonceResponse.json();
@@ -75,7 +57,6 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       const message = {
         endorser: address,
         endorsee: endorseeAddress,
-        level,
         epoch,
         nonce,
       };
@@ -90,23 +71,21 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       await apiRequest('POST', '/api/endorse', {
         endorser: address,
         endorsee: endorseeAddress,
-        level,
         epoch: epoch.toString(),
         nonce: nonce.toString(),
         sig: signature,
       });
 
       if (onEndorse) {
-        onEndorse(searchQuery, selectedLevel, note || undefined);
+        onEndorse(searchQuery, note || undefined);
       }
       
       toast({
         title: "Endorsement Created",
-        description: `You endorsed ${searchQuery} as ${selectedLevel}`,
+        description: `You vouched for ${searchQuery}`,
       });
       
       setSearchQuery("");
-      setSelectedLevel(null);
       setNote("");
     } catch (error: any) {
       toast({
@@ -122,9 +101,9 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   return (
     <Card data-testid="card-endorse-form">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Endorse User</CardTitle>
+        <CardTitle className="text-lg font-semibold">Vouch for Someone</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Select a trust level and endorse someone in the network
+          Vouch for someone you trust in the network
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -144,33 +123,10 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         </div>
 
         <div>
-          <Label>Trust Level</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-            {levels.map((level) => (
-              <button
-                key={level}
-                onClick={() => setSelectedLevel(level)}
-                className={`p-4 rounded-lg border-2 text-left transition-all hover-elevate ${
-                  selectedLevel === level
-                    ? "border-primary bg-primary/5"
-                    : "border-border"
-                }`}
-                data-testid={`button-level-${level.toLowerCase()}`}
-              >
-                <div className="font-semibold text-sm mb-1">{level}</div>
-                <div className="text-xs text-muted-foreground">
-                  {levelDescriptions[level]}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
           <Label htmlFor="note">Private Note (Optional)</Label>
           <Textarea
             id="note"
-            placeholder="Why you trust this person..."
+            placeholder="Why you vouch for this person..."
             className="mt-2 resize-none"
             rows={3}
             value={note}
@@ -184,19 +140,19 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
 
         <Button
           className="w-full h-12"
-          disabled={!searchQuery || !selectedLevel || !isConnected || isSubmitting}
+          disabled={!searchQuery || !isConnected || isSubmitting}
           onClick={handleSubmit}
           data-testid="button-submit-endorsement"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Creating...
+              Creating Vouch...
             </>
           ) : !isConnected ? (
-            "Connect Wallet to Endorse"
+            "Connect Wallet to Vouch"
           ) : (
-            "Create Endorsement"
+            "Vouch for This Person"
           )}
         </Button>
       </CardContent>

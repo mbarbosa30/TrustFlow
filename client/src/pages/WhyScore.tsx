@@ -33,11 +33,11 @@ export default function WhyScore() {
   const mockBottlenecks = [
     {
       edgeLabel: "••• → •••",
-      impact: "Limited by 0.4 capacity (Human level)",
+      impact: "Limited by node capacity at distance 2 (50 units)",
     },
     {
       edgeLabel: "••• → •••",
-      impact: "Limited by 0.7 capacity (Known level)",
+      impact: "Limited by node capacity at distance 3 (20 units)",
     },
   ];
 
@@ -98,7 +98,7 @@ export default function WhyScore() {
         <h1 className="text-3xl font-bold mb-2">Why This Score?</h1>
         <p className="text-muted-foreground">
           Your score is the max flow from community seeds to you. The min-cut (size 3) is the
-          smallest number of endorsements that would need to disappear for you to lose your badge.
+          smallest number of vouches that would need to disappear for you to lose your badge.
         </p>
       </div>
 

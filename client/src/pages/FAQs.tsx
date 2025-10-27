@@ -21,30 +21,38 @@ export default function FAQs() {
             What is TrustFlow?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            TrustFlow turns private endorsements into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your level without revealing your social graph.
+            TrustFlow turns public vouches into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your trustworthiness based on network structure.
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="levels" data-testid="faq-levels">
+        <AccordionItem value="vouching" data-testid="faq-vouching">
           <AccordionTrigger className="text-left">
-            What do the endorsement levels mean?
+            How does vouching work?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            <ul className="list-disc list-inside space-y-2">
-              <li><strong>Human</strong> — I believe this is a unique person (0.4 weight)</li>
-              <li><strong>Known</strong> — I personally know this person (0.7 weight)</li>
-              <li><strong>Trusted</strong> — I vouch for this person's behavior (1.0 weight)</li>
-            </ul>
-            <p className="mt-2">They map to different edge strengths in the flow network.</p>
+            <p className="mb-2">
+              TrustFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
+            </p>
+            <p className="mb-2">
+              <strong>Why no levels?</strong> The max-flow/min-cut algorithm determines trust scores based on network topology (path redundancy, distance from seeds, node capacity budgets) rather than explicit edge weights. This keeps it simple and avoids social friction from visible trust rankings.
+            </p>
+            <p>
+              Each vouch carries the same weight, but the graph structure does the heavy lifting to prevent Sybil attacks.
+            </p>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="privacy" data-testid="faq-privacy">
           <AccordionTrigger className="text-left">
-            Is my social graph public?
+            Are vouches public or private?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            No. Endorsements are stored as commitments (hashes with salt). By default, no one can see who endorsed whom. You can mutually reveal a specific connection if both sides consent.
+            <p className="mb-2">
+              <strong>Vouches are fully public.</strong> All vouches are visible on-chain and included in the epoch's Merkle transparency log. This enables complete auditability and independent verification of trust scores.
+            </p>
+            <p>
+              Anyone can see who vouched for whom, making the system transparent and verifiable. However, your optional profile information remains private unless you choose to share it.
+            </p>
           </AccordionContent>
         </AccordionItem>
 
@@ -85,10 +93,10 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <ul className="list-disc list-inside space-y-2">
-              <li>Ask for Known/Trusted endorsements from people already in the network</li>
-              <li>Diversify paths (get endorsements from independent regions)</li>
+              <li>Get vouches from people already well-connected in the network</li>
+              <li>Diversify paths (get vouches from independent regions or communities)</li>
               <li>Build genuine relationships over time</li>
-              <li>Avoid spammy patterns; let endorsements mature</li>
+              <li>Focus on quality connections with established members</li>
             </ul>
           </AccordionContent>
         </AccordionItem>
@@ -107,7 +115,7 @@ export default function FAQs() {
             Can other apps use my trust score?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            Yes. Export your Trust Attestation and present it anywhere. Verifiers can check the signature or verify an optional on-chain record. Your attestation is a portable, privacy-preserving proof of your trust level.
+            Yes. Export your Trust Attestation and present it anywhere. Verifiers can check the signature or verify the on-chain record. Your attestation is a portable, verifiable proof of your trust score.
           </AccordionContent>
         </AccordionItem>
 
@@ -125,7 +133,7 @@ export default function FAQs() {
             Can I delete my data?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            Yes. You can unlink wallets, delete your optional profile, and request removal of future use. Historical epochs stay reproducible for network integrity, but edges remain private (commitments only—no raw relationship data).
+            You can unlink wallets and delete your optional profile. However, vouches are public and recorded on-chain in the transparency log, so they remain visible for network integrity and reproducibility. Historical epochs stay intact to maintain verifiability.
           </AccordionContent>
         </AccordionItem>
       </Accordion>

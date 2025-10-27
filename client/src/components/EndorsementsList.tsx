@@ -1,14 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrustLevelBadge, type TrustLevel } from "./TrustLevelBadge";
-import { Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Endorsement {
   id: string;
   endorsee: string;
-  level: TrustLevel;
   date: string;
   commitment: string;
 }
@@ -60,7 +59,10 @@ export function EndorsementsList({
                   {endorsement.endorsee}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <TrustLevelBadge level={endorsement.level} showIcon={false} />
+                  <Badge variant="secondary" className="inline-flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Vouched</span>
+                  </Badge>
                   <span className="text-xs text-muted-foreground">
                     {new Date(endorsement.date).toLocaleDateString()}
                   </span>

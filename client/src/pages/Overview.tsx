@@ -1,18 +1,11 @@
 import { ScoreCard } from "@/components/ScoreCard";
 import { EndorseForm } from "@/components/EndorseForm";
 import { EndorsementsList } from "@/components/EndorsementsList";
-import { type TrustLevel } from "@/components/TrustLevelBadge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAccount } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import type { PublicEndorsement } from "@shared/schema";
-
-const LEVEL_MAP: Record<number, TrustLevel> = {
-  1: "Human",
-  2: "Known",
-  3: "Trusted",
-};
 
 export default function Overview() {
   const { address, isConnected } = useAccount();
@@ -52,7 +45,6 @@ export default function Overview() {
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     endorsee: e.endorsee,
-    level: LEVEL_MAP[e.level],
     date: e.createdAt.toISOString(),
     commitment: e.leafHash,
   })) || [];
@@ -60,7 +52,6 @@ export default function Overview() {
   const receivedEndorsements = receivedEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     endorsee: e.endorser,
-    level: LEVEL_MAP[e.level],
     date: e.createdAt.toISOString(),
     commitment: e.leafHash,
   })) || [];
@@ -87,8 +78,8 @@ export default function Overview() {
     console.log('Exported attestation:', attestation);
   };
 
-  const handleEndorse = async (endorsee: string, level: TrustLevel, note?: string) => {
-    console.log('Endorsement created:', { endorsee, level, note });
+  const handleEndorse = async (endorsee: string, note?: string) => {
+    console.log('Vouch created:', { endorsee, note });
   };
 
   const handleRevoke = (id: string) => {
@@ -128,9 +119,9 @@ export default function Overview() {
 
         <Card data-testid="card-endorse-form">
           <CardHeader>
-            <CardTitle>Give Endorsement</CardTitle>
+            <CardTitle>Vouch for Someone</CardTitle>
             <CardDescription>
-              Endorse others in the network to increase their trust score
+              Vouch for people you trust in the network
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -141,9 +132,9 @@ export default function Overview() {
 
       <Card data-testid="card-endorsements">
         <CardHeader>
-          <CardTitle>Endorsements</CardTitle>
+          <CardTitle>Vouches</CardTitle>
           <CardDescription>
-            Manage your given and received endorsements. Endorsements are private by default.
+            Manage your given and received vouches. Vouches are public and verifiable.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -158,23 +149,23 @@ export default function Overview() {
             </TabsList>
             <TabsContent value="given" className="mt-6" data-testid="tab-content-given">
               {isLoadingGiven ? (
-                <div className="text-center text-muted-foreground py-8">Loading endorsements...</div>
+                <div className="text-center text-muted-foreground py-8">Loading vouches...</div>
               ) : (
                 <EndorsementsList
                   endorsements={givenEndorsements}
                   onRevoke={handleRevoke}
-                  emptyMessage={isConnected ? "You haven't given any endorsements yet" : "Connect your wallet to view endorsements"}
+                  emptyMessage={isConnected ? "You haven't vouched for anyone yet" : "Connect your wallet to view vouches"}
                   showRevokeButton={true}
                 />
               )}
             </TabsContent>
             <TabsContent value="received" className="mt-6" data-testid="tab-content-received">
               {isLoadingReceived ? (
-                <div className="text-center text-muted-foreground py-8">Loading endorsements...</div>
+                <div className="text-center text-muted-foreground py-8">Loading vouches...</div>
               ) : (
                 <EndorsementsList
                   endorsements={receivedEndorsements}
-                  emptyMessage={isConnected ? "You haven't received any endorsements yet" : "Connect your wallet to view endorsements"}
+                  emptyMessage={isConnected ? "You haven't received any vouches yet" : "Connect your wallet to view vouches"}
                   showRevokeButton={false}
                 />
               )}

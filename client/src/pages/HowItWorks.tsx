@@ -18,33 +18,24 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert private endorsements into flow from seeds to users. Your acceptance is binary (≥1 unit of flow or min-cut ≥ 1). Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; raw edges stay private.
+              We convert public vouches into flow from seeds to users. Your acceptance is binary (≥1 unit of flow or min-cut ≥ 1). Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Endorsement Levels → Edge Strength</CardTitle>
+            <CardTitle>Vouch-Based Trust</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <span className="font-medium">Human</span>
-                <Badge variant="secondary">weight: 0.5</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <span className="font-medium">Known</span>
-                <Badge variant="secondary">weight: 0.8</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                <span className="font-medium">Trusted</span>
-                <Badge variant="secondary">weight: 1.0</Badge>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mt-3">
-              Weights are policy-controlled and published each epoch.
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              Each vouch is a simple binary endorsement representing your personal trust. There are no weighted levels—just vouch for people you trust. The max-flow/min-cut algorithm determines trust scores based on network topology (path redundancy, distance from seeds) rather than explicit edge weights.
             </p>
+            <div className="mt-3 p-3 rounded-lg bg-muted/30">
+              <p className="text-sm mb-0">
+                <strong>Why binary vouches?</strong> Transparent weighted levels (e.g., "Known" vs. "Trusted") can create social friction when visible to others. A single vouch level keeps it simple while letting graph structure do the work.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
@@ -63,7 +54,7 @@ export default function HowItWorks() {
                 </ul>
               </li>
               <li>Add <span className="font-mono">u<sup>−</sup> → SINK</span> with capacity 1 (first unit = acceptance)</li>
-              <li>An endorsement <span className="font-mono">a → b</span> becomes <span className="font-mono">a<sup>+</sup> → b<sup>−</sup></span> with capacity equal to the level weight</li>
+              <li>A vouch <span className="font-mono">a → b</span> becomes <span className="font-mono">a<sup>+</sup> → b<sup>−</sup></span> with capacity 1.0</li>
               <li>Connect <span className="font-mono">SOURCE → seed_in</span> with large capacity</li>
               <li>Run Dinic / preflow-push to compute max-flow and min-cut</li>
             </ul>
@@ -150,27 +141,33 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Stability, Diversity & Constraints</CardTitle>
+            <CardTitle>Stability & Diversity</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <ul>
               <li><strong>Stability:</strong> we approximate the single-edge influence with fast local recomputes on the residual graph</li>
-              <li><strong>Diversity:</strong> the system rewards multiple disjoint regions delivering flow</li>
-              <li><strong>Constraint (optional):</strong> require at least one Trusted edge within the first H hops to prevent "Human-only" rings from farming acceptance</li>
+              <li><strong>Diversity:</strong> the system rewards multiple disjoint regions delivering flow through min-cut measurements</li>
+              <li><strong>Node Capacity Constraints:</strong> each person has a fixed trust budget that decays with distance from seeds, preventing spam endorsements from diluting the graph</li>
             </ul>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Privacy</CardTitle>
+            <CardTitle>Public Vouches</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              Unlike privacy-preserving systems with hidden endorsements, TrustFlow uses <strong>fully public, verifiable vouches</strong>. All vouches are visible on-chain and included in the epoch's Merkle transparency log. This enables:
+            </p>
             <ul>
-              <li>Endorsements stored as commitments: <span className="font-mono text-sm">H(endorser DID ∥ endorsee DID ∥ type ∥ salt)</span></li>
-              <li>Mutual reveal requires both parties' consent</li>
-              <li>Profiles are optional and never used in scoring</li>
+              <li>Complete auditability of the trust graph</li>
+              <li>Independent verification of score computations</li>
+              <li>Transparency about who vouches for whom</li>
             </ul>
+            <p className="text-sm text-muted-foreground mt-3">
+              <strong>Note:</strong> Profiles and identity metadata remain optional and are never used in scoring.
+            </p>
           </CardContent>
         </Card>
 
@@ -181,7 +178,7 @@ export default function HowItWorks() {
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>Each epoch publishes:</p>
             <ul>
-              <li><span className="font-mono text-sm">params.json</span> (policy id, weights, capacity schedule)</li>
+              <li><span className="font-mono text-sm">params.json</span> (policy id, node capacity schedule, algorithm parameters)</li>
               <li><span className="font-mono text-sm">seed_root</span>, <span className="font-mono text-sm">graph_root</span> (Merkle roots)</li>
               <li><span className="font-mono text-sm">scores.jsonl</span> (flow, min-cut, STS) + signature</li>
             </ul>
