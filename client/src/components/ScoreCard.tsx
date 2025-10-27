@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ScoreCardProps {
   level: TrustLevel;
-  score: number;
+  sts: number;
+  percentile: number;
   minCutSize: number;
   epochTimestamp: string;
   onExportAttestation?: () => void;
@@ -14,7 +15,8 @@ interface ScoreCardProps {
 
 export function ScoreCard({
   level,
-  score,
+  sts,
+  percentile,
   minCutSize,
   epochTimestamp,
   onExportAttestation,
@@ -43,15 +45,25 @@ export function ScoreCard({
 
         <div>
           <div className="text-5xl font-bold tracking-tight" data-testid="text-score">
-            {score.toFixed(2)}
+            {sts}
           </div>
-          <div className="text-sm text-muted-foreground mt-2">Trust Score</div>
+          <div className="text-sm text-muted-foreground mt-2">
+            Standardized Trust Score (0-100)
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-lg" data-testid="text-mincut">
-          <Info className="w-5 h-5 text-muted-foreground" />
-          <span className="font-medium">{minCutSize} independent paths</span>
-          <span className="text-muted-foreground">from seeds</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2" data-testid="text-percentile">
+            <span className="text-sm text-muted-foreground">Percentile:</span>
+            <span className="text-lg font-semibold">{percentile}th</span>
+          </div>
+          <div className="flex items-center gap-2" data-testid="text-mincut">
+            <Info className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">
+              <span className="font-medium">{minCutSize}</span>
+              <span className="text-muted-foreground"> min-cut</span>
+            </span>
+          </div>
         </div>
 
         <Button

@@ -4,7 +4,8 @@ export default function Overview() {
   // TODO: remove mock functionality
   const mockData = {
     level: "Trusted" as const,
-    score: 1.73,
+    sts: 85,
+    percentile: 92,
     minCutSize: 3,
     epochTimestamp: "2025-10-27T12:00:00Z",
   };
@@ -13,7 +14,9 @@ export default function Overview() {
     const attestation = {
       sub: "user:0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
       level: mockData.level,
-      score: mockData.score,
+      sts: mockData.sts,
+      percentile: mockData.percentile,
+      minCut: mockData.minCutSize,
       epoch: mockData.epochTimestamp,
       policy: "advogato-v1",
       roots: {
@@ -41,7 +44,8 @@ export default function Overview() {
       <div className="max-w-md">
         <ScoreCard
           level={mockData.level}
-          score={mockData.score}
+          sts={mockData.sts}
+          percentile={mockData.percentile}
           minCutSize={mockData.minCutSize}
           epochTimestamp={mockData.epochTimestamp}
           onExportAttestation={handleExport}

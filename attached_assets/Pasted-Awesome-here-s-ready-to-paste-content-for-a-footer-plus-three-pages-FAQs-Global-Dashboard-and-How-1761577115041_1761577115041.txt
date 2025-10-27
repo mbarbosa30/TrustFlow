@@ -1,0 +1,261 @@
+Awesome—here’s ready-to-paste content for a footer plus three pages: FAQs, Global Dashboard, and How It Works (Algorithms & Formulas). I also included a short Use Cases section you can link from the footer. All copy is privacy-first and matches the max-flow/min-cut + standardized score design we discussed.
+
+⸻
+
+Footer (component copy)
+
+Links:
+	•	FAQs
+	•	Global Dashboard
+	•	How it Works
+	•	Use Cases
+	•	Status
+	•	Privacy · Terms
+	•	GitHub (Code) · API Docs
+
+Small print:
+“TrustFlow issues portable, privacy-preserving trust attestations computed from a curated seed set. Endorsements are private by default. Scores update by epoch. Do not rely on TrustFlow for high-stakes decisions without additional checks.”
+
+⸻
+
+Page: FAQs
+
+What is TrustFlow?
+
+TrustFlow turns private endorsements into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your level without revealing your social graph.
+
+What do the endorsement levels mean?
+	1.	Human — I believe this is a unique person.
+	2.	Know — I personally know this person.
+	3.	Trust — I vouch for this person’s behavior.
+(They map to different edge strengths in the math.)
+
+Is my social graph public?
+
+No. Endorsements are stored as commitments (hashes with salt). By default, no one can see who endorsed whom. You can mutually reveal a specific connection if both sides consent.
+
+How is my score computed?
+
+We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Trust Score (STS) from 0–100. See “How it Works” for formulas.
+
+What is “min-cut” in plain English?
+
+It’s the smallest number of independent endorsements that would need to disappear for you to lose your badge. Bigger = more resilient.
+
+How often do scores update?
+
+Each epoch (e.g., hourly). Every epoch publishes a signed bundle so anyone can reproduce results.
+
+How can I improve my score?
+	•	Ask Know/Trust endorsements from people already trusted.
+	•	Diversify paths (independent routes from seeds).
+	•	Avoid spammy patterns; let endorsements mature (cool-down).
+
+Can I link multiple wallets?
+
+Yes. We bind wallets to a DID so you can rotate keys or add addresses without changing your identity.
+
+Can other apps use my trust?
+
+Yes. Export your Trust Attestation and present it anywhere. Verifiers can check the signature or an EAS record (optional).
+
+Will there be tokens/claims?
+
+Optional. Scores can feed a Merkle distribution (points/tokens/credits) per epoch. This is feature-flagged and can be enabled later.
+
+Who chooses seeds and parameters?
+
+A governed list (multisig/DAO). Changes are published and only take effect after a one-epoch timelock.
+
+How do challenges/slashing work?
+
+If enabled, Trust endorsements may include a tiny bond. Proven Sybil abuse can slash the bond. See “How it Works → Incentives”.
+
+Can I delete my data?
+
+Yes. You can unlink wallets, delete your optional profile, and request removal of future use. Historical epochs stay reproducible but keep edges private (commitments only).
+
+⸻
+
+Page: Global Dashboard
+
+Tagline: System-level health and growth over time. All charts exclude any personally-identifiable relationships.
+
+KPI Cards (top row)
+	•	Accepted users (|A|) — Users meeting the acceptance threshold this epoch.
+	•	New accepted — First-time acceptances this epoch.
+	•	Avg min-cut — Redundancy of accepted set (higher = healthier).
+	•	Median STS — Central standardized score across accepted users.
+	•	Compute SLA — Median compute time + reproducibility rate (% epochs re-computed byte-exact).
+
+Tooltips for each KPI explain calculation and why it matters.
+
+Charts
+
+1) Accepted Users Over Time
+	•	Type: Time series (per epoch)
+	•	Y: Count of accepted users; stacked by tier (Apprentice/Journeyer/Master).
+	•	Insight: Adoption and tier progression.
+
+2) Min-Cut Distribution
+	•	Type: Histogram (accepted users)
+	•	X: Min-cut size (0–6+), Y: Users count
+	•	Insight: Network resilience to edge loss.
+
+3) STS (0–100) Distribution
+	•	Type: Histogram with percentile markers (P25, P50, P75, P95)
+	•	Insight: Calibration—should be well-spread, not pegged at extremes.
+
+4) Endorsement Mix
+	•	Type: Stacked area over time
+	•	Series: Human / Know / Trust share among effective edges this epoch
+	•	Insight: Quality of vouching culture.
+
+5) Path Diversity Index
+	•	Type: Box plot per epoch
+	•	Metric: Share of flow arriving via k disjoint regions (approx.)
+	•	Insight: Collusion resistance; higher diversity is better.
+
+6) Seeds Saturation
+	•	Type: Bar chart
+	•	Metric: Outgoing capacity saturation per seed (normalized)
+	•	Insight: Detect overloaded or centralizing seeds.
+
+7) Parameter Drift
+	•	Type: Timeline of policy id, capacity schedule, type weights
+	•	Insight: When/why the scoring environment changed.
+
+Optional if you add a risk model later:
+
+8) Risk Index (SybilRank/SybilInfer)
+	•	Type: Time series of mean/median risk for accepted users
+	•	Insight: Early warning for inorganic growth.
+
+Methodology (drawer/accordion)
+	•	All charts use accepted users unless stated.
+	•	Epochs are pinned to America/Argentina/Buenos_Aires for display (stored UTC).
+	•	Reproducibility: an epoch is “reproducible” if independent recompute matches our scores.jsonl hash.
+
+⸻
+
+Page: How It Works (Algorithms & Formulas)
+
+Overview
+
+We convert private endorsements into flow from seeds to users. Your acceptance is binary (≥1 unit of flow or min-cut ≥ 1). Your published score is a Standardized Trust Score (STS) in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; raw edges stay private.
+
+Endorsement Levels → Edge Strength
+	•	Human → weight 0.5
+	•	Know → weight 0.8
+	•	Trust → weight 1.0
+(Weights are policy-controlled and published each epoch.)
+
+Graph Construction (Advogato-style)
+	•	Split each user u into u^{-}\rightarrow u^{+} with node capacity c(d) based on BFS distance d from any seed:
+e.g., c(0)=800, c(1)=200, c(2)=50, c(\ge 3)=20.
+	•	Add u^{-}\rightarrow \text{SINK} with capacity 1 (first unit = acceptance).
+	•	An endorsement a \to b becomes a^{+}\rightarrow b^{-} with capacity equal to the level weight.
+	•	Connect SOURCE → seed_in with large capacity.
+	•	Run Dinic / preflow-push to compute max-flow and min-cut.
+
+Acceptance & Tiers
+	•	Accepted: flow to u^{-} ≥ 1 (or min-cut ≥ 1).
+	•	Tiers (suggested):
+	•	Apprentice: STS ≥ 40
+	•	Journeyer: STS ≥ 60 and min-cut ≥ 2
+	•	Master: STS ≥ 80 and min-cut ≥ 3 and Stability ≥ 0.8
+
+Standardized Trust Score (STS)
+
+We normalize components so scores are comparable across epochs and network sizes.
+
+Let:
+	•	f_i = flow to user i
+	•	c_i = min-cut for i
+	•	d_i = hop distance from seeds
+	•	\Delta_i = worst relative drop removing the most-influential inbound edge (stability proxy)
+
+Per epoch (accepted set only), compute anchors:
+	•	F_{95} = 95th percentile of \{f\}
+	•	C_{95} = 95th percentile of \{c\} (min 3)
+
+Normalize (bounded, robust):
+F_i=\min\!\left(1,\frac{\log(1+f_i)}{\log(1+\max(F_{95},\widetilde F_{95}))}\right),\quad
+C_i=\min\!\left(1,\frac{c_i}{\max(3,\max(C_{95},\widetilde C_{95}))}\right),\\
+D_i=e^{-\lambda d_i}\ (\lambda\approx0.35),\quad
+S_i=1-\min(1,\Delta_i)
+
+Blend:
+\boxed{\text{STS}_i=100\cdot\big(0.55\,F_i+0.25\,C_i+0.10\,S_i+0.10\,D_i\big)}
+
+Also publish Percentile Rank within the epoch for quick comparison.
+
+Stability, Diversity & Constraints
+	•	Stability: we approximate the single-edge influence with fast local recomputes on the residual graph.
+	•	Diversity: the system rewards multiple disjoint regions delivering flow.
+	•	Constraint (optional): require at least one Trust edge within the first H hops to prevent “Human-only” rings from farming acceptance.
+
+Privacy
+	•	Endorsements stored as commitments:
+H(\text{endorser DID} \parallel \text{endorsee DID} \parallel \text{type} \parallel \text{salt}).
+	•	Mutual reveal requires both parties’ consent.
+	•	Profiles are optional and never used in scoring.
+
+Incentives (optional, off by default)
+	•	Stake-to-Trust (capped): tiny bond on Trust endorsements; slashed upon successful Sybil challenge.
+	•	Reliability mining: edges that carry stable flow across epochs earn a trickle; spam earns nothing.
+	•	Diversity multiplier: rewards (not acceptance) increase when flow is supported by independent regions.
+
+Verifiability
+
+Each epoch publishes:
+	•	params.json (policy id, weights, capacity schedule)
+	•	seed_root, graph_root (Merkle roots)
+	•	scores.jsonl (flow, min-cut, STS) + signature
+Anyone can recompute and confirm byte-exact results.
+
+⸻
+
+Page: Use Cases (short)
+
+Sybil-Resistant Access
+
+Gate community actions (posting, proposals, grants) by tier (e.g., Journeyer+).
+
+UBI / Claims
+
+Distribute a base floor equally to accepted users and allocate a bonus pool by STS (with diminishing returns and diversity bonuses).
+
+Airdrops & Referrals
+
+Reward humans who are stably connected to trusted regions; penalize single-edge farms.
+
+Collusion-Resistant Moderation
+
+Use min-cut + stability to prioritize reports and throttle brigading.
+
+P2P Markets & Credit
+
+Use STS as a soft reputation input for limits, escrow release, or fee discounts.
+
+⸻
+
+Footer: Privacy & Terms (concise drafts)
+
+Privacy (short):
+We store endorsement commitments (hashes) and per-epoch scores. We do not store salts or raw edges server-side. Optional profile fields are separate and never affect scoring. You can unlink wallets and delete your profile at any time. Historical epochs remain reproducible but do not reveal edges.
+
+Terms (short):
+TrustFlow provides probabilistic signals only. Do not use it as the sole basis for high-stakes decisions. Parameters and seed lists can change with notice and a timelock. By using TrustFlow, you agree to our acceptable-use rules (no harassment, spam, or coordinated manipulation). Violations may lead to exclusion from future epochs.
+
+⸻
+
+Microcopy (sprinkle in tooltips)
+	•	STS: “Standardized Trust Score (0–100) blending flow, redundancy, stability, and proximity—comparable across epochs.”
+	•	Min-cut: “Smallest number of independent endorsements that must fail for you to lose acceptance.”
+	•	Path diversity: “Share of trust arriving via independent regions—higher is healthier.”
+	•	Attestation: “A signed proof of your level you can present to other apps—no social graph revealed.”
+
+⸻
+
+If you want, I can also convert this into markdown files for your Next.js routes (/faqs, /dashboard, /how-it-works, /use-cases) and include the tooltip strings as a JSON i18n bundle.

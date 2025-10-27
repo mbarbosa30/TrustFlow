@@ -5,7 +5,8 @@ export default function ScoreCardExample() {
     <div className="max-w-md">
       <ScoreCard
         level="Trusted"
-        score={1.73}
+        sts={85}
+        percentile={92}
         minCutSize={3}
         epochTimestamp="2025-10-27T12:00:00Z"
         onExportAttestation={() => console.log('Export attestation triggered')}
