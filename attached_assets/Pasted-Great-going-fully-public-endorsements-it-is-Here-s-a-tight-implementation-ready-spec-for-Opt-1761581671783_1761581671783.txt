@@ -1,0 +1,208 @@
+Great—going **fully public endorsements** it is. Here’s a tight, implementation-ready spec for **Option A** (everyone can verify every endorsement without trusting your server).
+
+# What “public & verifiable” means
+
+* Every endorsement is a **signed statement** by the endorser.
+* Statements are **immutable & append-only** (no silent edits).
+* Anyone can: recover the signer, check the payload, and audit history.
+
+---
+
+# Endorsement format (EIP-712 typed data)
+
+**Typed schema (levels: 1=Human, 2=Know, 3=Trust):**
+
+```json
+{
+  "types": {
+    "Endorsement": [
+      {"name":"endorser","type":"address"},
+      {"name":"endorsee","type":"address"},
+      {"name":"level","type":"uint8"},
+      {"name":"epoch","type":"uint64"},
+      {"name":"nonce","type":"uint64"}
+    ]
+  },
+  "primaryType":"Endorsement",
+  "domain":{"name":"TrustFlow","version":"1","chainId":8453,"verifyingContract":"0x0000000000000000000000000000000000000000"},
+  "message":{"endorser":"0x...","endorsee":"0x...","level":3,"epoch":42,"nonce":7}
+}
+```
+
+**Why these fields?**
+
+* `epoch`: binds the statement to a compute window.
+* `nonce`: prevents replay/equivocation by the same endorser within an epoch (you enforce monotonicity per endorser).
+
+**Client flow**
+
+1. Wallet signs typed data.
+2. POST the **payload + signature** to your API.
+3. Server *does not modify* the payload; it only validates and appends to the log.
+
+---
+
+# Validation (server)
+
+* `ecrecover(signature, domain, types, message)` → must equal `endorser`.
+* `level ∈ {1,2,3}`; `endorsee != endorser`.
+* `nonce == last_nonce(endorser)+1` within the same `epoch` (or strictly increasing globally).
+* Optional: **rate limits** per endorser & per level.
+
+---
+
+# Append-only transparency log
+
+Even though endorsements are public, keep an **append-only log** so the world can audit history and detect censorship.
+
+**Storage:**
+
+* `endorsements.csv` (or DB table) — immutable rows.
+* Per block/interval, publish **Signed Tree Head (STH)** for the Merkle tree over the rows so far.
+
+**STH object:**
+
+```json
+{
+  "treeSize": 123456,
+  "root": "0xMERKLE_ROOT",
+  "timestamp": 1730012345678,
+  "sig": "ed25519:..."         // log key signature over (treeSize|root|timestamp)
+}
+```
+
+**Public API (read-only):**
+
+* `GET /log/sth/latest` → current STH
+* `GET /log/endorsements?from=...&limit=...` → paginated raw records
+* `GET /log/proof/inclusion?leafHash=...&treeSize=...` → Merkle branch
+* `GET /log/proof/consistency?oldSize=...&newSize=...` → consistency proof
+
+**Leaf hash (for Merkle):**
+`leafHash = keccak256(rlp(endorser, endorsee, level, epoch, nonce, signature))`
+
+> You’re fully public, so you can also let replayers ignore the Merkle and just stream `endorsements.csv`. The Merkle+STH adds tamper-evidence and non-equivocation guarantees.
+
+---
+
+# Database schema (immutable rows + tombstones for revokes)
+
+```sql
+CREATE TABLE public_endorsements (
+  id BIGSERIAL PRIMARY KEY,
+  endorser TEXT NOT NULL,      -- 0x...
+  endorsee TEXT NOT NULL,      -- 0x...
+  level SMALLINT NOT NULL,     -- 1/2/3
+  epoch BIGINT NOT NULL,
+  nonce BIGINT NOT NULL,
+  sig TEXT NOT NULL,           -- hex EIP-712 sig
+  leaf_hash TEXT NOT NULL,     -- keccak256 over canonical leaf
+  created_at TIMESTAMP DEFAULT now()
+);
+CREATE UNIQUE INDEX uniq_endorse_per_nonce
+  ON public_endorsements(endorser, epoch, nonce);
+
+-- If you support revocation, append a tombstone (don’t delete):
+CREATE TABLE endorsement_tombstones (
+  endorsement_id BIGINT REFERENCES public_endorsements(id),
+  reason TEXT,
+  created_at TIMESTAMP DEFAULT now(),
+  PRIMARY KEY (endorsement_id)
+);
+```
+
+**Policy:** a revoked endorsement stays in history (so recomputes are possible); your compute engine just **ignores** tombstoned rows for future epochs.
+
+---
+
+# Public verification (anyone)
+
+**Given a row** `{endorser, endorsee, level, epoch, nonce, sig}`:
+
+1. Recreate the typed data and `ecrecover` → must match `endorser`.
+2. (Optional) Verify Merkle **inclusion** of `leafHash` against the latest STH; verify STH signature.
+3. Reconstruct the **full graph** for any epoch by filtering rows where `epoch <= targetEpoch` and not tombstoned before that epoch; then run the published params to recompute scores.
+
+> Provide a **verification CLI**: `trustflow endorse verify --row <json> --sth <sth.json> --proof <branch.json>`
+
+---
+
+# API endpoints (write + read)
+
+**Write**
+
+* `POST /endorse`
+
+  ```json
+  { "endorser":"0x...","endorsee":"0x...","level":3,"epoch":42,"nonce":7,"sig":"0x..." }
+  ```
+
+  * Validates signature/nonce; appends to log; returns `{id, leafHash, sth}`.
+* `POST /revoke` *(optional)*
+
+  ```json
+  { "endorsementId": 123, "reason": "mistake" }
+  ```
+
+**Read**
+
+* `GET /endorsements?endorser=0x..|endorsee=0x..|epoch=..` (paginated)
+* `GET /log/sth/latest`, `/log/proof/inclusion`, `/log/proof/consistency`
+
+---
+
+# Compute engine (no secrets)
+
+* For epoch **E**, build the graph from all **public** rows with `epoch <= E` and **not** tombstoned before E.
+* Edge capacity = weight(level) (e.g., Human 0.5, Know 0.8, Trust 1.0) times any maturation factor if you use cool-downs.
+* Publish `params.json` and the exact **container digest** for reproducibility.
+
+---
+
+# UI/UX notes
+
+* Endorsement form shows the exact message to be signed (human-readable EIP-712 preview).
+* Each published endorsement has a permalink with:
+
+  * signer (checksummed address), endorsee, level, epoch, nonce
+  * signature (shortened), `leafHash`, STH root & an **“Verify”** button
+* Profile pages list inbound/outbound endorsements (fully public).
+* Warn users that endorsements are **public & permanent** (revocation doesn’t erase history).
+
+---
+
+# Anti-abuse
+
+* **Quotas** per endorser per epoch (e.g., Human 50, Know 20, Trust 5).
+* **Cool-down**: endorsements made in the last N days contribute partially to capacities.
+* **Spam filters**: block self-endorse, circular bursts, and duplicate `(endorser, endorsee, level, epoch)`.
+
+---
+
+# Optional on-chain mirror (EAS)
+
+* Emit an EAS attestation with the same `(endorser, endorsee, level, epoch, nonce)` and the EIP-712 signature as data. Verifiers can either:
+
+  * pull from your log, or
+  * index chain events (extra liveness guarantees).
+
+---
+
+# Replit prompt delta (paste)
+
+* Implement `POST /endorse`, `GET /endorsements`, `GET /log/sth/latest`, `GET /log/proof/*`.
+* Store immutable rows; build a Merkle tree over `leafHash` values; publish STHs signed by a **log key** (ed25519).
+* Provide a tiny `verify.ts` that:
+
+  * reconstructs the EIP-712 domain & types,
+  * recovers signer from `sig`,
+  * verifies inclusion and STH signature.
+* Add a **Public Explorer** page with:
+
+  * recent endorsements table,
+  * per-endorser feed,
+  * STH widget + “verify inclusion” action.
+
+---
+
+This gives you **world-verifiable, replayable** endorsements with zero black boxes. Anyone can fetch the log, verify signatures, and recompute scores end-to-end.
