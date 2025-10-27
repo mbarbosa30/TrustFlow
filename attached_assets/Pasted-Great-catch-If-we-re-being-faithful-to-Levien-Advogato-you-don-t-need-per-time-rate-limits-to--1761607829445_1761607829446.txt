@@ -1,0 +1,27 @@
+Great catch. If we’re being faithful to Levien/Advogato, you don’t *need* per-time “rate limits” to keep the system attack-resistant. The max-flow construction already rate-limits *structurally*:
+
+* Each node is split (u^{-}\to u^{+}) with a **node capacity**; an endorser’s total outgoing “trust” is capped and must be **shared** across all endorsements. Spamming more edges just **dilutes** each edge’s effective flow; it doesn’t create more trust mass. ([squarefree.com][1])
+
+* Acceptance is decided globally (max-flow/min-cut), not by local degree or time. So attackers can’t “burst” their way in if the cut stays small; they run into the same capacity bottlenecks. ([squarefree.com][1])
+
+### What I’d change in our spec
+
+1. **Drop time-based endorsement quotas** from the *scoring* policy. Keep only API anti-abuse (to prevent DoS), which doesn’t affect the math.
+
+2. **Rely on node capacities** (Advogato style): give each endorser a fixed budget (via the (u^{-}\to u^{+}) capacity) and decay that budget by distance from seeds. This is the canonical control, not per-30d caps. ([squarefree.com][1])
+
+3. Keep **maturation** (soft ramp over ~7 days) only if you want to blunt instant brigading in *public* settings; it’s not required by the theory, just a pragmatic throttle for real-time systems.
+
+4. Preserve the **hard graph constraints** we already set for VOUCH-only:
+
+   * **min-cut ≥ 2** (two edge-disjoint paths),
+   * **seed coverage ≥ 2** (flow originates from ≥2 seeds/regions).
+     These are squarely in the spirit of max-flow defenses (focus on cuts/paths, not counts/time). ([squarefree.com][1])
+
+### TL;DR
+
+Use the flow network’s **node capacity** and **min-cut** properties to make endorsement floods self-defeating. Time quotas are optional operational hygiene, not core to attack-resistance in Levien’s model. If we publish params + scores each epoch, anyone can recompute and confirm that no extra trust appeared just because someone clicked “vouch” 100 times. ([squarefree.com][1])
+
+If you want, I’ll rewrite the policy JSON now to remove quotas and switch fully to node-capacity + cut constraints.
+
+[1]: https://www.squarefree.com/trust/trust.pdf?utm_source=chatgpt.com "A comparison of two trust metrics"
