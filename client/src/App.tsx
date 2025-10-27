@@ -35,26 +35,28 @@ function Navigation() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/">
-              <a className="flex items-center gap-2 font-bold text-xl hover-elevate rounded-lg px-2 py-1" data-testid="link-home">
-                <Network className="w-6 h-6 text-primary" />
-                <span>TrustFlow</span>
-              </a>
+            <Link 
+              href="/" 
+              className="flex items-center gap-2 font-bold text-xl hover-elevate rounded-lg px-2 py-1" 
+              data-testid="link-home"
+            >
+              <Network className="w-6 h-6 text-primary" />
+              <span>TrustFlow</span>
             </Link>
             
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => (
-                <Link key={item.path} href={item.path}>
-                  <a
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors hover-elevate ${
-                      location === item.path
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                    data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
-                  >
-                    {item.label}
-                  </a>
+                <Link 
+                  key={item.path} 
+                  href={item.path}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors hover-elevate ${
+                    location === item.path
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                  data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                >
+                  {item.label}
                 </Link>
               ))}
             </nav>
@@ -68,16 +70,16 @@ function Navigation() {
         
         <nav className="md:hidden pb-3 flex gap-1 overflow-x-auto">
           {navItems.map((item) => (
-            <Link key={item.path} href={item.path}>
-              <a
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors hover-elevate ${
-                  location === item.path
-                    ? "text-foreground bg-muted"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {item.label}
-              </a>
+            <Link 
+              key={item.path} 
+              href={item.path}
+              className={`px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors hover-elevate ${
+                location === item.path
+                  ? "text-foreground bg-muted"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {item.label}
             </Link>
           ))}
         </nav>
