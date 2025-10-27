@@ -63,7 +63,7 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert private endorsements into verifiable trust scores using network flow computation. 
+            Convert peer endorsements into verifiable trust scores using network flow computation. 
             Not simple vote counting—real graph algorithms that resist manipulation.
           </p>
           
