@@ -4,7 +4,6 @@ export const ENDORSEMENT_TYPES = {
   Endorsement: [
     { name: "endorser", type: "address" },
     { name: "endorsee", type: "address" },
-    { name: "level", type: "uint8" },
     { name: "epoch", type: "uint64" },
     { name: "nonce", type: "uint64" },
   ],
@@ -20,7 +19,6 @@ export const DOMAIN = {
 export interface EndorsementMessage {
   endorser: Address;
   endorsee: Address;
-  level: number;
   epoch: bigint;
   nonce: bigint;
 }
@@ -28,7 +26,6 @@ export interface EndorsementMessage {
 export interface SignedEndorsement {
   endorser: Address;
   endorsee: Address;
-  level: number;
   epoch: bigint;
   nonce: bigint;
   sig: Hex;
@@ -41,7 +38,6 @@ export async function verifyEndorsementSignature(
     const message: EndorsementMessage = {
       endorser: endorsement.endorser,
       endorsee: endorsement.endorsee,
-      level: endorsement.level,
       epoch: endorsement.epoch,
       nonce: endorsement.nonce,
     };
@@ -65,16 +61,11 @@ export async function verifyEndorsementSignature(
 export function validateEndorsementFields(endorsement: {
   endorser: string;
   endorsee: string;
-  level: number;
   epoch: bigint;
   nonce: bigint;
 }): { valid: boolean; error?: string } {
   if (endorsement.endorser === endorsement.endorsee) {
     return { valid: false, error: "Cannot endorse yourself" };
-  }
-
-  if (![1, 2, 3].includes(endorsement.level)) {
-    return { valid: false, error: "Level must be 1 (Human), 2 (Know), or 3 (Trust)" };
   }
 
   if (endorsement.epoch < 0) {
