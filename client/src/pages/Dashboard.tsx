@@ -5,6 +5,11 @@ import { AcceptedUsersChart } from "@/components/AcceptedUsersChart";
 import { STSHistogram } from "@/components/STSHistogram";
 import { EndorsementMixChart } from "@/components/EndorsementMixChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
+import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
+import { AverageSTSChart } from "@/components/AverageSTSChart";
+import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
+import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
+import { NetworkDensityChart } from "@/components/NetworkDensityChart";
 
 export default function Dashboard() {
   // TODO: remove mock functionality
@@ -110,6 +115,61 @@ export default function Dashboard() {
     { epoch: "Oct 27", min: 0.48, p25: 0.64, median: 0.77, p75: 0.88, max: 0.99 },
   ];
 
+  const mockNetworkGrowth = [
+    { epoch: "Oct 20", totalUsers: 7100, activeUsers: 5680 },
+    { epoch: "Oct 21", totalUsers: 7500, activeUsers: 6000 },
+    { epoch: "Oct 22", totalUsers: 7970, activeUsers: 6376 },
+    { epoch: "Oct 23", totalUsers: 8430, activeUsers: 6744 },
+    { epoch: "Oct 24", totalUsers: 8900, activeUsers: 7120 },
+    { epoch: "Oct 25", totalUsers: 9370, activeUsers: 7496 },
+    { epoch: "Oct 26", totalUsers: 9900, activeUsers: 7920 },
+    { epoch: "Oct 27", totalUsers: 12453, activeUsers: 9962 },
+  ];
+
+  const mockAverageSTS = [
+    { epoch: "Oct 20", mean: 52, median: 51, p25: 38, p75: 67 },
+    { epoch: "Oct 21", mean: 53, median: 52, p25: 39, p75: 68 },
+    { epoch: "Oct 22", mean: 54, median: 53, p25: 40, p75: 69 },
+    { epoch: "Oct 23", mean: 55, median: 54, p25: 41, p75: 70 },
+    { epoch: "Oct 24", mean: 56, median: 55, p25: 42, p75: 71 },
+    { epoch: "Oct 25", mean: 57, median: 56, p25: 43, p75: 72 },
+    { epoch: "Oct 26", mean: 57, median: 57, p25: 43, p75: 73 },
+    { epoch: "Oct 27", mean: 58, median: 58, p25: 42, p75: 74 },
+  ];
+
+  const mockEndorsementVelocity = [
+    { epoch: "Oct 20", newEndorsements: 2450, revokedEndorsements: 120 },
+    { epoch: "Oct 21", newEndorsements: 2680, revokedEndorsements: 95 },
+    { epoch: "Oct 22", newEndorsements: 2820, revokedEndorsements: 110 },
+    { epoch: "Oct 23", newEndorsements: 3100, revokedEndorsements: 130 },
+    { epoch: "Oct 24", newEndorsements: 3350, revokedEndorsements: 105 },
+    { epoch: "Oct 25", newEndorsements: 3720, revokedEndorsements: 125 },
+    { epoch: "Oct 26", newEndorsements: 4150, revokedEndorsements: 140 },
+    { epoch: "Oct 27", newEndorsements: 5200, revokedEndorsements: 85 },
+  ];
+
+  const mockScoreComponents = [
+    { epoch: "Oct 20", flow: 28, cut: 13, stability: 5, depth: 6 },
+    { epoch: "Oct 21", flow: 29, cut: 13, stability: 5, depth: 6 },
+    { epoch: "Oct 22", flow: 30, cut: 14, stability: 5, depth: 5 },
+    { epoch: "Oct 23", flow: 30, cut: 14, stability: 5, depth: 6 },
+    { epoch: "Oct 24", flow: 31, cut: 14, stability: 5, depth: 6 },
+    { epoch: "Oct 25", flow: 31, cut: 14, stability: 6, depth: 6 },
+    { epoch: "Oct 26", flow: 31, cut: 15, stability: 6, depth: 5 },
+    { epoch: "Oct 27", flow: 32, cut: 15, stability: 6, depth: 5 },
+  ];
+
+  const mockNetworkDensity = [
+    { epoch: "Oct 20", endorsementsPerUser: 2.3, avgPathLength: 3.8 },
+    { epoch: "Oct 21", endorsementsPerUser: 2.25, avgPathLength: 3.7 },
+    { epoch: "Oct 22", endorsementsPerUser: 2.28, avgPathLength: 3.6 },
+    { epoch: "Oct 23", endorsementsPerUser: 2.31, avgPathLength: 3.5 },
+    { epoch: "Oct 24", endorsementsPerUser: 2.27, avgPathLength: 3.4 },
+    { epoch: "Oct 25", endorsementsPerUser: 2.32, avgPathLength: 3.3 },
+    { epoch: "Oct 26", endorsementsPerUser: 2.36, avgPathLength: 3.2 },
+    { epoch: "Oct 27", endorsementsPerUser: 2.32, avgPathLength: 3.1 },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -123,6 +183,11 @@ export default function Dashboard() {
         <GlobalStats stats={mockStats} />
         
         <div className="grid lg:grid-cols-2 gap-6">
+          <NetworkGrowthChart data={mockNetworkGrowth} />
+          <AverageSTSChart data={mockAverageSTS} />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
           <AcceptedUsersChart data={mockAcceptedUsers} />
           <STSHistogram 
             distribution={mockSTSDistribution}
@@ -131,14 +196,21 @@ export default function Dashboard() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6">
+          <EndorsementVelocityChart data={mockEndorsementVelocity} />
           <EndorsementMixChart data={mockEndorsementMix} />
-          <PathDiversityChart data={mockPathDiversity} />
         </div>
-        
+
         <div className="grid lg:grid-cols-2 gap-6">
-          <RecentActivity activities={mockActivities} />
+          <ScoreComponentsChart data={mockScoreComponents} />
+          <NetworkDensityChart data={mockNetworkDensity} />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          <PathDiversityChart data={mockPathDiversity} />
           <TrustDistribution distribution={mockDistribution} />
         </div>
+        
+        <RecentActivity activities={mockActivities} />
       </div>
     </div>
   );
