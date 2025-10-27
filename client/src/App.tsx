@@ -9,8 +9,6 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import Overview from "@/pages/Overview";
 import WhyScore from "@/pages/WhyScore";
-import Endorse from "@/pages/Endorse";
-import Endorsements from "@/pages/Endorsements";
 import Verify from "@/pages/Verify";
 import FAQs from "@/pages/FAQs";
 import HowItWorks from "@/pages/HowItWorks";
@@ -25,8 +23,6 @@ function Navigation() {
     { path: "/", label: "Dashboard" },
     { path: "/overview", label: "Overview" },
     { path: "/why", label: "Why this score?" },
-    { path: "/endorse", label: "Endorse" },
-    { path: "/endorsements", label: "Endorsements" },
     { path: "/verify", label: "Verify" },
   ];
 
@@ -94,8 +90,6 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/overview" component={Overview} />
       <Route path="/why" component={WhyScore} />
-      <Route path="/endorse" component={Endorse} />
-      <Route path="/endorsements" component={Endorsements} />
       <Route path="/verify" component={Verify} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/how-it-works" component={HowItWorks} />
