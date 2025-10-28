@@ -100,6 +100,41 @@ export default function Seeds() {
     },
   });
 
+  const resetEpochMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/epoch/0', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Failed to reset epoch');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      setComputationResult(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/0/health'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      toast({
+        title: "Epoch Reset",
+        description: "Epoch scores and health data have been cleared",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Reset Epoch",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
   const computeEpochMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/epoch/0/compute', {
@@ -120,6 +155,7 @@ export default function Seeds() {
       setComputationResult(data.summary);
       queryClient.invalidateQueries({ queryKey: ['/api/score'] });
       queryClient.invalidateQueries({ queryKey: ['/api/epoch/0/health'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Epoch Computation Complete",
         description: `Computed scores for ${data.summary.scoresComputed} users`,
@@ -369,19 +405,32 @@ export default function Seeds() {
                 <li>Stores results in the database</li>
               </ul>
               <p className="pt-2">
-                <strong>Note:</strong> This only works if you have at least one seed configured.
+                <strong>Note:</strong> If the epoch is already computed, click "Reset Epoch" first to clear existing scores, then compute again.
               </p>
             </div>
 
-            <Button
-              onClick={() => computeEpochMutation.mutate()}
-              disabled={!isConnected || computeEpochMutation.isPending || !seedsData?.seeds.length}
-              className="w-full"
-              data-testid="button-compute-epoch"
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              {computeEpochMutation.isPending ? "Computing..." : "Compute Epoch 0 Scores"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => computeEpochMutation.mutate()}
+                disabled={!isConnected || computeEpochMutation.isPending || !seedsData?.seeds.length}
+                className="flex-1"
+                data-testid="button-compute-epoch"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {computeEpochMutation.isPending ? "Computing..." : "Compute Epoch 0 Scores"}
+              </Button>
+
+              <Button
+                onClick={() => resetEpochMutation.mutate()}
+                disabled={resetEpochMutation.isPending}
+                variant="outline"
+                className="flex-1"
+                data-testid="button-reset-epoch"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {resetEpochMutation.isPending ? "Resetting..." : "Reset Epoch"}
+              </Button>
+            </div>
 
             {computationResult && (
               <Card className="bg-muted">

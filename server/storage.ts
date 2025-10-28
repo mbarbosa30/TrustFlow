@@ -202,6 +202,15 @@ export class MemStorage implements IStorage {
   async deleteScoresByEpoch(epochId: number): Promise<void> {
     await db.delete(scores).where(eq(scores.epochId, epochId));
   }
+
+  async deleteEpochHealth(epochId: number): Promise<void> {
+    await db.delete(epochHealth).where(eq(epochHealth.epochId, epochId));
+  }
+
+  async deleteEpochData(epochId: number): Promise<void> {
+    await this.deleteScoresByEpoch(epochId);
+    await this.deleteEpochHealth(epochId);
+  }
 }
 
 export const storage = new MemStorage();

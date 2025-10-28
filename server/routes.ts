@@ -383,6 +383,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/epoch/:epochId", async (req, res) => {
+    try {
+      const epochId = parseInt(req.params.epochId, 10);
+      
+      if (isNaN(epochId) || epochId < 0) {
+        return res.status(400).json({ error: "Invalid epoch ID" });
+      }
+
+      await storage.deleteEpochData(epochId);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Epoch data deleted successfully"
+      });
+    } catch (error: any) {
+      console.error("Error deleting epoch:", error);
+      return res.status(500).json({ 
+        error: "Failed to delete epoch",
+        message: error.message 
+      });
+    }
+  });
+
   app.get("/api/epoch/:epochId/summary", async (req, res) => {
     try {
       const epochId = parseInt(req.params.epochId, 10);
