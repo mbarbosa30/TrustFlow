@@ -591,10 +591,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = [
         {
           epoch: `Epoch ${latestHealth.epochId}`,
-          flow: parseFloat(avgFlow.toFixed(2)),
-          cut: parseFloat(avgMinCut.toFixed(2)),
-          stability: parseFloat(avgStability.toFixed(2)),
-          depth: parseFloat(avgDepth.toFixed(2)),
+          flow: parseFloat((avgFlow * 100).toFixed(2)),
+          cut: parseFloat((avgMinCut * 100).toFixed(2)),
+          stability: parseFloat((avgStability * 100).toFixed(2)),
+          depth: parseFloat((avgDepth * 100).toFixed(2)),
         }
       ];
 
