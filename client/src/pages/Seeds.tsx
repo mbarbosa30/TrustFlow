@@ -168,7 +168,7 @@ export default function Seeds() {
       const currentEpochId = epochData?.epochId ?? 0;
       setComputationResult(null);
       queryClient.invalidateQueries({ queryKey: ['/api/score'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/epoch', currentEpochId, 'health'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/epoch/${currentEpochId}/health`] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Epoch Reset",
@@ -205,7 +205,7 @@ export default function Seeds() {
       const currentEpochId = epochData?.epochId ?? 0;
       setComputationResult(data.summary);
       queryClient.invalidateQueries({ queryKey: ['/api/score'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/epoch', currentEpochId, 'health'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/epoch/${currentEpochId}/health`] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Epoch Computation Complete",

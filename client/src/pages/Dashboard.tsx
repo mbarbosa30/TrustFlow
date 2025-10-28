@@ -13,6 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
+  const { data: epochData } = useQuery<{ epochId: number }>({
+    queryKey: ['/api/epoch/current'],
+  });
+
+  const currentEpochId = epochData?.epochId ?? 0;
+
   const { data: healthData, isLoading: isLoadingHealth } = useQuery<{
     epoch: number;
     GHI: number;
@@ -27,7 +33,8 @@ export default function Dashboard() {
       churnStability: number;
     };
   }>({
-    queryKey: ['/api/epoch/0/health'],
+    queryKey: [`/api/epoch/${currentEpochId}/health`],
+    enabled: currentEpochId !== undefined,
   });
 
   const { data: statsData, isLoading: isLoadingStats } = useQuery<{
@@ -111,10 +118,20 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Network Dashboard</h1>
-        <p className="text-muted-foreground">
-          Global statistics and activity across the trust network
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Network Dashboard</h1>
+            <p className="text-muted-foreground">
+              Global statistics and activity across the trust network
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-muted-foreground">Current Epoch</div>
+            <div className="text-3xl font-bold font-mono" data-testid="text-dashboard-epoch">
+              {currentEpochId}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-6">
