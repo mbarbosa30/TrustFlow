@@ -333,6 +333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalEndorsees: uniqueEndorsees[0]?.count || 0,
         trustedUsers,
         avgScore: Math.round(avgScore * 100) / 100,
+        avgSTS: Math.round(avgScore * 100) / 100,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
