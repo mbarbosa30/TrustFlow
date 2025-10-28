@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 interface STSHistogramProps {
   distribution: { bin: string; count: number }[];
   percentiles: { p25: number; p50: number; p75: number; p95: number };
+  isLoading?: boolean;
 }
 
-export function STSHistogram({ distribution, percentiles }: STSHistogramProps) {
+export function STSHistogram({ distribution, percentiles, isLoading = false }: STSHistogramProps) {
   const maxCount = distribution.length > 0 ? Math.max(...distribution.map(d => d.count)) : 0;
 
   return (
@@ -19,7 +20,13 @@ export function STSHistogram({ distribution, percentiles }: STSHistogramProps) {
         </p>
       </CardHeader>
       <CardContent>
-        {distribution.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12" data-testid="loading-sts-distribution">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading score distribution data...</p>
+            </div>
+          </div>
+        ) : distribution.length === 0 ? (
           <div className="flex items-center justify-center py-12" data-testid="text-no-sts-distribution">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No score distribution data available yet</p>

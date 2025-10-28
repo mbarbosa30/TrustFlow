@@ -10,9 +10,10 @@ interface DistributionData {
 
 interface TrustDistributionProps {
   distribution: DistributionData[];
+  isLoading?: boolean;
 }
 
-export function TrustDistribution({ distribution }: TrustDistributionProps) {
+export function TrustDistribution({ distribution, isLoading = false }: TrustDistributionProps) {
   return (
     <Card data-testid="card-trust-distribution">
       <CardHeader>
@@ -22,7 +23,13 @@ export function TrustDistribution({ distribution }: TrustDistributionProps) {
         </p>
       </CardHeader>
       <CardContent>
-        {distribution.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12" data-testid="loading-tier-distribution">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading tier distribution data...</p>
+            </div>
+          </div>
+        ) : distribution.length === 0 ? (
           <div className="flex items-center justify-center py-12" data-testid="text-no-tier-distribution">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No tier distribution data available yet</p>

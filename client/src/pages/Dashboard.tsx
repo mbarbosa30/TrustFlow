@@ -47,26 +47,26 @@ export default function Dashboard() {
     queryKey: ['/api/endorsements', { limit: 10 }],
   });
 
-  const { data: stsDistData } = useQuery<{
+  const { data: stsDistData, isLoading: isLoadingSTSDist } = useQuery<{
     distribution: { bin: string; count: number }[];
     percentiles: { p25: number; p50: number; p75: number; p95: number };
   }>({
     queryKey: ['/api/analytics/sts-distribution'],
   });
 
-  const { data: tierDistData } = useQuery<{
+  const { data: tierDistData, isLoading: isLoadingTierDist } = useQuery<{
     distribution: Array<{ level: 'Apprentice' | 'Journeyer' | 'Master'; count: number; percentage: number }>;
   }>({
     queryKey: ['/api/analytics/tier-distribution'],
   });
 
-  const { data: networkGrowthData } = useQuery<{
+  const { data: networkGrowthData, isLoading: isLoadingNetworkGrowth } = useQuery<{
     data: Array<{ epoch: string; totalUsers: number; activeUsers: number }>;
   }>({
     queryKey: ['/api/analytics/network-growth'],
   });
 
-  const { data: endorsementVelocityData } = useQuery<{
+  const { data: endorsementVelocityData, isLoading: isLoadingEndorsementVelocity } = useQuery<{
     data: Array<{ epoch: string; newEndorsements: number; revokedEndorsements: number }>;
   }>({
     queryKey: ['/api/analytics/endorsement-velocity'],
@@ -185,16 +185,26 @@ export default function Dashboard() {
         </Card>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <NetworkGrowthChart data={networkGrowthData?.data || []} />
-          <EndorsementVelocityChart data={endorsementVelocityData?.data || []} />
+          <NetworkGrowthChart 
+            data={networkGrowthData?.data || []} 
+            isLoading={isLoadingNetworkGrowth}
+          />
+          <EndorsementVelocityChart 
+            data={endorsementVelocityData?.data || []} 
+            isLoading={isLoadingEndorsementVelocity}
+          />
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           <STSHistogram 
             distribution={stsDistData?.distribution || []} 
             percentiles={stsDistData?.percentiles || { p25: 0, p50: 0, p75: 0, p95: 0 }} 
+            isLoading={isLoadingSTSDist}
           />
-          <TrustDistribution distribution={tierDistData?.distribution || []} />
+          <TrustDistribution 
+            distribution={tierDistData?.distribution || []} 
+            isLoading={isLoadingTierDist}
+          />
         </div>
         
         <RecentActivity activities={recentActivities} />

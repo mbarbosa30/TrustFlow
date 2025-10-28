@@ -9,9 +9,10 @@ interface EndorsementVelocityData {
 
 interface EndorsementVelocityChartProps {
   data: EndorsementVelocityData[];
+  isLoading?: boolean;
 }
 
-export function EndorsementVelocityChart({ data }: EndorsementVelocityChartProps) {
+export function EndorsementVelocityChart({ data, isLoading = false }: EndorsementVelocityChartProps) {
   return (
     <Card data-testid="card-endorsement-velocity">
       <CardHeader>
@@ -21,7 +22,13 @@ export function EndorsementVelocityChart({ data }: EndorsementVelocityChartProps
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {data.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-endorsement-velocity">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading endorsement activity data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
           <div className="flex items-center justify-center h-[300px]" data-testid="text-no-endorsement-velocity">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No endorsement activity data available yet</p>

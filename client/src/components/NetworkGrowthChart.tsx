@@ -9,9 +9,10 @@ interface NetworkGrowthData {
 
 interface NetworkGrowthChartProps {
   data: NetworkGrowthData[];
+  isLoading?: boolean;
 }
 
-export function NetworkGrowthChart({ data }: NetworkGrowthChartProps) {
+export function NetworkGrowthChart({ data, isLoading = false }: NetworkGrowthChartProps) {
   return (
     <Card data-testid="card-network-growth">
       <CardHeader>
@@ -21,7 +22,13 @@ export function NetworkGrowthChart({ data }: NetworkGrowthChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {data.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-network-growth">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading network growth data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
           <div className="flex items-center justify-center h-[300px]" data-testid="text-no-network-growth">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No network growth data available yet</p>
