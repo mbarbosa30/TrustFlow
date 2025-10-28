@@ -423,6 +423,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/analytics/sts-distribution", async (req, res) => {
+    try {
+      const latestHealth = await storage.getLatestEpochHealth();
+      
+      if (!latestHealth) {
+        return res.status(200).json({
+          distribution: [],
+          percentiles: { p25: 0, p50: 0, p75: 0, p95: 0 }
+        });
+      }
+
+      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+      const acceptedScores = scores.filter(s => s.flow >= 1);
+      
+      if (acceptedScores.length === 0) {
+        return res.status(200).json({
+          distribution: [],
+          percentiles: { p25: 0, p50: 0, p75: 0, p95: 0 }
+        });
+      }
+
+      const stsValues = acceptedScores.map(s => s.sts).sort((a, b) => a - b);
+      
+      const bins = [
+        { bin: "0-10", count: stsValues.filter(s => s >= 0 && s < 10).length },
+        { bin: "10-20", count: stsValues.filter(s => s >= 10 && s < 20).length },
+        { bin: "20-30", count: stsValues.filter(s => s >= 20 && s < 30).length },
+        { bin: "30-40", count: stsValues.filter(s => s >= 30 && s < 40).length },
+        { bin: "40-50", count: stsValues.filter(s => s >= 40 && s < 50).length },
+        { bin: "50-60", count: stsValues.filter(s => s >= 50 && s < 60).length },
+        { bin: "60-70", count: stsValues.filter(s => s >= 60 && s < 70).length },
+        { bin: "70-80", count: stsValues.filter(s => s >= 70 && s < 80).length },
+        { bin: "80-90", count: stsValues.filter(s => s >= 80 && s < 90).length },
+        { bin: "90-100", count: stsValues.filter(s => s >= 90 && s <= 100).length },
+      ];
+
+      const percentiles = {
+        p25: Math.round(stsValues[Math.floor(stsValues.length * 0.25)] || 0),
+        p50: Math.round(stsValues[Math.floor(stsValues.length * 0.50)] || 0),
+        p75: Math.round(stsValues[Math.floor(stsValues.length * 0.75)] || 0),
+        p95: Math.round(stsValues[Math.floor(stsValues.length * 0.95)] || 0),
+      };
+
+      return res.status(200).json({ distribution: bins, percentiles });
+    } catch (error) {
+      console.error("Error fetching STS distribution:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/tier-distribution", async (req, res) => {
+    try {
+      const latestHealth = await storage.getLatestEpochHealth();
+      
+      if (!latestHealth) {
+        return res.status(200).json({ distribution: [] });
+      }
+
+      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+      const acceptedScores = scores.filter(s => s.flow >= 1);
+      
+      const tierCounts = {
+        apprentice: acceptedScores.filter(s => s.tier === 'apprentice').length,
+        journeyer: acceptedScores.filter(s => s.tier === 'journeyer').length,
+        master: acceptedScores.filter(s => s.tier === 'master').length,
+      };
+
+      const total = acceptedScores.length || 1;
+
+      const distribution = [
+        {
+          level: 'apprentice' as const,
+          count: tierCounts.apprentice,
+          percentage: Math.round((tierCounts.apprentice / total) * 100),
+        },
+        {
+          level: 'journeyer' as const,
+          count: tierCounts.journeyer,
+          percentage: Math.round((tierCounts.journeyer / total) * 100),
+        },
+        {
+          level: 'master' as const,
+          count: tierCounts.master,
+          percentage: Math.round((tierCounts.master / total) * 100),
+        },
+      ];
+
+      return res.status(200).json({ distribution });
+    } catch (error) {
+      console.error("Error fetching tier distribution:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/network-growth", async (req, res) => {
+    try {
+      const allEndorsements = await storage.getEndorsements({ limit: 10000 });
+      const allParticipants = new Set<string>();
+      allEndorsements.forEach(e => {
+        allParticipants.add(e.endorser);
+        allParticipants.add(e.endorsee);
+      });
+
+      const latestHealth = await storage.getLatestEpochHealth();
+      let acceptedCount = 0;
+      
+      if (latestHealth) {
+        const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+        acceptedCount = scores.filter(s => s.flow >= 1).length;
+      }
+
+      const data = [
+        {
+          epoch: "Epoch 0",
+          totalUsers: allParticipants.size,
+          activeUsers: acceptedCount,
+        }
+      ];
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error("Error fetching network growth:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/endorsement-velocity", async (req, res) => {
+    try {
+      const allEndorsements = await storage.getEndorsements({ limit: 10000 });
+      
+      const data = [
+        {
+          epoch: "Epoch 0",
+          newEndorsements: allEndorsements.length,
+          revokedEndorsements: 0,
+        }
+      ];
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error("Error fetching endorsement velocity:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -1,0 +1,203 @@
+Absolutely. Here’s a clear, end-to-end explanation of how **max-flow / min-cut** works in *this* app—updated to your **VOUCH-only** model and consistent with everything we’ve been building (STS score, Global Health Index, verifiability, etc.). I’ll give you (1) the mental model, (2) the exact graph construction, (3) what we compute and why, (4) the acceptance & scoring rules, and (5) a drop-in “How it Works” page you can swap into the site to replace the older Human/Know/Trust copy.
+
+---
+
+# 1) Mental model (one paragraph)
+
+We treat the community as a **flow network**. A small, curated set of **seeds** acts like water sources. Each **vouch** is a pipe. Each person has a valve that limits how much trust they can forward (node capacity). We open the taps and compute the **maximum flow** that can reach each user. The **max-flow/min-cut theorem** guarantees the max trust reaching a user equals the capacity of the **smallest cut** (the fewest, tightest “pipes” you’d need to close) separating them from seeds. That makes gaming expensive: to push a Sybil through, an attacker must enlarge that user’s **min-cut**—i.e., create multiple independent paths from seeds.
+
+---
+
+# 2) Graph construction (precise, VOUCH-only)
+
+**Vertices**
+
+* For every user (u), create two nodes (u^{-}) (in) and (u^{+}) (out).
+* Add a global **SOURCE** and a per-epoch **SINK** (conceptual; implemented via edges from (u^{-}) to SINK).
+
+**Edges & capacities**
+
+1. **Node valve (forwarding budget).**
+   (u^{-}\rightarrow u^{+}) with capacity (c(d(u))), where (d(u)) is hop distance from the nearest seed.
+   Example schedule (policy):
+   (c(0)=800,\ c(1)=200,\ c(2)=50,\ c(\ge 3)=20).
+   (This is the structural “rate limit”: spamming more vouchers doesn’t create more capacity; it only dilutes how (u) forwards.)
+
+2. **Acceptance gate (first unit).**
+   (u^{-}\rightarrow \text{SINK}) with capacity **1**.
+   This ensures the **first** unit of flow represents “accepted as legitimate”; any remaining flow contributes to the score.
+
+3. **Vouch edges (single tier).**
+   For each public endorsement (a \xrightarrow{\text{VOUCH}} b):
+   (a^{+}\rightarrow b^{-}) with capacity = **1.0** × **maturationFactor**.
+   (Maturation is optional; if used, ramp a new vouch from 0→1 over ~7 days to blunt instant brigades in open networks.)
+
+4. **Seeds (sources).**
+   (\text{SOURCE}\rightarrow s^{-}) with a large capacity (e.g., 10⁶) for each seed (s).
+
+**Run the algorithm**
+
+* Use Dinic / Push-Relabel to compute **max-flow** (from SOURCE to SINK).
+* Use the residual network to derive **min-cuts** and path structure.
+
+---
+
+# 3) What we compute for each user (and why)
+
+For each user (u):
+
+* **Flow (f_u)**: total incoming flow into (u^{-}).
+  Interpretation: how much trust can actually reach you given all bottlenecks.
+
+* **Min-cut (c_u)**: the size (capacity) of the smallest cut separating seeds from (u).
+  Interpretation: the minimum “independent endorsements” that must fail for you to lose acceptance.
+
+* **Seed coverage**: number of **distinct seeds/seed-regions** that contribute non-trivial flow (e.g., >ε) to (u).
+  Interpretation: diversity of provenance (harder to collude).
+
+* **Edge-disjoint paths** (k=2 check): whether there exist at least **two edge-disjoint** seed→…→(u) paths.
+  Interpretation: confirms redundancy (Menger’s theorem).
+
+* **Stability proxy**: worst relative score drop when removing top-k inbound edges (local perturbation).
+  Interpretation: brittleness to one misjudged vouch.
+
+These are the raw ingredients for **acceptance** and **standardized scoring**.
+
+---
+
+# 4) Acceptance & standardized score (STS)
+
+## Acceptance (binary)
+
+In the **VOUCH-only** policy, a user is **accepted** this epoch iff:
+
+* **Min-cut (c_u \ge 2)** (two independent paths), **and**
+* **Seed coverage (\ge 2)** (flow originates from ≥2 seeds/regions), **and**
+* (If maturation is on) contributing vouches are past maturation (or partially counted).
+
+This keeps the signal crisp and collusion-resistant even in smaller graphs.
+
+## Standardized Trust Score (STS ∈ [0,100])
+
+To keep scores comparable across epochs and sizes:
+
+1. **Normalize components per epoch (accepted set):**
+   Let (F_{95}) be the 95th percentile of ({f}), (C_{95}) the 95th of ({c}) (min 3).
+   [
+   F_i=\min!\left(1,\frac{\log(1+f_i)}{\log(1+\max(F_{95},\widetilde F_{95}))}\right),\
+   C_i=\min!\left(1,\frac{c_i}{\max(3,\max(C_{95},\widetilde C_{95}))}\right),
+   ]
+   [
+   D_i=e^{-\lambda d_i},\ \ \ S_i=1-\min(1,\Delta_i)
+   ]
+   ((\widetilde F_{95},\widetilde C_{95}) are EMA anchors; (d_i) is seed distance; (\Delta_i) stability loss.)
+
+2. **Blend** (weights you publish in `params.json`):
+   [
+   \text{STS}_i=100\cdot(0.55F_i+0.25C_i+0.10S_i+0.10D_i).
+   ]
+
+3. Also publish **Percentile** within the epoch for a size-free comparator.
+
+---
+
+# 5) Why this is Sybil-resistant (the theorem in plain words)
+
+Because of **max-flow/min-cut**, the amount of trust that can reach a user equals the capacity of the **smallest cut** separating them from seeds. An attacker adding edges (vouches) without increasing **independent** capacity simply **doesn’t increase** the user’s max-flow beyond the cut. To pass acceptance, a Sybil needs **two disjoint paths** and **two seed origins**, which requires convincing independently trusted nodes—precisely the scarce resource.
+
+---
+
+# 6) Verifiability (no blind trust)
+
+* Every vouch is a **public EIP-712 signature** and sits in an **append-only transparency log** (Merkle STHs).
+* Each epoch publishes a signed **manifest**: `params.json`, seed list, log root, and `scores.jsonl`.
+* Anyone can fetch the log, rebuild the graph, rerun max-flow, verify min-cuts, and compare hashes (byte-exact reproducibility).
+* Optional: auditor committee can re-run from plaintext; later, per-user ZK proofs for “min-cut ≥ 2” without revealing neighbors.
+
+---
+
+# 7) Deterministic compute (pseudocode)
+
+```python
+# Build graph
+for u in users:
+    add_edge(u_in, u_out, cap=node_cap(distance_from_seeds(u)))
+    add_edge(u_in, SINK, cap=1.0)  # acceptance unit
+
+for (a, b, created_at) in VOUCH_EDGES:
+    eff = maturation_factor(created_at, now)  # 0..1 (or 1.0 if disabled)
+    add_edge(a_out, b_in, cap=eff)
+
+for s in SEEDS:
+    add_edge(SOURCE, s_in, cap=SEED_CAP)
+
+# Max-flow
+flow = dinic_max_flow(SOURCE, SINK)
+
+# Metrics per user
+for u in users:
+    f = inflow_to(u_in)
+    cut = min_cut_size_for(u)                 # from residual / s-t cut
+    seeds = contributing_seed_count(u)        # ε-threshold
+    k2 = has_two_edge_disjoint_paths(u)       # small second-flow check
+    accept = (cut >= 2) and (seeds >= 2) and k2
+
+    # Normalize & STS
+    F = norm_flow(f, F95, F95_ema)
+    C = norm_cut(cut, C95, C95_ema)
+    S = stability_drop(u, k=1)                # 0..1
+    D = exp(-lambda_ * distance_from_seeds(u))
+    STS = round(100*(0.55*F + 0.25*C + 0.10*S + 0.10*D))
+
+    write_row(u, flow=f, mincut=cut, seeds=seeds, accepted=accept, sts=STS)
+```
+
+---
+
+# 8) “How it Works” (drop-in page copy, VOUCH-only)
+
+## Overview
+
+We convert **public vouches** into a flow network rooted at a small seed set. A **max-flow/min-cut** computation determines who is accepted and assigns a standardized score. The math rewards **independent paths** from seeds and penalizes brittle, single-hub structures.
+
+## Graph construction
+
+* Each user has an in-node and out-node with a **forwarding budget** (node capacity) that decays with distance from seeds.
+* Each user has a **1-unit acceptance edge** to the sink.
+* Each **VOUCH** is a directed edge with capacity **1.0** (optionally ramped as it matures).
+* Seeds connect to SOURCE with large capacity.
+  We run **max-flow** and analyze the residual graph for min-cuts and path structure.
+
+## Acceptance (binary)
+
+Accepted if:
+
+* **Min-cut ≥ 2**
+* **Seed coverage ≥ 2**
+* **Two edge-disjoint paths** exist
+  (These make collusion rings and single hubs insufficient.)
+
+## Score (STS 0–100)
+
+We normalize a user’s flow, redundancy (min-cut), stability, and seed distance against per-epoch anchors so scores remain comparable across time and graph sizes.
+
+## Why it’s hard to game
+
+By the max-flow/min-cut theorem, increasing your score requires increasing the **cut**—i.e., adding **independent** support from the network. Spamming extra vouches through the same corridor doesn’t help, because node capacities and cuts bind the flow.
+
+## Verifiability
+
+* Every vouch is a **signed public record** in an append-only log.
+* Each epoch publishes a signed, reproducible **manifest** (params, roots, scores).
+* Anyone can re-run the computation and confirm byte-for-byte results.
+
+---
+
+### Should we still follow the earlier site context?
+
+Yes—with these two updates:
+
+1. Replace the **Human/Know/Trust** section with **VOUCH-only** language above.
+2. Anywhere we referenced tiered edge weights, set them to a single **VOUCH = 1.0** and keep the rest (max-flow, min-cut, STS, dashboard, verifiability) exactly the same.
+
+If you want, I can paste this directly into your “How it Works” page markdown and tweak the FAQs to reflect VOUCH-only (and remove mentions of multi-level endorsements).
