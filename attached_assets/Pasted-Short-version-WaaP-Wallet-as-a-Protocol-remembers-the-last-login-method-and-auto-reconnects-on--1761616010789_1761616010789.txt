@@ -1,0 +1,106 @@
+Short version: WaaP (Wallet-as-a-Protocol) **remembers the last login method and auto-reconnects on page load**. If your app also enables Wagmi’s `autoConnect` and/or WalletConnect’s persisted session, you’ll keep seeing the “old” wallet until you explicitly clear all three layers (WaaP, WalletConnect cache, and your app state). ([docs.waap.xyz][1])
+
+Here’s how to make it behave:
+
+## Why it’s happening
+
+* **WaaP auto-connect**: calling `eth_requestAccounts` (directly or indirectly) **restores the previous connection**. If you run this on mount, it’ll reattach the last wallet. ([docs.waap.xyz][1])
+* **Logout nuances**: `window.waap.logout()` clears WaaP & WalletConnect sessions, but **cannot programmatically disconnect injected wallets** (e.g., MetaMask). You must also clear your own UI/state and, for injected wallets, instruct the user to remove the connected site. ([docs.waap.xyz][2])
+* **WalletConnect v2 cache**: WC stores sessions in localStorage (keys like `wc@2:*`). If left in place, reconnect may still happen. (WaaP’s docs mention full logout for WC, but if your app initializes WC separately via Wagmi, you must clear that too.) ([docs.waap.xyz][2])
+* **Double providers**: If your Wagmi config registers both an injected connector and your WaaP connector (and `autoConnect: true`), Wagmi can re-select a previously successful connector before your new flow runs. (General Wagmi behavior; see community notes.) ([GitHub][3])
+
+## Fix checklist (do these in TrustFlow)
+
+1. **Initialize WaaP exactly once** and don’t auto-request accounts on mount:
+
+   ```ts
+   // do this in a client-only effect; guard against HMR
+   useEffect(() => {
+     if (!window.waap) initWaaP({
+       config: { authenticationMethods: ['email','phone','social','wallet'], styles:{ darkMode:true } },
+       walletConnectProjectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID, // if using external wallets
+       useStaging: false,
+     });
+   }, []);
+   // ❌ don't call eth_requestAccounts automatically on mount
+   ```
+
+   WaaP’s docs show auto-connect is triggered by `eth_requestAccounts`. Only call it in response to a user click, or first check `getLoginMethod()`. ([docs.waap.xyz][1])
+
+2. **Single source of truth for the provider**
+   If you’re using Wagmi, **use only the WaaP connector** (or ensure it is chosen first) and **disable Wagmi’s `autoConnect`** while debugging:
+
+   ```ts
+   export const config = createConfig({
+     // autoConnect: false, // start with this off
+     // connectors: [waapConnector()], // avoid registering extra injected connectors while testing
+   });
+   ```
+
+3. **Implement “smart logout”** exactly like WaaP suggests:
+
+   ```ts
+   async function smartLogout() {
+     const method = window.waap.getLoginMethod(); // 'waap' | 'walletconnect' | 'injected' | null
+     // clear your app state/UI first
+     setAddress(null); setLoginMethod(null);
+
+     if (method === 'waap' || method === 'walletconnect') {
+       await window.waap.logout(); // clears WaaP + WC session
+     } else if (method === 'injected') {
+       await window.waap.logout(); // clears WaaP app session
+       alert('Open your wallet extension > Connected sites > remove this site to fully disconnect.');
+     }
+   }
+   ```
+
+   This flow mirrors the docs (WaaP/WC are programmatically logged out; injected needs manual disconnect). ([docs.waap.xyz][2])
+
+4. **If you ever initialized WalletConnect directly via Wagmi**, also clear its persisted state when logging out:
+
+   ```ts
+   // (a) Wagmi disconnect if you used a Wagmi WC connector
+   // await disconnect();
+
+   // (b) Nuke WC v2 localStorage (only if you manage WC yourself)
+   Object.keys(localStorage)
+     .filter(k => k.startsWith('wc@2:'))
+     .forEach(k => localStorage.removeItem(k));
+   ```
+
+5. **Avoid accidental re-init / double listeners in dev**
+   With Vite/Next HMR, duplicate calls can happen. Guard your `initWaaP` and event bindings:
+
+   ```ts
+   if (!(window as any).__waapInited) {
+     initWaaP(...);
+     (window as any).__waapInited = true;
+   }
+   ```
+
+6. **Order of operations in your connect button**
+
+   ```ts
+   const onConnect = async () => {
+     // optional: if you want a clean start
+     await window.waap.logout().catch(()=>{});
+     const loginType = await window.waap.login(); // open modal
+     if (!loginType) return; // user cancelled
+     const [addr] = await window.waap.request({ method: 'eth_requestAccounts' });
+     setAddress(addr);
+   };
+   ```
+
+   This prevents immediately restoring an old session before the user chooses.
+
+7. **Confirm your WaaP config**
+   If you enable `'wallet'` in `authenticationMethods`, provide a **WalletConnect Project ID** or WC won’t behave correctly:
+   `walletConnectProjectId: '<PROJECT_ID>'`. ([docs.waap.xyz][2])
+
+---
+
+If you want, paste your `waap` init + your Wagmi config (or the `client` folder’s wallet code) and I’ll point to the exact lines to change. Meanwhile, applying the 7 steps above should stop the “stuck on old session” behavior and give you clean, predictable connects/logouts. ([docs.waap.xyz][1])
+
+[1]: https://docs.waap.xyz/docs/quick-start "Quick Start | Wallet as a Protocol"
+[2]: https://docs.waap.xyz/docs/guides/methods "Methods | Wallet as a Protocol"
+[3]: https://github.com/wevm/wagmi/discussions/1503?utm_source=chatgpt.com "WalletConnectConnector loses connection on page refresh"

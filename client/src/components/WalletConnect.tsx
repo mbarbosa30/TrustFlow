@@ -8,14 +8,54 @@ interface WalletConnectProps {
   onConnect?: (address: string) => void;
 }
 
+declare global {
+  interface Window {
+    waap?: any;
+    __waapInited?: boolean;
+  }
+}
+
 export function WalletConnect({ onConnect }: WalletConnectProps) {
   const { address, setAddress: setGlobalAddress } = useWallet();
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  // On mount, ensure we start with no address (ignore any WaaP auto-connect)
+  // On mount, check if WaaP already has an active session (auto-reconnect)
   useEffect(() => {
-    setGlobalAddress(null);
+    const checkExistingConnection = async () => {
+      try {
+        // Guard against HMR double-initialization
+        if (window.__waapInited) {
+          // WaaP already initialized, check if connected
+          if (window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
+            if (accounts && accounts.length > 0) {
+              setGlobalAddress(accounts[0]);
+            }
+          }
+          return;
+        }
+
+        // Initialize WaaP once
+        const { initWaaP } = await import("@human.tech/waap-sdk");
+        const { waapConfig } = await import("@/lib/waap.config");
+        
+        await initWaaP(waapConfig);
+        window.__waapInited = true;
+
+        // Check if there's an existing session (auto-reconnect)
+        if (window.ethereum) {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
+          if (accounts && accounts.length > 0) {
+            setGlobalAddress(accounts[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking WaaP connection:", error);
+      }
+    };
+
+    checkExistingConnection();
   }, [setGlobalAddress]);
 
   useEffect(() => {
@@ -28,48 +68,35 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     try {
       setIsConnecting(true);
       
-      // Dynamically import WaaP SDK only when user clicks Connect
-      const [{ initWaaP }, { waapConfig }] = await Promise.all([
-        import("@human.tech/waap-sdk"),
-        import("@/lib/waap.config")
-      ]);
-      
-      const waap = await initWaaP(waapConfig);
-      
-      // First, completely log out any existing session
+      if (!window.waap) {
+        throw new Error("WaaP not initialized");
+      }
+
+      // Optional: clear any previous session for a fresh start
       try {
-        await waap.logout();
+        await window.waap.logout();
       } catch (e) {
         // Ignore logout errors
       }
-      
-      // Clear all WaaP storage before connecting
-      const clearStorage = () => {
-        ['localStorage', 'sessionStorage'].forEach((storageType) => {
-          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
-          const keysToRemove = [];
-          for (let i = 0; i < storage.length; i++) {
-            const key = storage.key(i);
-            if (key && (key.includes('waap') || key.includes('silk') || key.includes('wc@') || key.includes('walletconnect'))) {
-              keysToRemove.push(key);
-            }
-          }
-          keysToRemove.forEach(k => storage.removeItem(k));
-        });
-      };
-      clearStorage();
-      
-      // Now do a fresh login
-      await waap.login();
-      const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+
+      // Open WaaP login modal (user chooses auth method)
+      const loginType = await window.waap.login();
+      if (!loginType) {
+        // User cancelled
+        return;
+      }
+
+      // Request accounts only after successful login
+      const accounts = await window.waap.request({ method: 'eth_requestAccounts' }) as string[];
       if (accounts && accounts.length > 0) {
         setGlobalAddress(accounts[0]);
         toast({
           title: "Wallet Connected",
-          description: "Successfully connected with WaaP",
+          description: `Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`,
         });
       }
     } catch (error: any) {
+      console.error("Connection error:", error);
       toast({
         title: "Connection Failed",
         description: error.message || "Failed to connect wallet",
@@ -82,32 +109,52 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
 
   const handleDisconnect = async () => {
     try {
-      // Dynamically import WaaP SDK
-      const [{ initWaaP }, { waapConfig }] = await Promise.all([
-        import("@human.tech/waap-sdk"),
-        import("@/lib/waap.config")
-      ]);
-      
-      const waap = await initWaaP(waapConfig);
-      await waap.logout();
-      
-      // Clear all WaaP-related localStorage
-      const keysToRemove: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.startsWith('waap') || key.startsWith('silk') || key.includes('wallet'))) {
-          keysToRemove.push(key);
-        }
+      if (!window.waap) {
+        setGlobalAddress(null);
+        return;
       }
-      keysToRemove.forEach(key => localStorage.removeItem(key));
-      
+
+      // Smart logout: handle different wallet types appropriately
+      const loginMethod = window.waap.getLoginMethod?.() || null;
+
+      // Clear app state first
       setGlobalAddress(null);
-      toast({
-        title: "Wallet Disconnected",
-        description: "Your wallet has been disconnected",
-      });
+
+      if (loginMethod === 'waap' || loginMethod === 'walletconnect') {
+        // WaaP and WalletConnect can be programmatically logged out
+        await window.waap.logout();
+        
+        // Also clear WalletConnect v2 localStorage if present
+        Object.keys(localStorage)
+          .filter(k => k.startsWith('wc@2:'))
+          .forEach(k => localStorage.removeItem(k));
+
+        toast({
+          title: "Disconnected",
+          description: "Your wallet has been disconnected",
+        });
+      } else if (loginMethod === 'injected') {
+        // Injected wallets (MetaMask, etc.) need manual disconnect
+        await window.waap.logout(); // Clear WaaP app session
+        
+        toast({
+          title: "Disconnected from App",
+          description: "To fully disconnect, open your wallet extension > Connected Sites > remove this site",
+        });
+      } else {
+        // No active session, just clear state
+        toast({
+          title: "Disconnected",
+          description: "Your wallet has been disconnected",
+        });
+      }
     } catch (error) {
-      console.warn('Error disconnecting:', error);
+      console.error('Error disconnecting:', error);
+      toast({
+        title: "Disconnect Error",
+        description: "There was an issue disconnecting. Please refresh the page.",
+        variant: "destructive",
+      });
     }
   };
 
