@@ -43,7 +43,9 @@ export class TrustScorer {
     const allUsers = this.extractAllUsers(endorsements, seeds);
     const userScores = new Map<Address, UserScore>();
     const flowValues: number[] = [];
+    const minCutValues: number[] = [];
 
+    // First pass: collect all flow and min-cut values
     for (const user of Array.from(allUsers)) {
       const graph = this.buildUserGraph(user, endorsements, seeds);
       const maxFlow = new DinicMaxFlow(graph);
@@ -51,24 +53,18 @@ export class TrustScorer {
       const flow = maxFlow.computeMaxFlow();
       const minCutSet = maxFlow.computeMinCut();
       const minCut = this.calculateMinCutSize(minCutSet, graph);
-      const depth = this.calculateDepth(user, endorsements, seeds);
-      const stability = this.calculateStability(user, endorsements, seeds);
-
-      const components: TrustScoreComponents = {
-        flow,
-        minCut,
-        stability,
-        depth,
-      };
 
       flowValues.push(flow);
+      minCutValues.push(minCut);
     }
 
     const p95Flow = this.calculatePercentile(flowValues, 0.95);
+    const p95MinCut = this.calculatePercentile(minCutValues, 0.95);
     const avgFlow = flowValues.reduce((a, b) => a + b, 0) / flowValues.length;
     let totalAccepted = 0;
     let totalMinCut = 0;
 
+    // Second pass: compute normalized scores
     for (const user of Array.from(allUsers)) {
       const graph = this.buildUserGraph(user, endorsements, seeds);
       const maxFlow = new DinicMaxFlow(graph);
@@ -89,7 +85,7 @@ export class TrustScorer {
       const normalizedComponents = this.normalizeComponents(
         components,
         p95Flow,
-        this.config.maxDepth
+        p95MinCut
       );
 
       const sts = this.calculateSTS(normalizedComponents);
@@ -292,18 +288,41 @@ export class TrustScorer {
   }
 
   /**
-   * Normalize score components to 0-1 range
+   * Normalize score components to 0-1 range per spec
+   * F_i = min(1, log(1+f_i) / log(1+F_95))
+   * C_i = min(1, c_i / max(3, C_95))
+   * D_i = e^(-λd_i) where λ ≈ 0.35
+   * S_i = stability (already in [0,1])
    */
   private normalizeComponents(
     components: TrustScoreComponents,
     p95Flow: number,
-    maxDepth: number
+    p95MinCut: number
   ): TrustScoreComponents {
+    const lambda = 0.35; // Depth decay parameter
+    
+    // Logarithmic flow normalization
+    const flowAnchor = Math.max(1, p95Flow);
+    const normalizedFlow = Math.min(
+      1,
+      Math.log(1 + components.flow) / Math.log(1 + flowAnchor)
+    );
+
+    // Min-cut normalization with floor of 3
+    const cutAnchor = Math.max(3, p95MinCut);
+    const normalizedMinCut = Math.min(1, components.minCut / cutAnchor);
+
+    // Exponential depth decay
+    const normalizedDepth = Math.exp(-lambda * components.depth);
+
+    // Stability is already normalized
+    const normalizedStability = Math.min(1, components.stability);
+
     return {
-      flow: Math.min(1, components.flow / Math.max(1, p95Flow)),
-      minCut: Math.min(1, components.minCut / 5),
-      stability: Math.min(1, components.stability),
-      depth: Math.max(0, 1 - components.depth / maxDepth),
+      flow: normalizedFlow,
+      minCut: normalizedMinCut,
+      stability: normalizedStability,
+      depth: normalizedDepth,
     };
   }
 
