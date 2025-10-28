@@ -18,7 +18,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into flow from seeds to users. Your acceptance is binary (≥1 unit of flow or min-cut ≥ 1). Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into flow from seeds to users using the Levien/Advogato trust metric. Acceptance requires min-cut ≥ 2, seed-coverage ≥ 2, and two edge-disjoint paths. Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
           </CardContent>
         </Card>
@@ -59,6 +59,14 @@ export default function HowItWorks() {
               <li>Connect <span className="font-mono">SOURCE → seed_in</span> with large capacity</li>
               <li>Run Dinic / preflow-push to compute max-flow and min-cut</li>
             </ul>
+            <div className="mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm mb-2">
+                <strong className="text-amber-600 dark:text-amber-400">🔒 Security: Epoch-Lagged Capacities</strong>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Node capacities <span className="font-mono">c(d)</span> are computed from each user's distance in the <strong>previous epoch's accepted subgraph</strong>, not the current live graph. This prevents distance-inflation attacks where attackers manipulate their proximity to seeds to gain inflated capacity. Policy: <span className="font-mono">nodeCap = c(prevEpochDistance)</span>.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

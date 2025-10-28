@@ -247,14 +247,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allParticipants.add(e.endorsee);
       });
 
-      // Get trusted users (accepted with flow >= 1) and average score from latest epoch
+      // Get trusted users (accepted via Levien criteria: min-cut >= 2, seed-coverage >= 2, edge-disjoint paths >= 2)
       const latestHealth = await storage.getLatestEpochHealth();
       let trustedUsers = 0;
       let avgScore = 0;
 
       if (latestHealth) {
         const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-        const acceptedScores = scores.filter(s => s.flow >= 1);
+        const acceptedScores = scores.filter(s => s.isAccepted);
         trustedUsers = acceptedScores.length;
         
         if (acceptedScores.length > 0) {
@@ -435,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.flow >= 1);
+      const acceptedScores = scores.filter(s => s.isAccepted);
       
       if (acceptedScores.length === 0) {
         return res.status(200).json({
@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.flow >= 1);
+      const acceptedScores = scores.filter(s => s.isAccepted);
       
       const tierCounts = {
         apprentice: acceptedScores.filter(s => s.tier === 'apprentice').length,
@@ -531,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (latestHealth) {
         const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-        acceptedCount = scores.filter(s => s.flow >= 1).length;
+        acceptedCount = scores.filter(s => s.isAccepted).length;
       }
 
       const data = [
@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.flow >= 1);
+      const acceptedScores = scores.filter(s => s.isAccepted);
       
       if (acceptedScores.length === 0) {
         return res.status(200).json({ data: [] });
@@ -614,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.flow >= 1);
+      const acceptedScores = scores.filter(s => s.isAccepted);
       
       if (acceptedScores.length === 0) {
         return res.status(200).json({ data: [] });
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.flow >= 1);
+      const acceptedScores = scores.filter(s => s.isAccepted);
       
       if (acceptedScores.length === 0) {
         return res.status(200).json({ data: [] });

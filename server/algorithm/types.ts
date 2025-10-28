@@ -33,6 +33,7 @@ export interface UserScore {
   components: TrustScoreComponents;
   tier: "Apprentice" | "Journeyer" | "Master" | null;
   percentile: number;
+  isAccepted: boolean;
 }
 
 export interface EpochComputationResult {

@@ -27,9 +27,18 @@ const DEFAULT_CONFIG: ScoringConfig = {
 
 export class TrustScorer {
   private config: ScoringConfig;
+  private laggedDepths: Map<Address, number> | null = null;
 
   constructor(config: Partial<ScoringConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * Set lagged depths from previous epoch's accepted subgraph
+   * SECURITY: Prevents distance-inflation attacks per Levien spec
+   */
+  setLaggedDepths(depths: Map<Address, number> | null) {
+    this.laggedDepths = depths;
   }
 
   /**
@@ -59,7 +68,8 @@ export class TrustScorer {
     const flowValues: number[] = [];
     const minCutValues: number[] = [];
 
-    // First pass: collect flow and min-cut values for ACCEPTED users only (flow ≥ 1)
+    // First pass: collect flow and min-cut values for ACCEPTED users only
+    // Levien acceptance criteria: min-cut >= 2, seed-coverage >= 2, two edge-disjoint paths
     for (const user of Array.from(allUsers)) {
       const graph = this.buildUserGraph(user, endorsements, seeds);
       const maxFlow = new DinicMaxFlow(graph);
@@ -67,9 +77,12 @@ export class TrustScorer {
       const flow = maxFlow.computeMaxFlow();
       const minCutSet = maxFlow.computeMinCut();
       const minCut = this.calculateMinCutSize(minCutSet, graph);
+      const seedCoverage = this.calculateSeedCoverage(user, endorsements, seeds);
+      const hasDisjointPaths = this.hasEdgeDisjointPaths(user, endorsements, seeds, 2);
 
       // Only include accepted users in percentile calculations
-      if (flow >= 1) {
+      const isAccepted = minCut >= 2 && seedCoverage >= 2 && hasDisjointPaths;
+      if (isAccepted) {
         flowValues.push(flow);
         minCutValues.push(minCut);
       }
@@ -104,6 +117,8 @@ export class TrustScorer {
       const minCut = this.calculateMinCutSize(minCutSet, graph);
       const depth = this.calculateDepth(user, endorsements, seeds);
       const stability = this.calculateStability(user, endorsements, seeds);
+      const seedCoverage = this.calculateSeedCoverage(user, endorsements, seeds);
+      const hasDisjointPaths = this.hasEdgeDisjointPaths(user, endorsements, seeds, 2);
 
       const components: TrustScoreComponents = {
         flow,
@@ -121,7 +136,9 @@ export class TrustScorer {
       const sts = this.calculateSTS(normalizedComponents);
       const tier = this.assignTier(sts, minCut, stability);
 
-      if (flow >= 1) {
+      // Levien acceptance criteria
+      const isAccepted = minCut >= 2 && seedCoverage >= 2 && hasDisjointPaths;
+      if (isAccepted) {
         totalAccepted++;
         totalMinCut += minCut;
       }
@@ -132,6 +149,7 @@ export class TrustScorer {
         components,
         tier,
         percentile: 0, // Will calculate after all scores are computed
+        isAccepted,
       });
     }
 
@@ -171,8 +189,12 @@ export class TrustScorer {
       graph.addNode(uPlus);
 
       // Advogato-style node capacity based on distance from seeds
+      // SECURITY: Use lagged depths from previous epoch to prevent distance-inflation attacks
       // Using refined gentler decay pattern: 800, 240, 96, 48, 24...
-      const depth = depths.get(u) ?? this.config.maxDepth;
+      const depth = this.laggedDepths 
+        ? (this.laggedDepths.get(u) ?? this.config.maxDepth)
+        : (depths.get(u) ?? this.config.maxDepth);
+      
       let capacity: number;
       if (depth === 0) {
         capacity = 800; // Seeds

@@ -31,6 +31,12 @@ export class EpochComputation {
 
     const seeds = seedsData.map(s => s.address as Address);
 
+    // SECURITY: Compute lagged depths from previous epoch's accepted subgraph
+    // This prevents distance-inflation attacks per Levien/Ruderman
+    const laggedDepths = await this.computeLaggedDepths(epochId, seeds);
+    this.scorer.setLaggedDepths(laggedDepths);
+    console.log(`Using lagged depths from previous epoch (${laggedDepths ? laggedDepths.size : 0} users)`);
+
     const formattedEndorsements = endorsements.map(e => ({
       endorser: e.endorser as Address,
       endorsee: e.endorsee as Address,
@@ -55,6 +61,7 @@ export class EpochComputation {
         depth: userScore.components.depth,
         tier: userScore.tier,
         percentile: userScore.percentile,
+        isAccepted: userScore.isAccepted,
       });
     }
 
@@ -107,6 +114,70 @@ export class EpochComputation {
   }
 
   /**
+   * Compute lagged depths from previous epoch's accepted subgraph
+   * SECURITY: Prevents distance-inflation attacks per Levien/Ruderman
+   */
+  private async computeLaggedDepths(
+    currentEpochId: number,
+    seeds: Address[]
+  ): Promise<Map<Address, number> | null> {
+    // For epoch 0, no previous epoch exists
+    if (currentEpochId === 0) {
+      console.log('Epoch 0: No lagged depths available (first epoch)');
+      return null;
+    }
+
+    const previousEpochId = currentEpochId - 1;
+    
+    // Get previous epoch's accepted users and their endorsements
+    const [previousScores, previousEndorsements] = await Promise.all([
+      storage.getScoresByEpoch(previousEpochId),
+      storage.getEndorsements({ epoch: previousEpochId, limit: 100000 }),
+    ]);
+
+    if (previousScores.length === 0) {
+      console.log(`No scores from previous epoch ${previousEpochId}, using current graph depths`);
+      return null;
+    }
+
+    // Build adjacency list from previous epoch's endorsements
+    const adjacency = new Map<Address, Address[]>();
+    for (const e of previousEndorsements) {
+      const endorser = e.endorser as Address;
+      const endorsee = e.endorsee as Address;
+      if (!adjacency.has(endorser)) {
+        adjacency.set(endorser, []);
+      }
+      adjacency.get(endorser)!.push(endorsee);
+    }
+
+    // Compute depths via BFS from seeds in the previous epoch's graph
+    const depths = new Map<Address, number>();
+    const queue: Array<{ user: Address; depth: number }> = [];
+
+    for (const seed of seeds) {
+      depths.set(seed, 0);
+      queue.push({ user: seed, depth: 0 });
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const { user, depth } = queue[head++];
+      const neighbors = adjacency.get(user) || [];
+
+      for (const neighbor of neighbors) {
+        if (!depths.has(neighbor)) {
+          depths.set(neighbor, depth + 1);
+          queue.push({ user: neighbor, depth: depth + 1 });
+        }
+      }
+    }
+
+    console.log(`Computed lagged depths for ${depths.size} users from epoch ${previousEpochId}`);
+    return depths;
+  }
+
+  /**
    * Check if scores exist for an epoch
    */
   async hasComputedScores(epochId: number): Promise<boolean> {
@@ -125,8 +196,8 @@ export class EpochComputation {
       storage.getSeeds(),
     ]);
 
-    // Calculate network metrics from scores
-    const acceptedScores = scores.filter(s => s.flow >= 1);
+    // Calculate network metrics from scores (using Levien acceptance criteria)
+    const acceptedScores = scores.filter(s => s.isAccepted);
     const flowValues = acceptedScores.map(s => s.flow);
     const minCutValues = acceptedScores.map(s => s.minCut);
 

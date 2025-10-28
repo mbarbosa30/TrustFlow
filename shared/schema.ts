@@ -127,6 +127,7 @@ export const scores = pgTable("scores", {
   depth: doublePrecision("depth").notNull(),
   tier: text("tier"),
   percentile: doublePrecision("percentile").notNull(),
+  isAccepted: boolean("is_accepted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
