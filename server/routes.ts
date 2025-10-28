@@ -16,7 +16,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const endorsement: SignedEndorsement = {
         endorser: body.endorser as Address,
         endorsee: body.endorsee as Address,
-        level: Number(body.level),
         epoch: BigInt(body.epoch),
         nonce: BigInt(body.nonce),
         sig: body.sig as Hex,
@@ -47,7 +46,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leafHash = computeLeafHash({
         endorser: endorsement.endorser,
         endorsee: endorsement.endorsee,
-        level: endorsement.level,
         epoch: endorsement.epoch,
         nonce: endorsement.nonce,
         sig: endorsement.sig,
@@ -56,7 +54,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const insertData = insertPublicEndorsementSchema.parse({
         endorser: endorsement.endorser,
         endorsee: endorsement.endorsee,
-        level: endorsement.level,
         epoch: Number(endorsement.epoch),
         nonce: Number(endorsement.nonce),
         sig: endorsement.sig,
