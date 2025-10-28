@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
+import { Wallet, Mail, Smartphone } from "lucide-react";
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
@@ -9,7 +9,7 @@ interface WalletConnectProps {
 }
 
 export function WalletConnect({ onConnect }: WalletConnectProps) {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, connector } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { toast } = useToast();
@@ -21,13 +21,17 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   }, [isConnected, address, onConnect]);
 
   const handleConnect = () => {
-    const connector = connectors[0];
-    if (connector) {
-      connect({ connector }, {
+    const waapConnector = connectors.find(c => c.id === 'waap');
+    const targetConnector = waapConnector || connectors[0];
+    
+    if (targetConnector) {
+      connect({ connector: targetConnector }, {
         onSuccess: () => {
           toast({
             title: "Wallet Connected",
-            description: "Successfully connected your wallet",
+            description: targetConnector.id === 'waap' 
+              ? "Successfully connected with WaaP" 
+              : "Successfully connected your wallet",
           });
         },
         onError: (error) => {
@@ -62,6 +66,9 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     );
   }
 
+  const waapConnector = connectors.find(c => c.id === 'waap');
+  const isWaaPAvailable = !!waapConnector;
+
   return (
     <Button
       onClick={handleConnect}
@@ -69,8 +76,17 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       className="gap-2"
       data-testid="button-connect-wallet"
     >
-      <Wallet className="w-4 h-4" />
-      {isPending ? "Connecting..." : "Connect Wallet"}
+      {isWaaPAvailable ? (
+        <>
+          <Mail className="w-4 h-4" />
+          {isPending ? "Connecting..." : "Sign In"}
+        </>
+      ) : (
+        <>
+          <Wallet className="w-4 h-4" />
+          {isPending ? "Connecting..." : "Connect Wallet"}
+        </>
+      )}
     </Button>
   );
 }

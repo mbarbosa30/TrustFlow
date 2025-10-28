@@ -1,10 +1,13 @@
 import { createConfig, http } from 'wagmi';
 import { base, baseSepolia, mainnet, celo } from 'wagmi/chains';
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
+import WaaPConnector from './waap.connector';
+import { waapConfig } from './waap.config';
 
 export const config = createConfig({
   chains: [base, baseSepolia, mainnet, celo],
   connectors: [
+    WaaPConnector(waapConfig),
     injected(),
     coinbaseWallet({ appName: 'TrustFlow' }),
     walletConnect({ 
