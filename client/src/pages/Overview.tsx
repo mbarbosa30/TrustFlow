@@ -25,12 +25,12 @@ export default function Overview() {
   });
 
   const { data: givenEndorsementsData, isLoading: isLoadingGiven } = useQuery<{ endorsements: PublicEndorsement[] }>({
-    queryKey: ['/api/endorsements', { endorser: address }],
+    queryKey: [`/api/endorsements?endorser=${address}`],
     enabled: isConnected && !!address,
   });
 
   const { data: receivedEndorsementsData, isLoading: isLoadingReceived } = useQuery<{ endorsements: PublicEndorsement[] }>({
-    queryKey: ['/api/endorsements', { endorsee: address }],
+    queryKey: [`/api/endorsements?endorsee=${address}`],
     enabled: isConnected && !!address,
   });
 
