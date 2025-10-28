@@ -29,6 +29,8 @@ interface GlobalStatsProps {
   stats: {
     totalUsers: number;
     totalEndorsements: number;
+    totalEndorsers: number;
+    totalEndorsees: number;
     trustedUsers: number;
     avgScore: number;
   };

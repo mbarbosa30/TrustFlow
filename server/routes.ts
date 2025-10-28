@@ -494,17 +494,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const distribution = [
         {
-          level: 'apprentice' as const,
+          level: 'Apprentice' as const,
           count: tierCounts.apprentice,
           percentage: Math.round((tierCounts.apprentice / total) * 100),
         },
         {
-          level: 'journeyer' as const,
+          level: 'Journeyer' as const,
           count: tierCounts.journeyer,
           percentage: Math.round((tierCounts.journeyer / total) * 100),
         },
         {
-          level: 'master' as const,
+          level: 'Master' as const,
           count: tierCounts.master,
           percentage: Math.round((tierCounts.master / total) * 100),
         },

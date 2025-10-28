@@ -27,7 +27,8 @@ const tierConfig = {
 };
 
 export function TierBadge({ tier, size = "md" }: TierBadgeProps) {
-  const config = tierConfig[tier];
+  const normalizedTier = (tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()) as Tier;
+  const config = tierConfig[normalizedTier];
   const Icon = config.icon;
   
   const sizeClasses = {
@@ -40,10 +41,10 @@ export function TierBadge({ tier, size = "md" }: TierBadgeProps) {
     <Badge 
       variant={config.variant}
       className={`${sizeClasses[size]} gap-1.5`}
-      data-testid={`badge-tier-${tier.toLowerCase()}`}
+      data-testid={`badge-tier-${normalizedTier.toLowerCase()}`}
     >
       <Icon className={size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4"} />
-      <span>{tier}</span>
+      <span>{normalizedTier}</span>
     </Badge>
   );
 }

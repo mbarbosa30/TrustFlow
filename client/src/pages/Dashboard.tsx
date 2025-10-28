@@ -1,6 +1,10 @@
 import { GlobalStats } from "@/components/GlobalStats";
 import { RecentActivity } from "@/components/RecentActivity";
 import { GHIGauge } from "@/components/GHIGauge";
+import { STSHistogram } from "@/components/STSHistogram";
+import { TrustDistribution } from "@/components/TrustDistribution";
+import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
+import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
@@ -43,12 +47,37 @@ export default function Dashboard() {
     queryKey: ['/api/endorsements', { limit: 10 }],
   });
 
+  const { data: stsDistData } = useQuery<{
+    distribution: { bin: string; count: number }[];
+    percentiles: { p25: number; p50: number; p75: number; p95: number };
+  }>({
+    queryKey: ['/api/analytics/sts-distribution'],
+  });
+
+  const { data: tierDistData } = useQuery<{
+    distribution: Array<{ level: 'Apprentice' | 'Journeyer' | 'Master'; count: number; percentage: number }>;
+  }>({
+    queryKey: ['/api/analytics/tier-distribution'],
+  });
+
+  const { data: networkGrowthData } = useQuery<{
+    data: Array<{ epoch: string; totalUsers: number; activeUsers: number }>;
+  }>({
+    queryKey: ['/api/analytics/network-growth'],
+  });
+
+  const { data: endorsementVelocityData } = useQuery<{
+    data: Array<{ epoch: string; newEndorsements: number; revokedEndorsements: number }>;
+  }>({
+    queryKey: ['/api/analytics/endorsement-velocity'],
+  });
+
   const recentActivities = recentEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     type: "endorsement" as const,
     endorser: `${e.endorser.slice(0, 6)}...${e.endorser.slice(-4)}`,
     endorsee: `${e.endorsee.slice(0, 6)}...${e.endorsee.slice(-4)}`,
-    timestamp: e.createdAt,
+    timestamp: new Date(e.createdAt).toISOString(),
   })) || [];
 
   return (
@@ -154,6 +183,27 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {networkGrowthData && networkGrowthData.data.length > 0 && (
+            <NetworkGrowthChart data={networkGrowthData.data} />
+          )}
+          {endorsementVelocityData && endorsementVelocityData.data.length > 0 && (
+            <EndorsementVelocityChart data={endorsementVelocityData.data} />
+          )}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {stsDistData && stsDistData.distribution.length > 0 && (
+            <STSHistogram 
+              distribution={stsDistData.distribution} 
+              percentiles={stsDistData.percentiles} 
+            />
+          )}
+          {tierDistData && tierDistData.distribution.length > 0 && (
+            <TrustDistribution distribution={tierDistData.distribution} />
+          )}
+        </div>
         
         <RecentActivity activities={recentActivities} />
       </div>
