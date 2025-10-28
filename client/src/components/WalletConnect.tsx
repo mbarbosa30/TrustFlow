@@ -45,7 +45,17 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
+    // Call WaaP's logout directly if using WaaP connector
+    if (connector?.id === 'waap') {
+      try {
+        // @ts-ignore - WaaP connector has logout method
+        await connector.logout();
+      } catch (error) {
+        console.warn('Error calling WaaP logout:', error);
+      }
+    }
+    
     disconnect();
     toast({
       title: "Wallet Disconnected",
