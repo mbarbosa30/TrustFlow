@@ -63,16 +63,47 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     });
   };
 
+  const handleSwitchAccount = async () => {
+    // Force logout and show login modal again
+    if (connector?.id === 'waap') {
+      try {
+        // @ts-ignore - WaaP connector has logout method
+        await connector.logout();
+        disconnect();
+        
+        // Wait a bit for logout to complete, then reconnect to show modal
+        setTimeout(() => {
+          const waapConnector = connectors.find(c => c.id === 'waap');
+          if (waapConnector) {
+            connect({ connector: waapConnector });
+          }
+        }, 500);
+      } catch (error) {
+        console.warn('Error switching account:', error);
+      }
+    }
+  };
+
   if (isConnected && address) {
     return (
-      <Button
-        variant="outline"
-        onClick={handleDisconnect}
-        className="font-mono"
-        data-testid="button-disconnect-wallet"
-      >
-        {address.substring(0, 6)}...{address.substring(address.length - 4)}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={handleSwitchAccount}
+          className="font-mono"
+          data-testid="button-switch-account"
+        >
+          {address.substring(0, 6)}...{address.substring(address.length - 4)}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleDisconnect}
+          data-testid="button-disconnect-wallet"
+        >
+          ✕
+        </Button>
+      </div>
     );
   }
 

@@ -121,12 +121,8 @@ export default function WaaPConnector(options?: InitWaaPOptions) {
       },
 
       async isAuthorized() {
-        try {
-          const accounts = await this.getAccounts();
-          return !!accounts?.[0];
-        } catch {
-          return false;
-        }
+        // Disable auto-reconnect - force explicit connection
+        return false;
       },
 
       async switchChain({ chainId }) {
