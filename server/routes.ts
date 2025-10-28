@@ -568,6 +568,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/analytics/score-components", async (req, res) => {
+    try {
+      const latestHealth = await storage.getLatestEpochHealth();
+      
+      if (!latestHealth) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+      const acceptedScores = scores.filter(s => s.flow >= 1);
+      
+      if (acceptedScores.length === 0) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const avgFlow = acceptedScores.reduce((sum, s) => sum + s.flow, 0) / acceptedScores.length;
+      const avgMinCut = acceptedScores.reduce((sum, s) => sum + s.minCut, 0) / acceptedScores.length;
+      const avgStability = acceptedScores.reduce((sum, s) => sum + s.stability, 0) / acceptedScores.length;
+      const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
+
+      const data = [
+        {
+          epoch: `Epoch ${latestHealth.epochId}`,
+          flow: parseFloat(avgFlow.toFixed(2)),
+          cut: parseFloat(avgMinCut.toFixed(2)),
+          stability: parseFloat(avgStability.toFixed(2)),
+          depth: parseFloat(avgDepth.toFixed(2)),
+        }
+      ];
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error("Error fetching score components:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/average-sts", async (req, res) => {
+    try {
+      const latestHealth = await storage.getLatestEpochHealth();
+      
+      if (!latestHealth) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+      const acceptedScores = scores.filter(s => s.flow >= 1);
+      
+      if (acceptedScores.length === 0) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const stsValues = acceptedScores.map(s => s.sts).sort((a, b) => a - b);
+      const mean = stsValues.reduce((sum, v) => sum + v, 0) / stsValues.length;
+      const median = stsValues[Math.floor(stsValues.length * 0.50)] || 0;
+      const p25 = stsValues[Math.floor(stsValues.length * 0.25)] || 0;
+      const p75 = stsValues[Math.floor(stsValues.length * 0.75)] || 0;
+
+      const data = [
+        {
+          epoch: `Epoch ${latestHealth.epochId}`,
+          mean: parseFloat(mean.toFixed(2)),
+          median: parseFloat(median.toFixed(2)),
+          p25: parseFloat(p25.toFixed(2)),
+          p75: parseFloat(p75.toFixed(2)),
+        }
+      ];
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error("Error fetching average STS:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/network-density", async (req, res) => {
+    try {
+      const allEndorsements = await storage.getEndorsements({ limit: 10000 });
+      const latestHealth = await storage.getLatestEpochHealth();
+      
+      if (!latestHealth || allEndorsements.length === 0) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+      const acceptedScores = scores.filter(s => s.flow >= 1);
+      
+      if (acceptedScores.length === 0) {
+        return res.status(200).json({ data: [] });
+      }
+
+      const allParticipants = new Set<string>();
+      allEndorsements.forEach(e => {
+        allParticipants.add(e.endorser);
+        allParticipants.add(e.endorsee);
+      });
+
+      const endorsementsPerUser = allEndorsements.length / allParticipants.size;
+      const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
+
+      const data = [
+        {
+          epoch: `Epoch ${latestHealth.epochId}`,
+          endorsementsPerUser: parseFloat(endorsementsPerUser.toFixed(2)),
+          avgPathLength: parseFloat(avgDepth.toFixed(2)),
+        }
+      ];
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error("Error fetching network density:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/analytics/path-diversity", async (req, res) => {
+    try {
+      return res.status(200).json({ data: [] });
+    } catch (error) {
+      console.error("Error fetching path diversity:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
