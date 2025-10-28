@@ -1,0 +1,206 @@
+Absolutely—here’s a clean, implementation-ready plan to add Human Wallet / WaaP to TrustFlow, wired for both login and EIP-712 vouch signing.
+
+⸻
+
+What we’ll use from WaaP (Human Wallet)
+	•	A tiny SDK that injects an EIP-1193 provider at window.waap. You call:
+	•	initWaaP(...) once on app load,
+	•	window.waap.login() to open their modal,
+	•	window.waap.request({ method: 'eth_requestAccounts' }) to get the address,
+	•	window.waap.request({ method: 'eth_signTypedData_v4', ... }) to sign EIP-712,
+	•	window.waap.request({ method: 'personal_sign', ... }) if you want SIWE,
+	•	window.waap.on('accountsChanged' | 'chainChanged' | 'disconnect', ...) for events,
+	•	window.waap.logout() to clear WaaP sessions.  ￼
+
+⸻
+
+1) Install & initialize (Next.js)
+
+npm i @human.tech/waap-sdk
+
+Create waap.config.ts:
+
+// waap.config.ts
+export const waapInitConfig = {
+  config: {
+    authenticationMethods: ['email', 'phone', 'social', 'wallet'], // show social + wallets
+    allowedSocials: ['google', 'twitter', 'discord'],
+    styles: { darkMode: true },
+    showSecured: true
+  },
+  // useStaging: false,
+  // walletConnectProjectId: '<YOUR_WC_ID>' // only if you enable WalletConnect
+  // referralCode: 'optional'
+} as const;
+
+Create a small provider (app router):
+
+// waap.provider.tsx
+'use client'
+import { PropsWithChildren, useEffect } from 'react'
+import { initWaaP } from '@human.tech/waap-sdk'
+import { waapInitConfig } from './waap.config'
+
+export function WaaPProvider({ children }: PropsWithChildren) {
+  useEffect(() => {
+    initWaaP(waapInitConfig) // sets window.waap
+  }, [])
+  return <>{children}</>
+}
+
+Wrap your app:
+
+// app/layout.tsx
+import { WaaPProvider } from '@/waap.provider'
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body><WaaPProvider>{children}</WaaPProvider></body>
+    </html>
+  )
+}
+
+WaaP supports auto-connect (re-hydrate previous session) simply by calling eth_requestAccounts on load.  ￼
+
+⸻
+
+2) Connect button (login) and session
+
+'use client'
+import { useState, useEffect } from 'react'
+
+export function ConnectWallet() {
+  const [address, setAddress] = useState<string | null>(null)
+
+  async function connect() {
+    // Opens WaaP modal if needed and returns the chosen login method
+    await (window as any).waap.login()
+    const accounts = await (window as any).waap.request({ method: 'eth_requestAccounts' })
+    setAddress(accounts?.[0] ?? null)
+  }
+
+  async function logout() {
+    await (window as any).waap.logout()
+    setAddress(null)
+  }
+
+  useEffect(() => {
+    // auto-connect if user had a session
+    ;(async () => {
+      try {
+        const accounts = await (window as any).waap.request({ method: 'eth_requestAccounts' })
+        setAddress(accounts?.[0] ?? null)
+      } catch {}
+    })()
+  }, [])
+
+  return (
+    <div>
+      {address ? (
+        <>
+          <div>Connected: {address}</div>
+          <button onClick={logout}>Logout</button>
+        </>
+      ) : (
+        <button onClick={connect}>Connect</button>
+      )}
+    </div>
+  )
+}
+
+Methods used above and their semantics are straight from WaaP’s Quick Start/Methods.  ￼
+
+⸻
+
+3) Sign VOUCH (EIP-712) for TrustFlow
+
+Your VOUCH typed-data (example you’ve been using):
+
+const domain = {
+  name: 'TrustFlow',
+  version: '1',
+  chainId: 8453, // e.g., Base mainnet (adjust to your network)
+  verifyingContract: '0x0000000000000000000000000000000000000000' // or a real verifier
+} as const
+
+const types = {
+  Endorsement: [
+    { name: 'endorser', type: 'address' },
+    { name: 'endorsee', type: 'address' },
+    { name: 'epoch', type: 'uint64' },
+    { name: 'nonce', type: 'uint64' },
+    { name: 'type', type: 'string' } // "VOUCH"
+  ]
+} as const
+
+function buildMessage(endorser: `0x${string}`, endorsee: `0x${string}`, epoch: bigint, nonce: bigint) {
+  return { endorser, endorsee, epoch, nonce, type: 'VOUCH' }
+}
+
+Ask WaaP to sign (EIP-712 v4):
+
+const accounts = await (window as any).waap.request({ method: 'eth_requestAccounts' })
+const endorser = accounts[0]
+const message = buildMessage(endorser, endorsee, BigInt(epoch), BigInt(nonce))
+
+const typedData = { domain, types, primaryType: 'Endorsement', message }
+
+const signature = await (window as any).waap.request({
+  method: 'eth_signTypedData_v4',
+  params: [endorser, JSON.stringify(typedData)]
+})
+
+Then POST {endorser, endorsee, epoch, nonce, sig: signature} to your /endorse API where you already recover the signer (ecrecover) and append to the transparency log. WaaP exposes exactly this EIP-712 flow.  ￼
+
+If you also want SIWE login sessions, use personal_sign with the ERC-4361 message and verify on your server—WaaP supports personal_sign.  ￼
+
+⸻
+
+4) Wagmi / Ethers integration (optional)
+
+If TrustFlow uses wagmi or ethers contexts, WaaP provides examples for:
+	•	Wagmi v2 with a custom WaaP connector, and
+	•	Ethers v6 using WaaP as a BrowserProvider.
+Copy the example config files (connector/provider) and wrap your app with WagmiProvider or a WaaPProvider.  ￼
+
+⸻
+
+5) Events & logout nuances
+	•	Listen for accountsChanged, chainChanged, disconnect from window.waap (EIP-1193 standard) to clear local state.
+	•	logout() fully clears WaaP/WalletConnect sessions. Injected wallets (e.g., MetaMask) can’t be programmatically disconnected—show instructions and still clear your app state.  ￼
+
+⸻
+
+6) Optional: WaaP extras that fit TrustFlow nicely
+	•	requestEmail() – lets a user share a verified email (only if they logged in with WaaP’s social/email). Good for account recovery notices.  ￼
+	•	requestSBT(‘phone’ | ‘kyc’) – prompts minting a Human ID SBT; if you later want a “verified human” flag separate from VOUCH, you can record that flag in TrustFlow without changing edge weights.  ￼
+	•	Auto-connect – rely on it to silently restore sessions on refresh via eth_requestAccounts.  ￼
+
+⸻
+
+7) Server bits you likely already have (just verify)
+	•	EIP-712 verification: recover signer from sig and the canonical typed data; signer must equal endorser. (You can use viem/ethers server-side.)
+	•	Append-only log: once verified, write the row + compute leafHash and update your Merkle tree → publish STH in the epoch bundle.
+	•	SIWE (optional): if you want a cookie/session, verify personal_sign of the SIWE message using siwe lib.
+
+⸻
+
+8) UX copy (integrations)
+	•	Button text: “Continue with Wallet” (keeps it neutral; WaaP will offer social/email + wallets).
+	•	Tooltip: “Supports Human Wallet, WalletConnect, and injected wallets. You can still export and use any EVM wallet later.”
+	•	Small print on VOUCH: “You will sign a readable EIP-712 message. Your vouch is public and permanent.”
+
+⸻
+
+9) Security notes
+	•	WaaP exposes an EIP-1193 interface—treat it like any wallet provider. Don’t bypass server-side signature verification.
+	•	If you enable WalletConnect, set your WC Project ID in initWaaP options.  ￼
+	•	If you later add gasless tx for on-chain attestations, check WaaP’s Gas Tank docs.
+
+⸻
+
+If you want, I can prepare small PRs for your repo:
+	•	/client – waap.provider.tsx, a ConnectWallet component, and a SignVouchButton.
+	•	/server – the EIP-712 verification util (viem), and a wallet/siwe route (optional).
+
+References: WaaP Quick Start (init/login/request, examples), Methods (API surface, auto-connect, logout, events), and EIP-712 signing guide.  ￼
