@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSignMessage } from "wagmi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ export default function Seeds() {
   const [computationResult, setComputationResult] = useState<ComputationSummary | null>(null);
   const { toast } = useToast();
   const { address: userAddress, isConnected } = useWallet();
+  const { signMessageAsync } = useSignMessage();
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
@@ -174,22 +176,8 @@ export default function Seeds() {
     if (!newAddress || !userAddress || !isConnected) return;
     
     try {
-      // Use WaaP for signing
-      if (!window.waap) {
-        throw new Error("Wallet not connected. Please connect your wallet first.");
-      }
-      
-      // Get current account (silent check)
-      const accounts = await window.waap.request({ method: 'eth_accounts' }) as string[];
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No wallet account available");
-      }
-      
       const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
-      const signature = await window.waap.request({
-        method: 'personal_sign',
-        params: [message, userAddress],
-      }) as string;
+      const signature = await signMessageAsync({ message });
       
       addSeedMutation.mutate({
         address: newAddress.toLowerCase(),
@@ -214,22 +202,8 @@ export default function Seeds() {
     
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
       try {
-        // Use WaaP for signing
-        if (!window.waap) {
-          throw new Error("Wallet not connected. Please connect your wallet first.");
-        }
-        
-        // Get current account (silent check)
-        const accounts = await window.waap.request({ method: 'eth_accounts' }) as string[];
-        if (!accounts || accounts.length === 0) {
-          throw new Error("No wallet account available");
-        }
-        
         const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
-        const signature = await window.waap.request({
-          method: 'personal_sign',
-          params: [message, userAddress],
-        }) as string;
+        const signature = await signMessageAsync({ message });
         
         deleteSeedMutation.mutate({
           address,
