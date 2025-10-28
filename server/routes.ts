@@ -8,6 +8,7 @@ import { computeLeafHash } from "./crypto/merkle";
 import { insertPublicEndorsementSchema, publicEndorsements } from "@shared/schema";
 import { computeUserConfidence } from "./health/ghi";
 import { sql } from "drizzle-orm";
+import { verifyMessage } from "viem";
 import type { Address, Hex } from "viem";
 
 export async function registerRoutes(app: Express): Promise<Server> {
