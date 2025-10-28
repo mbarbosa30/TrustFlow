@@ -21,19 +21,30 @@ export function TrustDistribution({ distribution }: TrustDistributionProps) {
           Network breakdown by achievement tier
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {distribution.map((item) => (
-          <div key={item.level} className="space-y-2">
-            <div className="flex items-center justify-between">
-              <TierBadge tier={item.level} />
-              <div className="text-right">
-                <div className="text-sm font-semibold">{item.count.toLocaleString()}</div>
-                <div className="text-xs text-muted-foreground">{item.percentage}%</div>
-              </div>
+      <CardContent>
+        {distribution.length === 0 ? (
+          <div className="flex items-center justify-center py-12" data-testid="text-no-tier-distribution">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No tier distribution data available yet</p>
+              <p className="text-xs mt-1">Tiers will appear after users receive trust scores</p>
             </div>
-            <Progress value={item.percentage} className="h-2" />
           </div>
-        ))}
+        ) : (
+          <div className="space-y-4">
+            {distribution.map((item) => (
+              <div key={item.level} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <TierBadge tier={item.level} />
+                  <div className="text-right">
+                    <div className="text-sm font-semibold">{item.count.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">{item.percentage}%</div>
+                  </div>
+                </div>
+                <Progress value={item.percentage} className="h-2" />
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
