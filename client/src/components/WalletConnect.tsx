@@ -37,11 +37,26 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   };
 
   const handleDisconnect = () => {
-    disconnect();
-    toast({
-      title: "Disconnected",
-      description: "Your wallet has been disconnected",
-    });
+    try {
+      disconnect();
+      
+      // Optional: Clear wagmi cache from localStorage
+      // Uncomment this if you want to completely clear the session
+      // localStorage.removeItem('wagmi.store');
+      // localStorage.removeItem('wagmi.recentConnectorId');
+      
+      toast({
+        title: "Disconnected",
+        description: "Your wallet has been disconnected",
+      });
+    } catch (error) {
+      console.error('Disconnect error:', error);
+      toast({
+        title: "Disconnect Error",
+        description: "There was an issue disconnecting",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isConnected && address) {
