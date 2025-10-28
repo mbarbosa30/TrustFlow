@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Info, TrendingUp, Users, Network, GitBranch, Shield, Activity, BarChart3, Shuffle } from "lucide-react";
 
 export default function Status() {
+  const { data: epochData } = useQuery<{ epochId: number }>({
+    queryKey: ['/api/epoch/current'],
+  });
+
+  const currentEpochId = epochData?.epochId ?? 0;
+
   const { data: healthData, isLoading } = useQuery<{
     epoch: number;
     GHI: number;
@@ -19,7 +25,8 @@ export default function Status() {
       churnStability: number;
     };
   }>({
-    queryKey: ['/api/epoch/0/health'],
+    queryKey: [`/api/epoch/${currentEpochId}/health`],
+    enabled: currentEpochId !== undefined,
   });
 
   const getHealthStatus = (ghi: number) => {
