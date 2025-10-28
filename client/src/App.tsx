@@ -22,7 +22,6 @@ const appNavItems = [
   { path: "/overview", label: "Overview" },
   { path: "/dashboard", label: "Dashboard" },
   { path: "/status", label: "Status" },
-  { path: "/seeds", label: "Seeds" },
 ];
 
 function Router() {
