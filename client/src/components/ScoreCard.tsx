@@ -15,7 +15,7 @@ import {
 interface ScoreCardProps {
   tier: Tier;
   sts: number;
-  flow: number;
+  flow?: number;
   percentile: number;
   minCutSize: number;
   epochTimestamp: string;
@@ -62,39 +62,41 @@ export function ScoreCard({
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className={flow !== undefined ? "grid grid-cols-2 gap-6" : ""}>
           <div>
             <div className="text-5xl font-bold tracking-tight" data-testid="text-score">
               {sts}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
-              Standardized Trust Score
+              Standardized Trust Score {flow === undefined ? "(0-100)" : ""}
             </div>
           </div>
-          <div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="cursor-help">
-                  <div className="text-5xl font-bold tracking-tight text-primary" data-testid="text-flow">
-                    {flow.toFixed(2)}
+          {flow !== undefined && (
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="cursor-help">
+                    <div className="text-5xl font-bold tracking-tight text-primary" data-testid="text-flow">
+                      {flow.toFixed(2)}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
+                      Raw Flow
+                      <Info className="w-3 h-3" />
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
-                    Raw Flow
-                    <Info className="w-3 h-3" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-2">
+                    <div className="font-semibold text-sm">Raw Flow Value</div>
+                    <div className="text-xs text-muted-foreground">
+                      The actual max-flow capacity from seed nodes to you, measured in units.
+                      This is the "honest" algorithm output before standardization to 0-100.
+                    </div>
                   </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <div className="space-y-2">
-                  <div className="font-semibold text-sm">Raw Flow Value</div>
-                  <div className="text-xs text-muted-foreground">
-                    The actual max-flow capacity from seed nodes to you, measured in units.
-                    This is the "honest" algorithm output before standardization to 0-100.
-                  </div>
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3">
