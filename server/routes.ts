@@ -849,6 +849,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Data Management Endpoints
+  app.post("/api/test-data/organic-growth", async (req, res) => {
+    try {
+      const currentEpoch = await storage.getCurrentEpoch();
+      if (!currentEpoch) {
+        return res.status(400).json({ error: "No current epoch found" });
+      }
+
+      const previousEpoch = await storage.getEpoch(currentEpoch.id - 1);
+      if (!previousEpoch) {
+        return res.status(400).json({ error: "No previous epoch found - use seeds to bootstrap" });
+      }
+
+      const previousScores = await storage.getScoresByEpoch(previousEpoch.id);
+      const acceptedUsers = previousScores
+        .filter(s => s.isAccepted)
+        .map(s => s.address.toLowerCase());
+
+      if (acceptedUsers.length === 0) {
+        return res.status(400).json({ error: "No accepted users in previous epoch" });
+      }
+
+      const existingEndorsements = await storage.getEndorsements({ 
+        epoch: currentEpoch.id,
+        limit: 10000 
+      });
+
+      const existingPairs = new Set(
+        existingEndorsements.map(e => `${e.endorser.toLowerCase()}-${e.endorsee.toLowerCase()}`)
+      );
+
+      let added = 0;
+
+      // Generate random address helper
+      const generateRandomAddress = (): string => {
+        const chars = '0123456789abcdef';
+        let address = '0x';
+        for (let i = 0; i < 40; i++) {
+          address += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return address;
+      };
+
+      // Step 1: Peer vouches
+      const targetPeerVouches = Math.min(100, acceptedUsers.length * 3);
+      let peerVouches = 0;
+      while (peerVouches < targetPeerVouches) {
+        const endorser = acceptedUsers[Math.floor(Math.random() * acceptedUsers.length)];
+        const endorsee = acceptedUsers[Math.floor(Math.random() * acceptedUsers.length)];
+        if (endorser === endorsee) continue;
+        const pairKey = `${endorser.toLowerCase()}-${endorsee.toLowerCase()}`;
+        if (existingPairs.has(pairKey)) continue;
+
+        const nonce = BigInt(Date.now() + added);
+        const sig = '0x' + '00'.repeat(65);
+        const { computeLeafHash } = await import('./crypto/merkle');
+        const leafHash = computeLeafHash({
+          endorser,
+          endorsee,
+          epoch: BigInt(currentEpoch.id),
+          nonce,
+          sig,
+        });
+
+        await storage.createEndorsement({
+          endorser,
+          endorsee,
+          epoch: currentEpoch.id,
+          nonce,
+          leafHash,
+          sig,
+        });
+
+        existingPairs.add(pairKey);
+        peerVouches++;
+        added++;
+      }
+
+      // Step 2: Invite new members
+      const numNewMembers = Math.max(5, Math.floor(acceptedUsers.length * 0.3));
+      const newMembers: string[] = [];
+      for (let i = 0; i < numNewMembers; i++) {
+        newMembers.push(generateRandomAddress());
+      }
+
+      let invitations = 0;
+      for (const newMember of newMembers) {
+        const numInvites = 2 + Math.floor(Math.random() * 3);
+        const shuffled = [...acceptedUsers].sort(() => Math.random() - 0.5);
+        
+        for (let i = 0; i < Math.min(numInvites, shuffled.length); i++) {
+          const endorser = shuffled[i];
+          const pairKey = `${endorser.toLowerCase()}-${newMember.toLowerCase()}`;
+          if (existingPairs.has(pairKey)) continue;
+
+          const nonce = BigInt(Date.now() + added);
+          const sig = '0x' + '00'.repeat(65);
+          const { computeLeafHash } = await import('./crypto/merkle');
+          const leafHash = computeLeafHash({
+            endorser,
+            endorsee: newMember,
+            epoch: BigInt(currentEpoch.id),
+            nonce,
+            sig,
+          });
+
+          await storage.createEndorsement({
+            endorser,
+            endorsee: newMember,
+            epoch: currentEpoch.id,
+            nonce,
+            leafHash,
+            sig,
+          });
+
+          existingPairs.add(pairKey);
+          invitations++;
+          added++;
+        }
+      }
+
+      // Step 3: New members vouch for each other
+      const targetNewMemberVouches = Math.min(30, newMembers.length * 2);
+      let newMemberVouches = 0;
+      while (newMemberVouches < targetNewMemberVouches) {
+        const endorser = newMembers[Math.floor(Math.random() * newMembers.length)];
+        const endorsee = newMembers[Math.floor(Math.random() * newMembers.length)];
+        if (endorser === endorsee) continue;
+        const pairKey = `${endorser.toLowerCase()}-${endorsee.toLowerCase()}`;
+        if (existingPairs.has(pairKey)) continue;
+
+        const nonce = BigInt(Date.now() + added);
+        const sig = '0x' + '00'.repeat(65);
+        const { computeLeafHash } = await import('./crypto/merkle');
+        const leafHash = computeLeafHash({
+          endorser,
+          endorsee,
+          epoch: BigInt(currentEpoch.id),
+          nonce,
+          sig,
+        });
+
+        await storage.createEndorsement({
+          endorser,
+          endorsee,
+          epoch: currentEpoch.id,
+          nonce,
+          leafHash,
+          sig,
+        });
+
+        existingPairs.add(pairKey);
+        newMemberVouches++;
+        added++;
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Organic growth data added successfully",
+        summary: {
+          epochId: currentEpoch.id,
+          peerVouches,
+          invitations,
+          newMemberVouches,
+          totalAdded: added,
+          newMembers: newMembers.length,
+          expectedNetworkSize: acceptedUsers.length + newMembers.length,
+        }
+      });
+    } catch (error) {
+      console.error("Error adding organic growth data:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/test-data/endorsements", async (req, res) => {
+    try {
+      await db.execute(sql`DELETE FROM public_endorsements`);
+      return res.status(200).json({ 
+        success: true,
+        message: "All endorsements deleted successfully" 
+      });
+    } catch (error) {
+      console.error("Error deleting endorsements:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/test-data/all", async (req, res) => {
+    try {
+      await db.execute(sql`DELETE FROM scores`);
+      await db.execute(sql`DELETE FROM epoch_health`);
+      await db.execute(sql`DELETE FROM public_endorsements`);
+      await db.execute(sql`DELETE FROM epochs WHERE id > 0`);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "All test data deleted successfully (seeds preserved)" 
+      });
+    } catch (error) {
+      console.error("Error deleting all data:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

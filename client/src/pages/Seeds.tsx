@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Shield, Zap, ArrowRight, Calendar } from "lucide-react";
+import { Trash2, Plus, Shield, Zap, ArrowRight, Calendar, Database, Users, AlertTriangle } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 
 interface Seed {
@@ -215,6 +215,132 @@ export default function Seeds() {
     onError: (error: any) => {
       toast({
         title: "Computation Failed",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addOrganicGrowthMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/test-data/organic-growth', {});
+    },
+    onSuccess: (data: any) => {
+      // Invalidate all data-dependent queries
+      queryClient.invalidateQueries({ queryKey: ['/api/endorsements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/sts-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/tier-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-growth'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/endorsement-velocity'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/score-components'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/average-sts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-density'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/path-diversity'] });
+      // Invalidate all epoch health queries (current and specific)
+      const currentEpochId = epochData?.epochId ?? 0;
+      queryClient.invalidateQueries({ queryKey: [`/api/epoch/${currentEpochId}/health`] });
+      toast({
+        title: "Organic Growth Added",
+        description: `Added ${data.summary.totalAdded} endorsements (${data.summary.newMembers} new members)`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Add Growth Data",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearEndorsementsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/test-data/endorsements', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to clear endorsements');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate all data-dependent queries
+      queryClient.invalidateQueries({ queryKey: ['/api/endorsements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/sts-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/tier-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-growth'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/endorsement-velocity'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/score-components'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/average-sts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-density'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/path-diversity'] });
+      // Invalidate all epoch health queries
+      const currentEpochId = epochData?.epochId ?? 0;
+      queryClient.invalidateQueries({ queryKey: [`/api/epoch/${currentEpochId}/health`] });
+      toast({
+        title: "Endorsements Cleared",
+        description: "All endorsements have been deleted from the database",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Clear Endorsements",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearAllDataMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/test-data/all', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to clear all data');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate ALL queries to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/endorsements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/sts-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/tier-distribution'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-growth'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/endorsement-velocity'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/score-components'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/average-sts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/network-density'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/analytics/path-diversity'] });
+      // Invalidate all epoch health queries
+      const currentEpochId = epochData?.epochId ?? 0;
+      queryClient.invalidateQueries({ queryKey: [`/api/epoch/${currentEpochId}/health`] });
+      toast({
+        title: "All Data Cleared",
+        description: "All test data has been deleted (seeds preserved)",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Clear Data",
         description: error.message || "An error occurred",
         variant: "destructive",
       });
@@ -564,6 +690,104 @@ export default function Seeds() {
                 </CardContent>
               </Card>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="w-5 h-5 text-amber-500" />
+              Test Data Management
+            </CardTitle>
+            <CardDescription>
+              Experimental tools to populate and manage test data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 text-sm text-muted-foreground p-4 bg-amber-500/10 rounded-md border border-amber-500/20">
+              <p className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-medium">
+                <AlertTriangle className="w-4 h-4" />
+                Development Tool
+              </p>
+              <p>
+                These tools are for testing and experimentation. Use them to quickly populate
+                the network with realistic data or reset to a clean state.
+              </p>
+            </div>
+
+            {epochData && (
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-md">
+                <div>
+                  <div className="text-xs text-muted-foreground">Current Epoch</div>
+                  <div className="text-2xl font-bold font-mono">{epochData.epochId}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{epochData.status}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Created</div>
+                  <div className="text-sm font-mono">{new Date(epochData.createdAt).toLocaleDateString()}</div>
+                  <div className="text-xs text-muted-foreground">{new Date(epochData.createdAt).toLocaleTimeString()}</div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Populate Data
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Add organic growth data to the current epoch (peer vouches + new members)
+                </p>
+                <Button
+                  onClick={() => addOrganicGrowthMutation.mutate()}
+                  disabled={addOrganicGrowthMutation.isPending}
+                  className="w-full"
+                  data-testid="button-add-organic-growth"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  {addOrganicGrowthMutation.isPending ? "Adding..." : "Add Organic Growth"}
+                </Button>
+              </div>
+
+              <div className="border-t pt-3">
+                <h4 className="font-semibold mb-2 flex items-center gap-2 text-destructive">
+                  <Trash2 className="w-4 h-4" />
+                  Remove Data
+                </h4>
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => {
+                      if (confirm("Clear all endorsements? This cannot be undone.")) {
+                        clearEndorsementsMutation.mutate();
+                      }
+                    }}
+                    disabled={clearEndorsementsMutation.isPending}
+                    variant="outline"
+                    className="w-full"
+                    data-testid="button-clear-endorsements"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {clearEndorsementsMutation.isPending ? "Clearing..." : "Clear All Endorsements"}
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      if (confirm("Delete ALL test data (endorsements, scores, epochs)? Seeds will be preserved. This cannot be undone.")) {
+                        clearAllDataMutation.mutate();
+                      }
+                    }}
+                    disabled={clearAllDataMutation.isPending}
+                    variant="destructive"
+                    className="w-full"
+                    data-testid="button-clear-all-data"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    {clearAllDataMutation.isPending ? "Clearing..." : "Clear Everything (Keep Seeds)"}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
