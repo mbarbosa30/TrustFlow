@@ -111,6 +111,7 @@ export default function Overview() {
                 scoreData.trust.sts >= 50 ? "Journeyer" : "Apprentice"
               }
               sts={scoreData.trust.sts}
+              flow={scoreData.trust.flow}
               percentile={Math.round(scoreData.confidence.percent)}
               minCutSize={scoreData.trust.mincut}
               epochTimestamp={new Date().toISOString()}
