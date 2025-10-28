@@ -1,0 +1,364 @@
+import type { Address } from "viem";
+import { FlowGraph } from "./graph";
+import { DinicMaxFlow } from "./maxflow";
+import type { TrustScoreComponents, UserScore, EpochComputationResult } from "./types";
+
+export interface Endorsement {
+  endorser: Address;
+  endorsee: Address;
+  epoch: number;
+}
+
+export interface ScoringConfig {
+  flowWeight: number;
+  cutWeight: number;
+  stabilityWeight: number;
+  depthWeight: number;
+  maxDepth: number;
+}
+
+const DEFAULT_CONFIG: ScoringConfig = {
+  flowWeight: 0.55,
+  cutWeight: 0.25,
+  stabilityWeight: 0.10,
+  depthWeight: 0.10,
+  maxDepth: 6,
+};
+
+export class TrustScorer {
+  private config: ScoringConfig;
+
+  constructor(config: Partial<ScoringConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
+  /**
+   * Compute trust scores for all users in the network
+   */
+  computeScores(
+    endorsements: Endorsement[],
+    seeds: Address[],
+    epoch: number
+  ): EpochComputationResult {
+    const allUsers = this.extractAllUsers(endorsements, seeds);
+    const userScores = new Map<Address, UserScore>();
+    const flowValues: number[] = [];
+
+    for (const user of Array.from(allUsers)) {
+      const graph = this.buildUserGraph(user, endorsements, seeds);
+      const maxFlow = new DinicMaxFlow(graph);
+      
+      const flow = maxFlow.computeMaxFlow();
+      const minCutSet = maxFlow.computeMinCut();
+      const minCut = this.calculateMinCutSize(minCutSet, graph);
+      const depth = this.calculateDepth(user, endorsements, seeds);
+      const stability = this.calculateStability(user, endorsements, seeds);
+
+      const components: TrustScoreComponents = {
+        flow,
+        minCut,
+        stability,
+        depth,
+      };
+
+      flowValues.push(flow);
+    }
+
+    const p95Flow = this.calculatePercentile(flowValues, 0.95);
+    const avgFlow = flowValues.reduce((a, b) => a + b, 0) / flowValues.length;
+    let totalAccepted = 0;
+    let totalMinCut = 0;
+
+    for (const user of Array.from(allUsers)) {
+      const graph = this.buildUserGraph(user, endorsements, seeds);
+      const maxFlow = new DinicMaxFlow(graph);
+      
+      const flow = maxFlow.computeMaxFlow();
+      const minCutSet = maxFlow.computeMinCut();
+      const minCut = this.calculateMinCutSize(minCutSet, graph);
+      const depth = this.calculateDepth(user, endorsements, seeds);
+      const stability = this.calculateStability(user, endorsements, seeds);
+
+      const components: TrustScoreComponents = {
+        flow,
+        minCut,
+        stability,
+        depth,
+      };
+
+      const normalizedComponents = this.normalizeComponents(
+        components,
+        p95Flow,
+        this.config.maxDepth
+      );
+
+      const sts = this.calculateSTS(normalizedComponents);
+      const tier = this.assignTier(sts, minCut, stability);
+
+      if (flow >= 1) {
+        totalAccepted++;
+        totalMinCut += minCut;
+      }
+
+      userScores.set(user, {
+        address: user,
+        sts,
+        components,
+        tier,
+        percentile: 0, // Will calculate after all scores are computed
+      });
+    }
+
+    this.assignPercentiles(userScores);
+
+    return {
+      epoch,
+      scores: userScores,
+      networkMetrics: {
+        totalAccepted,
+        avgFlow,
+        avgMinCut: totalAccepted > 0 ? totalMinCut / totalAccepted : 0,
+        p95Flow,
+      },
+    };
+  }
+
+  /**
+   * Build graph for a specific user (user-centric flow network)
+   */
+  private buildUserGraph(
+    user: Address,
+    endorsements: Endorsement[],
+    seeds: Address[]
+  ): FlowGraph {
+    const SOURCE = "SOURCE";
+    const SINK = "SINK";
+    const graph = new FlowGraph(SOURCE, SINK);
+
+    const allUsers = this.extractAllUsers(endorsements, seeds);
+    const depths = this.computeDepths(endorsements, seeds);
+
+    for (const u of Array.from(allUsers)) {
+      const uMinus = `${u}-`;
+      const uPlus = `${u}+`;
+      graph.addNode(uMinus);
+      graph.addNode(uPlus);
+
+      const depth = depths.get(u) ?? this.config.maxDepth;
+      const capacity = depth < this.config.maxDepth ? 2 : 1;
+      
+      graph.addEdge(uMinus, uPlus, capacity);
+    }
+
+    for (const seed of seeds) {
+      graph.addEdge(SOURCE, `${seed}-`, Infinity);
+    }
+
+    for (const endorsement of endorsements) {
+      const { endorser, endorsee } = endorsement;
+      graph.addEdge(`${endorser}+`, `${endorsee}-`, 1.0);
+    }
+
+    graph.addEdge(`${user}+`, SINK, 1);
+
+    return graph;
+  }
+
+  /**
+   * Calculate min-cut size from the reachable set
+   */
+  private calculateMinCutSize(reachableSet: Set<string>, graph: FlowGraph): number {
+    let cutSize = 0;
+    const nodes = graph.getNodes();
+
+    for (const nodeId of Array.from(reachableSet)) {
+      const node = nodes.get(nodeId);
+      if (!node) continue;
+
+      for (const edge of node.edges) {
+        if (!reachableSet.has(edge.to) && edge.capacity > edge.flow) {
+          cutSize++;
+        }
+      }
+    }
+
+    return Math.max(1, Math.floor(cutSize / 2));
+  }
+
+  /**
+   * Calculate depth (distance from seeds) using BFS
+   */
+  private calculateDepth(
+    user: Address,
+    endorsements: Endorsement[],
+    seeds: Address[]
+  ): number {
+    const depths = this.computeDepths(endorsements, seeds);
+    return depths.get(user) ?? this.config.maxDepth;
+  }
+
+  /**
+   * Compute depths for all users using BFS from seeds
+   */
+  private computeDepths(
+    endorsements: Endorsement[],
+    seeds: Address[]
+  ): Map<Address, number> {
+    const depths = new Map<Address, number>();
+    const adjacency = new Map<Address, Address[]>();
+
+    for (const { endorser, endorsee } of endorsements) {
+      if (!adjacency.has(endorser)) {
+        adjacency.set(endorser, []);
+      }
+      adjacency.get(endorser)!.push(endorsee);
+    }
+
+    const queue: Array<{ user: Address; depth: number }> = [];
+    
+    for (const seed of seeds) {
+      depths.set(seed, 0);
+      queue.push({ user: seed, depth: 0 });
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const { user, depth } = queue[head++];
+      const neighbors = adjacency.get(user) || [];
+
+      for (const neighbor of neighbors) {
+        if (!depths.has(neighbor)) {
+          depths.set(neighbor, depth + 1);
+          queue.push({ user: neighbor, depth: depth + 1 });
+        }
+      }
+    }
+
+    return depths;
+  }
+
+  /**
+   * Calculate stability (resistance to edge removal)
+   */
+  private calculateStability(
+    user: Address,
+    endorsements: Endorsement[],
+    seeds: Address[]
+  ): number {
+    const graph = this.buildUserGraph(user, endorsements, seeds);
+    const maxFlow = new DinicMaxFlow(graph);
+    const baseFlow = maxFlow.computeMaxFlow();
+
+    if (baseFlow < 1) return 0;
+
+    const incomingEndorsements = endorsements.filter(e => e.endorsee === user);
+    
+    if (incomingEndorsements.length === 0) return 0;
+
+    let totalFlowWithout = 0;
+
+    for (const endorsement of incomingEndorsements) {
+      const filteredEndorsements = endorsements.filter(
+        e => !(e.endorser === endorsement.endorser && e.endorsee === endorsement.endorsee)
+      );
+      
+      const testGraph = this.buildUserGraph(user, filteredEndorsements, seeds);
+      const testMaxFlow = new DinicMaxFlow(testGraph);
+      const flowWithout = testMaxFlow.computeMaxFlow();
+      
+      totalFlowWithout += flowWithout;
+    }
+
+    const avgFlowWithout = totalFlowWithout / incomingEndorsements.length;
+    const stability = baseFlow > 0 ? avgFlowWithout / baseFlow : 0;
+
+    return stability;
+  }
+
+  /**
+   * Normalize score components to 0-1 range
+   */
+  private normalizeComponents(
+    components: TrustScoreComponents,
+    p95Flow: number,
+    maxDepth: number
+  ): TrustScoreComponents {
+    return {
+      flow: Math.min(1, components.flow / Math.max(1, p95Flow)),
+      minCut: Math.min(1, components.minCut / 5),
+      stability: Math.min(1, components.stability),
+      depth: Math.max(0, 1 - components.depth / maxDepth),
+    };
+  }
+
+  /**
+   * Calculate final STS score from normalized components
+   */
+  private calculateSTS(normalized: TrustScoreComponents): number {
+    const { flowWeight, cutWeight, stabilityWeight, depthWeight } = this.config;
+
+    const sts =
+      100 *
+      (flowWeight * normalized.flow +
+        cutWeight * normalized.minCut +
+        stabilityWeight * normalized.stability +
+        depthWeight * normalized.depth);
+
+    return Math.round(sts * 100) / 100;
+  }
+
+  /**
+   * Assign tier based on STS, min-cut, and stability
+   */
+  private assignTier(
+    sts: number,
+    minCut: number,
+    stability: number
+  ): "Apprentice" | "Journeyer" | "Master" | null {
+    if (sts < 30 || minCut < 1) return null;
+    if (sts >= 75 && minCut >= 3 && stability >= 0.7) return "Master";
+    if (sts >= 50 && minCut >= 2) return "Journeyer";
+    return "Apprentice";
+  }
+
+  /**
+   * Calculate percentile rankings for all scores
+   */
+  private assignPercentiles(scores: Map<Address, UserScore>): void {
+    const sortedScores = Array.from(scores.values())
+      .map(s => s.sts)
+      .sort((a, b) => a - b);
+
+    for (const [address, userScore] of Array.from(scores.entries())) {
+      const rank = sortedScores.findIndex(s => s >= userScore.sts);
+      const percentile = ((rank + 1) / sortedScores.length) * 100;
+      userScore.percentile = Math.round(percentile * 100) / 100;
+    }
+  }
+
+  /**
+   * Extract all unique users from endorsements and seeds
+   */
+  private extractAllUsers(endorsements: Endorsement[], seeds: Address[]): Set<Address> {
+    const users = new Set<Address>(seeds);
+
+    for (const { endorser, endorsee } of endorsements) {
+      users.add(endorser);
+      users.add(endorsee);
+    }
+
+    return users;
+  }
+
+  /**
+   * Calculate percentile value from array
+   */
+  private calculatePercentile(values: number[], percentile: number): number {
+    if (values.length === 0) return 0;
+    
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = Math.ceil(sorted.length * percentile) - 1;
+    
+    return sorted[Math.max(0, index)];
+  }
+}
