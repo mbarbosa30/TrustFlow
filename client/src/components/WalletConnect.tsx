@@ -66,7 +66,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     );
   }
 
-  if (address) {
+  if (address && address.length > 0) {
     return (
       <Button
         variant="outline"

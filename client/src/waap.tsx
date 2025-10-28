@@ -47,13 +47,15 @@ export function WaaPProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const accounts = await window.waap.request({ method: 'eth_requestAccounts' });
-          setAddress(accounts?.[0] ?? null);
+          const addr = accounts?.[0];
+          setAddress(addr && addr !== '' ? addr : null);
         } catch (error) {
           console.log('No existing session to restore');
         }
         
         window.waap.on('accountsChanged', (accounts: string[]) => {
-          setAddress(accounts?.[0] ?? null);
+          const addr = accounts?.[0];
+          setAddress(addr && addr !== '' ? addr : null);
         });
         
         setReady(true);
@@ -77,7 +79,8 @@ export function WaaPProvider({ children }: { children: React.ReactNode }) {
           throw new Error('Login cancelled');
         }
         const accounts = await window.waap.request({ method: 'eth_requestAccounts' });
-        const newAddress = accounts?.[0] ?? null;
+        const addr = accounts?.[0];
+        const newAddress = addr && addr !== '' ? addr : null;
         setAddress(newAddress);
         return newAddress;
       },
