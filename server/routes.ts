@@ -17,14 +17,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const body = req.body;
 
-      const endorsement: SignedEndorsement = {
-        endorser: body.endorser as Address,
-        endorsee: body.endorsee as Address,
-        epoch: BigInt(body.epoch),
-        nonce: BigInt(body.nonce),
-        sig: body.sig as Hex,
-        chainId: body.chainId ? Number(body.chainId) : undefined,
-      };
+      // Validate required fields exist
+      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce || !body.timestamp || !body.sig) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // Safely parse BigInt fields with error handling
+      let endorsement: SignedEndorsement;
+      try {
+        endorsement = {
+          endorser: body.endorser as Address,
+          endorsee: body.endorsee as Address,
+          epoch: BigInt(body.epoch),
+          nonce: BigInt(body.nonce),
+          timestamp: BigInt(body.timestamp),
+          sig: body.sig as Hex,
+          chainId: body.chainId ? Number(body.chainId) : undefined,
+        };
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid numeric field format" });
+      }
 
       const fieldValidation = validateEndorsementFields(endorsement);
       if (!fieldValidation.valid) {
@@ -147,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If no active epoch exists, create epoch 0
       if (!currentEpoch) {
         currentEpoch = await storage.createEpoch({
-          id: BigInt(0),
+          id: 0,
           status: "active",
           graphRoot: null,
           seedRoot: null,

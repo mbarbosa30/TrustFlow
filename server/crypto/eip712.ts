@@ -6,6 +6,7 @@ export const ENDORSEMENT_TYPES = {
     { name: "endorsee", type: "address" },
     { name: "epoch", type: "uint64" },
     { name: "nonce", type: "uint64" },
+    { name: "timestamp", type: "uint64" },
   ],
 } as const;
 
@@ -20,6 +21,7 @@ export interface EndorsementMessage {
   endorsee: Address;
   epoch: bigint;
   nonce: bigint;
+  timestamp: bigint;
 }
 
 export interface SignedEndorsement {
@@ -27,6 +29,7 @@ export interface SignedEndorsement {
   endorsee: Address;
   epoch: bigint;
   nonce: bigint;
+  timestamp: bigint;
   sig: Hex;
   chainId?: number; // Optional for backward compatibility
 }
@@ -40,6 +43,7 @@ export async function verifyEndorsementSignature(
       endorsee: endorsement.endorsee,
       epoch: endorsement.epoch,
       nonce: endorsement.nonce,
+      timestamp: endorsement.timestamp,
     };
 
     // Construct domain with chainId if provided
@@ -55,6 +59,7 @@ export async function verifyEndorsementSignature(
       endorsee: endorsement.endorsee,
       epoch: endorsement.epoch.toString(),
       nonce: endorsement.nonce.toString(),
+      timestamp: endorsement.timestamp.toString(),
     }, null, 2));
 
     const valid = await verifyTypedData({
@@ -75,11 +80,15 @@ export async function verifyEndorsementSignature(
   }
 }
 
+// Clock skew tolerance: 5 minutes in milliseconds
+const CLOCK_SKEW_TOLERANCE_MS = 5 * 60 * 1000;
+
 export function validateEndorsementFields(endorsement: {
   endorser: string;
   endorsee: string;
   epoch: bigint;
   nonce: bigint;
+  timestamp: bigint;
 }): { valid: boolean; error?: string } {
   if (endorsement.endorser === endorsement.endorsee) {
     return { valid: false, error: "Cannot endorse yourself" };
@@ -99,6 +108,34 @@ export function validateEndorsementFields(endorsement: {
 
   if (!endorsement.endorsee.match(/^0x[a-fA-F0-9]{40}$/)) {
     return { valid: false, error: "Invalid endorsee address" };
+  }
+
+  // Validate timestamp against server clock
+  const serverTime = BigInt(Date.now());
+  const clientTime = endorsement.timestamp;
+  
+  // Check for unreasonably large timestamps (prevent DoS via Number overflow)
+  const MAX_REASONABLE_TIMESTAMP = BigInt(Date.now()) + BigInt(365 * 24 * 60 * 60 * 1000); // 1 year in future
+  const MIN_REASONABLE_TIMESTAMP = BigInt(1609459200000); // Jan 1, 2021 (before TrustFlow existed)
+  
+  if (clientTime > MAX_REASONABLE_TIMESTAMP || clientTime < MIN_REASONABLE_TIMESTAMP) {
+    return { 
+      valid: false, 
+      error: "Timestamp is unreasonably far from current time" 
+    };
+  }
+
+  const timeDiff = serverTime > clientTime 
+    ? serverTime - clientTime 
+    : clientTime - serverTime;
+
+  if (timeDiff > BigInt(CLOCK_SKEW_TOLERANCE_MS)) {
+    // Safe to convert to Number now since we've validated range
+    const diffSeconds = Number(timeDiff) / 1000;
+    return { 
+      valid: false, 
+      error: `Timestamp out of acceptable range (±5 minutes). Clock skew: ${diffSeconds.toFixed(0)}s` 
+    };
   }
 
   return { valid: true };
