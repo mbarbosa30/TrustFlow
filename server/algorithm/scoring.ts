@@ -438,4 +438,69 @@ export class TrustScorer {
     
     return sorted[Math.max(0, index)];
   }
+
+  /**
+   * Calculate seed coverage: count distinct seeds that can reach this user
+   * Per Levien spec: require >= 2 seeds to prevent single-seed blast-radius
+   */
+  private calculateSeedCoverage(
+    user: Address,
+    endorsements: Endorsement[],
+    seeds: Address[]
+  ): number {
+    const adjacency = new Map<Address, Address[]>();
+    
+    // Build reverse adjacency (who endorses whom)
+    for (const { endorser, endorsee } of endorsements) {
+      if (!adjacency.has(endorsee)) {
+        adjacency.set(endorsee, []);
+      }
+      adjacency.get(endorsee)!.push(endorser);
+    }
+
+    // BFS backward from user to find which seeds can reach them
+    const reachableSeeds = new Set<Address>();
+    const visited = new Set<Address>([user]);
+    const queue: Address[] = [user];
+
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
+      
+      // Check if current node is a seed
+      if (seeds.includes(current)) {
+        reachableSeeds.add(current);
+      }
+
+      const predecessors = adjacency.get(current) || [];
+      for (const pred of predecessors) {
+        if (!visited.has(pred)) {
+          visited.add(pred);
+          queue.push(pred);
+        }
+      }
+    }
+
+    return reachableSeeds.size;
+  }
+
+  /**
+   * Check if there are at least k edge-disjoint paths from seeds to user
+   * Uses max-flow: by max-flow/min-cut theorem, max number of edge-disjoint 
+   * paths equals the min-cut value
+   */
+  private hasEdgeDisjointPaths(
+    user: Address,
+    endorsements: Endorsement[],
+    seeds: Address[],
+    k: number
+  ): boolean {
+    const graph = this.buildUserGraph(user, endorsements, seeds);
+    const maxFlow = new DinicMaxFlow(graph);
+    const minCutSet = maxFlow.computeMinCut();
+    const minCut = this.calculateMinCutSize(minCutSet, graph);
+    
+    // By max-flow/min-cut theorem: min-cut value = max number of edge-disjoint paths
+    return minCut >= k;
+  }
 }
