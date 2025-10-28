@@ -4,7 +4,7 @@ export const waapConfig: InitWaaPOptions = {
   useStaging: false,
   config: {
     allowedSocials: ["google", "twitter", "discord", "github"],
-    authenticationMethods: ["email", "phone", "social"],
+    authenticationMethods: ["email", "phone", "social", "wallet"],
     styles: {
       darkMode: false,
     },
