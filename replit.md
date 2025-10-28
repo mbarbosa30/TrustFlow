@@ -173,6 +173,20 @@ Preferred communication style: Simple, everyday language.
 - **Sequential Progression**: Each new epoch builds on the accepted subgraph from previous epoch
 - **Benefits**: Proper epoch lifecycle, immutable historical data, supports multi-epoch trust evolution
 
+**ADDRESS NORMALIZATION (October 2025)**: Fixed critical case-sensitivity bug in scoring algorithm:
+- **Problem**: JavaScript Set/Map treated addresses with different casing as separate users (e.g., "0x216844eF..." vs "0x216844ef...")
+- **Impact**: Scoring algorithm was creating duplicate user nodes, causing incorrect network size calculations and missing scores for legitimate users
+- **Solution**: Normalized all Ethereum addresses to lowercase throughout the scoring algorithm
+- **Affected Methods**: 
+  - `extractAllUsers()` - normalizes addresses when building user set
+  - `computeDepths()` - normalizes addresses in BFS graph traversal
+  - `buildUserGraph()` - normalizes addresses when building flow network
+  - `calculateDepth()`, `calculateStability()`, `calculateSeedCoverage()` - normalize for map lookups and graph operations
+  - `computeLaggedDepths()` - normalizes addresses from previous epoch's accepted subgraph
+- **Database Impact**: All addresses are now stored in lowercase in the scores table
+- **Verification**: Epoch 3 recomputation correctly processes 17 unique addresses instead of creating duplicates
+- **Future Safeguards**: All address comparisons and storage operations use lowercase normalization to prevent regression
+
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 
 **Portable Credentials**: Trust attestations are self-contained, signed JSON objects (compatible with W3C Verifiable Credentials)
