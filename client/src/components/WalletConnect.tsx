@@ -13,6 +13,8 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
+  console.log('[WalletConnect] ready:', ready, 'address:', address);
+
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
