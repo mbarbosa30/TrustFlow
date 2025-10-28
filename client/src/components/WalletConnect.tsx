@@ -2,8 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { initWaaP } from "@human.tech/waap-sdk";
-import { waapConfig } from "@/lib/waap.config";
 import { useWallet } from "@/contexts/WalletContext";
 
 interface WalletConnectProps {
@@ -24,6 +22,13 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
+      
+      // Dynamically import WaaP SDK only when user clicks Connect
+      const [{ initWaaP }, { waapConfig }] = await Promise.all([
+        import("@human.tech/waap-sdk"),
+        import("@/lib/waap.config")
+      ]);
+      
       const waap = await initWaaP(waapConfig);
       
       // First, completely log out any existing session
@@ -72,6 +77,12 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
 
   const handleDisconnect = async () => {
     try {
+      // Dynamically import WaaP SDK
+      const [{ initWaaP }, { waapConfig }] = await Promise.all([
+        import("@human.tech/waap-sdk"),
+        import("@/lib/waap.config")
+      ]);
+      
       const waap = await initWaaP(waapConfig);
       await waap.logout();
       

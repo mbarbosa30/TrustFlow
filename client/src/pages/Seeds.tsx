@@ -9,8 +9,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield } from "lucide-react";
 import { useWallet } from "@/contexts/WalletContext";
-import { initWaaP } from "@human.tech/waap-sdk";
-import { waapConfig } from "@/lib/waap.config";
 
 interface Seed {
   address: string;
@@ -88,6 +86,12 @@ export default function Seeds() {
     if (!newAddress || !userAddress || !isConnected) return;
     
     try {
+      // Dynamically import WaaP SDK
+      const [{ initWaaP }, { waapConfig }] = await Promise.all([
+        import("@human.tech/waap-sdk"),
+        import("@/lib/waap.config")
+      ]);
+      
       const waap = await initWaaP(waapConfig);
       const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
       const signature = await waap.request({
@@ -118,6 +122,12 @@ export default function Seeds() {
     
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
       try {
+        // Dynamically import WaaP SDK
+        const [{ initWaaP }, { waapConfig }] = await Promise.all([
+          import("@human.tech/waap-sdk"),
+          import("@/lib/waap.config")
+        ]);
+        
         const waap = await initWaaP(waapConfig);
         const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
         const signature = await waap.request({

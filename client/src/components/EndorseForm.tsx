@@ -10,8 +10,6 @@ import { useWallet } from '@/contexts/WalletContext';
 import { apiRequest } from "@/lib/queryClient";
 import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
-import { initWaaP } from "@human.tech/waap-sdk";
-import { waapConfig } from "@/lib/waap.config";
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 
@@ -100,6 +98,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
+      // Dynamically import WaaP SDK
+      const [{ initWaaP }, { waapConfig }] = await Promise.all([
+        import("@human.tech/waap-sdk"),
+        import("@/lib/waap.config")
+      ]);
+      
       const waap = await initWaaP(waapConfig);
       const signature = await waap.request({
         method: 'eth_signTypedData_v4',
