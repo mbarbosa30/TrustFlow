@@ -31,6 +31,7 @@ export function isWaaPConnector(connector: Connector | undefined): connector is 
 
 export default function WaaPConnector(options?: InitWaaPOptions) {
   let WaaPProvider: WaaPEthereumProviderInterface | null = null;
+  let isInitializing = false;
 
   return createConnector<WaaPEthereumProviderInterface>((config) => {
     return {
@@ -116,7 +117,16 @@ export default function WaaPConnector(options?: InitWaaPOptions) {
 
       async getProvider() {
         if (WaaPProvider) return WaaPProvider;
+        if (isInitializing) {
+          // Wait for initialization to complete
+          while (isInitializing) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          return WaaPProvider!;
+        }
+        isInitializing = true;
         WaaPProvider = await initWaaP(options);
+        isInitializing = false;
         return WaaPProvider;
       },
 
