@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield, Zap } from "lucide-react";
-import { useAccount } from 'wagmi';
+import { useWallet } from '@/hooks/useWallet';
 
 interface Seed {
   address: string;
@@ -39,7 +39,7 @@ export default function Seeds() {
   const [newNote, setNewNote] = useState("");
   const [computationResult, setComputationResult] = useState<ComputationSummary | null>(null);
   const { toast } = useToast();
-  const { address: userAddress, isConnected } = useAccount();
+  const { address: userAddress, isConnected } = useWallet();
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
@@ -174,19 +174,19 @@ export default function Seeds() {
     if (!newAddress || !userAddress || !isConnected) return;
     
     try {
-      // Use already-initialized WaaP instance
-      if (!window.ethereum) {
+      // Use WaaP for signing
+      if (!window.waap) {
         throw new Error("Wallet not connected. Please connect your wallet first.");
       }
       
-      // Request account authorization first
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+      // Get current account (silent check)
+      const accounts = await window.waap.request({ method: 'eth_accounts' }) as string[];
       if (!accounts || accounts.length === 0) {
         throw new Error("No wallet account available");
       }
       
       const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
-      const signature = await window.ethereum.request({
+      const signature = await window.waap.request({
         method: 'personal_sign',
         params: [message, userAddress],
       }) as string;
@@ -214,19 +214,19 @@ export default function Seeds() {
     
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
       try {
-        // Use already-initialized WaaP instance
-        if (!window.ethereum) {
+        // Use WaaP for signing
+        if (!window.waap) {
           throw new Error("Wallet not connected. Please connect your wallet first.");
         }
         
-        // Request account authorization first
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+        // Get current account (silent check)
+        const accounts = await window.waap.request({ method: 'eth_accounts' }) as string[];
         if (!accounts || accounts.length === 0) {
           throw new Error("No wallet account available");
         }
         
         const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
-        const signature = await window.ethereum.request({
+        const signature = await window.waap.request({
           method: 'personal_sign',
           params: [message, userAddress],
         }) as string;

@@ -28,14 +28,12 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   // Auto-reconnect on mount if user had a previous WaaP session
   useEffect(() => {
     const attemptAutoConnect = async () => {
-      if (!window.waap) {
-        console.log('WaaP not initialized yet');
-        return;
-      }
+      if (!window.waap) return;
 
       try {
+        // Use eth_accounts (silent check, no modal)
         const accounts = await window.waap.request({ 
-          method: 'eth_requestAccounts' 
+          method: 'eth_accounts' 
         });
         
         if (accounts && accounts.length > 0) {
@@ -50,15 +48,22 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       }
     };
 
-    // Small delay to ensure WaaP is initialized
-    const timer = setTimeout(attemptAutoConnect, 500);
-    return () => clearTimeout(timer);
+    // Retry until WaaP is ready
+    let attempts = 0;
+    const maxAttempts = 10;
+    const checkInterval = setInterval(() => {
+      if (window.waap || attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        attemptAutoConnect();
+      }
+      attempts++;
+    }, 300);
+
+    return () => clearInterval(checkInterval);
   }, [onConnect]);
 
-  // Listen for account changes
+  // Listen for account changes - retry until WaaP is ready
   useEffect(() => {
-    if (!window.waap) return;
-
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length === 0) {
         setAddress(null);
@@ -73,10 +78,17 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       setAddress(null);
     };
 
-    window.waap.on('accountsChanged', handleAccountsChanged);
-    window.waap.on('disconnect', handleDisconnect);
+    // Retry until WaaP is available to set up listeners
+    const setupListeners = setInterval(() => {
+      if (window.waap) {
+        clearInterval(setupListeners);
+        window.waap.on('accountsChanged', handleAccountsChanged);
+        window.waap.on('disconnect', handleDisconnect);
+      }
+    }, 300);
 
     return () => {
+      clearInterval(setupListeners);
       if (window.waap) {
         window.waap.removeListener('accountsChanged', handleAccountsChanged);
         window.waap.removeListener('disconnect', handleDisconnect);

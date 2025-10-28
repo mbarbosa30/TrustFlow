@@ -1,8 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAccount } from 'wagmi';
+import { useWallet } from '@/hooks/useWallet';
 
 export default function WhyScore() {
-  const { isConnected } = useAccount();
+  const { isConnected } = useWallet();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
