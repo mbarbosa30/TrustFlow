@@ -19,6 +19,7 @@ export default function Overview() {
     did: string;
     epoch: number;
     trust: { sts: number; flow: number; mincut: number };
+    percentile: number;
     confidence: {
       percent: number;
       global: { GHI: number; sizeN: number; cutN: number; churnN: number };
@@ -112,7 +113,7 @@ export default function Overview() {
               }
               sts={scoreData.trust.sts}
               flow={scoreData.trust.flow}
-              percentile={Math.round(scoreData.confidence.percent)}
+              percentile={Math.round(scoreData.percentile)}
               minCutSize={scoreData.trust.mincut}
               epochTimestamp={new Date().toISOString()}
               walletAddress={address || undefined}
