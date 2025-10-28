@@ -158,6 +158,21 @@ Preferred communication style: Simple, everyday language.
 - **Backend Support**: Server accepts chainId parameter and verifies signatures with matching domain
 - **Benefits**: Improved UX (no network switching prompts), broader accessibility, network-agnostic trust system
 
+**EPOCH PROGRESSION SYSTEM (October 2025)**: Implemented proper epoch lifecycle management:
+- **Schema Changes**: Added `status` ('active'/'closed') and `closedAt` fields to `epochs` table
+- **Storage Layer**: Created `getCurrentEpoch()`, `getEpoch()`, `createEpoch()`, `closeEpoch()`, `advanceEpoch()` methods
+- **API Endpoints**: 
+  - `GET /api/epoch/current` - Returns current active epoch (auto-creates epoch 0 if none exists)
+  - `POST /api/epoch/advance` - Closes current epoch and creates next sequential epoch
+- **Immutability**: Endorsements to closed epochs are rejected with validation error
+- **Frontend Integration**:
+  - EndorseForm dynamically fetches current epoch (no hardcoded epoch 0)
+  - Seeds page displays current epoch status with "Advance Epoch" button
+  - Dashboard shows current epoch number and queries health data for active epoch
+  - All compute/reset operations use current epoch dynamically
+- **Sequential Progression**: Each new epoch builds on the accepted subgraph from previous epoch
+- **Benefits**: Proper epoch lifecycle, immutable historical data, supports multi-epoch trust evolution
+
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 
 **Portable Credentials**: Trust attestations are self-contained, signed JSON objects (compatible with W3C Verifiable Credentials)
