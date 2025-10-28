@@ -101,6 +101,11 @@ async function seedDatabase() {
   try {
     // Get current epoch
     const currentEpoch = await storage.getCurrentEpoch();
+    
+    if (!currentEpoch) {
+      throw new Error("No current epoch found. Please ensure the application has initialized.");
+    }
+    
     console.log(`📅 Current epoch: ${currentEpoch.id}`);
     
     // Add seeds
@@ -139,21 +144,20 @@ async function seedDatabase() {
       if (!endorsementSet.has(key)) {
         // Create a mock signed endorsement
         // In production, these would come from actual EIP-712 signatures
-        const timestamp = Date.now();
-        const nonce = await storage.getLatestNonce(edge.endorser, currentEpoch.id);
+        const maxNonce = await storage.getMaxNonce(edge.endorser, currentEpoch.id);
+        const nextNonce = maxNonce + 1;
         
         // Generate a mock leaf hash (in production this would be computed from signature)
         const leafHash = `0x${Buffer.from(
-          `${edge.endorser}-${edge.endorsee}-${currentEpoch.id}-${nonce + 1}-${timestamp}`
+          `${edge.endorser}-${edge.endorsee}-${currentEpoch.id}-${nextNonce}`
         ).toString('hex').slice(0, 64).padEnd(64, '0')}`;
         
         await storage.createEndorsement({
           endorser: edge.endorser,
           endorsee: edge.endorsee,
           epoch: currentEpoch.id,
-          nonce: nonce + 1,
-          timestamp: BigInt(timestamp),
-          signature: `0x${'00'.repeat(65)}`, // Mock signature
+          nonce: nextNonce,
+          sig: `0x${'00'.repeat(65)}`, // Mock signature
           leafHash,
         });
         
