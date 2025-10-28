@@ -325,15 +325,16 @@ export class TrustScorer {
 
   /**
    * Assign tier based on STS, min-cut, and stability
+   * Per spec: Apprentice ≥40, Journeyer ≥60 + cut≥2, Master ≥80 + cut≥3 + stability≥0.8
    */
   private assignTier(
     sts: number,
     minCut: number,
     stability: number
   ): "Apprentice" | "Journeyer" | "Master" | null {
-    if (sts < 30 || minCut < 1) return null;
-    if (sts >= 75 && minCut >= 3 && stability >= 0.7) return "Master";
-    if (sts >= 50 && minCut >= 2) return "Journeyer";
+    if (sts < 40 || minCut < 1) return null;
+    if (sts >= 80 && minCut >= 3 && stability >= 0.8) return "Master";
+    if (sts >= 60 && minCut >= 2) return "Journeyer";
     return "Apprentice";
   }
 
