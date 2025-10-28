@@ -243,13 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const did = req.params.did;
 
-      const latestHealth = await storage.getLatestEpochHealth();
-
-      if (!latestHealth) {
-        return res.status(404).json({ error: "No epoch health data available" });
-      }
-
-      const userScore = await storage.getScore(did, latestHealth.epochId);
+      const userScore = await storage.getLatestScore(did);
 
       if (!userScore) {
         return res.status(404).json({ 
@@ -258,11 +252,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const confidence = computeUserConfidence(latestHealth.ghi, userScore.minCut);
+      const epochHealth = await storage.getEpochHealth(Number(userScore.epochId));
+      
+      const confidence = computeUserConfidence(epochHealth?.ghi || 0, userScore.minCut);
 
       return res.status(200).json({
         did,
-        epoch: latestHealth.epochId,
+        epoch: userScore.epochId,
         trust: {
           sts: userScore.sts,
           flow: userScore.flow,
@@ -278,12 +274,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         confidence: {
           percent: confidence.percent,
-          global: {
-            GHI: latestHealth.ghi,
-            sizeN: latestHealth.sizeN,
-            cutN: latestHealth.cutN,
-            churnN: latestHealth.churnN,
-          },
+          global: epochHealth ? {
+            GHI: epochHealth.ghi,
+            sizeN: epochHealth.sizeN,
+            cutN: epochHealth.cutN,
+            churnN: epochHealth.churnN,
+          } : null,
           local: confidence.local,
         },
       });
