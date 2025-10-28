@@ -21,6 +21,7 @@ interface EndorseFormProps {
 const ENDORSEMENT_DOMAIN = {
   name: "TrustFlow",
   version: "1",
+  chainId: 42220, // Celo mainnet
 } as const;
 
 const ENDORSEMENT_TYPES = {
@@ -42,20 +43,20 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
   
+  // ENS resolution uses Ethereum mainnet (standard practice)
+  // even though the app operates on Celo for signing
   const publicClient = createPublicClient({
     chain: mainnet,
     transport: http(),
   });
 
   const resolveENSName = async (nameOrAddress: string): Promise<Address> => {
+    // If it's already an address, return it directly
     if (nameOrAddress.toLowerCase().startsWith('0x')) {
       return nameOrAddress as Address;
     }
 
-    if (!publicClient) {
-      throw new Error("Unable to resolve ENS: Ethereum mainnet connection required");
-    }
-
+    // Resolve ENS name on Ethereum mainnet
     try {
       setIsResolvingENS(true);
       const normalizedName = normalize(nameOrAddress);
@@ -64,12 +65,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       });
 
       if (!resolvedAddress) {
-        throw new Error(`ENS name "${nameOrAddress}" not found or not configured`);
+        throw new Error(`ENS name "${nameOrAddress}" could not be resolved. Please use a valid Ethereum address (0x...) instead.`);
       }
 
       return resolvedAddress;
     } catch (error: any) {
-      throw new Error(`Failed to resolve ENS name: ${error.message}`);
+      throw new Error(`Failed to resolve ENS name: ${error.message || 'Please enter a valid Ethereum address (0x...)'}`);
     } finally {
       setIsResolvingENS(false);
     }

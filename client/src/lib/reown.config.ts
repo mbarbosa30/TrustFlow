@@ -1,6 +1,6 @@
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet, base } from '@wagmi/core/chains'
+import { celo } from '@wagmi/core/chains'
 
 // Get projectId from environment or use the provided one
 export const projectId = '126d93e6740defb2bed36da3e24a5114'
@@ -19,7 +19,7 @@ const metadata = {
 
 // Create wagmi adapter
 export const wagmiAdapter = new WagmiAdapter({
-  networks: [mainnet, base],
+  networks: [celo],
   projectId,
   ssr: false
 })
@@ -27,7 +27,8 @@ export const wagmiAdapter = new WagmiAdapter({
 // Create AppKit instance
 export const appKit = createAppKit({
   adapters: [wagmiAdapter],
-  networks: [mainnet, base],
+  networks: [celo],
+  defaultNetwork: celo,
   projectId,
   metadata,
   features: {
