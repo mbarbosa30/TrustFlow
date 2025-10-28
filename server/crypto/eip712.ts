@@ -12,8 +12,6 @@ export const ENDORSEMENT_TYPES = {
 export const DOMAIN = {
   name: "TrustFlow",
   version: "1",
-  chainId: 8453,
-  verifyingContract: "0x0000000000000000000000000000000000000000" as Address,
 } as const;
 
 export interface EndorsementMessage {

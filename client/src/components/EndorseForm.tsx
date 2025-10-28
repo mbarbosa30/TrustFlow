@@ -13,6 +13,12 @@ import type { Address } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
 }
@@ -20,8 +26,6 @@ interface EndorseFormProps {
 const ENDORSEMENT_DOMAIN = {
   name: "TrustFlow",
   version: "1",
-  chainId: 8453,
-  verifyingContract: "0x0000000000000000000000000000000000000000" as Address,
 } as const;
 
 const ENDORSEMENT_TYPES = {
