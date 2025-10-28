@@ -40,6 +40,20 @@ export class TrustScorer {
     seeds: Address[],
     epoch: number
   ): EpochComputationResult {
+    // Edge case: no seeds configured
+    if (seeds.length === 0) {
+      return {
+        epoch,
+        scores: new Map(),
+        networkMetrics: {
+          totalAccepted: 0,
+          avgFlow: 0,
+          avgMinCut: 0,
+          p95Flow: 0,
+        },
+      };
+    }
+
     const allUsers = this.extractAllUsers(endorsements, seeds);
     const userScores = new Map<Address, UserScore>();
     const flowValues: number[] = [];
@@ -380,13 +394,18 @@ export class TrustScorer {
    * Calculate percentile rankings for all scores
    */
   private assignPercentiles(scores: Map<Address, UserScore>): void {
+    // Edge case: no scores to rank
+    if (scores.size === 0) return;
+
     const sortedScores = Array.from(scores.values())
       .map(s => s.sts)
       .sort((a, b) => a - b);
 
     for (const [address, userScore] of Array.from(scores.entries())) {
       const rank = sortedScores.findIndex(s => s >= userScore.sts);
-      const percentile = ((rank + 1) / sortedScores.length) * 100;
+      const percentile = sortedScores.length > 0 
+        ? ((rank + 1) / sortedScores.length) * 100 
+        : 0;
       userScore.percentile = Math.round(percentile * 100) / 100;
     }
   }
