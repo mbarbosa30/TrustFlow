@@ -132,6 +132,14 @@ Preferred communication style: Simple, everyday language.
 - **Schema Impact**: Removed `level` field from `publicEndorsements` table
 - **UI Impact**: Simplified vouch form, removed level selector, updated all explanation pages
 
+**DATA INTEGRITY UPDATE (October 2025)**: Removed all mock data from frontend pages to ensure production-ready state:
+- **Dashboard**: Now queries real API endpoints (`/api/stats`, `/api/endorsements`, `/api/epoch/0/health`). Removed mock charts for analytics that don't have real data yet
+- **WhyScore**: Replaced mock flow paths/bottlenecks with message explaining epoch-based calculations
+- **Status**: Already using real data from `/api/epoch/0/health`
+- **Overview**: Already using real data from database queries
+- **Backend**: Created `/api/stats` endpoint that aggregates real network statistics (total users, endorsements, endorsers, endorsees)
+- All pages gracefully handle empty database states with appropriate loading/empty state messages
+
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 
 **Portable Credentials**: Trust attestations are self-contained, signed JSON objects (compatible with W3C Verifiable Credentials)
