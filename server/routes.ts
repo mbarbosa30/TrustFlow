@@ -138,10 +138,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid epoch ID" });
       }
 
-      const health = await storage.getEpochHealth(epochId);
+      let health = await storage.getEpochHealth(epochId);
 
+      // Auto-create mock epoch health data if it doesn't exist
       if (!health) {
-        return res.status(404).json({ error: "Epoch health data not found" });
+        const { generateMockEpochHealth } = await import("./health/mock-data");
+        health = await generateMockEpochHealth(epochId);
       }
 
       return res.status(200).json({
