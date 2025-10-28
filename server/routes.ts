@@ -77,8 +77,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const insertData = insertPublicEndorsementSchema.parse({
-        endorser: endorsement.endorser,
-        endorsee: endorsement.endorsee,
+        endorser: endorsement.endorser.toLowerCase(),
+        endorsee: endorsement.endorsee.toLowerCase(),
         epoch: Number(endorsement.epoch),
         nonce: Number(endorsement.nonce),
         sig: endorsement.sig,
@@ -110,10 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } = {};
 
       if (endorser && typeof endorser === "string") {
-        filters.endorser = endorser;
+        filters.endorser = endorser.toLowerCase();
       }
       if (endorsee && typeof endorsee === "string") {
-        filters.endorsee = endorsee;
+        filters.endorsee = endorsee.toLowerCase();
       }
       if (epoch && typeof epoch === "string") {
         filters.epoch = parseInt(epoch);
@@ -140,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/nonce/:endorser/:epoch", async (req, res) => {
     try {
       const { endorser, epoch } = req.params;
-      const maxNonce = await storage.getMaxNonce(endorser, parseInt(epoch));
+      const maxNonce = await storage.getMaxNonce(endorser.toLowerCase(), parseInt(epoch));
       
       return res.status(200).json({ 
         maxNonce,
