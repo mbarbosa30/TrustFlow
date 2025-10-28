@@ -79,7 +79,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       {isWaaPAvailable ? (
         <>
           <Mail className="w-4 h-4" />
-          {isPending ? "Connecting..." : "Sign In"}
+          {isPending ? "Connecting..." : "Connect"}
         </>
       ) : (
         <>
