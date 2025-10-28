@@ -14,6 +14,21 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
+  // Clear all WaaP session data on mount to prevent auto-connect
+  useEffect(() => {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('waap') || key.startsWith('silk') || key.startsWith('wc@') || key.includes('walletconnect'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+      console.log('Cleared:', key);
+    });
+  }, []);
+
   useEffect(() => {
     if (address && onConnect) {
       onConnect(address);
