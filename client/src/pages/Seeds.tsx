@@ -23,13 +23,14 @@ interface ComputationSummary {
     totalAccepted: number;
     avgMinCut: number;
     avgFlow: number;
+    p95Flow: number;
   };
   health: {
     ghi: number;
     sizeN: number;
     cutN: number;
     churnN: number;
-  };
+  } | null;
   duration: number;
 }
 
@@ -391,21 +392,23 @@ export default function Seeds() {
                       <span className="text-muted-foreground">Scores Computed:</span>
                       <span className="font-mono font-semibold">{computationResult.scoresComputed}</span>
                     </div>
+                    {computationResult.health && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Network Health (GHI):</span>
+                        <span className="font-mono font-semibold">{computationResult.health.ghi}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Duration:</span>
-                      <span className="font-mono">{computationResult.duration}ms</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Network Health (GHI):</span>
-                      <span className="font-mono font-semibold">{computationResult.health.ghi}</span>
+                      <span className="text-muted-foreground">Total Accepted:</span>
+                      <span className="font-mono">{computationResult.networkMetrics.totalAccepted}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Avg Min-Cut:</span>
                       <span className="font-mono">{computationResult.networkMetrics.avgMinCut.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total Accepted:</span>
-                      <span className="font-mono">{computationResult.networkMetrics.totalAccepted}</span>
+                      <span className="text-muted-foreground">Avg Flow:</span>
+                      <span className="font-mono">{computationResult.networkMetrics.avgFlow.toFixed(2)}</span>
                     </div>
                   </div>
                 </CardContent>
