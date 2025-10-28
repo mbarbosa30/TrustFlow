@@ -11,9 +11,10 @@ interface AverageSTSData {
 
 interface AverageSTSChartProps {
   data: AverageSTSData[];
+  isLoading?: boolean;
 }
 
-export function AverageSTSChart({ data }: AverageSTSChartProps) {
+export function AverageSTSChart({ data, isLoading = false }: AverageSTSChartProps) {
   return (
     <Card data-testid="card-average-sts">
       <CardHeader>
@@ -23,7 +24,21 @@ export function AverageSTSChart({ data }: AverageSTSChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-average-sts">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading STS trend data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="text-no-average-sts">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No STS trend data available yet</p>
+              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis 
@@ -79,6 +94,7 @@ export function AverageSTSChart({ data }: AverageSTSChartProps) {
             />
           </ComposedChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

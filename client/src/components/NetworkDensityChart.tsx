@@ -9,9 +9,10 @@ interface NetworkDensityData {
 
 interface NetworkDensityChartProps {
   data: NetworkDensityData[];
+  isLoading?: boolean;
 }
 
-export function NetworkDensityChart({ data }: NetworkDensityChartProps) {
+export function NetworkDensityChart({ data, isLoading = false }: NetworkDensityChartProps) {
   return (
     <Card data-testid="card-network-density">
       <CardHeader>
@@ -21,7 +22,21 @@ export function NetworkDensityChart({ data }: NetworkDensityChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-network-density">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading network density data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="text-no-network-density">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No network density data available yet</p>
+              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis 
@@ -70,6 +85,7 @@ export function NetworkDensityChart({ data }: NetworkDensityChartProps) {
             />
           </LineChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );

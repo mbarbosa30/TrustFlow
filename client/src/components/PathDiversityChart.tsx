@@ -11,9 +11,10 @@ interface EpochDiversity {
 
 interface PathDiversityChartProps {
   data: EpochDiversity[];
+  isLoading?: boolean;
 }
 
-export function PathDiversityChart({ data }: PathDiversityChartProps) {
+export function PathDiversityChart({ data, isLoading = false }: PathDiversityChartProps) {
   const recentData = data.slice(-4);
   
   return (
@@ -27,7 +28,21 @@ export function PathDiversityChart({ data }: PathDiversityChartProps) {
         </p>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-path-diversity">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading path diversity data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="text-no-path-diversity">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No path diversity data available yet</p>
+              <p className="text-xs mt-1">This metric will be computed in future epoch calculations</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
           {recentData.map((point, index) => (
             <div key={index} className="space-y-2">
               <div className="text-xs text-muted-foreground font-mono">
@@ -66,6 +81,7 @@ export function PathDiversityChart({ data }: PathDiversityChartProps) {
         <div className="mt-4 text-xs text-muted-foreground">
           <p>Recent epochs showing distribution of path diversity. Higher diversity indicates more independent trust sources.</p>
         </div>
+        )}
       </CardContent>
     </Card>
   );

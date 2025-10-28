@@ -11,9 +11,10 @@ interface ScoreComponentsData {
 
 interface ScoreComponentsChartProps {
   data: ScoreComponentsData[];
+  isLoading?: boolean;
 }
 
-export function ScoreComponentsChart({ data }: ScoreComponentsChartProps) {
+export function ScoreComponentsChart({ data, isLoading = false }: ScoreComponentsChartProps) {
   return (
     <Card data-testid="card-score-components">
       <CardHeader>
@@ -23,7 +24,21 @@ export function ScoreComponentsChart({ data }: ScoreComponentsChartProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="loading-score-components">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">Loading score component data...</p>
+            </div>
+          </div>
+        ) : data.length === 0 ? (
+          <div className="flex items-center justify-center h-[300px]" data-testid="text-no-score-components">
+            <div className="text-center text-muted-foreground">
+              <p className="text-sm">No score component data available yet</p>
+              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
             <XAxis 
@@ -78,6 +93,7 @@ export function ScoreComponentsChart({ data }: ScoreComponentsChartProps) {
             />
           </AreaChart>
         </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   );
