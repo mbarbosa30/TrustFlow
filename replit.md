@@ -71,12 +71,18 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication and Authorization
 
-**Planned Approach** (not yet implemented):
-- Wallet-based authentication using Sign-In With Ethereum (SIWE) / EIP-712
+**Current Implementation**: WaaP (Wallet as a Protocol) integration for one-click authentication
+- Uses @human.tech/waap-sdk via custom wagmi connector
+- Supports email, phone, social (Google, Twitter, Discord, GitHub) authentication methods
+- Auto-reconnect on page refresh for improved UX
+- EIP-1193 compliant interface with full multi-chain support
+- Configuration in `client/src/lib/waap.config.ts` and `client/src/lib/waap.connector.ts`
+- WalletConnect component prioritizes WaaP "Sign In" flow over traditional wallet connections
+
+**Future Enhancements**:
 - DID (Decentralized Identifier) system binding multiple wallets to a single trust subject
 - Optional linking of Web2 identifiers (ENS, Farcaster, email/phone hashes)
-
-**Current State**: No authentication system implemented; scaffolded in storage interface
+- Enhanced wallet signature verification for seed management endpoints
 
 ### External Dependencies
 
@@ -87,6 +93,8 @@ Preferred communication style: Simple, everyday language.
 - **Wouter**: Client-side routing
 - **Lucide React**: Icon library
 - **date-fns**: Date manipulation
+- **Wagmi v2**: React hooks for Ethereum with viem
+- **@human.tech/waap-sdk**: WaaP authentication SDK for one-click sign-in
 
 **Backend Libraries**:
 - **Express**: HTTP server framework
@@ -139,6 +147,15 @@ Preferred communication style: Simple, everyday language.
 - **Overview**: Already using real data from database queries
 - **Backend**: Created `/api/stats` endpoint that aggregates real network statistics (total users, endorsements, endorsers, endorsees)
 - All pages gracefully handle empty database states with appropriate loading/empty state messages
+
+**WAAP INTEGRATION (October 2025)**: Integrated WaaP (Wallet as a Protocol) for improved authentication UX:
+- **Authentication Methods**: Email, phone, social (Google, Twitter, Discord, GitHub) plus traditional wallet options
+- **Custom Connector**: Created wagmi v2 connector (`waap.connector.ts`) implementing EIP-1193 interface
+- **Configuration**: TrustFlow-specific config in `waap.config.ts` with branding and auth method settings
+- **UI Updates**: WalletConnect component detects WaaP and shows "Sign In" instead of "Connect Wallet"
+- **Connector Priority**: WaaP connector listed first in wagmi config for default selection
+- **Benefits**: No browser extensions required, auto-reconnect, gas sponsorship capabilities
+- **Compatibility**: Maintains full backward compatibility with existing wallet connectors (injected, Coinbase, WalletConnect)
 
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 
