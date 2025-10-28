@@ -247,11 +247,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allParticipants.add(e.endorsee);
       });
 
+      // Get trusted users (accepted with flow >= 1) and average score from latest epoch
+      const latestHealth = await storage.getLatestEpochHealth();
+      let trustedUsers = 0;
+      let avgScore = 0;
+
+      if (latestHealth) {
+        const scores = await storage.getScoresByEpoch(latestHealth.epochId);
+        const acceptedScores = scores.filter(s => s.flow >= 1);
+        trustedUsers = acceptedScores.length;
+        
+        if (acceptedScores.length > 0) {
+          const totalSts = acceptedScores.reduce((sum, s) => sum + s.sts, 0);
+          avgScore = totalSts / acceptedScores.length;
+        }
+      }
+
       return res.status(200).json({
         totalUsers: allParticipants.size,
         totalEndorsements: totalEndorsements[0]?.count || 0,
         totalEndorsers: uniqueEndorsers[0]?.count || 0,
         totalEndorsees: uniqueEndorsees[0]?.count || 0,
+        trustedUsers,
+        avgScore: Math.round(avgScore * 100) / 100,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
