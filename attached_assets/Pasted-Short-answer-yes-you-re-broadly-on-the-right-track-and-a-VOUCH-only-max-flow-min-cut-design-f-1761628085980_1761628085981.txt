@@ -1,0 +1,62 @@
+Short answer: yes—you’re broadly on the right track, and a **VOUCH-only, max-flow/min-cut** design fits the Levien/Advogato approach. Below I (1) restate the core of Levien’s metric as documented, (2) map your current design to it, and (3) flag the classic pitfalls Levien/Ruderman discuss—with concrete mitigations so you don’t repeat Advogato’s problems.
+
+# 1) What Levien’s/Advogato metric actually does
+
+* **Node capacities by seed distance.** Each user (x) gets a capacity (c_x) that **decreases with distance from seeds** (Advogato used 800, 200, 50, …). 
+* **Node splitting + sink edge.** Each node is split (x^{-}!\to x^{+}). There’s a **capacity-1 edge to the sink** (acceptance unit), and **(x^{-}!\to x^{+})** gets the remaining capacity. 
+* **Endorsements become edges.** A certification (A\to B) is an edge (A^{+}!\to B^{-})** with high/“infinite” capacity in the classic write-up. (Practice varies; finite is fine.) 
+* **Compute max-flow.** Using Ford-Fulkerson/Dinic; **a user is accepted iff there’s flow from (x^{-}) to the sink**. 
+* **Attack-resistance bound.** The number of bad nodes accepted is bounded by a function of **confused** nodes’ capacities; i.e., the attacker must recruit real users, not just spin up sockpuppets. 
+
+# 2) Where your VOUCH-only design matches (good)
+
+* **Same graph skeleton.** You’re using node-split, a **1-unit sink edge (acceptance)**, and a **seeded flow**—all exactly per Advogato. 
+* **Single tier is OK.** Levien used three *passes* (apprentice/journeyer/master) historically, but the **core theorem** (max-flow ↔ min-cut) doesn’t require tiers. Your “VOUCH = capacity 1.0” edges are fine.
+* **Cut-based acceptance.** Your policy “min-cut ≥ 2 and seed-coverage ≥ 2” tightens acceptance beyond Advogato’s “flow ≥ 1,” improving robustness in small graphs while staying consistent with the theory.
+
+# 3) Classic pitfalls called out in the literature—and fixes
+
+**Pitfall A: Distance-inflation attack.**
+Ruderman’s comparison notes a weakness: because **(c_x)** depends on **distance from seeds**, an attacker who shortens distance for a compromised node can **inflate its capacity** and then “waterfall” trust to many bad nodes. 
+
+**Mitigations you should adopt:**
+
+* **Epoch-lagged distances.** Compute (d(x)) and (c(d)) from the **previous epoch’s accepted subgraph**, not the live endorsement graph, so attackers can’t raise capacities inside the current run. (Publish this rule in `params.json`.)
+* **Gentler capacity schedule.** Use a **shallower decay** (e.g., 800, 240, 96, 48, 24…) to reduce the “step-function jackpot” from moving one hop closer, or cap **per-node forward capacity** with a low ceiling after distance 2–3.
+* **Dual constraints (you already planned):** require **min-cut ≥ 2** *and* **seed-coverage ≥ 2**. That makes distance-shortening alone insufficient.
+
+**Pitfall B: Seed proximity sensitivity.**
+The closer a confused node is to seeds, the more damage it can do. (Ruderman points this out explicitly.) 
+
+**Mitigations:**
+
+* **Seed diversity check.** Your **seed-coverage ≥ 2** rule directly dampens single-seed blast-radius.
+* **Seed saturation guardrail.** Track max share of outflow from any single seed; if it spikes, reduce that seed’s effective cap next epoch (publish in dashboard).
+
+**Pitfall C: Public social pressure.**
+Advogato’s public certifications created perverse incentives (vouching friends at top tier). Social, not algorithmic—but real. 
+
+**Mitigation:** You’ve already simplified semantics to **VOUCH only** and plan an **append-only, signed transparency log**. Keep the EIP-712 text very explicit (“public & permanent”).
+
+# 4) Your extras that are not in Levien—but sensible
+
+* **Edge-disjoint path check (k=2)** and **seed-coverage ≥ 2**: stronger acceptance than “flow ≥ 1”—good for Sybil resistance in smaller networks.
+* **STS normalization (0–100)** and **Global Health Index**: these are score-presentation and system-health layers; they **don’t change the flow math** and are fine to add.
+* **Maturation (7-day ramp)**: not required by the theory, but pragmatic to blunt burst attacks in open/signup-heavy contexts. Keep it if you expect real-time gaming; else you can disable.
+
+# 5) Small spec tweaks I recommend (to be maximally faithful & robust)
+
+* **Finite edge capacity.** Use **1.0** per VOUCH (not “infinite”). Ruderman’s description used “infinite,” but finite is cleaner and prevents weird interactions if you ever mix edge types. 
+* **Lagged capacities.** Publish: `nodeCap = c(prevEpochDistance)`. No mid-epoch distance recompute.
+* **Acceptance rule.** Keep: **min-cut ≥ 2, seed-coverage ≥ 2, two edge-disjoint paths**.
+* **Publish proofs.** In your epoch bundle, include **per-user cut witnesses** (edge IDs + Merkle proofs) so anyone can validate reported min-cuts without seeing the full neighborhood.
+
+---
+
+## Bottom line
+
+* The **core construction** you’re using (seeded flow, node-split, 1-unit sink, capacity by seed distance) is **exactly** the Advogato/Levien method. 
+* Your **VOUCH-only** simplification is compatible, and your **min-cut ≥ 2 & seed-coverage ≥ 2** constraints directly address the **distance-inflation** and **seed-sensitivity** issues highlighted in subsequent analyses. 
+* Add **epoch-lagged distances** and keep **finite edge caps** to stay on the safest path.
+
+If you want, I can patch your “How it Works” page to (a) swap in these exact citations and (b) state the “lagged distance” policy so auditors can recompute identically.
