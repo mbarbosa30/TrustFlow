@@ -1,11 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndorsement } from "./crypto/eip712";
 import { validateNonce } from "./crypto/nonce";
 import { computeLeafHash } from "./crypto/merkle";
-import { insertPublicEndorsementSchema } from "@shared/schema";
+import { insertPublicEndorsementSchema, publicEndorsements } from "@shared/schema";
 import { computeUserConfidence } from "./health/ghi";
+import { sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -188,6 +190,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching user score:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const totalEndorsements = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publicEndorsements);
+
+      const uniqueEndorsers = await db
+        .select({ count: sql<number>`count(distinct endorser)::int` })
+        .from(publicEndorsements);
+
+      const uniqueEndorsees = await db
+        .select({ count: sql<number>`count(distinct endorsee)::int` })
+        .from(publicEndorsements);
+
+      const allParticipants = new Set<string>();
+      const endorsements = await storage.getEndorsements({ limit: 10000 });
+      endorsements.forEach(e => {
+        allParticipants.add(e.endorser);
+        allParticipants.add(e.endorsee);
+      });
+
+      return res.status(200).json({
+        totalUsers: allParticipants.size,
+        totalEndorsements: totalEndorsements[0]?.count || 0,
+        totalEndorsers: uniqueEndorsers[0]?.count || 0,
+        totalEndorsees: uniqueEndorsees[0]?.count || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching stats:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });

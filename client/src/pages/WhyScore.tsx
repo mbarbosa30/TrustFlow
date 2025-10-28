@@ -1,126 +1,53 @@
-import { FlowPathVisualization } from "@/components/FlowPathVisualization";
-import { BottleneckAnalysis } from "@/components/BottleneckAnalysis";
-import { StabilityMeter } from "@/components/StabilityMeter";
-import { STSBreakdown } from "@/components/STSBreakdown";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAccount } from 'wagmi';
 
 export default function WhyScore() {
-  // TODO: remove mock functionality
-  const mockPaths = [
-    {
-      nodes: [
-        { id: "seed1", label: "Seed", isAnonymous: false },
-        { id: "anon1", label: "0x1234", isAnonymous: true },
-        { id: "anon2", label: "0x5678", isAnonymous: true },
-        { id: "you", label: "You", isAnonymous: false },
-      ],
-    },
-    {
-      nodes: [
-        { id: "seed2", label: "Seed", isAnonymous: false },
-        { id: "anon3", label: "0xabcd", isAnonymous: true },
-        { id: "you2", label: "You", isAnonymous: false },
-      ],
-    },
-    {
-      nodes: [
-        { id: "seed3", label: "Seed", isAnonymous: false },
-        { id: "known1", label: "0x9abc", isAnonymous: false },
-        { id: "you3", label: "You", isAnonymous: false },
-      ],
-    },
-  ];
-
-  const mockBottlenecks = [
-    {
-      edgeLabel: "••• → •••",
-      impact: "Limited by node capacity at distance 2 (50 units)",
-    },
-    {
-      edgeLabel: "••• → •••",
-      impact: "Limited by node capacity at distance 3 (20 units)",
-    },
-  ];
-
-  const mockSTSComponents = [
-    {
-      name: "Flow (F)",
-      value: 0.92,
-      weight: 0.55,
-      contribution: 50.6,
-      description: "Max-flow reaching you from seeds, normalized with log scaling against the 95th percentile to handle graph growth",
-      formula: (
-        <span>
-          F = min(1, log(1+flow) / log(1+F<sub>95</sub>))
-        </span>
-      ),
-    },
-    {
-      name: "Cut (C)",
-      value: 0.75,
-      weight: 0.25,
-      contribution: 18.8,
-      description: "Min-cut size (path redundancy) normalized against the 95th percentile. Higher = more resilient to edge loss",
-      formula: (
-        <span>
-          C = min(1, minCut / max(3, C<sub>95</sub>))
-        </span>
-      ),
-    },
-    {
-      name: "Stability (S)",
-      value: 0.85,
-      weight: 0.10,
-      contribution: 8.5,
-      description: "Resistance to single-edge removal. 1 minus the worst relative flow drop if any single inbound edge is removed",
-      formula: (
-        <span>
-          S = 1 − max(Δ<sub>i</sub>) where Δ = (f − f<sup>−e</sup>) / f
-        </span>
-      ),
-    },
-    {
-      name: "Depth (D)",
-      value: 0.70,
-      weight: 0.10,
-      contribution: 7.0,
-      description: "Proximity to seeds with exponential decay. Rewards being closer to the trust roots without dominating the score",
-      formula: (
-        <span>
-          D = e<sup>−0.35×hops</sup>
-        </span>
-      ),
-    },
-  ];
+  const { isConnected } = useAccount();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Why This Score?</h1>
         <p className="text-muted-foreground">
-          Your score is the max flow from community seeds to you. The min-cut (size 3) is the
-          smallest number of vouches that would need to disappear for you to lose your badge.
+          Detailed score breakdowns and explainability are computed during epoch runs
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div className="lg:col-span-2">
-          <STSBreakdown components={mockSTSComponents} totalSTS={85} />
-        </div>
-
-        <div className="lg:col-span-2">
-          <FlowPathVisualization paths={mockPaths} />
-        </div>
-        
-        <BottleneckAnalysis bottlenecks={mockBottlenecks} />
-        
-        <StabilityMeter
-          maxImpact={0.15}
-          contributionBreakdown={[
-            { region: "Region A (disjoint)", percentage: 62 },
-            { region: "Region B (disjoint)", percentage: 38 },
-          ]}
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Score Explainability</CardTitle>
+          <CardDescription>
+            Trust scores and their breakdowns are calculated during epoch computations
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="py-8">
+          {!isConnected ? (
+            <p className="text-sm text-muted-foreground text-center">
+              Connect your wallet to view your trust score breakdown
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Your score breakdown will appear here after:
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                <li>You receive vouches from users in the network</li>
+                <li>An epoch computation runs to calculate max-flow paths</li>
+                <li>Your STS (Standardized Trust Score) components are computed</li>
+              </ul>
+              <p className="text-sm text-muted-foreground pt-4">
+                The score breakdown will show:
+              </p>
+              <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                <li><strong>Flow (F):</strong> Max-flow reaching you from seeds</li>
+                <li><strong>Cut (C):</strong> Min-cut size (path redundancy)</li>
+                <li><strong>Stability (S):</strong> Resistance to edge removal</li>
+                <li><strong>Depth (D):</strong> Proximity to trust roots</li>
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
