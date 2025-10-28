@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Shield, Zap } from "lucide-react";
+import { Trash2, Plus, Shield, Zap, ArrowRight, Calendar } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 
 interface Seed {
@@ -45,6 +45,16 @@ export default function Seeds() {
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
+  });
+
+  const { data: epochData, isLoading: isEpochLoading } = useQuery<{ 
+    epochId: number; 
+    status: string;
+    createdAt: string;
+    closedAt: string | null;
+  }>({
+    queryKey: ['/api/epoch/current'],
+    refetchInterval: 5000, // Refresh every 5 seconds
   });
 
   const addSeedMutation = useMutation({
@@ -102,9 +112,45 @@ export default function Seeds() {
     },
   });
 
+  const advanceEpochMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/epoch/advance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Failed to advance epoch');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setComputationResult(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      toast({
+        title: "Epoch Advanced",
+        description: `Advanced to Epoch ${data.newEpochId}. Current epoch closed and new epoch created.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Advance Epoch",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
   const resetEpochMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/epoch/0', {
+      const currentEpochId = epochData?.epochId ?? 0;
+      const response = await fetch(`/api/epoch/${currentEpochId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -119,9 +165,10 @@ export default function Seeds() {
       return response.json();
     },
     onSuccess: () => {
+      const currentEpochId = epochData?.epochId ?? 0;
       setComputationResult(null);
       queryClient.invalidateQueries({ queryKey: ['/api/score'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/epoch/0/health'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch', currentEpochId, 'health'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Epoch Reset",
@@ -139,7 +186,8 @@ export default function Seeds() {
 
   const computeEpochMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/epoch/0/compute', {
+      const currentEpochId = epochData?.epochId ?? 0;
+      const response = await fetch(`/api/epoch/${currentEpochId}/compute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,9 +202,10 @@ export default function Seeds() {
       return response.json();
     },
     onSuccess: (data) => {
+      const currentEpochId = epochData?.epochId ?? 0;
       setComputationResult(data.summary);
       queryClient.invalidateQueries({ queryKey: ['/api/score'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/epoch/0/health'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch', currentEpochId, 'health'] });
       queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
       toast({
         title: "Epoch Computation Complete",
@@ -233,6 +282,84 @@ export default function Seeds() {
       </div>
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Current Epoch
+            </CardTitle>
+            <CardDescription>
+              Track and manage the current active epoch for trust scoring
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isEpochLoading ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Loading epoch information...
+              </div>
+            ) : epochData ? (
+              <>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-muted rounded-md">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Active Epoch</div>
+                      <div className="text-3xl font-bold font-mono" data-testid="text-current-epoch">
+                        {epochData.epochId}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">Status</div>
+                      <div className="font-semibold text-primary capitalize">{epochData.status}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Created</div>
+                      <div className="font-mono">{new Date(epochData.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    {epochData.closedAt && (
+                      <div>
+                        <div className="text-muted-foreground">Closed</div>
+                        <div className="font-mono">{new Date(epochData.closedAt).toLocaleDateString()}</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <p>
+                      <strong>Epochs</strong> are sequential scoring periods. Each epoch builds on the accepted 
+                      subgraph from the previous epoch, creating an immutable trust history.
+                    </p>
+                    <p>
+                      When you <strong>advance an epoch</strong>, the current epoch is closed (made immutable) 
+                      and a new epoch is created. All new endorsements will go to the new epoch.
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to advance to Epoch ${(epochData.epochId || 0) + 1}?\n\nThis will:\n- Close Epoch ${epochData.epochId} (make it immutable)\n- Create Epoch ${(epochData.epochId || 0) + 1}\n- All new endorsements will go to the new epoch`)) {
+                      advanceEpochMutation.mutate();
+                    }
+                  }}
+                  disabled={advanceEpochMutation.isPending}
+                  className="w-full"
+                  data-testid="button-advance-epoch"
+                >
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  {advanceEpochMutation.isPending ? "Advancing..." : `Advance to Epoch ${(epochData.epochId || 0) + 1}`}
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No epoch data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -391,7 +518,7 @@ export default function Seeds() {
                 data-testid="button-compute-epoch"
               >
                 <Zap className="w-4 h-4 mr-2" />
-                {computeEpochMutation.isPending ? "Computing..." : "Compute Epoch 0 Scores"}
+                {computeEpochMutation.isPending ? "Computing..." : `Compute Epoch ${epochData?.epochId ?? 0} Scores`}
               </Button>
 
               <Button
