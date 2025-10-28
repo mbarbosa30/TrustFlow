@@ -27,6 +27,8 @@ export default function Dashboard() {
     totalEndorsements: number;
     totalEndorsers: number;
     totalEndorsees: number;
+    trustedUsers: number;
+    avgScore: number;
   }>({
     queryKey: ['/api/stats'],
   });
@@ -69,8 +71,10 @@ export default function Dashboard() {
           <GlobalStats stats={{
             totalUsers: statsData.totalUsers,
             totalEndorsements: statsData.totalEndorsements,
-            trustedUsers: 0,
-            avgScore: 0,
+            totalEndorsers: statsData.totalEndorsers,
+            totalEndorsees: statsData.totalEndorsees,
+            trustedUsers: statsData.trustedUsers,
+            avgScore: statsData.avgScore,
           }} />
         ) : (
           <Card>
