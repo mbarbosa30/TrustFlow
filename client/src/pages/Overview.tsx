@@ -3,12 +3,17 @@ import { EndorseForm } from "@/components/EndorseForm";
 import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { QrCode } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from "react";
+import { QRCodeDialog } from "@/components/QRCodeDialog";
 import type { PublicEndorsement } from "@shared/schema";
 
 export default function Overview() {
   const { address, isConnected } = useWallet();
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
     did: string;
@@ -109,7 +114,7 @@ export default function Overview() {
               percentile={Math.round(scoreData.confidence.percent)}
               minCutSize={scoreData.trust.mincut}
               epochTimestamp={new Date().toISOString()}
-              walletAddress={address}
+              walletAddress={address || undefined}
               onExportAttestation={handleExport}
               confidence={{
                 percent: scoreData.confidence.percent,
@@ -123,10 +128,22 @@ export default function Overview() {
                 <CardTitle>Your Trust Score</CardTitle>
                 <CardDescription>No trust score available yet</CardDescription>
               </CardHeader>
-              <CardContent className="py-8">
+              <CardContent className="py-8 space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
                   Your trust score will be calculated after you receive vouches from the network and an epoch computation runs.
                 </p>
+                {address && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 mx-auto flex"
+                    onClick={() => setShowQRCode(true)}
+                    data-testid="button-show-qr-no-score"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Show My QR Code
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
@@ -180,6 +197,14 @@ export default function Overview() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {address && (
+        <QRCodeDialog
+          open={showQRCode}
+          onOpenChange={setShowQRCode}
+          address={address}
+        />
+      )}
     </div>
   );
 }
