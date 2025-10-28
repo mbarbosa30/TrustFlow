@@ -1,0 +1,204 @@
+Totally—here’s a clear, no-nonsense **Terms of Service** and **Privacy Policy** you can drop into your app. They reflect the **VOUCH-only, public endorsements + transparency log** design, epoch bundles, reproducibility, STS/GHI scores, and future-optional claims/tokens. Tweak bracketed items (⟦like this⟧) to your org.
+
+---
+
+# Terms of Service
+
+*Effective date:* ⟦YYYY-MM-DD⟧
+*Entity:* ⟦TrustFlow Labs, Inc. / DAO / Foundation⟧ (“**TrustFlow**,” “**we**,” “**us**”)
+
+## 1) Acceptance of Terms
+
+By accessing TrustFlow’s website, API, or smart-contract interfaces (collectively, the “**Service**”), you agree to these Terms and our Privacy Policy. If you do not agree, do not use the Service.
+
+## 2) What TrustFlow Is (and Isn’t)
+
+TrustFlow publishes **world-verifiable endorsements** (“VOUCH” statements) and computes **Sybil-resistant trust metrics** via a max-flow/min-cut algorithm. We publish per-epoch manifests so anyone can recompute results.
+**TrustFlow is not** a bank, broker, insurer, credit bureau, rating agency, or fiduciary; outputs are **probabilistic signals**, not advice or guarantees.
+
+## 3) Eligibility; Accounts
+
+You must (a) be legally competent to contract, and (b) use the Service in compliance with applicable laws. You may link wallets or DIDs; you are responsible for securing your keys/devices.
+
+## 4) Public Endorsements; Immutability
+
+* **Endorsements are public and permanent.** A VOUCH is a signed, on-chain or off-chain EIP-712 message stored in an **append-only transparency log** (with Merkle proofs).
+* You may file a **revocation** (tombstone) to signal withdrawal going forward, but historical entries remain auditable to preserve reproducibility and anti-tampering guarantees.
+
+## 5) Scores, Attestations, and Use
+
+* The Service may output per-epoch **scores** (e.g., STS 0–100), acceptance flags, and attestations (JWT/VC or EAS).
+* Scores may change between epochs. Parameters (policy id, capacities) may change after a public timelock.
+* **You and relying parties** bear responsibility for how outputs are used; do not use TrustFlow alone for **high-stakes decisions** (employment, housing, medical, safety-critical systems, or legal determinations).
+
+## 6) Acceptable Use
+
+You agree not to:
+
+* Engage in **Sybil farming**, identity fraud, deception, brigading, or manipulative behavior.
+* Spam, harass, defame, or dox others.
+* Attack Service integrity (DDoS, exploit attempts) except via good-faith disclosure under our Security Policy.
+* Misrepresent affiliations or forge signatures.
+
+We may throttle, flag, or block usage to protect integrity.
+
+## 7) Transparency, Reproducibility, and Third-Party Audits
+
+We publish signed **epoch bundles** (params, seed list or root, log root, scores) and may support auditor committees. Third parties may recompute and publish validations or critiques; we are **not** responsible for their conclusions.
+
+## 8) API & Rate Limits
+
+We offer public, read-heavy endpoints and may enforce **fair-use limits**. Do not scrape in a manner that degrades service. Use our proofs rather than refetching full datasets when possible.
+
+## 9) Intellectual Property
+
+* You retain rights in your content (e.g., profile text).
+* You grant us a worldwide, non-exclusive, royalty-free license to store, publish, and display your **endorsements** and related cryptographic material for transparency and verification.
+* Our code, docs, and brand are protected; some components may be open-sourced under their own licenses.
+
+## 10) Tokens / Claims (If Enabled Later)
+
+Any future **points/tokens/claims** distribution will have separate terms. Participation may be restricted by jurisdiction and compliance rules. Nothing herein constitutes an offer or solicitation.
+
+## 11) Disclaimers
+
+THE SERVICE AND OUTPUTS ARE PROVIDED “AS IS.” WE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT SCORES ARE ERROR-FREE OR SUITABLE FOR ANY PARTICULAR DECISION.
+
+## 12) Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE WILL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES; OR ANY LOSS OF PROFITS, DATA, OR GOODWILL. OUR AGGREGATE LIABILITY SHALL NOT EXCEED ⟦USD 100⟧ OR THE AMOUNT YOU PAID US IN THE PAST 12 MONTHS, WHICHEVER IS GREATER.
+
+## 13) Indemnification
+
+You agree to indemnify and hold TrustFlow and its contributors harmless from any claims or liabilities arising from your use of the Service, your endorsements, or your violation of these Terms.
+
+## 14) Changes; Termination
+
+We may update these Terms. Material changes will be posted with a new effective date. We may suspend or terminate access for policy violations or risks to integrity.
+
+## 15) Governing Law; Dispute Resolution
+
+These Terms are governed by ⟦jurisdiction⟧ law. Disputes will be resolved via ⟦binding arbitration / courts of ⟦city, country⟧⟧. You agree to waive class actions to the extent permitted by law.
+
+## 16) Contact
+
+⟦[legal@trustflow.example](mailto:legal@trustflow.example)⟧ | ⟦postal address⟧
+
+---
+
+# Privacy Policy
+
+*Effective date:* ⟦YYYY-MM-DD⟧
+
+This Privacy Policy explains how TrustFlow processes information in connection with our **public endorsement** system and trust metrics.
+
+## 1) Overview: Privacy in a Transparency System
+
+TrustFlow aims for **verifiable integrity** with **minimal personal data**. Because endorsements are world-verifiable, certain data is intentionally public and **not erasable** (see §5). We separate **public artifacts** from **optional profile data** and logs.
+
+## 2) What We Collect
+
+### A) Public by Design
+
+* **Endorsements (“VOUCH” statements):** signer address/DID, subject address/DID, epoch, nonce, signature, and derived hashes (leaf, Merkle).
+* **Transparency log items:** Merkle roots, inclusion/consistency proofs, Signed Tree Heads (STHs).
+* **Epoch bundles:** parameter files, seed list or root, score files (STS, acceptance), and signatures.
+
+> This material is **permanently public** to enable independent verification and recomputation.
+
+### B) Service & Profile Data (Optional / Operational)
+
+* **Wallet/DID linkages** you initiate.
+* **Profile fields** you provide (name, avatar, city, bio) and visibility settings.
+* **Telemetry** (non-sensitive): basic device/browser data, coarse IP-derived location, performance metrics, aggregate analytics.
+* **Support communications**.
+
+We **do not** collect or store endorsement **salts** or private keys.
+
+## 3) Why We Process Data (Purposes & Legal Bases)
+
+* **Provide the Service** (publish endorsements, run epochs, serve proofs).
+* **Integrity & security** (detect manipulation, spam, exploit attempts).
+* **Research & improvement** (calibration, aggregate analytics).
+* **Compliance** (respond to lawful requests, enforce terms).
+
+Legal bases (where applicable): **contract**, **legitimate interests** (security, transparency), and **consent** (optional profiles, cookies where required).
+
+## 4) Data Sharing
+
+* **Public artifacts** are shared globally by design.
+* **Vendors** (hosting, storage, analytics) under contracts and security controls.
+* **Auditors** (if appointed) may receive encrypted graph material for recomputation.
+* **Legal**: where required by law.
+
+We do **not** sell personal data.
+
+## 5) Retention & Immutability
+
+* Public endorsements, transparency log entries, and epoch bundles are **append-only** and **retained indefinitely** for verifiability.
+* Optional profiles and operational logs are retained for as long as needed for the purposes above, then deleted or de-identified.
+* **Revocations** add tombstones; they do not remove historical entries.
+
+## 6) Your Choices & Rights
+
+* **Do not endorse** if you do not want a permanent public record of your VOUCH.
+* **Profiles:** you can add/edit/delete optional profile fields at any time.
+* **Wallets/DIDs:** you can unlink or relink.
+* **Access & portability:** request a copy of your profile data and links we store.
+* **Deletion:** we can delete **profile** and **operational** data, but **not** public endorsements or log artifacts needed for verifiability.
+* **Objection/Restriction:** you may object to processing of optional analytics.
+  Submit requests to ⟦[privacy@trustflow.example](mailto:privacy@trustflow.example)⟧. We may ask you to prove wallet/DID control.
+
+## 7) International Transfers
+
+We may process data globally. Where required, we use appropriate safeguards (e.g., SCCs, DPA terms) with vendors.
+
+## 8) Security
+
+We employ industry-standard safeguards: HTTPS, content-addressed artifacts, signed STHs, key rotation, access controls, and monitoring. No system is perfect—use hardware wallets and good opsec.
+
+## 9) Cookies & Analytics
+
+We use minimal cookies/SDKs necessary to operate and measure the Service. Where required, we show a consent banner and honor opt-outs.
+
+## 10) Children
+
+The Service is not directed to children under 16 (or the age required by your jurisdiction). Do not use the Service if you are under the applicable age.
+
+## 11) Third-Party Links
+
+External sites (e.g., explorers, GitHub, EAS) have their own policies; we are not responsible for their practices.
+
+## 12) Changes
+
+We may update this Policy; we will post the new effective date and, for material changes, provide reasonable notice.
+
+## 13) Contact; DPO
+
+Questions or requests: ⟦[privacy@trustflow.example](mailto:privacy@trustflow.example)⟧.
+DPO (if required): ⟦Name/Contact⟧.
+
+---
+
+## Security & Responsible Disclosure (add to your /security page)
+
+If you believe you’ve found a vulnerability:
+
+* Email ⟦[security@trustflow.example](mailto:security@trustflow.example)⟧ with details and reproduction steps.
+* Do not publicly disclose until we acknowledge and fix or after ⟦30⟧ days.
+* In-scope: signature verification, epoch bundle integrity, log consistency, recomputation mismatches.
+* We may offer thanks or a bounty at our discretion.
+
+---
+
+## Short “Status” blurb (footer link)
+
+* **Policy ID:** ⟦vouch-only-v1⟧
+* **Epoch Cadence:** ⟦hourly / daily⟧
+* **Last Bundle Hash:** ⟦0x…⟧ (signed)
+* **Compute Image Digest:** ⟦sha256:…⟧
+* **Reproducibility Rate (30d):** ⟦99.9%⟧
+
+---
+
+If you want, I can tailor these to a specific jurisdiction (e.g., Argentina/EU hybrid), add EAS-specific language, or wire them straight into your Next.js routes (`/terms`, `/privacy`, `/security`, `/status`) with a compact TOC and anchors.

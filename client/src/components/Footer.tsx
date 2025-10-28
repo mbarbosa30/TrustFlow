@@ -41,7 +41,7 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm">Network</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-dashboard">
                   Global Dashboard
                 </Link>
               </li>
@@ -63,10 +63,11 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a 
-                  href="https://github.com/trustflow" 
+                  href="https://github.com/mbarbosa30/TrustFlow" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="link-footer-github"
                 >
                   GitHub
                 </a>
@@ -77,24 +78,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a 
-                  href="https://trustflow.io/privacy" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Privacy
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="https://trustflow.io/terms" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Terms
-                </a>
+                <Link href="/terms-privacy" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-terms-privacy">
+                  Terms & Privacy
+                </Link>
               </li>
             </ul>
           </div>

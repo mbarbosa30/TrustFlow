@@ -15,6 +15,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Status from "@/pages/Status";
 import Seeds from "@/pages/Seeds";
+import TermsPrivacy from "@/pages/TermsPrivacy";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/faqs" component={FAQs} />
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/use-cases" component={UseCases} />
+      <Route path="/terms-privacy" component={TermsPrivacy} />
       <Route component={NotFound} />
     </Switch>
   );
