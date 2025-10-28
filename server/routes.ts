@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/score/:did", async (req, res) => {
     try {
-      const did = req.params.did;
+      const did = req.params.did.toLowerCase();
 
       const userScore = await storage.getLatestScore(did);
 
@@ -386,7 +386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/seeds/:address", async (req, res) => {
     try {
-      const { address } = req.params;
+      const address = req.params.address.toLowerCase();
       const { walletSignature } = req.body;
 
       if (!walletSignature || !walletSignature.address || !walletSignature.message || !walletSignature.signature) {

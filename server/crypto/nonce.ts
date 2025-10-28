@@ -7,12 +7,13 @@ export async function getNextNonce(
   endorser: Address,
   epoch: number
 ): Promise<bigint> {
+  const normalizedEndorser = endorser.toLowerCase();
   const lastEndorsement = await db
     .select({ nonce: publicEndorsements.nonce })
     .from(publicEndorsements)
     .where(
       and(
-        eq(publicEndorsements.endorser, endorser),
+        eq(publicEndorsements.endorser, normalizedEndorser),
         eq(publicEndorsements.epoch, epoch)
       )
     )
@@ -31,7 +32,8 @@ export async function validateNonce(
   epoch: number,
   nonce: bigint
 ): Promise<{ valid: boolean; error?: string; expectedNonce?: bigint }> {
-  const expectedNonce = await getNextNonce(endorser, epoch);
+  const normalizedEndorser = endorser.toLowerCase() as Address;
+  const expectedNonce = await getNextNonce(normalizedEndorser, epoch);
 
   if (nonce !== expectedNonce) {
     return {

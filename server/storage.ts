@@ -67,9 +67,16 @@ export class MemStorage implements IStorage {
   }
 
   async createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement> {
+    // Normalize addresses to lowercase for consistent storage
+    const normalizedEndorsement = {
+      ...endorsement,
+      endorser: endorsement.endorser.toLowerCase(),
+      endorsee: endorsement.endorsee.toLowerCase(),
+    };
+    
     const [dbEndorsement] = await db
       .insert(publicEndorsements)
-      .values(endorsement)
+      .values(normalizedEndorsement)
       .returning();
     
     return dbEndorsement;
@@ -86,10 +93,10 @@ export class MemStorage implements IStorage {
     
     const conditions = [];
     if (filters?.endorser) {
-      conditions.push(eq(publicEndorsements.endorser, filters.endorser));
+      conditions.push(eq(publicEndorsements.endorser, filters.endorser.toLowerCase()));
     }
     if (filters?.endorsee) {
-      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee));
+      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee.toLowerCase()));
     }
     if (filters?.epoch !== undefined) {
       conditions.push(eq(publicEndorsements.epoch, filters.epoch));
@@ -107,12 +114,13 @@ export class MemStorage implements IStorage {
   }
 
   async getMaxNonce(endorser: string, epoch: number): Promise<number> {
+    const normalizedEndorser = endorser.toLowerCase();
     const lastEndorsement = await db
       .select({ nonce: publicEndorsements.nonce })
       .from(publicEndorsements)
       .where(
         and(
-          eq(publicEndorsements.endorser, endorser),
+          eq(publicEndorsements.endorser, normalizedEndorser),
           eq(publicEndorsements.epoch, epoch)
         )
       )
@@ -156,9 +164,16 @@ export class MemStorage implements IStorage {
   }
 
   async createSeed(seed: InsertSeed): Promise<Seed> {
+    // Normalize addresses to lowercase for consistent storage
+    const normalizedSeed = {
+      ...seed,
+      address: seed.address.toLowerCase(),
+      addedBy: seed.addedBy.toLowerCase(),
+    };
+    
     const [dbSeed] = await db
       .insert(seeds)
-      .values(seed)
+      .values(normalizedSeed)
       .returning();
     
     return dbSeed;
@@ -169,43 +184,53 @@ export class MemStorage implements IStorage {
   }
 
   async deleteSeed(address: string): Promise<void> {
-    await db.delete(seeds).where(eq(seeds.address, address));
+    const normalizedAddress = address.toLowerCase();
+    await db.delete(seeds).where(eq(seeds.address, normalizedAddress));
   }
 
   async isSeed(address: string): Promise<boolean> {
+    const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(seeds)
-      .where(eq(seeds.address, address))
+      .where(eq(seeds.address, normalizedAddress))
       .limit(1);
     
     return results.length > 0;
   }
 
   async createScore(score: InsertScore): Promise<Score> {
+    // Normalize address to lowercase for consistent storage
+    const normalizedScore = {
+      ...score,
+      address: score.address.toLowerCase(),
+    };
+    
     const [dbScore] = await db
       .insert(scores)
-      .values(score)
+      .values(normalizedScore)
       .returning();
     
     return dbScore;
   }
 
   async getScore(address: string, epochId: number): Promise<Score | undefined> {
+    const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(scores)
-      .where(and(eq(scores.address, address), eq(scores.epochId, epochId)))
+      .where(and(eq(scores.address, normalizedAddress), eq(scores.epochId, epochId)))
       .limit(1);
     
     return results[0];
   }
 
   async getLatestScore(address: string): Promise<Score | undefined> {
+    const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(scores)
-      .where(eq(scores.address, address))
+      .where(eq(scores.address, normalizedAddress))
       .orderBy(desc(scores.epochId))
       .limit(1);
     
