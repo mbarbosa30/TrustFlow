@@ -55,7 +55,7 @@ export default function Dashboard() {
     createdAt: Date;
     leafHash: string;
   }> }>({
-    queryKey: ['/api/endorsements', { limit: 10 }],
+    queryKey: ['/api/endorsements?limit=10'],
   });
 
   const { data: stsDistData, isLoading: isLoadingSTSDist } = useQuery<{
