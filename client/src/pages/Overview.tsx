@@ -109,6 +109,7 @@ export default function Overview() {
               percentile={Math.round(scoreData.confidence.percent)}
               minCutSize={scoreData.trust.mincut}
               epochTimestamp={new Date().toISOString()}
+              walletAddress={address}
               onExportAttestation={handleExport}
               confidence={{
                 percent: scoreData.confidence.percent,

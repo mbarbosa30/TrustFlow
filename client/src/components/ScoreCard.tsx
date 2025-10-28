@@ -1,9 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge, type Tier } from "./TierBadge";
-import { Copy, Download, Info, HelpCircle } from "lucide-react";
+import { Copy, Download, Info, HelpCircle, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useState } from "react";
+import { QRCodeDialog } from "./QRCodeDialog";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +18,7 @@ interface ScoreCardProps {
   percentile: number;
   minCutSize: number;
   epochTimestamp: string;
+  walletAddress?: string;
   onExportAttestation?: () => void;
   confidence?: {
     percent: number;
@@ -30,10 +33,12 @@ export function ScoreCard({
   percentile,
   minCutSize,
   epochTimestamp,
+  walletAddress,
   onExportAttestation,
   confidence,
 }: ScoreCardProps) {
   const { toast } = useToast();
+  const [showQRCode, setShowQRCode] = useState(false);
 
   const handleExport = () => {
     if (onExportAttestation) {
@@ -115,6 +120,17 @@ export function ScoreCard({
         </div>
 
         <div className="flex flex-col gap-2">
+          {walletAddress && (
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => setShowQRCode(true)}
+              data-testid="button-show-qr"
+            >
+              <QrCode className="w-4 h-4" />
+              Show My QR Code
+            </Button>
+          )}
           <Link href="/why">
             <Button
               variant="outline"
@@ -135,6 +151,14 @@ export function ScoreCard({
           </Button>
         </div>
       </CardContent>
+
+      {walletAddress && (
+        <QRCodeDialog
+          open={showQRCode}
+          onOpenChange={setShowQRCode}
+          address={walletAddress}
+        />
+      )}
     </Card>
   );
 }
