@@ -27,7 +27,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       }
 
       try {
-        const accounts = await window.waap.request({ method: 'eth_requestAccounts' }) as string[];
+        const accounts = await window.waap.request({ method: 'eth_accounts' }) as string[];
         if (accounts && accounts.length > 0) {
           setGlobalAddress(accounts[0]);
         }

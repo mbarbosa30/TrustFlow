@@ -37,14 +37,14 @@ export default function Overview() {
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     endorsee: e.endorsee,
-    date: e.createdAt.toISOString(),
+    date: typeof e.createdAt === 'string' ? e.createdAt : new Date(e.createdAt).toISOString(),
     commitment: e.leafHash,
   })) || [];
 
   const receivedEndorsements = receivedEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     endorsee: e.endorser,
-    date: e.createdAt.toISOString(),
+    date: typeof e.createdAt === 'string' ? e.createdAt : new Date(e.createdAt).toISOString(),
     commitment: e.leafHash,
   })) || [];
 
