@@ -51,6 +51,17 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       try {
         // @ts-ignore - WaaP connector has logout method
         await connector.logout();
+        
+        // Manually clear WaaP's localStorage to prevent auto-reconnect
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('waap') || key.startsWith('silk') || key.includes('wallet'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
       } catch (error) {
         console.warn('Error calling WaaP logout:', error);
       }
