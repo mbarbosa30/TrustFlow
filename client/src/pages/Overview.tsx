@@ -9,16 +9,8 @@ import type { PublicEndorsement } from "@shared/schema";
 
 export default function Overview() {
   const { address, isConnected } = useAccount();
-  
-  const mockData = {
-    tier: "Master" as const,
-    sts: 85,
-    percentile: 92,
-    minCutSize: 3,
-    epochTimestamp: "2025-10-27T12:00:00Z",
-  };
 
-  const { data: confidenceData } = useQuery<{
+  const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
     did: string;
     epoch: number;
     trust: { sts: number; flow: number; mincut: number };
@@ -57,21 +49,17 @@ export default function Overview() {
   })) || [];
 
   const handleExport = () => {
+    if (!scoreData) return;
+    
     const attestation = {
-      sub: "user:0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-      tier: mockData.tier,
-      sts: mockData.sts,
-      percentile: mockData.percentile,
-      minCut: mockData.minCutSize,
-      epoch: mockData.epochTimestamp,
+      sub: `user:${address}`,
+      sts: scoreData.trust.sts,
+      flow: scoreData.trust.flow,
+      minCut: scoreData.trust.mincut,
+      epoch: scoreData.epoch,
       policy: "advogato-v1",
-      roots: {
-        graph: "0x8f5d9e2a...",
-        seed: "0x1a2b3c4d...",
-        params: "0xabcdef12...",
-      },
+      confidence: scoreData.confidence.percent,
       iss: "trustflow.app",
-      sig: "ed25519:...",
     };
     
     navigator.clipboard.writeText(JSON.stringify(attestation, null, 2));
@@ -98,23 +86,32 @@ export default function Overview() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div>
-          <ScoreCard
-            tier={mockData.tier}
-            sts={mockData.sts}
-            percentile={mockData.percentile}
-            minCutSize={mockData.minCutSize}
-            epochTimestamp={mockData.epochTimestamp}
-            onExportAttestation={handleExport}
-            confidence={
-              confidenceData
-                ? {
-                    percent: confidenceData.confidence.percent,
-                    ghi: confidenceData.confidence.global.GHI,
-                    localMincutN: confidenceData.confidence.local.mincutN,
-                  }
-                : undefined
-            }
-          />
+          {isLoadingScore ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">Loading score data...</div>
+              </CardContent>
+            </Card>
+          ) : !isConnected ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Trust Score</CardTitle>
+                <CardDescription>Connect your wallet to view your trust score</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Trust Score</CardTitle>
+                <CardDescription>No trust score available yet</CardDescription>
+              </CardHeader>
+              <CardContent className="py-8">
+                <p className="text-sm text-muted-foreground text-center">
+                  Your trust score will be calculated after you receive vouches from the network and an epoch computation runs.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div>
