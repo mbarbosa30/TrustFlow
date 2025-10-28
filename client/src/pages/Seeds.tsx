@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield } from "lucide-react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 
 interface Seed {
   address: string;
@@ -21,14 +21,15 @@ export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
-  const { address: userAddress } = useAccount();
+  const { address: userAddress, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
   });
 
   const addSeedMutation = useMutation({
-    mutationFn: async (data: { address: string; addedBy?: string; note?: string }) => {
+    mutationFn: async (data: { address: string; walletSignature: any; note?: string }) => {
       return await apiRequest('POST', '/api/seeds', data);
     },
     onSuccess: () => {
@@ -50,8 +51,21 @@ export default function Seeds() {
   });
 
   const deleteSeedMutation = useMutation({
-    mutationFn: async (address: string) => {
-      return await apiRequest('DELETE', `/api/seeds/${address}`);
+    mutationFn: async (data: { address: string; walletSignature: any }) => {
+      const response = await fetch(`/api/seeds/${data.address}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletSignature: data.walletSignature }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete seed');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/seeds'] });
@@ -70,18 +84,53 @@ export default function Seeds() {
   });
 
   const handleAddSeed = async () => {
-    if (!newAddress) return;
+    if (!newAddress || !userAddress || !isConnected) return;
     
-    addSeedMutation.mutate({
-      address: newAddress.toLowerCase(),
-      addedBy: userAddress,
-      note: newNote || undefined,
-    });
+    try {
+      const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
+      const signature = await signMessageAsync({ message });
+      
+      addSeedMutation.mutate({
+        address: newAddress.toLowerCase(),
+        walletSignature: {
+          address: userAddress,
+          message,
+          signature,
+        },
+        note: newNote || undefined,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Signature Required",
+        description: error.message || "You must sign the message to add a seed",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteSeed = async (address: string) => {
+    if (!userAddress || !isConnected) return;
+    
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
-      deleteSeedMutation.mutate(address);
+      try {
+        const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
+        const signature = await signMessageAsync({ message });
+        
+        deleteSeedMutation.mutate({
+          address,
+          walletSignature: {
+            address: userAddress,
+            message,
+            signature,
+          },
+        });
+      } catch (error: any) {
+        toast({
+          title: "Signature Required",
+          description: error.message || "You must sign the message to remove a seed",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -159,12 +208,12 @@ export default function Seeds() {
 
             <Button
               onClick={handleAddSeed}
-              disabled={!newAddress || addSeedMutation.isPending}
+              disabled={!newAddress || !isConnected || addSeedMutation.isPending}
               className="w-full"
               data-testid="button-add-seed"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Seed
+              {!isConnected ? "Connect Wallet to Add Seed" : "Add Seed"}
             </Button>
           </CardContent>
         </Card>

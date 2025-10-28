@@ -114,6 +114,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/nonce/:endorser/:epoch", async (req, res) => {
+    try {
+      const { endorser, epoch } = req.params;
+      const maxNonce = await storage.getMaxNonce(endorser, parseInt(epoch));
+      
+      return res.status(200).json({ 
+        maxNonce,
+        nextNonce: maxNonce + 1 
+      });
+    } catch (error) {
+      console.error("Error fetching nonce:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/epoch/:id/health", async (req, res) => {
     try {
       const epochId = parseInt(req.params.id);
@@ -239,13 +254,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/seeds", async (req, res) => {
     try {
-      const { address, addedBy, note } = req.body;
+      const { address, walletSignature, note } = req.body;
 
       if (!address) {
         return res.status(400).json({ error: "Address is required" });
       }
 
-      const seed = await storage.createSeed({ address, addedBy, note });
+      if (!walletSignature || !walletSignature.address || !walletSignature.message || !walletSignature.signature) {
+        return res.status(401).json({ error: "Wallet signature required for authentication" });
+      }
+
+      const isValidSignature = await verifyMessage({
+        address: walletSignature.address as Address,
+        message: walletSignature.message,
+        signature: walletSignature.signature as Hex,
+      });
+
+      if (!isValidSignature) {
+        return res.status(401).json({ error: "Invalid wallet signature" });
+      }
+
+      const seed = await storage.createSeed({ 
+        address: address.toLowerCase(), 
+        addedBy: walletSignature.address.toLowerCase(),
+        note 
+      });
+      
       return res.status(201).json({ seed });
     } catch (error) {
       console.error("Error creating seed:", error);
@@ -256,6 +290,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/seeds/:address", async (req, res) => {
     try {
       const { address } = req.params;
+      const { walletSignature } = req.body;
+
+      if (!walletSignature || !walletSignature.address || !walletSignature.message || !walletSignature.signature) {
+        return res.status(401).json({ error: "Wallet signature required for authentication" });
+      }
+
+      const isValidSignature = await verifyMessage({
+        address: walletSignature.address as Address,
+        message: walletSignature.message,
+        signature: walletSignature.signature as Hex,
+      });
+
+      if (!isValidSignature) {
+        return res.status(401).json({ error: "Invalid wallet signature" });
+      }
+
       await storage.deleteSeed(address);
       return res.status(200).json({ success: true });
     } catch (error) {

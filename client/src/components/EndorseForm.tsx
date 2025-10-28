@@ -79,9 +79,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
 
       const epoch = BigInt(0);
 
-      const nonceResponse = await fetch(`/api/endorsements?endorser=${address}&epoch=${epoch}`);
+      const nonceResponse = await fetch(`/api/nonce/${address}/${epoch}`);
+      if (!nonceResponse.ok) {
+        throw new Error("Failed to fetch nonce");
+      }
       const nonceData = await nonceResponse.json();
-      const nonce = BigInt(nonceData.endorsements?.length || 0);
+      const nonce = BigInt(nonceData.nextNonce);
 
       const message = {
         endorser: address,
