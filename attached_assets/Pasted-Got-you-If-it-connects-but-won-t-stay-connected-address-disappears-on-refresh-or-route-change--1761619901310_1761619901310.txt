@@ -1,0 +1,146 @@
+Got you. If it *connects but won’t stay connected* (address disappears on refresh or route change), it’s almost always one of these:
+
+1. WaaP isn’t re-hydrated before you ask for the account
+2. Your React tree loses the provider/state on navigation
+3. Wagmi/WC aren’t configured to persist (or are double-initialized)
+4. You’re on HTTP (WalletConnect mobile won’t persist reliably)
+
+Here’s a tight fix list you can apply to TrustFlow:
+
+# 1) Put WaaP at the root and re-request on load (client only)
+
+In `app/layout.tsx` (or your root), wrap with a client-side provider and **do not** call anything server-side.
+
+```tsx
+// app/waap.provider.tsx
+'use client'
+import { PropsWithChildren, useEffect, useState } from 'react'
+import { initWaaP } from '@human.tech/waap-sdk'
+
+export function WaaPProvider({ children }: PropsWithChildren) {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (!(window as any).__waapInited) {
+      initWaaP({
+        config: {
+          authenticationMethods: ['email','phone','social','wallet'],
+          styles: { darkMode: true },
+        },
+        // if you let users pick “Wallet” (external), you need a WC projectId:
+        walletConnectProjectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
+        useStaging: false,
+      })
+      ;(window as any).__waapInited = true
+    }
+    setReady(true)
+  }, [])
+
+  return <>{ready && children}</>
+}
+```
+
+Then in `app/layout.tsx`:
+
+```tsx
+// app/layout.tsx
+import { WaaPProvider } from './waap.provider'
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <WaaPProvider>{children}</WaaPProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+On any page that needs the address, **restore** using the WaaP auto-connect contract: call `eth_requestAccounts` once the page mounts (WaaP will revive the previous session if it exists). ([docs.wallet.human.tech][1])
+
+```tsx
+'use client'
+import { useEffect, useState } from 'react'
+
+export default function AccountBadge() {
+  const [address, setAddress] = useState<string | null>(null)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const accts = await window.waap.request({ method: 'eth_requestAccounts' }) // restores previous session
+        setAddress(accts?.[0] ?? null)
+      } catch {}
+      window.waap.on('accountsChanged', (a: string[]) => setAddress(a?.[0] ?? null))
+    })()
+  }, [])
+
+  return <span>{address ? `Connected: ${address.slice(0,6)}…${address.slice(-4)}` : 'Not connected'}</span>
+}
+```
+
+WaaP’s quick-start explicitly notes this “auto-connect on page refresh” behavior—asking for `eth_requestAccounts` on load should bring the last session back. ([docs.wallet.human.tech][1])
+
+# 2) If you use Wagmi, keep it single-sourced
+
+If you added Wagmi too, start by **disabling `autoConnect`** and use only a WaaP connector (avoid registering injected/Coinbase/WC connectors separately until it works). Multiple connectors + `autoConnect` can pick the wrong one or lose state. ([wagmi.sh][2])
+
+```ts
+// wagmi.config.ts
+export const config = createConfig({
+  autoConnect: false,        // turn off while debugging persistence
+  connectors: [waapConnector(/* passes window.waap as EIP-1193 */)],
+  // ... transports/chains
+})
+```
+
+If you **do** let users choose “Wallet” (WalletConnect) through WaaP, make sure you provide a **WalletConnect v2 projectId** in `initWaaP`. WC v2 also needs the user to pre-approve chains; misconfig there can look like “not staying connected.” ([docs.wallet.human.tech][1])
+
+# 3) Don’t double-init or lose state on route changes
+
+* Guard WaaP init with a flag (`__waapInited`) to avoid HMR duplicating listeners in dev (already in the snippet).
+* Ensure your provider components are under a single `layout.tsx` so navigation doesn’t unmount them (App Router pattern from WaaP docs). ([docs.wallet.human.tech][1])
+
+# 4) Ensure HTTPS if you test mobile WC
+
+WalletConnect sessions can break on mobile if the site isn’t served over HTTPS. Use HTTPS for dev previews (Vercel/Netlify) or a local tunnel. ([forum.moralis.io][3])
+
+# 5) Add a reliable “smart logout” (and test reconnect)
+
+Sometimes a “failed reconnect” is just a half-cleared prior session. Implement this:
+
+```ts
+async function smartLogout() {
+  try {
+    await window.waap.logout(); // clears WaaP & WC session when applicable
+  } finally {
+    // (optional) if you ever used WC directly via Wagmi, also clear its storage:
+    Object.keys(localStorage).filter(k => k.startsWith('wc@2:')).forEach(k => localStorage.removeItem(k))
+  }
+}
+```
+
+Then test the sequence:
+
+1. Connect → confirm `eth_requestAccounts` returns an address
+2. Refresh → address should reappear from the same call (auto-restore)
+3. `smartLogout()` → refresh → `eth_requestAccounts` should now return [] until user logs in again
+
+WaaP documents the login → request accounts → auto-connect flow and the session management expectations. ([docs.wallet.human.tech][1])
+
+---
+
+### Quick triage for your repo
+
+Without editing your code directly, these are the likely friction points in TrustFlow:
+
+* **Provider created on the server** (Next.js RSC). Fix: mark your WaaP wrapper `'use client'` and only touch `window.waap` in `useEffect`. ([docs.wallet.human.tech][1])
+* **Account read before WaaP is ready**. Fix: gate UI on a `ready` flag after `initWaaP` resolves. ([docs.wallet.human.tech][1])
+* **Two sources of truth** (WaaP + separate Wagmi WC/injected connectors). Fix: one connector path at a time while debugging. ([wagmi.sh][2])
+* **Missing WC projectId** while allowing external wallets in WaaP. Fix: add `walletConnectProjectId`. ([docs.wallet.human.tech][1])
+
+If you paste your `client` wallet init (or link the specific files under `client/` that set Wagmi/WaaP up), I’ll pinpoint the exact lines to change.
+
+[1]: https://docs.wallet.human.tech/docs/quick-start "Quick Start | Wallet as a Protocol"
+[2]: https://wagmi.sh/react/guides/connect-wallet?utm_source=chatgpt.com "Connect Wallet"
+[3]: https://forum.moralis.io/t/walletconnect-not-working-on-android/14953?page=2&utm_source=chatgpt.com "Walletconnect not working on android"
