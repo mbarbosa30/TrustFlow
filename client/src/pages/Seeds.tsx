@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Shield } from "lucide-react";
+import { Trash2, Plus, Shield, Zap } from "lucide-react";
 import { useAccount } from 'wagmi';
 
 interface Seed {
@@ -17,9 +17,26 @@ interface Seed {
   createdAt: Date;
 }
 
+interface ComputationSummary {
+  scoresComputed: number;
+  networkMetrics: {
+    totalAccepted: number;
+    avgMinCut: number;
+    avgFlow: number;
+  };
+  health: {
+    ghi: number;
+    sizeN: number;
+    cutN: number;
+    churnN: number;
+  };
+  duration: number;
+}
+
 export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [computationResult, setComputationResult] = useState<ComputationSummary | null>(null);
   const { toast } = useToast();
   const { address: userAddress, isConnected } = useAccount();
 
@@ -76,6 +93,40 @@ export default function Seeds() {
     onError: (error: any) => {
       toast({
         title: "Failed to Remove Seed",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const computeEpochMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/epoch/0/compute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || error.message || 'Failed to compute epoch');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setComputationResult(data.summary);
+      queryClient.invalidateQueries({ queryKey: ['/api/score'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/epoch/0/health'] });
+      toast({
+        title: "Epoch Computation Complete",
+        description: `Computed scores for ${data.summary.scoresComputed} users`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Computation Failed",
         description: error.message || "An error occurred",
         variant: "destructive",
       });
@@ -291,6 +342,74 @@ export default function Seeds() {
                   </Card>
                 ))}
               </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-primary" />
+              Compute Epoch Scores
+            </CardTitle>
+            <CardDescription>
+              Run the max-flow algorithm to calculate trust scores for all users
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                This triggers the trust scoring algorithm which:
+              </p>
+              <ul className="list-disc list-inside ml-4 space-y-1">
+                <li>Loads all vouches from the network</li>
+                <li>Runs max-flow/min-cut from seed addresses</li>
+                <li>Calculates STS (Standardized Trust Score) for each user</li>
+                <li>Stores results in the database</li>
+              </ul>
+              <p className="pt-2">
+                <strong>Note:</strong> This only works if you have at least one seed configured.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => computeEpochMutation.mutate()}
+              disabled={!isConnected || computeEpochMutation.isPending || !seedsData?.seeds.length}
+              className="w-full"
+              data-testid="button-compute-epoch"
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              {computeEpochMutation.isPending ? "Computing..." : "Compute Epoch 0 Scores"}
+            </Button>
+
+            {computationResult && (
+              <Card className="bg-muted">
+                <CardContent className="pt-4">
+                  <h4 className="font-semibold mb-2">Computation Results</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Scores Computed:</span>
+                      <span className="font-mono font-semibold">{computationResult.scoresComputed}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Duration:</span>
+                      <span className="font-mono">{computationResult.duration}ms</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Network Health (GHI):</span>
+                      <span className="font-mono font-semibold">{computationResult.health.ghi}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Avg Min-Cut:</span>
+                      <span className="font-mono">{computationResult.networkMetrics.avgMinCut.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Accepted:</span>
+                      <span className="font-mono">{computationResult.networkMetrics.totalAccepted}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </CardContent>
         </Card>
