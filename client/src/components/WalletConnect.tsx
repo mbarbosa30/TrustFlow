@@ -1,144 +1,96 @@
 import { Button } from "@/components/ui/button";
-import { Wallet, Mail, Smartphone } from "lucide-react";
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { initWaaP } from "@human.tech/waap-sdk";
+import { waapConfig } from "@/lib/waap.config";
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;
 }
 
 export function WalletConnect({ onConnect }: WalletConnectProps) {
-  const { address, isConnected, connector } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
+  const [address, setAddress] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (isConnected && address && onConnect) {
+    if (address && onConnect) {
       onConnect(address);
     }
-  }, [isConnected, address, onConnect]);
+  }, [address, onConnect]);
 
-  const handleConnect = () => {
-    const waapConnector = connectors.find(c => c.id === 'waap');
-    const targetConnector = waapConnector || connectors[0];
-    
-    if (targetConnector) {
-      connect({ connector: targetConnector }, {
-        onSuccess: () => {
-          toast({
-            title: "Wallet Connected",
-            description: targetConnector.id === 'waap' 
-              ? "Successfully connected with WaaP" 
-              : "Successfully connected your wallet",
-          });
-        },
-        onError: (error) => {
-          toast({
-            title: "Connection Failed",
-            description: error.message || "Failed to connect wallet",
-            variant: "destructive",
-          });
-        },
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      const waap = await initWaaP(waapConfig);
+      await waap.login();
+      const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+      if (accounts && accounts.length > 0) {
+        setAddress(accounts[0]);
+        toast({
+          title: "Wallet Connected",
+          description: "Successfully connected with WaaP",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Failed to connect wallet",
+        variant: "destructive",
       });
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   const handleDisconnect = async () => {
-    // Call WaaP's logout directly if using WaaP connector
-    if (connector?.id === 'waap') {
-      try {
-        // @ts-ignore - WaaP connector has logout method
-        await connector.logout();
-        
-        // Manually clear WaaP's localStorage to prevent auto-reconnect
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (key.startsWith('waap') || key.startsWith('silk') || key.includes('wallet'))) {
-            keysToRemove.push(key);
-          }
+    try {
+      const waap = await initWaaP(waapConfig);
+      await waap.logout();
+      
+      // Clear all WaaP-related localStorage
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('waap') || key.startsWith('silk') || key.includes('wallet'))) {
+          keysToRemove.push(key);
         }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-        
-      } catch (error) {
-        console.warn('Error calling WaaP logout:', error);
       }
-    }
-    
-    disconnect();
-    toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected",
-    });
-  };
-
-  const handleSwitchAccount = async () => {
-    // Force logout and show login modal again
-    if (connector?.id === 'waap') {
-      try {
-        // @ts-ignore - WaaP connector has logout method
-        await connector.logout();
-        disconnect();
-        
-        // Wait a bit for logout to complete, then reconnect to show modal
-        setTimeout(() => {
-          const waapConnector = connectors.find(c => c.id === 'waap');
-          if (waapConnector) {
-            connect({ connector: waapConnector });
-          }
-        }, 500);
-      } catch (error) {
-        console.warn('Error switching account:', error);
-      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      setAddress(null);
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected",
+      });
+    } catch (error) {
+      console.warn('Error disconnecting:', error);
     }
   };
 
-  if (isConnected && address) {
+  if (address) {
     return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          onClick={handleSwitchAccount}
-          className="font-mono"
-          data-testid="button-switch-account"
-        >
-          {address.substring(0, 6)}...{address.substring(address.length - 4)}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleDisconnect}
-          data-testid="button-disconnect-wallet"
-        >
-          ✕
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        onClick={handleDisconnect}
+        className="font-mono"
+        data-testid="button-disconnect-wallet"
+      >
+        {address.substring(0, 6)}...{address.substring(address.length - 4)}
+      </Button>
     );
   }
-
-  const waapConnector = connectors.find(c => c.id === 'waap');
-  const isWaaPAvailable = !!waapConnector;
 
   return (
     <Button
       onClick={handleConnect}
-      disabled={isPending}
+      disabled={isConnecting}
       className="gap-2"
       data-testid="button-connect-wallet"
     >
-      {isWaaPAvailable ? (
-        <>
-          <Mail className="w-4 h-4" />
-          {isPending ? "Connecting..." : "Connect"}
-        </>
-      ) : (
-        <>
-          <Wallet className="w-4 h-4" />
-          {isPending ? "Connecting..." : "Connect Wallet"}
-        </>
-      )}
+      <Mail className="w-4 h-4" />
+      {isConnecting ? "Connecting..." : "Connect"}
     </Button>
   );
 }
