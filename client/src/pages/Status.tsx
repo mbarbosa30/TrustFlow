@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { GHIGauge } from "@/components/GHIGauge";
 import { Badge } from "@/components/ui/badge";
-import { Info, TrendingUp, Users, Network, GitBranch, Shield, Activity, BarChart3, Shuffle } from "lucide-react";
+import { Info, TrendingUp, Users, Network, GitBranch, Shield, Activity, BarChart3, Shuffle, Globe } from "lucide-react";
 
 export default function Status() {
   const { data: epochData } = useQuery<{ epochId: number }>({
@@ -10,6 +10,15 @@ export default function Status() {
   });
 
   const currentEpochId = epochData?.epochId ?? 0;
+
+  const { data: statsData } = useQuery<{
+    totalUsers: number;
+    totalEndorsements: number;
+    totalEndorsers: number;
+    totalEndorsees: number;
+  }>({
+    queryKey: ['/api/stats'],
+  });
 
   const { data: healthData, isLoading } = useQuery<{
     epoch: number;
@@ -107,11 +116,65 @@ export default function Status() {
       </div>
 
       <div className="space-y-8">
+        {statsData && (
+          <Card data-testid="card-cumulative-stats">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                All-Time Network Statistics
+              </CardTitle>
+              <CardDescription>
+                Cumulative metrics across all epochs since inception
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold" data-testid="text-total-users">
+                    {statsData.totalUsers.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Participants</div>
+                  <div className="text-xs text-muted-foreground">
+                    Unique addresses in network
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold" data-testid="text-total-endorsements">
+                    {statsData.totalEndorsements.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Endorsements</div>
+                  <div className="text-xs text-muted-foreground">
+                    All vouches ever created
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold" data-testid="text-total-endorsers">
+                    {statsData.totalEndorsers.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Active Endorsers</div>
+                  <div className="text-xs text-muted-foreground">
+                    Users who have vouched
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="text-3xl font-bold" data-testid="text-total-endorsees">
+                    {statsData.totalEndorsees.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Endorsed Users</div>
+                  <div className="text-xs text-muted-foreground">
+                    Users who received vouches
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card data-testid="card-status-hero">
           <CardHeader>
-            <CardTitle className="text-2xl">Global Health Index</CardTitle>
+            <CardTitle className="text-2xl">Current Epoch Health</CardTitle>
             <CardDescription>
-              Overall network health score computed from 9 independent metrics
+              Global Health Index (GHI) for Epoch {healthData.epoch} computed from 9 independent metrics
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -147,7 +210,7 @@ export default function Status() {
                     <div className="text-2xl font-bold" data-testid="text-accepted-count">
                       {healthData.raw.acceptedCount.toLocaleString()}
                     </div>
-                    <div className="text-xs text-muted-foreground">Accepted Users</div>
+                    <div className="text-xs text-muted-foreground">Accepted (This Epoch)</div>
                   </div>
                   <div>
                     <div className="text-2xl font-bold" data-testid="text-avg-mincut">
