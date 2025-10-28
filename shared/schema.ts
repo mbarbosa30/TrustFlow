@@ -101,3 +101,17 @@ export const insertEpochHealthSchema = createInsertSchema(epochHealth).omit({
 
 export type InsertEpochHealth = z.infer<typeof insertEpochHealthSchema>;
 export type EpochHealth = typeof epochHealth.$inferSelect;
+
+export const seeds = pgTable("seeds", {
+  address: text("address").primaryKey(),
+  addedBy: text("added_by"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertSeedSchema = createInsertSchema(seeds).omit({
+  createdAt: true,
+});
+
+export type InsertSeed = z.infer<typeof insertSeedSchema>;
+export type Seed = typeof seeds.$inferSelect;

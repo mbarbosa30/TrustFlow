@@ -227,6 +227,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/seeds", async (req, res) => {
+    try {
+      const seeds = await storage.getSeeds();
+      return res.status(200).json({ seeds });
+    } catch (error) {
+      console.error("Error fetching seeds:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/seeds", async (req, res) => {
+    try {
+      const { address, addedBy, note } = req.body;
+
+      if (!address) {
+        return res.status(400).json({ error: "Address is required" });
+      }
+
+      const seed = await storage.createSeed({ address, addedBy, note });
+      return res.status(201).json({ seed });
+    } catch (error) {
+      console.error("Error creating seed:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/seeds/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      await storage.deleteSeed(address);
+      return res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error deleting seed:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

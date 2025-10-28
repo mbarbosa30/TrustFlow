@@ -6,8 +6,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAccount, useSignTypedData } from 'wagmi';
+import { useAccount, useSignTypedData, usePublicClient } from 'wagmi';
 import { apiRequest } from "@/lib/queryClient";
+import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
 
 interface EndorseFormProps {
@@ -34,9 +35,39 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResolvingENS, setIsResolvingENS] = useState(false);
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
+  const publicClient = usePublicClient({ chainId: 1 });
+
+  const resolveENSName = async (nameOrAddress: string): Promise<Address> => {
+    if (nameOrAddress.toLowerCase().startsWith('0x')) {
+      return nameOrAddress as Address;
+    }
+
+    if (!publicClient) {
+      throw new Error("Unable to resolve ENS: Ethereum mainnet connection required");
+    }
+
+    try {
+      setIsResolvingENS(true);
+      const normalizedName = normalize(nameOrAddress);
+      const resolvedAddress = await publicClient.getEnsAddress({
+        name: normalizedName,
+      });
+
+      if (!resolvedAddress) {
+        throw new Error(`ENS name "${nameOrAddress}" not found or not configured`);
+      }
+
+      return resolvedAddress;
+    } catch (error: any) {
+      throw new Error(`Failed to resolve ENS name: ${error.message}`);
+    } finally {
+      setIsResolvingENS(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!searchQuery || !address || !isConnected) return;
@@ -44,9 +75,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
     setIsSubmitting(true);
     
     try {
-      const endorseeAddress = searchQuery.toLowerCase().startsWith('0x') 
-        ? searchQuery as Address
-        : searchQuery as Address;
+      const endorseeAddress = await resolveENSName(searchQuery);
 
       const epoch = BigInt(0);
 
@@ -137,11 +166,16 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
 
         <Button
           className="w-full h-12"
-          disabled={!searchQuery || !isConnected || isSubmitting}
+          disabled={!searchQuery || !isConnected || isSubmitting || isResolvingENS}
           onClick={handleSubmit}
           data-testid="button-submit-endorsement"
         >
-          {isSubmitting ? (
+          {isResolvingENS ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Resolving ENS Name...
+            </>
+          ) : isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Creating Vouch...

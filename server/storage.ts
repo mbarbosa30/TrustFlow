@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -21,6 +21,11 @@ export interface IStorage {
   createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth>;
   getEpochHealth(epochId: number): Promise<EpochHealth | undefined>;
   getLatestEpochHealth(): Promise<EpochHealth | undefined>;
+  
+  createSeed(seed: InsertSeed): Promise<Seed>;
+  getSeeds(): Promise<Seed[]>;
+  deleteSeed(address: string): Promise<void>;
+  isSeed(address: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -134,6 +139,33 @@ export class MemStorage implements IStorage {
       .limit(1);
     
     return results[0];
+  }
+
+  async createSeed(seed: InsertSeed): Promise<Seed> {
+    const [dbSeed] = await db
+      .insert(seeds)
+      .values(seed)
+      .returning();
+    
+    return dbSeed;
+  }
+
+  async getSeeds(): Promise<Seed[]> {
+    return await db.select().from(seeds);
+  }
+
+  async deleteSeed(address: string): Promise<void> {
+    await db.delete(seeds).where(eq(seeds.address, address));
+  }
+
+  async isSeed(address: string): Promise<boolean> {
+    const results = await db
+      .select()
+      .from(seeds)
+      .where(eq(seeds.address, address))
+      .limit(1);
+    
+    return results.length > 0;
   }
 }
 

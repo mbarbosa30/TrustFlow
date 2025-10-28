@@ -17,6 +17,7 @@ import FAQs from "@/pages/FAQs";
 import HowItWorks from "@/pages/HowItWorks";
 import UseCases from "@/pages/UseCases";
 import Status from "@/pages/Status";
+import Seeds from "@/pages/Seeds";
 import { Footer } from "@/components/Footer";
 import { Network } from "lucide-react";
 
@@ -28,6 +29,7 @@ function Navigation() {
     { path: "/overview", label: "Overview" },
     { path: "/why", label: "Why this score?" },
     { path: "/verify", label: "Verify" },
+    { path: "/seeds", label: "Seeds" },
   ];
 
   return (
@@ -96,6 +98,7 @@ function Router() {
       <Route path="/overview" component={Overview} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
+      <Route path="/seeds" component={Seeds} />
       <Route path="/status" component={Status} />
       <Route path="/faqs" component={FAQs} />
       <Route path="/how-it-works" component={HowItWorks} />
