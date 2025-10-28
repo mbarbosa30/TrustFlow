@@ -9,7 +9,8 @@ export const ENDORSEMENT_TYPES = {
   ],
 } as const;
 
-export const DOMAIN = {
+// Domain is constructed dynamically with chainId to support multi-chain signatures
+export const DOMAIN_BASE = {
   name: "TrustFlow",
   version: "1",
 } as const;
@@ -27,6 +28,7 @@ export interface SignedEndorsement {
   epoch: bigint;
   nonce: bigint;
   sig: Hex;
+  chainId?: number; // Optional for backward compatibility
 }
 
 export async function verifyEndorsementSignature(
@@ -40,7 +42,14 @@ export async function verifyEndorsementSignature(
       nonce: endorsement.nonce,
     };
 
-    console.log("Verifying signature with domain:", JSON.stringify(DOMAIN, null, 2));
+    // Construct domain with chainId if provided
+    // Default to 1 (Ethereum mainnet) for backward compatibility
+    const domain = {
+      ...DOMAIN_BASE,
+      chainId: endorsement.chainId || 1,
+    };
+
+    console.log("Verifying signature with domain:", JSON.stringify(domain, null, 2));
     console.log("Message:", JSON.stringify({
       endorser: endorsement.endorser,
       endorsee: endorsement.endorsee,
@@ -50,7 +59,7 @@ export async function verifyEndorsementSignature(
 
     const valid = await verifyTypedData({
       address: endorsement.endorser,
-      domain: DOMAIN,
+      domain,
       types: ENDORSEMENT_TYPES,
       primaryType: "Endorsement",
       message,

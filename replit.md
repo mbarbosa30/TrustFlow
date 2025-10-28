@@ -71,13 +71,14 @@ Preferred communication style: Simple, everyday language.
 
 ### Authentication and Authorization
 
-**Current Implementation**: WaaP (Wallet as a Protocol) integration for one-click authentication
-- Uses @human.tech/waap-sdk via custom wagmi connector
-- Supports email, phone, social (Google, Twitter, Discord, GitHub) authentication methods
+**Current Implementation**: Reown AppKit integration for multi-network authentication
+- Supports multiple networks: Ethereum, Celo, Polygon, Arbitrum, Optimism, Base
+- Email, phone, social (Google, Twitter, Discord, GitHub) authentication methods via Reown features
+- Traditional wallet connections (MetaMask, Coinbase, WalletConnect, etc.)
 - Auto-reconnect on page refresh for improved UX
-- EIP-1193 compliant interface with full multi-chain support
-- Configuration in `client/src/lib/waap.config.ts` and `client/src/lib/waap.connector.ts`
-- WalletConnect component prioritizes WaaP "Sign In" flow over traditional wallet connections
+- Configuration in `client/src/lib/reown.config.ts`
+- Uses off-chain EIP-712 signatures - users can stay on ANY supported network (no forced network switching)
+- Signature domain includes chainId matching user's current network for security and wallet compatibility
 
 **Future Enhancements**:
 - DID (Decentralized Identifier) system binding multiple wallets to a single trust subject
@@ -94,7 +95,7 @@ Preferred communication style: Simple, everyday language.
 - **Lucide React**: Icon library
 - **date-fns**: Date manipulation
 - **Wagmi v2**: React hooks for Ethereum with viem
-- **@human.tech/waap-sdk**: WaaP authentication SDK for one-click sign-in
+- **@reown/appkit**: Multi-network wallet connection and authentication SDK
 
 **Backend Libraries**:
 - **Express**: HTTP server framework
@@ -148,14 +149,14 @@ Preferred communication style: Simple, everyday language.
 - **Backend**: Created `/api/stats` endpoint that aggregates real network statistics (total users, endorsements, endorsers, endorsees)
 - All pages gracefully handle empty database states with appropriate loading/empty state messages
 
-**WAAP INTEGRATION (October 2025)**: Integrated WaaP (Wallet as a Protocol) for improved authentication UX:
-- **Authentication Methods**: Email, phone, social (Google, Twitter, Discord, GitHub) plus traditional wallet options
-- **Custom Connector**: Created wagmi v2 connector (`waap.connector.ts`) implementing EIP-1193 interface
-- **Configuration**: TrustFlow-specific config in `waap.config.ts` with branding and auth method settings
-- **UI Updates**: WalletConnect component detects WaaP and shows "Sign In" instead of "Connect Wallet"
-- **Connector Priority**: WaaP connector listed first in wagmi config for default selection
-- **Benefits**: No browser extensions required, auto-reconnect, gas sponsorship capabilities
-- **Compatibility**: Maintains full backward compatibility with existing wallet connectors (injected, Coinbase, WalletConnect)
+**MULTI-NETWORK SUPPORT (October 2025)**: Implemented flexible multi-chain authentication via Reown AppKit:
+- **Supported Networks**: Ethereum, Celo, Polygon, Arbitrum, Optimism, Base (users can stay on any network)
+- **Authentication Methods**: Email, phone, social (Google, Twitter, Discord, GitHub) plus traditional wallet connections
+- **Configuration**: Reown AppKit in `client/src/lib/reown.config.ts` with multi-network setup
+- **Dynamic Signatures**: EIP-712 domain uses user's current chainId for signature security
+- **No Forced Switching**: Since TrustFlow only uses off-chain signatures, users don't need to change networks
+- **Backend Support**: Server accepts chainId parameter and verifies signatures with matching domain
+- **Benefits**: Improved UX (no network switching prompts), broader accessibility, network-agnostic trust system
 
 **Epoch-Based Computation**: Deterministic, versioned scoring runs that publish all inputs as verifiable artifacts
 

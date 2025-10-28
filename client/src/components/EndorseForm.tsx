@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2, QrCode } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAccount, useSignTypedData } from 'wagmi';
+import { useAccount, useSignTypedData, useChainId } from 'wagmi';
 import { apiRequest } from "@/lib/queryClient";
 import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
@@ -18,11 +18,8 @@ interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
 }
 
-const ENDORSEMENT_DOMAIN = {
-  name: "TrustFlow",
-  version: "1",
-  chainId: 42220, // Celo mainnet
-} as const;
+// Domain is created dynamically per signature to match user's current network
+// This allows users to sign from any supported network
 
 const ENDORSEMENT_TYPES = {
   Endorsement: [
@@ -42,9 +39,9 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
+  const chainId = useChainId();
   
   // ENS resolution uses Ethereum mainnet (standard practice)
-  // even though the app operates on Celo for signing
   const publicClient = createPublicClient({
     chain: mainnet,
     transport: http(),
@@ -100,9 +97,14 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
-      // Sign with wagmi
+      // Sign with wagmi using user's current chain
+      // The chainId is used for signature security, not network enforcement
       const signature = await signTypedDataAsync({
-        domain: ENDORSEMENT_DOMAIN,
+        domain: {
+          name: "TrustFlow",
+          version: "1",
+          chainId: chainId,
+        },
         types: ENDORSEMENT_TYPES,
         primaryType: 'Endorsement',
         message: {
@@ -121,6 +123,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         epoch: epoch.toString(),
         nonce: nonce.toString(),
         sig: signature,
+        chainId: chainId, // Include chainId so backend can verify with correct domain
       });
 
       if (onEndorse) {

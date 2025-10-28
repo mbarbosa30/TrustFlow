@@ -23,6 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         epoch: BigInt(body.epoch),
         nonce: BigInt(body.nonce),
         sig: body.sig as Hex,
+        chainId: body.chainId ? Number(body.chainId) : undefined,
       };
 
       const fieldValidation = validateEndorsementFields(endorsement);
