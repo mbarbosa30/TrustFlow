@@ -185,24 +185,16 @@ export default function Dashboard() {
         </Card>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {networkGrowthData && networkGrowthData.data.length > 0 && (
-            <NetworkGrowthChart data={networkGrowthData.data} />
-          )}
-          {endorsementVelocityData && endorsementVelocityData.data.length > 0 && (
-            <EndorsementVelocityChart data={endorsementVelocityData.data} />
-          )}
+          <NetworkGrowthChart data={networkGrowthData?.data || []} />
+          <EndorsementVelocityChart data={endorsementVelocityData?.data || []} />
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {stsDistData && stsDistData.distribution.length > 0 && (
-            <STSHistogram 
-              distribution={stsDistData.distribution} 
-              percentiles={stsDistData.percentiles} 
-            />
-          )}
-          {tierDistData && tierDistData.distribution.length > 0 && (
-            <TrustDistribution distribution={tierDistData.distribution} />
-          )}
+          <STSHistogram 
+            distribution={stsDistData?.distribution || []} 
+            percentiles={stsDistData?.percentiles || { p25: 0, p50: 0, p75: 0, p95: 0 }} 
+          />
+          <TrustDistribution distribution={tierDistData?.distribution || []} />
         </div>
         
         <RecentActivity activities={recentActivities} />
