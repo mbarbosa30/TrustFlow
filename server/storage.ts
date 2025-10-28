@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -26,6 +26,11 @@ export interface IStorage {
   getSeeds(): Promise<Seed[]>;
   deleteSeed(address: string): Promise<void>;
   isSeed(address: string): Promise<boolean>;
+  
+  createScore(score: InsertScore): Promise<Score>;
+  getScore(address: string, epochId: number): Promise<Score | undefined>;
+  getScoresByEpoch(epochId: number): Promise<Score[]>;
+  deleteScoresByEpoch(epochId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -166,6 +171,36 @@ export class MemStorage implements IStorage {
       .limit(1);
     
     return results.length > 0;
+  }
+
+  async createScore(score: InsertScore): Promise<Score> {
+    const [dbScore] = await db
+      .insert(scores)
+      .values(score)
+      .returning();
+    
+    return dbScore;
+  }
+
+  async getScore(address: string, epochId: number): Promise<Score | undefined> {
+    const results = await db
+      .select()
+      .from(scores)
+      .where(and(eq(scores.address, address), eq(scores.epochId, epochId)))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getScoresByEpoch(epochId: number): Promise<Score[]> {
+    return await db
+      .select()
+      .from(scores)
+      .where(eq(scores.epochId, epochId));
+  }
+
+  async deleteScoresByEpoch(epochId: number): Promise<void> {
+    await db.delete(scores).where(eq(scores.epochId, epochId));
   }
 }
 

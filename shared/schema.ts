@@ -115,3 +115,25 @@ export const insertSeedSchema = createInsertSchema(seeds).omit({
 
 export type InsertSeed = z.infer<typeof insertSeedSchema>;
 export type Seed = typeof seeds.$inferSelect;
+
+export const scores = pgTable("scores", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  address: text("address").notNull(),
+  epochId: bigint("epoch_id", { mode: "number" }).notNull(),
+  sts: doublePrecision("sts").notNull(),
+  flow: doublePrecision("flow").notNull(),
+  minCut: doublePrecision("min_cut").notNull(),
+  stability: doublePrecision("stability").notNull(),
+  depth: doublePrecision("depth").notNull(),
+  tier: text("tier"),
+  percentile: doublePrecision("percentile").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertScoreSchema = createInsertSchema(scores).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertScore = z.infer<typeof insertScoreSchema>;
+export type Score = typeof scores.$inferSelect;
