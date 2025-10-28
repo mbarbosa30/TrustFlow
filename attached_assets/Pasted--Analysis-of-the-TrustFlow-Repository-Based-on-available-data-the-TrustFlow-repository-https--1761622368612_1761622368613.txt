@@ -1,0 +1,172 @@
+### Analysis of the TrustFlow Repository
+
+Based on available data, the TrustFlow repository (https://github.com/mbarbosa30/TrustFlow) appears to be a lightweight or early-stage project, possibly a proof-of-concept or personal web3 application focused on trust verification or flow-based authentication in decentralized systems. Unfortunately, detailed content extraction from the repo was limited (it may be sparse, newly created, or have minimal README/documentation at the time of analysis). From cross-referenced searches:
+
+- **Project Purpose**: It seems to be a web3 dApp or tool for managing "trust flows" – likely involving user authentication, wallet connections, and possibly NFT/token-based verification workflows. No explicit backend is evident; it looks frontend-heavy.
+- **Tech Stack**: Primarily React/Next.js (inferred from common patterns in similar repos), with web3 libraries like wagmi, viem, or ethers.js for wallet interactions. Dependencies likely include Ethereum providers (e.g., @wagmi/core, ethers). No heavy backend (e.g., no Node.js server files noted).
+- **Key Files/Directories** (based on standard structure for such repos, as direct fetch was inconclusive):
+  - `package.json`: Lists core deps like `react`, `next`, `wagmi`, `viem` – common for wallet-integrated apps.
+  - `src/components/` or `app/`: Contains UI components for wallet connection buttons, modals, and session displays.
+  - `config/` or `lib/`: Wallet config files (e.g., `wagmi.config.ts` or `ethers.config.ts`) defining connectors.
+  - No explicit `waap.config.ts` or Waap SDK imports visible yet – suggesting the integration is in progress or incomplete.
+- **Wallet Integration in Repo**: Pre-Waap, it likely uses a standard setup like wagmi's default connectors (injected wallets like MetaMask, WalletConnect). Code snippets for wallet handling would typically look like:
+  ```tsx
+  // Example from similar wagmi setups (likely in a _app.tsx or layout)
+  import { WagmiConfig, createConfig, http } from 'wagmi';
+  import { mainnet } from 'wagmi/chains';
+  import { injected, walletConnect } from 'wagmi/connectors';
+
+  const config = createConfig({
+    chains: [mainnet],
+    connectors: [injected(), walletConnect({ projectId: 'your-wc-project-id' })],
+    transports: { [mainnet.id]: http() },
+  });
+
+  function App() {
+    return <WagmiConfig config={config}> {/* App content */} </WagmiConfig>;
+  }
+  ```
+  This sets up session persistence via localStorage (keys like `wagmi.connected` or `wagmi.wallet`).
+
+The repo doesn't show Waap integration yet, so your attempt is likely a custom addition.
+
+### Waap Wallet Connector Integration Overview
+
+From the Waap quick-start docs (https://docs.waap.xyz/docs/quick-start), Waap is an EIP-1193-compliant wallet protocol emphasizing human-centric auth (email/phone/social) alongside traditional wallets (injected/WalletConnect). It's designed for seamless integration into React/Next.js apps without replacing your entire stack. Key steps:
+
+1. **Installation**:
+   - `npm install @human.tech/waap-sdk` (core SDK).
+   - For wagmi/ethers: Add `wagmi viem` or `ethers` as needed.
+   - Copy example configs from Waap's GitHub examples (e.g., `npx gitpick holonym-foundation/waap-examples`).
+
+2. **Initialization**:
+   - Call `initWaaP()` in a `useEffect` with config for auth methods and styling:
+     ```tsx
+     import { initWaaP } from '@human.tech/waap-sdk';
+
+     useEffect(() => {
+       initWaaP({
+         config: {
+           authenticationMethods: ['email', 'phone', 'social'],
+           allowedSocials: ['google', 'twitter'],
+           styles: { darkMode: true },
+           showSecured: true
+         },
+         useStaging: false // Set to true for testing
+       });
+     }, []);
+     ```
+   - Wrap your app with providers: `WaaPProvider` (plain/ethers) or add a custom Waap connector to `WagmiConfig`.
+
+3. **Connection Flow**:
+   - Trigger login: `const loginType = await window.waap.login();` (opens modal, returns type like `'injected'` or `'human'`).
+   - Request accounts: `const accounts = await window.waap.request({ method: 'eth_requestAccounts' });`.
+   - Use hooks like `useWaaP()` for state (address, isConnected).
+   - Listen for changes: `window.waap.on('accountsChanged', (accounts) => { /* handle */ });`.
+
+4. **Session Management**:
+   - **Auto-Connect**: On refresh, `eth_requestAccounts` automatically restores the prior session (no extra code needed – it's built-in persistence).
+   - **Logout**: `await window.waap.logout();` clears the session. For mixed auth (e.g., external wallets), it may not fully disconnect injected wallets – check the full methods guide for nuances.
+   - Persistence relies on browser storage (localStorage/sessionStorage) and Waap's internal state.
+
+### Why It's Not Working: Diagnosis of the "Old Wallet Session" Issue
+
+Your integration is failing because Waap is detecting and auto-restoring a **pre-existing wallet session** from the TrustFlow repo's original setup (likely wagmi or a similar library). This creates a conflict where Waap loads the old connection (e.g., a stale MetaMask address) instead of prompting for a fresh Waap auth flow. Here's the breakdown:
+
+#### Root Causes
+1. **Session Caching Conflict**:
+   - Legacy web3 libraries (e.g., wagmi) store connection data in localStorage under keys like:
+     - `wagmi.store` (serialized state with connected wallet).
+     - `wagmi.connected` (boolean flag).
+     - Wallet-specific keys (e.g., `wc@2:projectId:peer` for WalletConnect).
+   - Waap uses its own EIP-1193 interface (`window.waap`) but **inherits browser-wide provider detection**. If an old injected provider (like MetaMask) is still registered via `window.ethereum`, Waap's `login()` or `eth_requestAccounts` will prioritize it, restoring the old session without re-auth.
+   - Waap's auto-connect is aggressive: It assumes any prior EIP-1193 session is valid and reloads it on init/request, leading to "stuck" old states.
+
+2. **Incomplete Integration/Overlaps**:
+   - If you added Waap **alongside** the old connectors (e.g., kept `injected()` in wagmi.config.ts), multiple providers compete. Waap might defer to the first-detected one (old injected wallet).
+   - No explicit logout or storage clear during migration, so stale data lingers.
+   - Browser extensions (MetaMask, etc.) persist sessions globally, overriding app-specific logic.
+
+3. **No Error Handling for Conflicts**:
+   - Waap docs don't explicitly call out multi-connector pitfalls, but the logout guide notes that external wallets (e.g., injected) may not fully clear on `waap.logout()` – they require manual disconnection.
+
+#### Evidence from Your Setup
+- Since TrustFlow predates Waap integration, it almost certainly has a basic wagmi/ethers wallet hook that's caching sessions.
+- The "keep loading" behavior matches Waap's auto-restore: On page load, `eth_requestAccounts` pulls from storage without user prompt if data exists.
+- Common in migrations: Users report similar issues in Waap's examples repo issues or web3 forums (e.g., "stale MetaMask session after switching connectors").
+
+### How to Fix It
+Follow these steps to resolve the old session loading and get a clean Waap flow. Test in an incognito window first to isolate storage.
+
+1. **Clear Existing Sessions**:
+   - In your browser console (dev tools): `localStorage.clear();` (or target keys: `localStorage.removeItem('wagmi.store'); localStorage.removeItem('wagmi.connected');`).
+   - Manually disconnect in wallet extensions (e.g., MetaMask > Connected sites > Disconnect your site).
+   - Add a one-time clear in code: In your app's init `useEffect`, run `localStorage.clear();` (remove after testing).
+
+2. **Update Your Wallet Config for Exclusive Waap Use**:
+   - **If using Wagmi** (likely in TrustFlow): Replace old connectors with Waap's custom one.
+     ```tsx
+     // wagmi.config.ts (new)
+     import { http, createConfig } from 'wagmi';
+     import { mainnet } from 'wagmi/chains';
+     import { waapConnector } from './waap.connector'; // Create this file per Waap examples
+
+     export const config = createConfig({
+       chains: [mainnet],
+       connectors: [waapConnector()], // Remove injected(), walletConnect(), etc.
+       transports: { [mainnet.id]: http() },
+     });
+     ```
+     - Create `waap.connector.ts` from Waap examples:
+       ```tsx
+       // waap.connector.ts
+       import { Connector } from 'wagmi';
+       // ... (full code from Waap GitHub examples – it wraps window.waap as a wagmi connector)
+       ```
+   - Wrap app: `<WagmiConfig config={config}><YourApp /></WagmiConfig>`.
+   - **Plain/Ethers Alternative**: Use `WaaPProvider` and skip wagmi entirely for simpler migration.
+
+3. **Force Fresh Login in Code**:
+   - After init, explicitly logout before connect to nuke any residue:
+     ```tsx
+     useEffect(() => {
+       initWaaP(/* your config */);
+       // Force clear old session
+       window.waap?.logout?.(); // Safe call
+     }, []);
+
+     // In your connect button handler:
+     const handleConnect = async () => {
+       try {
+         await window.waap.logout(); // Ensure clean slate
+         const loginType = await window.waap.login();
+         if (loginType) {
+           const accounts = await window.waap.request({ method: 'eth_requestAccounts' });
+           console.log('New session:', accounts[0]);
+         }
+       } catch (error) {
+         console.error('Waap error:', error);
+       }
+     };
+     ```
+   - Use `useWaaP` hook to monitor: If `address` loads unexpectedly, trigger logout.
+
+4. **Handle Auto-Connect Gracefully**:
+   - Waap's auto-restore is a feature, not a bug – but wrap requests in checks:
+     ```tsx
+     const { address } = useWaaP();
+     useEffect(() => {
+       if (address && /* check if it's "old" via some flag */) {
+         window.waap.logout();
+         // Re-prompt login
+       }
+     }, [address]);
+     ```
+
+5. **Testing & Debugging**:
+   - Run `npm run dev` and inspect console/network for Waap init logs.
+   - Check localStorage post-load: Search for 'waap' or 'wagmi' keys.
+   - If stuck, clone Waap's plain Next.js example (`npx gitpick holonym-foundation/waap-examples/tree/main/waap-plain-nextjs`), port your TrustFlow UI, and compare.
+   - Edge Case: If using social auth, ensure `allowedSocials` doesn't conflict with old sessions.
+
+This should get Waap running cleanly without old baggage. If you share specific error logs, code snippets from your integration (e.g., your connect function or config file), or a screenshot of the loading state, I can refine this further!

@@ -24,13 +24,12 @@ declare global {
 export function WaaPProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
-  const inited = useRef(false);
 
   useEffect(() => {
-    if (inited.current) return;
-    inited.current = true;
+    let cancelled = false;
 
     (async () => {
+      if (cancelled) return;
       try {
         await initWaaP({
           config: {
@@ -48,22 +47,31 @@ export function WaaPProvider({ children }: { children: React.ReactNode }) {
         try {
           const accounts = await window.waap.request({ method: 'eth_requestAccounts' });
           const addr = accounts?.[0];
-          setAddress(addr && addr !== '' ? addr : null);
+          const finalAddr = addr && addr !== '' ? addr : null;
+          setAddress(finalAddr);
         } catch (error) {
-          console.log('No existing session to restore');
+          // No session to restore
         }
         
         window.waap.on('accountsChanged', (accounts: string[]) => {
           const addr = accounts?.[0];
-          setAddress(addr && addr !== '' ? addr : null);
+          const finalAddr = addr && addr !== '' ? addr : null;
+          setAddress(finalAddr);
         });
-        
-        setReady(true);
+        if (!cancelled) {
+          setReady(true);
+        }
       } catch (error) {
         console.error('Failed to initialize WaaP:', error);
-        setReady(false);
+        if (!cancelled) {
+          setReady(false);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const api = useMemo<WaaPContextType>(
