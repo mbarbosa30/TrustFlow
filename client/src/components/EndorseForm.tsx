@@ -6,10 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAccount, useSignTypedData, usePublicClient } from 'wagmi';
+import { useWallet } from '@/contexts/WalletContext';
 import { apiRequest } from "@/lib/queryClient";
 import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
+import { initWaaP } from "@human.tech/waap-sdk";
+import { waapConfig } from "@/lib/waap.config";
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
 
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
@@ -37,9 +41,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const { toast } = useToast();
-  const { address, isConnected } = useAccount();
-  const { signTypedDataAsync } = useSignTypedData();
-  const publicClient = usePublicClient({ chainId: 1 });
+  const { address, isConnected } = useWallet();
+  
+  const publicClient = createPublicClient({
+    chain: mainnet,
+    transport: http(),
+  });
 
   const resolveENSName = async (nameOrAddress: string): Promise<Address> => {
     if (nameOrAddress.toLowerCase().startsWith('0x')) {
@@ -93,12 +100,19 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
-      const signature = await signTypedDataAsync({
-        domain: ENDORSEMENT_DOMAIN,
-        types: ENDORSEMENT_TYPES,
-        primaryType: 'Endorsement',
-        message,
-      });
+      const waap = await initWaaP(waapConfig);
+      const signature = await waap.request({
+        method: 'eth_signTypedData_v4',
+        params: [
+          address,
+          JSON.stringify({
+            domain: ENDORSEMENT_DOMAIN,
+            types: ENDORSEMENT_TYPES,
+            primaryType: 'Endorsement',
+            message,
+          }),
+        ],
+      }) as string;
 
       await apiRequest('POST', '/api/endorse', {
         endorser: address,
