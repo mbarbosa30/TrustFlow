@@ -40,6 +40,14 @@ export async function verifyEndorsementSignature(
       nonce: endorsement.nonce,
     };
 
+    console.log("Verifying signature with domain:", JSON.stringify(DOMAIN, null, 2));
+    console.log("Message:", JSON.stringify({
+      endorser: endorsement.endorser,
+      endorsee: endorsement.endorsee,
+      epoch: endorsement.epoch.toString(),
+      nonce: endorsement.nonce.toString(),
+    }, null, 2));
+
     const valid = await verifyTypedData({
       address: endorsement.endorser,
       domain: DOMAIN,
@@ -48,6 +56,8 @@ export async function verifyEndorsementSignature(
       message,
       signature: endorsement.sig,
     });
+
+    console.log("Signature valid:", valid);
 
     return valid;
   } catch (error) {

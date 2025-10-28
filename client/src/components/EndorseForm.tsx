@@ -121,18 +121,25 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce: nonce.toString(),
       };
       
+      const typedData = {
+        domain: ENDORSEMENT_DOMAIN,
+        types: ENDORSEMENT_TYPES,
+        primaryType: 'Endorsement',
+        message: messageForSigning,
+      };
+
+      console.log("Signing with domain:", JSON.stringify(ENDORSEMENT_DOMAIN, null, 2));
+      console.log("Signing message:", JSON.stringify(messageForSigning, null, 2));
+      
       const signature = await window.ethereum.request({
         method: 'eth_signTypedData_v4',
         params: [
           address,
-          JSON.stringify({
-            domain: ENDORSEMENT_DOMAIN,
-            types: ENDORSEMENT_TYPES,
-            primaryType: 'Endorsement',
-            message: messageForSigning,
-          }),
+          JSON.stringify(typedData),
         ],
       }) as string;
+
+      console.log("Signature created:", signature);
 
       await apiRequest('POST', '/api/endorse', {
         endorser: address,
