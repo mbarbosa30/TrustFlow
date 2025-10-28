@@ -29,7 +29,6 @@ function Navigation() {
     { path: "/overview", label: "Overview" },
     { path: "/why", label: "Why this score?" },
     { path: "/verify", label: "Verify" },
-    { path: "/seeds", label: "Seeds" },
   ];
 
   return (

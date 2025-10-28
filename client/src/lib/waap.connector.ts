@@ -99,7 +99,9 @@ export default function WaaPConnector(options?: InitWaaPOptions) {
           const provider = await this.getProvider();
           if (!provider) return [];
           const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
-          return accounts.map((x) => getAddress(x));
+          return accounts
+            .filter((x) => x && x.trim() !== '')
+            .map((x) => getAddress(x));
         } catch (error) {
           console.error("Error getting accounts:", error);
           return [];
