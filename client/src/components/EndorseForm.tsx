@@ -16,6 +16,7 @@ import { mainnet } from 'viem/chains';
 declare global {
   interface Window {
     ethereum?: any;
+    waap?: any;
   }
 }
 
@@ -102,13 +103,14 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
-      // Use already-initialized WaaP instance
-      if (!window.ethereum) {
+      // Use WaaP provider (falls back to window.ethereum for other wallets)
+      const provider = window.waap || window.ethereum;
+      if (!provider) {
         throw new Error("Wallet not connected. Please connect your wallet first.");
       }
       
       // Request account authorization first
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
+      const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[];
       if (!accounts || accounts.length === 0) {
         throw new Error("No wallet account available");
       }
@@ -130,8 +132,9 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
 
       console.log("Signing with domain:", JSON.stringify(ENDORSEMENT_DOMAIN, null, 2));
       console.log("Signing message:", JSON.stringify(messageForSigning, null, 2));
+      console.log("Using provider:", provider === window.waap ? 'WaaP' : 'window.ethereum');
       
-      const signature = await window.ethereum.request({
+      const signature = await provider.request({
         method: 'eth_signTypedData_v4',
         params: [
           address,
