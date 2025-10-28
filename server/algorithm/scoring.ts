@@ -171,16 +171,19 @@ export class TrustScorer {
       graph.addNode(uPlus);
 
       // Advogato-style node capacity based on distance from seeds
+      // Using refined gentler decay pattern: 800, 240, 96, 48, 24...
       const depth = depths.get(u) ?? this.config.maxDepth;
       let capacity: number;
       if (depth === 0) {
         capacity = 800; // Seeds
       } else if (depth === 1) {
-        capacity = 200; // 1 hop
+        capacity = 240; // 1 hop (800 * 0.3)
       } else if (depth === 2) {
-        capacity = 50; // 2 hops
+        capacity = 96; // 2 hops (240 * 0.4)
+      } else if (depth === 3) {
+        capacity = 48; // 3 hops (96 * 0.5)
       } else {
-        capacity = 20; // 3+ hops
+        capacity = 24; // 4+ hops (48 * 0.5)
       }
       
       graph.addEdge(uMinus, uPlus, capacity);
