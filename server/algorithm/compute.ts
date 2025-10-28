@@ -125,12 +125,33 @@ export class EpochComputation {
       storage.getSeeds(),
     ]);
 
+    // Calculate network metrics from scores
+    const acceptedScores = scores.filter(s => s.flow >= 1);
+    const flowValues = acceptedScores.map(s => s.flow);
+    const minCutValues = acceptedScores.map(s => s.minCut);
+
+    const totalAccepted = acceptedScores.length;
+    const avgFlow = flowValues.length > 0 
+      ? flowValues.reduce((a, b) => a + b, 0) / flowValues.length 
+      : 0;
+    const avgMinCut = minCutValues.length > 0
+      ? minCutValues.reduce((a, b) => a + b, 0) / minCutValues.length
+      : 0;
+    
+    // Calculate p95 flow
+    const sortedFlows = [...flowValues].sort((a, b) => a - b);
+    const p95Index = Math.ceil(sortedFlows.length * 0.95) - 1;
+    const p95Flow = sortedFlows.length > 0 ? sortedFlows[Math.max(0, p95Index)] : 0;
+
     return {
       epochId,
-      computed: scores.length > 0,
-      totalScores: scores.length,
-      totalEndorsements: endorsements.length,
-      totalSeeds: seeds.length,
+      scoresComputed: scores.length,
+      networkMetrics: {
+        totalAccepted,
+        avgFlow,
+        avgMinCut,
+        p95Flow,
+      },
       health: health
         ? {
             ghi: health.ghi,
@@ -139,6 +160,7 @@ export class EpochComputation {
             churnN: health.churnN,
           }
         : null,
+      duration: 0, // Will be set by the actual computation call
     };
   }
 }
