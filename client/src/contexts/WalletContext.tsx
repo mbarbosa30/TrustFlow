@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext } from "react";
+import { useWaaP } from "@/waap";
 
 interface WalletContextType {
   address: string | null;
@@ -9,10 +10,10 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [address, setAddress] = useState<string | null>(null);
+  const { address } = useWaaP();
 
   return (
-    <WalletContext.Provider value={{ address, setAddress, isConnected: !!address }}>
+    <WalletContext.Provider value={{ address, setAddress: () => {}, isConnected: !!address }}>
       {children}
     </WalletContext.Provider>
   );

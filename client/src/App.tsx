@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletConnect } from "@/components/WalletConnect";
 import { WalletProvider } from "@/contexts/WalletContext";
-import { WaaPProvider } from "@/providers/WaaPProvider";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
@@ -112,22 +111,20 @@ function App() {
   const showNavigation = location !== "/";
 
   return (
-    <WaaPProvider>
-      <WalletProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <div className="min-h-screen bg-background flex flex-col">
-              {showNavigation && <Navigation />}
-              <main className="flex-1">
-                <Router />
-              </main>
-              <Footer />
-            </div>
-            <Toaster />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </WalletProvider>
-    </WaaPProvider>
+    <WalletProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className="min-h-screen bg-background flex flex-col">
+            {showNavigation && <Navigation />}
+            <main className="flex-1">
+              <Router />
+            </main>
+            <Footer />
+          </div>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </WalletProvider>
   );
 }
 

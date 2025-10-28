@@ -1,0 +1,137 @@
+Yes—I re-opened your TrustFlow repo and the **client** app, but GitHub’s UI is partially erroring in my browser session so I can’t render individual files inline. I can still give you a drop-in fix that matches WaaP’s quick-start contract and stops the “connect → forget / old session” mess. ([GitHub][1])
+
+Below is the **exact wiring WaaP expects** (from their docs), adapted to a Vite/React client. It does three things your app likely isn’t doing consistently:
+
+1. **Init WaaP once** at the app root (client-only).
+2. **Restore the last session** on load via `eth_requestAccounts`.
+3. Provide **clean login/logout** that also clears WalletConnect cache when needed. ([docs.waap.xyz][2])
+
+---
+
+# 1) Add a tiny WaaP provider (client/src/waap.tsx)
+
+```tsx
+// client/src/waap.tsx
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { initWaaP } from '@human.tech/waap-sdk'
+
+type Ctx = {
+  ready: boolean
+  address: string | null
+  login: () => Promise<void>
+  logout: () => Promise<void>
+}
+
+const C = createContext<Ctx>({ ready:false, address:null, login:async()=>{}, logout:async()=>{} })
+
+export function WaaPProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false)
+  const [address, setAddress] = useState<string|null>(null)
+  const inited = useRef(false)
+
+  useEffect(() => {
+    if (inited.current) return
+    inited.current = true
+
+    initWaaP({
+      config: {
+        authenticationMethods: ['email','phone','social','wallet'],
+        styles: { darkMode: true },
+      },
+      // REQUIRED if you expose "wallet" (external wallets) in the modal:
+      walletConnectProjectId: import.meta.env.VITE_WC_PROJECT_ID,
+      useStaging: false,
+    })
+
+    ;(async () => {
+      try {
+        // WaaP auto-reconnect: this restores the previous session if any
+        const accts = await window.waap.request({ method: 'eth_requestAccounts' })
+        setAddress(accts?.[0] ?? null)
+      } catch {}
+      window.waap.on('accountsChanged', (a: string[]) => setAddress(a?.[0] ?? null))
+      setReady(true)
+    })()
+  }, [])
+
+  const api = useMemo<Ctx>(() => ({
+    ready,
+    address,
+    login: async () => {
+      await window.waap.login() // opens WaaP modal
+      const accts = await window.waap.request({ method: 'eth_requestAccounts' })
+      setAddress(accts?.[0] ?? null)
+    },
+    logout: async () => {
+      try { await window.waap.logout() } finally {
+        // If you ever initialized WalletConnect separately, also clear its persisted state:
+        Object.keys(localStorage).filter(k => k.startsWith('wc@2:')).forEach(k => localStorage.removeItem(k))
+        setAddress(null)
+      }
+    },
+  }), [ready, address])
+
+  return <C.Provider value={api}>{children}</C.Provider>
+}
+
+export const useWaaP = () => useContext(C)
+```
+
+This follows WaaP’s **Basic Integration** + **Auto-Connect on Page Refresh** guidance: `initWaaP` → `login()` → `eth_requestAccounts` (and auto-restores on refresh). ([docs.waap.xyz][2])
+
+---
+
+# 2) Mount it once at the top (client/src/main.tsx)
+
+```tsx
+// client/src/main.tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import { WaaPProvider } from './waap'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WaaPProvider>
+      <App />
+    </WaaPProvider>
+  </React.StrictMode>
+)
+```
+
+---
+
+# 3) Use it anywhere (Connect button)
+
+```tsx
+// any component
+import { useWaaP } from '../waap' // adjust path
+
+export function ConnectWallet() {
+  const { ready, address, login, logout } = useWaaP()
+  if (!ready) return <button disabled>Loading wallet…</button>
+  if (!address) return <button onClick={login}>Connect wallet</button>
+  return (
+    <div style={{display:'flex', gap:8}}>
+      <span>Connected: {address.slice(0,6)}…{address.slice(-4)}</span>
+      <button onClick={logout}>Logout</button>
+    </div>
+  )
+}
+```
+
+---
+
+## 4 quick gotchas I strongly suspect in your current wiring
+
+* **No WC projectId while showing “Wallet”** in the WaaP modal → external wallets won’t persist properly. Set `VITE_WC_PROJECT_ID=...` and pass it to `initWaaP`. ([docs.waap.xyz][2])
+* **Calling WaaP from SSR / before mount** → `window.waap` is undefined or late; always gate with `useEffect` and a `ready` flag (as above). ([docs.waap.xyz][2])
+* **Not re-requesting accounts on load** → the address disappears after refresh; WaaP expects `eth_requestAccounts` to restore the session. ([docs.waap.xyz][2])
+* **Mixing connectors** (Wagmi injected/Coinbase + WaaP) with auto connect → a previous non-WaaP provider “wins” or stale WalletConnect session reattaches. While debugging, let WaaP be the **only** provider. ([docs.waap.xyz][2])
+
+If you stick these 3 files/changes in, you’ll get the flow you want: **click connect → wallet opens → accept → address stays (and comes back after refresh)**. That’s literally the contract WaaP documents. ([docs.waap.xyz][2])
+
+If you want me to pinpoint exact lines, tell me which file currently initializes the wallet in `client/` and I’ll diff it against the snippet above.
+
+[1]: https://github.com/mbarbosa30/TrustFlow "GitHub - mbarbosa30/TrustFlow"
+[2]: https://docs.waap.xyz/docs/quick-start "Quick Start | Wallet as a Protocol"

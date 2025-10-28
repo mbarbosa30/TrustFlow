@@ -1,0 +1,147 @@
+You’re right — this should be dead-simple. The problem isn’t WaaP; it’s how the app is wiring it. From the repo structure (Vite + React) and WaaP’s quick-start, there are a few classic foot-guns that will make it “connect… then forget” or endlessly reuse an old session.
+
+Here’s the fix, step-by-step, with exact code you can drop in.
+
+# What’s wrong (most likely)
+
+* Calling `window.waap` **before** WaaP is initialized, or from a place that re-mounts on route changes.
+* Not **re-asking** for accounts on load (this is how WaaP restores the last session).
+* Mixing WaaP with other connectors (WalletConnect via Wagmi / injected) so a different provider “wins.”
+* Enabling “wallet” without a **WalletConnect projectId**.
+  The WaaP docs specify: init once, call `login()` on user action, and on page refresh call `eth_requestAccounts` to restore the session; `logout()` clears sessions (WC/injected have nuances). ([docs.wallet.human.tech][1])
+
+# 1) Add a tiny WaaP provider (Vite + React)
+
+Create `src/waap.tsx`:
+
+```tsx
+// src/waap.tsx
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { initWaaP } from '@human.tech/waap-sdk'
+
+type Ctx = {
+  ready: boolean
+  address: string | null
+  login: () => Promise<void>
+  logout: () => Promise<void>
+}
+
+const WaaPCtx = createContext<Ctx>({ ready:false, address:null, login: async()=>{}, logout: async()=>{} })
+
+export function WaaPProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false)
+  const [address, setAddress] = useState<string|null>(null)
+  const inited = useRef(false)
+
+  useEffect(() => {
+    if (inited.current) return
+    inited.current = true
+
+    initWaaP({
+      config: {
+        // choose the methods you actually want to show:
+        authenticationMethods: ['email','phone','social','wallet'],
+        styles: { darkMode: true },
+      },
+      // required if you expose "wallet" (external wallets via WC):
+      walletConnectProjectId: import.meta.env.VITE_WC_PROJECT_ID,
+      useStaging: false,
+    })
+
+    // restore previous session (WaaP auto-connect)
+    ;(async () => {
+      try {
+        const accts = await window.waap.request({ method: 'eth_requestAccounts' })
+        setAddress(accts?.[0] ?? null)
+      } catch {}
+      window.waap.on('accountsChanged', (a: string[]) => setAddress(a?.[0] ?? null))
+      setReady(true)
+    })()
+  }, [])
+
+  const api = useMemo<Ctx>(() => ({
+    ready,
+    address,
+    login: async () => {
+      await window.waap.login() // opens the WaaP modal
+      const accts = await window.waap.request({ method: 'eth_requestAccounts' })
+      setAddress(accts?.[0] ?? null)
+    },
+    logout: async () => {
+      try { await window.waap.logout() } finally {
+        // if you ever used WC directly elsewhere, nuke its cache too:
+        Object.keys(localStorage).filter(k => k.startsWith('wc@2:')).forEach(k => localStorage.removeItem(k))
+        setAddress(null)
+      }
+    },
+  }), [ready, address])
+
+  return <WaaPCtx.Provider value={api}>{children}</WaaPCtx.Provider>
+}
+
+export const useWaaP = () => useContext(WaaPCtx)
+```
+
+WaaP expects exactly this lifecycle: `initWaaP()` once; `login()` on click; `eth_requestAccounts` on refresh to restore; and `logout()` when leaving. ([docs.wallet.human.tech][1])
+
+# 2) Mount it once at the top of your app
+
+In `src/main.tsx`:
+
+```tsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import { WaaPProvider } from './waap'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WaaPProvider>
+      <App />
+    </WaaPProvider>
+  </React.StrictMode>
+)
+```
+
+# 3) Use it anywhere (connect button + address badge)
+
+```tsx
+import { useWaaP } from './waap'
+
+export function ConnectButton() {
+  const { ready, address, login, logout } = useWaaP()
+  if (!ready) return <button disabled>Loading wallet…</button>
+  if (!address) return <button onClick={login}>Connect wallet</button>
+  return (
+    <div style={{display:'flex', gap:8}}>
+      <span>Connected: {address.slice(0,6)}…{address.slice(-4)}</span>
+      <button onClick={logout}>Logout</button>
+    </div>
+  )
+}
+```
+
+# 4) Environment vars
+
+Add a WalletConnect project id if you’re exposing “Wallet”:
+
+```
+VITE_WC_PROJECT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+(If you don’t want external wallets, remove `'wallet'` from `authenticationMethods`.) ([docs.wallet.human.tech][1])
+
+# 5) Don’t mix providers while debugging
+
+If you also wired Wagmi/injected/Coinbase connectors elsewhere, **remove them for now** and let WaaP be the only EIP-1193 provider. Multiple connectors plus auto-connect is a common source of “wrong wallet” or “no session” issues. Then add Wagmi back later with a single WaaP connector. The WaaP docs include a Wagmi example config if you need it. ([docs.wallet.human.tech][1])
+
+# 6) How this fixes your two symptoms
+
+* **“Keeps loading an old session”** → We don’t call anything on mount except `eth_requestAccounts`, which restores *the* last session in a controlled way. `logout()` actually clears WaaP (and WC if applicable). ([docs.wallet.human.tech][1])
+* **“Won’t hold the address”** → The provider sits at the app root; we subscribe to `accountsChanged`, and we re-ask accounts on refresh (WaaP’s recommended “auto-connect” behavior). ([docs.wallet.human.tech][1])
+
+---
+
+If you want me to point to exact lines in your repo, grant me a specific file path where you currently init the wallet (e.g., `client/src/main.tsx`, `client/src/lib/wallet.ts`, etc.). But wiring your app exactly like the snippets above — strictly following WaaP’s quick-start contract (`login` → `eth_requestAccounts` → persist on refresh) — will make it the “click, accept, done” flow you expect. ([docs.wallet.human.tech][1])
+
+[1]: https://docs.wallet.human.tech/docs/quick-start "Quick Start | Wallet as a Protocol"
