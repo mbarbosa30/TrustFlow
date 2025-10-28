@@ -45,7 +45,7 @@ export class TrustScorer {
     const flowValues: number[] = [];
     const minCutValues: number[] = [];
 
-    // First pass: collect all flow and min-cut values
+    // First pass: collect flow and min-cut values for ACCEPTED users only (flow ≥ 1)
     for (const user of Array.from(allUsers)) {
       const graph = this.buildUserGraph(user, endorsements, seeds);
       const maxFlow = new DinicMaxFlow(graph);
@@ -54,13 +54,29 @@ export class TrustScorer {
       const minCutSet = maxFlow.computeMinCut();
       const minCut = this.calculateMinCutSize(minCutSet, graph);
 
-      flowValues.push(flow);
-      minCutValues.push(minCut);
+      // Only include accepted users in percentile calculations
+      if (flow >= 1) {
+        flowValues.push(flow);
+        minCutValues.push(minCut);
+      }
     }
 
-    const p95Flow = this.calculatePercentile(flowValues, 0.95);
-    const p95MinCut = this.calculatePercentile(minCutValues, 0.95);
-    const avgFlow = flowValues.reduce((a, b) => a + b, 0) / flowValues.length;
+    // Historical baseline anchors (for cross-epoch stability)
+    const historicalFlowP95 = 10; // F̃₉₅ - adjust based on historical data
+    const historicalMinCutP95 = 3; // C̃₉₅ - adjust based on historical data
+    
+    const p95Flow = Math.max(
+      this.calculatePercentile(flowValues, 0.95),
+      historicalFlowP95
+    );
+    const p95MinCut = Math.max(
+      this.calculatePercentile(minCutValues, 0.95),
+      historicalMinCutP95
+    );
+    
+    const avgFlow = flowValues.length > 0 
+      ? flowValues.reduce((a, b) => a + b, 0) / flowValues.length 
+      : 0;
     let totalAccepted = 0;
     let totalMinCut = 0;
 
@@ -251,6 +267,7 @@ export class TrustScorer {
 
   /**
    * Calculate stability (resistance to edge removal)
+   * Per spec: S_i = 1 - min(1, Δ_i) where Δ_i is worst relative drop
    */
   private calculateStability(
     user: Address,
@@ -265,9 +282,9 @@ export class TrustScorer {
 
     const incomingEndorsements = endorsements.filter(e => e.endorsee === user);
     
-    if (incomingEndorsements.length === 0) return 0;
+    if (incomingEndorsements.length === 0) return 1; // Perfectly stable if no edges
 
-    let totalFlowWithout = 0;
+    let worstDrop = 0; // Δ_i - worst relative drop
 
     for (const endorsement of incomingEndorsements) {
       const filteredEndorsements = endorsements.filter(
@@ -278,11 +295,13 @@ export class TrustScorer {
       const testMaxFlow = new DinicMaxFlow(testGraph);
       const flowWithout = testMaxFlow.computeMaxFlow();
       
-      totalFlowWithout += flowWithout;
+      // Calculate relative drop from removing this edge
+      const relativeDrop = (baseFlow - flowWithout) / baseFlow;
+      worstDrop = Math.max(worstDrop, relativeDrop);
     }
 
-    const avgFlowWithout = totalFlowWithout / incomingEndorsements.length;
-    const stability = baseFlow > 0 ? avgFlowWithout / baseFlow : 0;
+    // S_i = 1 - min(1, Δ_i)
+    const stability = 1 - Math.min(1, worstDrop);
 
     return stability;
   }
