@@ -34,12 +34,12 @@ export default function Landing() {
             Graph-Based Trust Network
           </Badge>
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight" data-testid="text-hero-headline">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
             Sybil-Resistant Trust Using{" "}
             <span className="text-primary">Max-Flow/Min-Cut Algorithms</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
             Convert public peer vouches into verifiable trust scores using network flow computation. 
             Not simple vote counting—real graph algorithms with complete transparency.
           </p>
