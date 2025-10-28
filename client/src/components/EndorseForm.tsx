@@ -81,7 +81,13 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
     try {
       const endorseeAddress = await resolveENSName(searchQuery);
 
-      const epoch = BigInt(0);
+      // Fetch current epoch
+      const epochResponse = await fetch('/api/epoch/current');
+      if (!epochResponse.ok) {
+        throw new Error("Failed to fetch current epoch");
+      }
+      const epochData = await epochResponse.json();
+      const epoch = BigInt(epochData.epochId);
 
       const nonceResponse = await fetch(`/api/nonce/${address}/${epoch}`);
       if (!nonceResponse.ok) {
