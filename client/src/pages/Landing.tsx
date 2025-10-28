@@ -32,7 +32,7 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert public peer vouches into verifiable trust scores using network flow computation. 
+            Convert public peer vouching into verifiable trust scores through network flow computation. 
             Not simple vote counting—real graph algorithms with complete transparency.
           </p>
           
