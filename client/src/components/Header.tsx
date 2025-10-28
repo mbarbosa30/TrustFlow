@@ -31,7 +31,7 @@ export function Header({ navItems, variant = "app" }: HeaderProps) {
               <span>TrustFlow</span>
             </Link>
             
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-2">
               {navItems.map((item) => {
                 const isActive = location === item.path;
                 
@@ -74,7 +74,7 @@ export function Header({ navItems, variant = "app" }: HeaderProps) {
         </div>
         
         {/* Mobile navigation */}
-        <nav className="md:hidden pb-3 flex gap-1 overflow-x-auto">
+        <nav className="md:hidden pb-3 flex gap-2 overflow-x-auto">
           {navItems.map((item) => {
             const isActive = location === item.path;
             
