@@ -119,35 +119,38 @@ export function ScoreCard({
           )}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
           {walletAddress && (
             <Button
               variant="outline"
-              className="w-full gap-2"
+              size="sm"
+              className="gap-2 flex-1"
               onClick={() => setShowQRCode(true)}
               data-testid="button-show-qr"
             >
               <QrCode className="w-4 h-4" />
-              Show My QR Code
+              Show QR
             </Button>
           )}
-          <Link href="/why">
+          <Link href="/why" className="flex-1">
             <Button
               variant="outline"
+              size="sm"
               className="w-full gap-2"
               data-testid="button-why-score"
             >
               <HelpCircle className="w-4 h-4" />
-              Why this score?
+              Why?
             </Button>
           </Link>
           <Button
-            className="w-full gap-2"
+            size="sm"
+            className="gap-2 flex-1"
             onClick={handleExport}
             data-testid="button-export-attestation"
           >
             <Download className="w-4 h-4" />
-            Export Attestation
+            Export
           </Button>
         </div>
       </CardContent>
