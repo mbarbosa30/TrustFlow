@@ -144,8 +144,18 @@ export class TrustScorer {
       graph.addNode(uMinus);
       graph.addNode(uPlus);
 
+      // Advogato-style node capacity based on distance from seeds
       const depth = depths.get(u) ?? this.config.maxDepth;
-      const capacity = depth < this.config.maxDepth ? 2 : 1;
+      let capacity: number;
+      if (depth === 0) {
+        capacity = 800; // Seeds
+      } else if (depth === 1) {
+        capacity = 200; // 1 hop
+      } else if (depth === 2) {
+        capacity = 50; // 2 hops
+      } else {
+        capacity = 20; // 3+ hops
+      }
       
       graph.addEdge(uMinus, uPlus, capacity);
     }
@@ -159,7 +169,8 @@ export class TrustScorer {
       graph.addEdge(`${endorser}+`, `${endorsee}-`, 1.0);
     }
 
-    graph.addEdge(`${user}+`, SINK, Infinity);
+    // Add sink connection with capacity 1 for acceptance threshold
+    graph.addEdge(`${user}-`, SINK, 1);
 
     return graph;
   }
