@@ -594,9 +594,9 @@ export class TrustScorer {
     } else if (networkSize < 200) {
       return {
         name: "Moderate (Medium Network)",
-        description: "flow >= 1 AND min-cut >= 2 (basic Sybil resistance)",
+        description: "flow >= 1 AND min-cut >= 1 (basic Sybil resistance)",
         minFlow: 1,
-        minCut: 2,
+        minCut: 1,
         minSeedCoverage: 1,
         requireEdgeDisjointPaths: false,
       };
