@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet } from '@/contexts/WalletContext';
+import { useWaaP } from '@/waap';
 import { apiRequest } from "@/lib/queryClient";
 import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
@@ -44,7 +44,8 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const { toast } = useToast();
-  const { address, isConnected } = useWallet();
+  const { address } = useWaaP();
+  const isConnected = !!address;
   
   const publicClient = createPublicClient({
     chain: mainnet,
