@@ -582,28 +582,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/network-growth", async (req, res) => {
     try {
-      const allEndorsements = await storage.getEndorsements({ limit: 10000 });
-      const allParticipants = new Set<string>();
-      allEndorsements.forEach(e => {
-        allParticipants.add(e.endorser);
-        allParticipants.add(e.endorsee);
-      });
-
-      const latestHealth = await storage.getLatestEpochHealth();
-      let acceptedCount = 0;
+      const allScores = await storage.getAllScores();
       
-      if (latestHealth) {
-        const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-        acceptedCount = scores.filter(s => s.isAccepted).length;
-      }
-
-      const data = [
-        {
-          epoch: "Epoch 0",
-          totalUsers: allParticipants.size,
-          activeUsers: acceptedCount,
+      // Group scores by epoch
+      const scoresByEpoch = allScores.reduce((acc, score) => {
+        const epochId = Number(score.epochId);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
         }
-      ];
+        acc[epochId].push(score);
+        return acc;
+      }, {} as Record<number, typeof allScores>);
+
+      const data = Object.keys(scoresByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => {
+          const epochScores = scoresByEpoch[Number(epochId)];
+          const acceptedCount = epochScores.filter(s => s.isAccepted).length;
+          const totalCount = epochScores.length;
+          
+          return {
+            epoch: `Epoch ${epochId}`,
+            totalUsers: totalCount,
+            activeUsers: acceptedCount,
+          };
+        });
 
       return res.status(200).json({ data });
     } catch (error) {
@@ -616,13 +619,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allEndorsements = await storage.getEndorsements({ limit: 10000 });
       
-      const data = [
-        {
-          epoch: "Epoch 0",
-          newEndorsements: allEndorsements.length,
-          revokedEndorsements: 0,
+      // Group endorsements by epoch
+      const endorsementsByEpoch = allEndorsements.reduce((acc, e) => {
+        const epochId = Number(e.epoch);
+        if (!acc[epochId]) {
+          acc[epochId] = 0;
         }
-      ];
+        acc[epochId]++;
+        return acc;
+      }, {} as Record<number, number>);
+
+      const data = Object.keys(endorsementsByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => ({
+          epoch: `Epoch ${epochId}`,
+          newEndorsements: endorsementsByEpoch[Number(epochId)],
+          revokedEndorsements: 0,
+        }));
 
       return res.status(200).json({ data });
     } catch (error) {
@@ -633,33 +646,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/score-components", async (req, res) => {
     try {
-      const latestHealth = await storage.getLatestEpochHealth();
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.isAccepted);
-      
-      if (acceptedScores.length === 0) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const avgFlow = acceptedScores.reduce((sum, s) => sum + s.flow, 0) / acceptedScores.length;
-      const avgMinCut = acceptedScores.reduce((sum, s) => sum + s.minCut, 0) / acceptedScores.length;
-      const avgStability = acceptedScores.reduce((sum, s) => sum + s.stability, 0) / acceptedScores.length;
-      const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
-
-      const data = [
-        {
-          epoch: `Epoch ${latestHealth.epochId}`,
-          flow: parseFloat((avgFlow * 100).toFixed(2)),
-          cut: parseFloat((avgMinCut * 100).toFixed(2)),
-          stability: parseFloat((avgStability * 100).toFixed(2)),
-          depth: parseFloat((avgDepth * 100).toFixed(2)),
+      // Group scores by epoch
+      const scoresByEpoch = allScores.reduce((acc, score) => {
+        const epochId = Number(score.epochId);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
         }
-      ];
+        acc[epochId].push(score);
+        return acc;
+      }, {} as Record<number, typeof allScores>);
+
+      const data = Object.keys(scoresByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => {
+          const epochScores = scoresByEpoch[Number(epochId)];
+          const acceptedScores = epochScores.filter(s => s.isAccepted);
+          
+          if (acceptedScores.length === 0) {
+            return null;
+          }
+
+          const avgFlow = acceptedScores.reduce((sum, s) => sum + s.flow, 0) / acceptedScores.length;
+          const avgMinCut = acceptedScores.reduce((sum, s) => sum + s.minCut, 0) / acceptedScores.length;
+          const avgStability = acceptedScores.reduce((sum, s) => sum + s.stability, 0) / acceptedScores.length;
+          const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
+
+          return {
+            epoch: `Epoch ${epochId}`,
+            flow: parseFloat((avgFlow * 100).toFixed(2)),
+            cut: parseFloat((avgMinCut * 100).toFixed(2)),
+            stability: parseFloat((avgStability * 100).toFixed(2)),
+            depth: parseFloat((avgDepth * 100).toFixed(2)),
+          };
+        })
+        .filter(d => d !== null);
 
       return res.status(200).json({ data });
     } catch (error) {
@@ -670,34 +692,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/average-sts", async (req, res) => {
     try {
-      const latestHealth = await storage.getLatestEpochHealth();
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.isAccepted);
-      
-      if (acceptedScores.length === 0) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const stsValues = acceptedScores.map(s => s.sts).sort((a, b) => a - b);
-      const mean = stsValues.reduce((sum, v) => sum + v, 0) / stsValues.length;
-      const median = stsValues[Math.floor(stsValues.length * 0.50)] || 0;
-      const p25 = stsValues[Math.floor(stsValues.length * 0.25)] || 0;
-      const p75 = stsValues[Math.floor(stsValues.length * 0.75)] || 0;
-
-      const data = [
-        {
-          epoch: `Epoch ${latestHealth.epochId}`,
-          mean: parseFloat(mean.toFixed(2)),
-          median: parseFloat(median.toFixed(2)),
-          p25: parseFloat(p25.toFixed(2)),
-          p75: parseFloat(p75.toFixed(2)),
+      // Group scores by epoch
+      const scoresByEpoch = allScores.reduce((acc, score) => {
+        const epochId = Number(score.epochId);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
         }
-      ];
+        acc[epochId].push(score);
+        return acc;
+      }, {} as Record<number, typeof allScores>);
+
+      const data = Object.keys(scoresByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => {
+          const epochScores = scoresByEpoch[Number(epochId)];
+          const acceptedScores = epochScores.filter(s => s.isAccepted);
+          
+          if (acceptedScores.length === 0) {
+            return null;
+          }
+
+          const stsValues = acceptedScores.map(s => s.sts).sort((a, b) => a - b);
+          const mean = stsValues.reduce((sum, v) => sum + v, 0) / stsValues.length;
+          const median = stsValues[Math.floor(stsValues.length * 0.50)] || 0;
+          const p25 = stsValues[Math.floor(stsValues.length * 0.25)] || 0;
+          const p75 = stsValues[Math.floor(stsValues.length * 0.75)] || 0;
+
+          return {
+            epoch: `Epoch ${epochId}`,
+            mean: parseFloat(mean.toFixed(2)),
+            median: parseFloat(median.toFixed(2)),
+            p25: parseFloat(p25.toFixed(2)),
+            p75: parseFloat(p75.toFixed(2)),
+          };
+        })
+        .filter(d => d !== null);
 
       return res.status(200).json({ data });
     } catch (error) {
@@ -709,35 +740,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/network-density", async (req, res) => {
     try {
       const allEndorsements = await storage.getEndorsements({ limit: 10000 });
-      const latestHealth = await storage.getLatestEpochHealth();
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth || allEndorsements.length === 0) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.isAccepted);
-      
-      if (acceptedScores.length === 0) {
-        return res.status(200).json({ data: [] });
-      }
-
-      const allParticipants = new Set<string>();
-      allEndorsements.forEach(e => {
-        allParticipants.add(e.endorser);
-        allParticipants.add(e.endorsee);
-      });
-
-      const endorsementsPerUser = allEndorsements.length / allParticipants.size;
-      const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
-
-      const data = [
-        {
-          epoch: `Epoch ${latestHealth.epochId}`,
-          endorsementsPerUser: parseFloat(endorsementsPerUser.toFixed(2)),
-          avgPathLength: parseFloat(avgDepth.toFixed(2)),
+      // Group data by epoch
+      const endorsementsByEpoch = allEndorsements.reduce((acc, e) => {
+        const epochId = Number(e.epoch);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
         }
-      ];
+        acc[epochId].push(e);
+        return acc;
+      }, {} as Record<number, typeof allEndorsements>);
+
+      const scoresByEpoch = allScores.reduce((acc, score) => {
+        const epochId = Number(score.epochId);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
+        }
+        acc[epochId].push(score);
+        return acc;
+      }, {} as Record<number, typeof allScores>);
+
+      const data = Object.keys(scoresByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => {
+          const epochScores = scoresByEpoch[Number(epochId)];
+          const epochEndorsements = endorsementsByEpoch[Number(epochId)] || [];
+          const acceptedScores = epochScores.filter(s => s.isAccepted);
+          
+          if (acceptedScores.length === 0 || epochEndorsements.length === 0) {
+            return null;
+          }
+
+          const allParticipants = new Set<string>();
+          epochEndorsements.forEach(e => {
+            allParticipants.add(e.endorser);
+            allParticipants.add(e.endorsee);
+          });
+
+          const endorsementsPerUser = epochEndorsements.length / allParticipants.size;
+          const avgDepth = acceptedScores.reduce((sum, s) => sum + s.depth, 0) / acceptedScores.length;
+
+          return {
+            epoch: `Epoch ${epochId}`,
+            endorsementsPerUser: parseFloat(endorsementsPerUser.toFixed(2)),
+            avgPathLength: parseFloat(avgDepth.toFixed(2)),
+          };
+        })
+        .filter(d => d !== null);
 
       return res.status(200).json({ data });
     } catch (error) {
