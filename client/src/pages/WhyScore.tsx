@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useWallet } from '@/contexts/WalletContext';
+import { useWaaP } from '@/waap';
 
 export default function WhyScore() {
-  const { isConnected } = useWallet();
+  const { address } = useWaaP();
+  const isConnected = !!address;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield } from "lucide-react";
-import { useWallet } from "@/contexts/WalletContext";
+import { useWaaP } from '@/waap';
 
 interface Seed {
   address: string;
@@ -21,7 +21,8 @@ export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
-  const { address: userAddress, isConnected } = useWallet();
+  const { address: userAddress } = useWaaP();
+  const isConnected = !!userAddress;
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
