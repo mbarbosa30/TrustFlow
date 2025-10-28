@@ -18,7 +18,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into flow from seeds to users using the Levien/Advogato trust metric. Acceptance requires min-cut ≥ 2, seed-coverage ≥ 2, and two edge-disjoint paths. Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into flow from seeds to users using the Levien/Advogato trust metric with an <strong>adaptive acceptance policy</strong>. Small networks use lenient criteria (flow ≥ 1) to enable early growth, while larger networks (≥200 users) enforce the strict Levien spec (min-cut ≥ 2, seed-coverage ≥ 2, and two edge-disjoint paths) for full Sybil resistance. Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
           </CardContent>
         </Card>
@@ -75,21 +75,51 @@ export default function HowItWorks() {
             <CardTitle>Acceptance & Tiers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
-                <div className="font-semibold mb-2">Accepted (Levien Spec)</div>
-                <p className="text-sm text-muted-foreground font-mono space-y-1">
-                  <span className="block">min-cut ≥ 2</span>
-                  <span className="block">AND seed-coverage ≥ 2</span>
-                  <span className="block">AND two edge-disjoint paths</span>
+                <div className="font-semibold mb-2">Adaptive Acceptance Policy</div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Acceptance criteria adapt to network size to balance early growth with Sybil resistance:
                 </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Stricter than classic "flow ≥ 1" to prevent single-seed blast-radius and distance-inflation attacks.
-                </p>
+                
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">Small Network (&lt;50 users)</span>
+                      <Badge variant="outline">Lenient</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono">flow ≥ 1</p>
+                    <p className="text-xs text-muted-foreground mt-1">Allows early network growth</p>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">Medium Network (50-200 users)</span>
+                      <Badge variant="outline">Moderate</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono">flow ≥ 1 AND min-cut ≥ 2</p>
+                    <p className="text-xs text-muted-foreground mt-1">Basic Sybil resistance</p>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">Large Network (≥200 users)</span>
+                      <Badge>Strict (Levien Spec)</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-mono space-y-0.5">
+                      <span className="block">min-cut ≥ 2</span>
+                      <span className="block">AND seed-coverage ≥ 2</span>
+                      <span className="block">AND two edge-disjoint paths</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Full Sybil resistance per Levien/Advogato
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <div className="border-t pt-3">
-                <div className="font-semibold mb-3">Suggested Tiers:</div>
+                <div className="font-semibold mb-3">Trust Tiers:</div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                     <span className="font-medium">Apprentice</span>

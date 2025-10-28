@@ -116,6 +116,7 @@ export class EpochComputation {
   /**
    * Compute lagged depths from previous epoch's accepted subgraph
    * SECURITY: Prevents distance-inflation attacks per Levien/Ruderman
+   * Only includes ACCEPTED users from previous epoch to prevent unaccepted nodes from shortening paths
    */
   private async computeLaggedDepths(
     currentEpochId: number,
@@ -140,24 +141,37 @@ export class EpochComputation {
       return null;
     }
 
-    // Build adjacency list from previous epoch's endorsements
+    // CRITICAL: Only use ACCEPTED users from previous epoch
+    const acceptedAddresses = new Set(
+      previousScores.filter(s => s.isAccepted).map(s => s.address as Address)
+    );
+
+    console.log(`Previous epoch had ${acceptedAddresses.size} accepted users out of ${previousScores.length} total`);
+
+    // Build adjacency list ONLY from endorsements between accepted users
     const adjacency = new Map<Address, Address[]>();
     for (const e of previousEndorsements) {
       const endorser = e.endorser as Address;
       const endorsee = e.endorsee as Address;
-      if (!adjacency.has(endorser)) {
-        adjacency.set(endorser, []);
+      
+      // Only include edge if BOTH endpoints were accepted in previous epoch
+      if (acceptedAddresses.has(endorser) && acceptedAddresses.has(endorsee)) {
+        if (!adjacency.has(endorser)) {
+          adjacency.set(endorser, []);
+        }
+        adjacency.get(endorser)!.push(endorsee);
       }
-      adjacency.get(endorser)!.push(endorsee);
     }
 
-    // Compute depths via BFS from seeds in the previous epoch's graph
+    // Compute depths via BFS from seeds in the ACCEPTED subgraph only
     const depths = new Map<Address, number>();
     const queue: Array<{ user: Address; depth: number }> = [];
 
     for (const seed of seeds) {
-      depths.set(seed, 0);
-      queue.push({ user: seed, depth: 0 });
+      if (acceptedAddresses.has(seed)) {
+        depths.set(seed, 0);
+        queue.push({ user: seed, depth: 0 });
+      }
     }
 
     let head = 0;
@@ -166,14 +180,14 @@ export class EpochComputation {
       const neighbors = adjacency.get(user) || [];
 
       for (const neighbor of neighbors) {
-        if (!depths.has(neighbor)) {
+        if (!depths.has(neighbor) && acceptedAddresses.has(neighbor)) {
           depths.set(neighbor, depth + 1);
           queue.push({ user: neighbor, depth: depth + 1 });
         }
       }
     }
 
-    console.log(`Computed lagged depths for ${depths.size} users from epoch ${previousEpochId}`);
+    console.log(`Computed lagged depths for ${depths.size} users from accepted subgraph of epoch ${previousEpochId}`);
     return depths;
   }
 

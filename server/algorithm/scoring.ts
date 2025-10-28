@@ -69,7 +69,12 @@ export class TrustScorer {
     const minCutValues: number[] = [];
 
     // First pass: collect flow and min-cut values for ACCEPTED users only
-    // Levien acceptance criteria: min-cut >= 2, seed-coverage >= 2, two edge-disjoint paths
+    // Adaptive acceptance criteria: lenient for small networks, strict Levien spec for larger
+    const networkSize = allUsers.size;
+    const acceptancePolicy = this.getAcceptancePolicy(networkSize);
+    
+    console.log(`Network size: ${networkSize} users, using ${acceptancePolicy.name} acceptance policy`);
+
     for (const user of Array.from(allUsers)) {
       const graph = this.buildUserGraph(user, endorsements, seeds);
       const maxFlow = new DinicMaxFlow(graph);
@@ -80,8 +85,15 @@ export class TrustScorer {
       const seedCoverage = this.calculateSeedCoverage(user, endorsements, seeds);
       const hasDisjointPaths = this.hasEdgeDisjointPaths(user, endorsements, seeds, 2);
 
-      // Only include accepted users in percentile calculations
-      const isAccepted = minCut >= 2 && seedCoverage >= 2 && hasDisjointPaths;
+      // Apply adaptive acceptance policy
+      const isAccepted = this.checkAcceptance(
+        flow, 
+        minCut, 
+        seedCoverage, 
+        hasDisjointPaths, 
+        acceptancePolicy
+      );
+      
       if (isAccepted) {
         flowValues.push(flow);
         minCutValues.push(minCut);
@@ -136,8 +148,15 @@ export class TrustScorer {
       const sts = this.calculateSTS(normalizedComponents);
       const tier = this.assignTier(sts, minCut, stability);
 
-      // Levien acceptance criteria
-      const isAccepted = minCut >= 2 && seedCoverage >= 2 && hasDisjointPaths;
+      // Apply adaptive acceptance policy
+      const isAccepted = this.checkAcceptance(
+        flow, 
+        minCut, 
+        seedCoverage, 
+        hasDisjointPaths, 
+        acceptancePolicy
+      );
+      
       if (isAccepted) {
         totalAccepted++;
         totalMinCut += minCut;
@@ -524,5 +543,74 @@ export class TrustScorer {
     
     // By max-flow/min-cut theorem: min-cut value = max number of edge-disjoint paths
     return minCut >= k;
+  }
+
+  /**
+   * Get adaptive acceptance policy based on network size
+   * Small networks: lenient (flow >= 1) to allow growth
+   * Medium networks: moderate (flow >= 1 AND min-cut >= 2)
+   * Large networks: strict Levien spec (min-cut >= 2 AND seed-coverage >= 2 AND edge-disjoint paths)
+   */
+  private getAcceptancePolicy(networkSize: number): {
+    name: string;
+    description: string;
+    minFlow: number;
+    minCut: number;
+    minSeedCoverage: number;
+    requireEdgeDisjointPaths: boolean;
+  } {
+    if (networkSize < 50) {
+      return {
+        name: "Lenient (Small Network)",
+        description: "flow >= 1 (allows early network growth)",
+        minFlow: 1,
+        minCut: 0,
+        minSeedCoverage: 1,
+        requireEdgeDisjointPaths: false,
+      };
+    } else if (networkSize < 200) {
+      return {
+        name: "Moderate (Medium Network)",
+        description: "flow >= 1 AND min-cut >= 2 (basic Sybil resistance)",
+        minFlow: 1,
+        minCut: 2,
+        minSeedCoverage: 1,
+        requireEdgeDisjointPaths: false,
+      };
+    } else {
+      return {
+        name: "Strict (Large Network - Levien Spec)",
+        description: "min-cut >= 2 AND seed-coverage >= 2 AND two edge-disjoint paths",
+        minFlow: 0, // Not used in strict mode
+        minCut: 2,
+        minSeedCoverage: 2,
+        requireEdgeDisjointPaths: true,
+      };
+    }
+  }
+
+  /**
+   * Check if user meets acceptance criteria based on policy
+   */
+  private checkAcceptance(
+    flow: number,
+    minCut: number,
+    seedCoverage: number,
+    hasDisjointPaths: boolean,
+    policy: ReturnType<typeof this.getAcceptancePolicy>
+  ): boolean {
+    if (policy.requireEdgeDisjointPaths) {
+      // Strict Levien spec
+      return minCut >= policy.minCut && 
+             seedCoverage >= policy.minSeedCoverage && 
+             hasDisjointPaths;
+    } else {
+      // Lenient or moderate
+      const meetsFlow = flow >= policy.minFlow;
+      const meetsCut = policy.minCut === 0 || minCut >= policy.minCut;
+      const meetsSeedCoverage = seedCoverage >= policy.minSeedCoverage;
+      
+      return meetsFlow && meetsCut && meetsSeedCoverage;
+    }
   }
 }
