@@ -12,6 +12,8 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const { ready, address, login, logout } = useWaaP();
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
+  
+  console.log('[WalletConnect] Render state:', { ready, address, isConnecting });
 
   const handleConnect = async () => {
     try {

@@ -25,6 +25,8 @@ export function WaaPProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
   const inited = useRef(false);
+  
+  console.log('WaaPProvider render:', { ready, address, initedCurrent: inited.current });
 
   useEffect(() => {
     if (inited.current) return;
@@ -47,16 +49,20 @@ export function WaaPProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const accounts = await window.waap.request({ method: 'eth_requestAccounts' });
+          console.log('WaaP: Session restore result:', accounts);
           setAddress(accounts?.[0] ?? null);
         } catch (error) {
-          console.log('No existing session to restore');
+          console.log('WaaP: No existing session to restore');
         }
         
         window.waap.on('accountsChanged', (accounts: string[]) => {
+          console.log('WaaP: accountsChanged event:', accounts);
           setAddress(accounts?.[0] ?? null);
         });
         
+        console.log('WaaP: About to set ready=true');
         setReady(true);
+        console.log('WaaP: setReady(true) called');
       } catch (error) {
         console.error('Failed to initialize WaaP:', error);
         setReady(false);
