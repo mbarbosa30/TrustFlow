@@ -5,7 +5,7 @@ import { db } from "./db";
 import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndorsement } from "./crypto/eip712";
 import { validateNonce } from "./crypto/nonce";
 import { computeLeafHash } from "./crypto/merkle";
-import { insertPublicEndorsementSchema, publicEndorsements } from "@shared/schema";
+import { insertPublicEndorsementSchema, publicEndorsements, scores } from "@shared/schema";
 import { computeUserConfidence } from "./health/ghi";
 import { sql } from "drizzle-orm";
 import { verifyMessage } from "viem";
@@ -310,20 +310,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allParticipants.add(e.endorsee);
       });
 
-      // Get trusted users (accepted via Levien criteria: min-cut >= 2, seed-coverage >= 2, edge-disjoint paths >= 2)
-      const latestHealth = await storage.getLatestEpochHealth();
-      let trustedUsers = 0;
-      let avgScore = 0;
+      // Aggregate trusted users and average STS across ALL epochs
+      const allScoresResult = await db
+        .select()
+        .from(scores);
 
-      if (latestHealth) {
-        const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-        const acceptedScores = scores.filter(s => s.isAccepted);
-        trustedUsers = acceptedScores.length;
-        
-        if (acceptedScores.length > 0) {
-          const totalSts = acceptedScores.reduce((sum, s) => sum + s.sts, 0);
-          avgScore = totalSts / acceptedScores.length;
-        }
+      const acceptedScores = allScoresResult.filter(s => s.isAccepted);
+      const trustedUsers = acceptedScores.length;
+      
+      let avgScore = 0;
+      if (acceptedScores.length > 0) {
+        const totalSts = acceptedScores.reduce((sum, s) => sum + s.sts, 0);
+        avgScore = totalSts / acceptedScores.length;
       }
 
       return res.status(200).json({
