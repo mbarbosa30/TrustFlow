@@ -1,0 +1,148 @@
+Great — we can make WaaP work cleanly with your Reown (WalletConnect) **projectId** `126d93e6740defb2bed36da3e24a5114`. The short version: use **one** WalletConnect client across your app, pass the **same** `projectId` into it (and into WaaP if it proxies WC), and clear any stale WC v2 state once. Here’s a battle-tested setup + workarounds.
+
+# 1) Put the projectId in env
+
+Create `.env.local`:
+
+```bash
+NEXT_PUBLIC_REOWN_PROJECT_ID=126d93e6740defb2bed36da3e24a5114
+```
+
+Reown/AppKit & wagmi expect a `projectId` (same as the old WalletConnect Cloud Project ID). ([docs.reown.com][1])
+
+# 2) Use a single WalletConnect client (wagmi example)
+
+Install deps:
+
+```bash
+npm i wagmi viem @tanstack/react-query
+```
+
+Create `wagmi.ts`:
+
+```ts
+import { http, createConfig } from 'wagmi'
+import { mainnet, base } from 'wagmi/chains'
+import { walletConnect } from 'wagmi/connectors'
+
+export const wagmiConfig = createConfig({
+  chains: [mainnet, base],
+  transports: {
+    [mainnet.id]: http(),
+    [base.id]: http(),
+  },
+  connectors: [
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID!, // << same id
+      // Optional UX flags:
+      isNewChainsStale: true, // WC v2 pre-approves chains
+      metadata: {
+        name: 'TrustFlow',
+        description: 'Sybil-resistant trust app',
+        url: 'https://your.app',
+        icons: ['https://your.app/icon.png'],
+      },
+    }),
+  ],
+})
+```
+
+(Using wagmi’s `walletConnect` ensures a proper WC v2 client that needs your `projectId`.) ([wagmi.sh][2])
+
+In your `_app.tsx` (or root):
+
+```tsx
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { wagmiConfig } from './wagmi'
+const qc = new QueryClient()
+
+export default function App({ Component, pageProps }) {
+  if (!process.env.NEXT_PUBLIC_REOWN_PROJECT_ID) {
+    throw new Error('Missing Reown projectId')
+  }
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={qc}>
+        <Component {...pageProps} />
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+```
+
+# 3) Wire WaaP to the *same* WalletConnect client
+
+Depending on WaaP’s API, do **one** of these:
+
+**A) WaaP accepts `projectId` directly (ideal):**
+
+```ts
+import { initWaaP } from '@human.tech/waap-sdk'
+
+initWaaP({
+  walletConnect: { projectId: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID! }
+  // other WaaP options...
+})
+```
+
+**B) WaaP wants a provider/signer:** pass wagmi’s provider/signer down to WaaP so both share the same WC session:
+
+```ts
+import { useAccount, useWalletClient } from 'wagmi'
+
+function WaaPBridge() {
+  const { address } = useAccount()
+  const { data: walletClient } = useWalletClient()
+  useEffect(() => {
+    if (walletClient) {
+      // @ts-expect-error depends on WaaP API
+      waap.setProvider(walletClient) // or waap.setSigner(walletClient)
+    }
+  }, [walletClient])
+  return null
+}
+```
+
+**C) WaaP initializes its own WC client but doesn’t expose projectId:** don’t use WaaP’s internal WC; disable it and rely on wagmi/WalletConnect for the session, then pass the connected provider to WaaP (like B). This avoids “two WC clients” fighting each other.
+
+> Reown/AppKit is the official gateway to the WalletConnect Network; any flow that uses WC must be given your projectId. ([docs.reown.com][1])
+
+# 4) One-time reset to kill the “old session”
+
+When migrating configs, wipe stale WC v2 storage (localStorage/IndexedDB):
+
+* Keys to clear: `wc@2:*`, `walletconnect`, `WALLETCONNECT_DEEPLINK_CHOICE`, and sometimes `wagmi.store`.
+
+Do it once (e.g., behind an “advanced” button) so you don’t nuke real sessions in prod.
+
+# 5) Common pitfalls & fixes
+
+* **Different projectIds in different places** → make **one env** source of truth; thread it into wagmi *and* WaaP. (WC v2 needs the correct `projectId` to connect to the relay.) ([wagmi.sh][2])
+* **Two WalletConnect stacks at once** (e.g., WaaP + wagmi both spinning a WC client) → pick **one** WC client and integrate the other layer via provider/signer.
+* **Chain not pre-approved** → WC v2 requires the wallet to approve chains up front. Ensure `chains:[…]` in wagmi matches what you’ll use; set `isNewChainsStale:true` or prompt user to re-approve when switching. ([wagmi.sh][2])
+* **Wrong docs name** → “WalletConnect” is now **Reown** (same network; new brand). The SDKs talk in “AppKit” terms but still use `projectId`. ([docs.reown.com][3])
+* **Origin not allowed** → in the Reown dashboard, set an **allowlist** for your web origins so your key isn’t blocked. ([docs.reown.com][4])
+
+# 6) Minimal “it works” test
+
+1. New browser profile → open app → click “Connect”.
+2. QR shows → scan with wallet → approve chains.
+3. Address appears. Switch accounts in wallet → address updates.
+4. Reload page → session persists (same projectId) and reconnects instantly.
+
+# 7) If WaaP still “sticks to an old wallet”
+
+* Confirm only **one** WC client is active (log the projectId at init).
+* Clear `wc@2:*` once.
+* Ensure both WaaP and wagmi use **the same chain list** and **the same metadata** (name/url/icons) so wallets don’t cache two separate sessions.
+* As a workaround, **disable** WaaP’s internal WC layer and **always** hand it the wagmi wallet client (Option B above).
+
+---
+
+If you paste your WaaP init snippet and where you create your connectors, I’ll adjust it line-by-line so they share the exact same WC instance.
+
+[1]: https://docs.reown.com/appkit/overview?utm_source=chatgpt.com "Overview"
+[2]: https://wagmi.sh/core/api/connectors/walletConnect?utm_source=chatgpt.com "walletConnect"
+[3]: https://docs.reown.com/overview?utm_source=chatgpt.com "Reown Docs: Quickstart"
+[4]: https://docs.reown.com/appkit/next/core/installation?utm_source=chatgpt.com "Installation"

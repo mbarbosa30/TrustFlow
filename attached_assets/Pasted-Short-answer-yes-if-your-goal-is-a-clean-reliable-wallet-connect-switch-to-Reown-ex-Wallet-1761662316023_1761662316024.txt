@@ -1,0 +1,117 @@
+Short answer: **yes**—if your goal is a clean, reliable wallet connect, switch to **Reown (ex-WalletConnect) AppKit** directly and drop WaaP from the connection layer. Reown/AppKit is the official gateway to the WalletConnect network, requires a **projectId**, and is actively maintained (WalletConnect SDKs have been deprecated in favor of Reown). ([docs.reown.com][1])
+
+Here’s how I’d do it fast and safely.
+
+# Why Reown over WaaP for wallet connect
+
+* **First-party, battle-tested**: AppKit is Reown’s maintained SDK for wallet UX across 600+ wallets. ([docs.reown.com][1])
+* **One source of truth**: a single `projectId` drives the WalletConnect relay + modal; fewer mismatches, fewer “stale session” issues. ([docs.reown.com][2])
+* **Clear migration path**: official guides for wagmi/ConnectKit/Web3Modal → AppKit. ([docs.reown.com][3])
+* **Deprecation reality**: old WalletConnect-branded SDKs have timed support and are replaced by Reown packages. ([docs.reown.com][4])
+
+# Minimal Reown AppKit setup (Next.js + wagmi)
+
+1. **Env**
+
+```bash
+# .env.local
+NEXT_PUBLIC_REOWN_PROJECT_ID=126d93e6740defb2bed36da3e24a5114
+```
+
+2. **Install**
+
+```bash
+npm i @reown/appkit wagmi viem @tanstack/react-query
+```
+
+(AppKit has first-class wagmi integration, and supports multi-chain.) ([docs.reown.com][5])
+
+3. **Provider**
+
+```tsx
+// app/providers.tsx (or _app.tsx)
+import { WagmiProvider, createConfig, http } from 'wagmi'
+import { mainnet, base } from 'wagmi/chains'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAppKit } from '@reown/appkit'
+
+const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID!
+if (!projectId) throw new Error('Missing Reown projectId')
+
+const wagmiConfig = createConfig({
+  chains: [mainnet, base],
+  transports: { [mainnet.id]: http(), [base.id]: http() }
+})
+
+const appKit = createAppKit({
+  projectId,               // REQUIRED
+  wagmiConfig,             // Reown handles the WC client & modal
+  themeMode: 'dark'
+})
+
+const qc = new QueryClient()
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={qc}>
+        {children}
+        {appKit.modal}  {/* renders the modal portal */}
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+```
+
+Reown’s AppKit overview + installation note the `projectId` requirement and multi-chain support. ([docs.reown.com][1])
+
+4. **Connect button**
+
+```tsx
+// components/Connect.tsx
+import { useAppKit } from '@reown/appkit'
+import { useAccount } from 'wagmi'
+
+export function Connect() {
+  const kit = useAppKit()
+  const { address, isConnected } = useAccount()
+  return isConnected ? (
+    <button onClick={() => kit.open({ view: 'Account' })}>
+      {address?.slice(0,6)}…{address?.slice(-4)}
+    </button>
+  ) : (
+    <button onClick={() => kit.open()}>Connect Wallet</button>
+  )
+}
+```
+
+# Clean migration from WaaP
+
+* **Remove WaaP’s internal WC client** and any separate WalletConnect init. Let **AppKit** own the WC client + modal entirely.
+* Thread the same `projectId` everywhere AppKit is used; **do not** initialize a second WC client elsewhere (wagmi connector not needed when AppKit is in charge). Reown’s docs emphasize the single-client pattern and `projectId`. ([docs.walletconnect.network][6])
+* **One-time reset** (during migration only): clear `wc@2:*`, `walletconnect`, `wagmi.store` from localStorage/IndexedDB to avoid restoring a stale session created under the old setup.
+
+# If you must keep WaaP for other features
+
+Keep WaaP for whatever it adds (e.g., auth/UI), but **feed it the provider from Reown AppKit** rather than letting WaaP spin its own WalletConnect client. The golden rule: **one WC client + one projectId** in the whole app. (Several integration guides for AppKit show single-client patterns; same idea.) ([docs.reown.com][7])
+
+# Troubleshooting checklist
+
+* **QR/modal doesn’t show** → missing/incorrect `projectId` (AppKit requires it). ([docs.reown.com][2])
+* **“Old session” keeps coming back** → a second WC client is running or stale storage wasn’t cleared.
+* **Chain switching fails** → pre-approve chains in config; WC v2 expects upfront namespaces (wagmi note). ([wagmi.sh][8])
+* **Key abuse concern** → add origin allowlist for your Reown project in the dashboard. ([docs.reown.com][9])
+
+---
+
+**Bottom line:** if the wallet layer is your pain point, **use Reown AppKit natively**. It eliminates the “copy-pasted ProjectID” confusion, reduces session bugs, and aligns with the WalletConnect→Reown migration path that the ecosystem is standardizing on. ([docs.reown.com][10])
+
+[1]: https://docs.reown.com/appkit/overview?utm_source=chatgpt.com "Overview"
+[2]: https://docs.reown.com/advanced/walletconnectmodal/options?utm_source=chatgpt.com "Options"
+[3]: https://docs.reown.com/appkit/migration/from-connectkit-next?utm_source=chatgpt.com "Migration from ConnectKit to AppKit"
+[4]: https://docs.reown.com/advanced/walletconnect-deprecations?utm_source=chatgpt.com "Deprecated WalletConnect SDKs"
+[5]: https://docs.reown.com/appkit/react/core/installation?utm_source=chatgpt.com "Installation"
+[6]: https://docs.walletconnect.network/wallet-sdk/web/usage?utm_source=chatgpt.com "Usage - WalletConnect Docs"
+[7]: https://docs.reown.com/appkit/faq?utm_source=chatgpt.com "AppKit FAQs"
+[8]: https://wagmi.sh/react/api/connectors/walletConnect?utm_source=chatgpt.com "walletConnect"
+[9]: https://docs.reown.com/advanced/multichain/polkadot/wallet-integration-guide?utm_source=chatgpt.com "Wallet Integration Guide"
+[10]: https://docs.reown.com/appkit/upgrade/wcm?utm_source=chatgpt.com "WalletConnect Modal to Reown AppKit Core"
