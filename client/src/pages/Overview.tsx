@@ -3,13 +3,12 @@ import { EndorseForm } from "@/components/EndorseForm";
 import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useWaaP } from '@/waap';
+import { useAccount } from 'wagmi';
 import { useQuery } from '@tanstack/react-query';
 import type { PublicEndorsement } from "@shared/schema";
 
 export default function Overview() {
-  const { address } = useWaaP();
-  const isConnected = !!address;
+  const { address, isConnected } = useAccount();
 
   const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
     did: string;

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield } from "lucide-react";
-import { useWaaP } from '@/waap';
+import { useAccount } from 'wagmi';
 
 interface Seed {
   address: string;
@@ -21,8 +21,7 @@ export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
-  const { address: userAddress } = useWaaP();
-  const isConnected = !!userAddress;
+  const { address: userAddress, isConnected } = useAccount();
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],

@@ -6,19 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Search, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useWaaP } from '@/waap';
+import { useAccount, useSignTypedData } from 'wagmi';
 import { apiRequest } from "@/lib/queryClient";
 import { normalize } from 'viem/ens';
 import type { Address } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
-
-declare global {
-  interface Window {
-    ethereum?: any;
-    waap?: any;
-  }
-}
 
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
@@ -44,8 +37,8 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const { toast } = useToast();
-  const { address } = useWaaP();
-  const isConnected = !!address;
+  const { address, isConnected } = useAccount();
+  const { signTypedDataAsync } = useSignTypedData();
   
   const publicClient = createPublicClient({
     chain: mainnet,
@@ -104,44 +97,18 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
-      // Use WaaP provider (falls back to window.ethereum for other wallets)
-      const provider = window.waap || window.ethereum;
-      if (!provider) {
-        throw new Error("Wallet not connected. Please connect your wallet first.");
-      }
-      
-      // Request account authorization first
-      const accounts = await provider.request({ method: 'eth_requestAccounts' }) as string[];
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No wallet account available");
-      }
-      
-      // Convert BigInt to string for JSON serialization
-      const messageForSigning = {
-        endorser: address,
-        endorsee: endorseeAddress,
-        epoch: epoch.toString(),
-        nonce: nonce.toString(),
-      };
-      
-      const typedData = {
+      // Sign with wagmi
+      const signature = await signTypedDataAsync({
         domain: ENDORSEMENT_DOMAIN,
         types: ENDORSEMENT_TYPES,
         primaryType: 'Endorsement',
-        message: messageForSigning,
-      };
-
-      console.log("Signing with domain:", JSON.stringify(ENDORSEMENT_DOMAIN, null, 2));
-      console.log("Signing message:", JSON.stringify(messageForSigning, null, 2));
-      console.log("Using provider:", provider === window.waap ? 'WaaP' : 'window.ethereum');
-      
-      const signature = await provider.request({
-        method: 'eth_signTypedData_v4',
-        params: [
-          address,
-          JSON.stringify(typedData),
-        ],
-      }) as string;
+        message: {
+          endorser: address,
+          endorsee: endorseeAddress,
+          epoch,
+          nonce,
+        },
+      });
 
       console.log("Signature created:", signature);
 

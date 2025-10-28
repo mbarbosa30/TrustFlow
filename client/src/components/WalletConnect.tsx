@@ -1,74 +1,50 @@
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useWaaP } from "@/waap";
-import { useState } from "react";
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;
 }
 
 export function WalletConnect({ onConnect }: WalletConnectProps) {
-  const { ready, address, login, logout } = useWaaP();
-  const [isConnecting, setIsConnecting] = useState(false);
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
   const { toast } = useToast();
 
-  console.log('[WalletConnect] ready:', ready, 'address:', address);
-
-  const handleConnect = async () => {
-    try {
-      setIsConnecting(true);
-      const connectedAddress = await login();
-      
-      if (connectedAddress) {
-        toast({
-          title: "Wallet Connected",
-          description: `Connected: ${connectedAddress.slice(0, 6)}...${connectedAddress.slice(-4)}`,
-        });
-        
-        if (onConnect) {
-          onConnect(connectedAddress);
+  const handleConnect = () => {
+    const injectedConnector = connectors[0];
+    if (injectedConnector) {
+      connect({ connector: injectedConnector }, {
+        onSuccess: (data) => {
+          const addr = data.accounts[0];
+          toast({
+            title: "Wallet Connected",
+            description: `Connected: ${addr.slice(0, 6)}...${addr.slice(-4)}`,
+          });
+          if (onConnect) onConnect(addr);
+        },
+        onError: (error) => {
+          toast({
+            title: "Connection Failed",
+            description: error.message,
+            variant: "destructive",
+          });
         }
-      }
-    } catch (error: any) {
-      console.error("Connection error:", error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect wallet",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Disconnected",
-        description: "Your wallet has been disconnected",
-      });
-    } catch (error) {
-      console.error('Error disconnecting:', error);
-      toast({
-        title: "Disconnect Error",
-        description: "There was an issue disconnecting. Please refresh the page.",
-        variant: "destructive",
       });
     }
   };
 
-  if (!ready) {
-    return (
-      <Button disabled className="gap-2" data-testid="button-connect-wallet">
-        <Mail className="w-4 h-4" />
-        Loading...
-      </Button>
-    );
-  }
+  const handleDisconnect = () => {
+    disconnect();
+    toast({
+      title: "Disconnected",
+      description: "Your wallet has been disconnected",
+    });
+  };
 
-  if (address && address.length > 0) {
+  if (isConnected && address) {
     return (
       <Button
         variant="outline"
@@ -84,12 +60,12 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   return (
     <Button
       onClick={handleConnect}
-      disabled={isConnecting}
+      disabled={isPending}
       className="gap-2"
       data-testid="button-connect-wallet"
     >
-      <Mail className="w-4 h-4" />
-      {isConnecting ? "Connecting..." : "Connect"}
+      <Wallet className="w-4 h-4" />
+      {isPending ? "Connecting..." : "Connect Wallet"}
     </Button>
   );
 }

@@ -1,9 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useWaaP } from '@/waap';
+import { useAccount } from 'wagmi';
 
 export default function WhyScore() {
-  const { address } = useWaaP();
-  const isConnected = !!address;
+  const { isConnected } = useAccount();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
