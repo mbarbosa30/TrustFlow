@@ -5,6 +5,10 @@ import { STSHistogram } from "@/components/STSHistogram";
 import { TrustDistribution } from "@/components/TrustDistribution";
 import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
+import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
+import { AverageSTSChart } from "@/components/AverageSTSChart";
+import { NetworkDensityChart } from "@/components/NetworkDensityChart";
+import { PathDiversityChart } from "@/components/PathDiversityChart";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
@@ -70,6 +74,30 @@ export default function Dashboard() {
     data: Array<{ epoch: string; newEndorsements: number; revokedEndorsements: number }>;
   }>({
     queryKey: ['/api/analytics/endorsement-velocity'],
+  });
+
+  const { data: scoreComponentsData, isLoading: isLoadingScoreComponents } = useQuery<{
+    data: Array<{ epoch: string; flow: number; cut: number; stability: number; depth: number }>;
+  }>({
+    queryKey: ['/api/analytics/score-components'],
+  });
+
+  const { data: averageSTSData, isLoading: isLoadingAverageSTS } = useQuery<{
+    data: Array<{ epoch: string; mean: number; median: number; p25: number; p75: number }>;
+  }>({
+    queryKey: ['/api/analytics/average-sts'],
+  });
+
+  const { data: networkDensityData, isLoading: isLoadingNetworkDensity } = useQuery<{
+    data: Array<{ epoch: string; endorsementsPerUser: number; avgPathLength: number }>;
+  }>({
+    queryKey: ['/api/analytics/network-density'],
+  });
+
+  const { data: pathDiversityData, isLoading: isLoadingPathDiversity } = useQuery<{
+    data: Array<{ epoch: string; min: number; p25: number; median: number; p75: number; max: number }>;
+  }>({
+    queryKey: ['/api/analytics/path-diversity'],
   });
 
   const recentActivities = recentEndorsementsData?.endorsements.map(e => ({
@@ -204,6 +232,28 @@ export default function Dashboard() {
           <TrustDistribution 
             distribution={tierDistData?.distribution || []} 
             isLoading={isLoadingTierDist}
+          />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <ScoreComponentsChart 
+            data={scoreComponentsData?.data || []} 
+            isLoading={isLoadingScoreComponents}
+          />
+          <AverageSTSChart 
+            data={averageSTSData?.data || []} 
+            isLoading={isLoadingAverageSTS}
+          />
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <NetworkDensityChart 
+            data={networkDensityData?.data || []} 
+            isLoading={isLoadingNetworkDensity}
+          />
+          <PathDiversityChart 
+            data={pathDiversityData?.data || []} 
+            isLoading={isLoadingPathDiversity}
           />
         </div>
         
