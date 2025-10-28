@@ -181,19 +181,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No epoch health data available" });
       }
 
-      const mockUserMinCut = 2;
-      const mockUserSTS = 75;
-      const mockUserFlow = 1.5;
+      const userScore = await storage.getScore(did, latestHealth.epochId);
 
-      const confidence = computeUserConfidence(latestHealth.ghi, mockUserMinCut);
+      if (!userScore) {
+        return res.status(404).json({ 
+          error: "No score computed for this user",
+          message: "User either has no endorsements or epoch computation has not run yet"
+        });
+      }
+
+      const confidence = computeUserConfidence(latestHealth.ghi, userScore.minCut);
 
       return res.status(200).json({
         did,
         epoch: latestHealth.epochId,
         trust: {
-          sts: mockUserSTS,
-          flow: mockUserFlow,
-          mincut: mockUserMinCut,
+          sts: userScore.sts,
+          flow: userScore.flow,
+          mincut: userScore.minCut,
+        },
+        tier: userScore.tier,
+        percentile: userScore.percentile,
+        components: {
+          flow: userScore.flow,
+          minCut: userScore.minCut,
+          stability: userScore.stability,
+          depth: userScore.depth,
         },
         confidence: {
           percent: confidence.percent,
