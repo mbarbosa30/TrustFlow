@@ -188,6 +188,7 @@ export class TrustScorer {
 
   /**
    * Build graph for a specific user (user-centric flow network)
+   * IMPORTANT: Normalizes all addresses to lowercase for consistency
    */
   private buildUserGraph(
     user: Address,
@@ -197,6 +198,8 @@ export class TrustScorer {
     const SOURCE = "SOURCE";
     const SINK = "SINK";
     const graph = new FlowGraph(SOURCE, SINK);
+    
+    const normalizedUser = user.toLowerCase() as Address;
 
     const allUsers = this.extractAllUsers(endorsements, seeds);
     const depths = this.computeDepths(endorsements, seeds);
@@ -231,16 +234,18 @@ export class TrustScorer {
     }
 
     for (const seed of seeds) {
-      graph.addEdge(SOURCE, `${seed}-`, Infinity);
+      const normalizedSeed = seed.toLowerCase() as Address;
+      graph.addEdge(SOURCE, `${normalizedSeed}-`, Infinity);
     }
 
     for (const endorsement of endorsements) {
-      const { endorser, endorsee } = endorsement;
-      graph.addEdge(`${endorser}+`, `${endorsee}-`, 1.0);
+      const normalizedEndorser = endorsement.endorser.toLowerCase() as Address;
+      const normalizedEndorsee = endorsement.endorsee.toLowerCase() as Address;
+      graph.addEdge(`${normalizedEndorser}+`, `${normalizedEndorsee}-`, 1.0);
     }
 
     // Add sink connection with capacity 1 for acceptance threshold
-    graph.addEdge(`${user}-`, SINK, 1);
+    graph.addEdge(`${normalizedUser}-`, SINK, 1);
 
     return graph;
   }
@@ -273,6 +278,7 @@ export class TrustScorer {
 
   /**
    * Calculate depth (distance from seeds) using BFS
+   * IMPORTANT: Normalizes address to lowercase for lookup
    */
   private calculateDepth(
     user: Address,
@@ -280,11 +286,12 @@ export class TrustScorer {
     seeds: Address[]
   ): number {
     const depths = this.computeDepths(endorsements, seeds);
-    return depths.get(user) ?? this.config.maxDepth;
+    return depths.get(user.toLowerCase() as Address) ?? this.config.maxDepth;
   }
 
   /**
    * Compute depths for all users using BFS from seeds
+   * IMPORTANT: Normalizes addresses to lowercase to prevent case-sensitivity bugs
    */
   private computeDepths(
     endorsements: Endorsement[],
@@ -294,17 +301,21 @@ export class TrustScorer {
     const adjacency = new Map<Address, Address[]>();
 
     for (const { endorser, endorsee } of endorsements) {
-      if (!adjacency.has(endorser)) {
-        adjacency.set(endorser, []);
+      const normalizedEndorser = endorser.toLowerCase() as Address;
+      const normalizedEndorsee = endorsee.toLowerCase() as Address;
+      
+      if (!adjacency.has(normalizedEndorser)) {
+        adjacency.set(normalizedEndorser, []);
       }
-      adjacency.get(endorser)!.push(endorsee);
+      adjacency.get(normalizedEndorser)!.push(normalizedEndorsee);
     }
 
     const queue: Array<{ user: Address; depth: number }> = [];
     
     for (const seed of seeds) {
-      depths.set(seed, 0);
-      queue.push({ user: seed, depth: 0 });
+      const normalizedSeed = seed.toLowerCase() as Address;
+      depths.set(normalizedSeed, 0);
+      queue.push({ user: normalizedSeed, depth: 0 });
     }
 
     let head = 0;
@@ -326,19 +337,23 @@ export class TrustScorer {
   /**
    * Calculate stability (resistance to edge removal)
    * Per spec: S_i = 1 - min(1, Δ_i) where Δ_i is worst relative drop
+   * IMPORTANT: Normalizes addresses to lowercase for comparison
    */
   private calculateStability(
     user: Address,
     endorsements: Endorsement[],
     seeds: Address[]
   ): number {
-    const graph = this.buildUserGraph(user, endorsements, seeds);
+    const normalizedUser = user.toLowerCase() as Address;
+    const graph = this.buildUserGraph(normalizedUser, endorsements, seeds);
     const maxFlow = new DinicMaxFlow(graph);
     const baseFlow = maxFlow.computeMaxFlow();
 
     if (baseFlow < 1) return 0;
 
-    const incomingEndorsements = endorsements.filter(e => e.endorsee === user);
+    const incomingEndorsements = endorsements.filter(
+      e => e.endorsee.toLowerCase() === normalizedUser
+    );
     
     if (incomingEndorsements.length === 0) return 1; // Perfectly stable if no edges
 
@@ -346,10 +361,11 @@ export class TrustScorer {
 
     for (const endorsement of incomingEndorsements) {
       const filteredEndorsements = endorsements.filter(
-        e => !(e.endorser === endorsement.endorser && e.endorsee === endorsement.endorsee)
+        e => !(e.endorser.toLowerCase() === endorsement.endorser.toLowerCase() && 
+               e.endorsee.toLowerCase() === endorsement.endorsee.toLowerCase())
       );
       
-      const testGraph = this.buildUserGraph(user, filteredEndorsements, seeds);
+      const testGraph = this.buildUserGraph(normalizedUser, filteredEndorsements, seeds);
       const testMaxFlow = new DinicMaxFlow(testGraph);
       const flowWithout = testMaxFlow.computeMaxFlow();
       
@@ -456,13 +472,14 @@ export class TrustScorer {
 
   /**
    * Extract all unique users from endorsements and seeds
+   * IMPORTANT: Normalizes addresses to lowercase to prevent case-sensitivity bugs
    */
   private extractAllUsers(endorsements: Endorsement[], seeds: Address[]): Set<Address> {
-    const users = new Set<Address>(seeds);
+    const users = new Set<Address>(seeds.map(s => s.toLowerCase() as Address));
 
     for (const { endorser, endorsee } of endorsements) {
-      users.add(endorser);
-      users.add(endorsee);
+      users.add(endorser.toLowerCase() as Address);
+      users.add(endorsee.toLowerCase() as Address);
     }
 
     return users;
@@ -483,33 +500,39 @@ export class TrustScorer {
   /**
    * Calculate seed coverage: count distinct seeds that can reach this user
    * Per Levien spec: require >= 2 seeds to prevent single-seed blast-radius
+   * IMPORTANT: Normalizes addresses to lowercase for comparison
    */
   private calculateSeedCoverage(
     user: Address,
     endorsements: Endorsement[],
     seeds: Address[]
   ): number {
+    const normalizedUser = user.toLowerCase() as Address;
+    const normalizedSeeds = seeds.map(s => s.toLowerCase() as Address);
     const adjacency = new Map<Address, Address[]>();
     
     // Build reverse adjacency (who endorses whom)
     for (const { endorser, endorsee } of endorsements) {
-      if (!adjacency.has(endorsee)) {
-        adjacency.set(endorsee, []);
+      const normalizedEndorser = endorser.toLowerCase() as Address;
+      const normalizedEndorsee = endorsee.toLowerCase() as Address;
+      
+      if (!adjacency.has(normalizedEndorsee)) {
+        adjacency.set(normalizedEndorsee, []);
       }
-      adjacency.get(endorsee)!.push(endorser);
+      adjacency.get(normalizedEndorsee)!.push(normalizedEndorser);
     }
 
     // BFS backward from user to find which seeds can reach them
     const reachableSeeds = new Set<Address>();
-    const visited = new Set<Address>([user]);
-    const queue: Address[] = [user];
+    const visited = new Set<Address>([normalizedUser]);
+    const queue: Address[] = [normalizedUser];
 
     let head = 0;
     while (head < queue.length) {
       const current = queue[head++];
       
       // Check if current node is a seed
-      if (seeds.includes(current)) {
+      if (normalizedSeeds.includes(current)) {
         reachableSeeds.add(current);
       }
 

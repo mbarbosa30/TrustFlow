@@ -142,8 +142,9 @@ export class EpochComputation {
     }
 
     // CRITICAL: Only use ACCEPTED users from previous epoch
+    // IMPORTANT: Normalize all addresses to lowercase to prevent case-sensitivity bugs
     const acceptedAddresses = new Set(
-      previousScores.filter(s => s.isAccepted).map(s => s.address as Address)
+      previousScores.filter(s => s.isAccepted).map(s => (s.address as string).toLowerCase() as Address)
     );
 
     console.log(`Previous epoch had ${acceptedAddresses.size} accepted users out of ${previousScores.length} total`);
@@ -151,8 +152,8 @@ export class EpochComputation {
     // Build adjacency list ONLY from endorsements between accepted users
     const adjacency = new Map<Address, Address[]>();
     for (const e of previousEndorsements) {
-      const endorser = e.endorser as Address;
-      const endorsee = e.endorsee as Address;
+      const endorser = (e.endorser as string).toLowerCase() as Address;
+      const endorsee = (e.endorsee as string).toLowerCase() as Address;
       
       // Only include edge if BOTH endpoints were accepted in previous epoch
       if (acceptedAddresses.has(endorser) && acceptedAddresses.has(endorsee)) {
@@ -168,9 +169,10 @@ export class EpochComputation {
     const queue: Array<{ user: Address; depth: number }> = [];
 
     for (const seed of seeds) {
-      if (acceptedAddresses.has(seed)) {
-        depths.set(seed, 0);
-        queue.push({ user: seed, depth: 0 });
+      const normalizedSeed = seed.toLowerCase() as Address;
+      if (acceptedAddresses.has(normalizedSeed)) {
+        depths.set(normalizedSeed, 0);
+        queue.push({ user: normalizedSeed, depth: 0 });
       }
     }
 
