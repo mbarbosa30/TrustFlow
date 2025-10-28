@@ -15,21 +15,6 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  // Clear all WaaP session data on mount to prevent auto-connect
-  useEffect(() => {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.startsWith('waap') || key.startsWith('silk') || key.startsWith('wc@') || key.includes('walletconnect'))) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(key => {
-      localStorage.removeItem(key);
-      console.log('Cleared:', key);
-    });
-  }, []);
-
   useEffect(() => {
     if (address && onConnect) {
       onConnect(address);
@@ -40,6 +25,31 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     try {
       setIsConnecting(true);
       const waap = await initWaaP(waapConfig);
+      
+      // First, completely log out any existing session
+      try {
+        await waap.logout();
+      } catch (e) {
+        // Ignore logout errors
+      }
+      
+      // Clear all WaaP storage before connecting
+      const clearStorage = () => {
+        ['localStorage', 'sessionStorage'].forEach((storageType) => {
+          const storage = storageType === 'localStorage' ? localStorage : sessionStorage;
+          const keysToRemove = [];
+          for (let i = 0; i < storage.length; i++) {
+            const key = storage.key(i);
+            if (key && (key.includes('waap') || key.includes('silk') || key.includes('wc@') || key.includes('walletconnect'))) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(k => storage.removeItem(k));
+        });
+      };
+      clearStorage();
+      
+      // Now do a fresh login
       await waap.login();
       const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
       if (accounts && accounts.length > 0) {
