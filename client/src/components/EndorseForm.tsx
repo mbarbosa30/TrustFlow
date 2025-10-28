@@ -105,6 +105,15 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       ]);
       
       const waap = await initWaaP(waapConfig);
+      
+      // Convert BigInt to string for JSON serialization
+      const messageForSigning = {
+        endorser: address,
+        endorsee: endorseeAddress,
+        epoch: epoch.toString(),
+        nonce: nonce.toString(),
+      };
+      
       const signature = await waap.request({
         method: 'eth_signTypedData_v4',
         params: [
@@ -113,7 +122,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
             domain: ENDORSEMENT_DOMAIN,
             types: ENDORSEMENT_TYPES,
             primaryType: 'Endorsement',
-            message,
+            message: messageForSigning,
           }),
         ],
       }) as string;
