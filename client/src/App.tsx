@@ -19,10 +19,10 @@ import TermsPrivacy from "@/pages/TermsPrivacy";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
-  { path: "/dashboard", label: "Dashboard" },
   { path: "/overview", label: "Overview" },
-  { path: "/why", label: "Why this score?" },
-  { path: "/verify", label: "Verify" },
+  { path: "/dashboard", label: "Dashboard" },
+  { path: "/status", label: "Status" },
+  { path: "/seeds", label: "Seeds" },
 ];
 
 function Router() {
@@ -44,15 +44,25 @@ function Router() {
   );
 }
 
+const landingNavItems = [
+  { path: "/how-it-works", label: "How It Works" },
+  { path: "/use-cases", label: "Use Cases" },
+  { path: "/faqs", label: "FAQs" },
+];
+
 function App() {
   const [location] = useLocation();
-  const showAppNavigation = location !== "/";
+  const isLandingPage = location === "/";
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="min-h-screen bg-background flex flex-col">
-          {showAppNavigation && <Header navItems={appNavItems} variant="app" />}
+          <Header 
+            navItems={isLandingPage ? landingNavItems : appNavItems} 
+            authenticatedNavItems={appNavItems}
+            variant={isLandingPage ? "landing" : "app"} 
+          />
           <main className="flex-1">
             <Router />
           </main>

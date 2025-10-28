@@ -3,14 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Network, Shield, GitBranch, CheckCircle2, TrendingUp, Users, ArrowRight } from "lucide-react";
-import { Header } from "@/components/Header";
 import { useQuery } from "@tanstack/react-query";
-
-const landingNavItems = [
-  { path: "/how-it-works", label: "How It Works" },
-  { path: "/use-cases", label: "Use Cases" },
-  { path: "/faqs", label: "FAQs" },
-];
 
 export default function Landing() {
   const { data: stats } = useQuery<{
@@ -25,7 +18,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen">
-      <Header navItems={landingNavItems} variant="landing" />
 
       <section className="relative py-20 md:py-32 px-4">
         <div className="max-w-5xl mx-auto text-center">

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Network } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletConnect } from "@/components/WalletConnect";
+import { useWallet } from "@/hooks/useWallet";
 
 interface NavItem {
   path: string;
@@ -11,11 +12,16 @@ interface NavItem {
 
 interface HeaderProps {
   navItems: NavItem[];
+  authenticatedNavItems?: NavItem[];
   variant?: "landing" | "app";
 }
 
-export function Header({ navItems, variant = "app" }: HeaderProps) {
+export function Header({ navItems, authenticatedNavItems, variant = "app" }: HeaderProps) {
   const [location] = useLocation();
+  const { isConnected } = useWallet();
+  
+  // Use authenticated nav items when wallet is connected, otherwise use default nav items
+  const displayNavItems = isConnected && authenticatedNavItems ? authenticatedNavItems : navItems;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -32,7 +38,7 @@ export function Header({ navItems, variant = "app" }: HeaderProps) {
             </Link>
             
             <nav className="hidden md:flex items-center gap-2">
-              {navItems.map((item) => {
+              {displayNavItems.map((item) => {
                 const isActive = location === item.path;
                 
                 if (variant === "landing") {
@@ -75,7 +81,7 @@ export function Header({ navItems, variant = "app" }: HeaderProps) {
         
         {/* Mobile navigation */}
         <nav className="md:hidden pb-3 flex gap-2 overflow-x-auto">
-          {navItems.map((item) => {
+          {displayNavItems.map((item) => {
             const isActive = location === item.path;
             
             if (variant === "landing") {

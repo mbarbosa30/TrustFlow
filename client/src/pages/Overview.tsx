@@ -99,6 +99,23 @@ export default function Overview() {
                 <CardDescription>Connect your wallet to view your trust score</CardDescription>
               </CardHeader>
             </Card>
+          ) : scoreData ? (
+            <ScoreCard
+              tier={
+                scoreData.trust.sts >= 75 ? "Master" :
+                scoreData.trust.sts >= 50 ? "Journeyer" : "Apprentice"
+              }
+              sts={scoreData.trust.sts}
+              percentile={Math.round(scoreData.confidence.percent)}
+              minCutSize={scoreData.trust.mincut}
+              epochTimestamp={new Date().toISOString()}
+              onExportAttestation={handleExport}
+              confidence={{
+                percent: scoreData.confidence.percent,
+                ghi: scoreData.confidence.global.GHI,
+                localMincutN: scoreData.confidence.local.mincutN,
+              }}
+            />
           ) : (
             <Card>
               <CardHeader>

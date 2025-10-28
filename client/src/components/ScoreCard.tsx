@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TierBadge, type Tier } from "./TierBadge";
-import { Copy, Download, Info } from "lucide-react";
+import { Copy, Download, Info, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 import {
   Tooltip,
   TooltipContent,
@@ -113,14 +114,26 @@ export function ScoreCard({
           )}
         </div>
 
-        <Button
-          className="w-full gap-2"
-          onClick={handleExport}
-          data-testid="button-export-attestation"
-        >
-          <Download className="w-4 h-4" />
-          Export Attestation
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Link href="/why">
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              data-testid="button-why-score"
+            >
+              <HelpCircle className="w-4 h-4" />
+              Why this score?
+            </Button>
+          </Link>
+          <Button
+            className="w-full gap-2"
+            onClick={handleExport}
+            data-testid="button-export-attestation"
+          >
+            <Download className="w-4 h-4" />
+            Export Attestation
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
