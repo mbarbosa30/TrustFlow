@@ -68,11 +68,13 @@ export type TreeHead = typeof treeHeads.$inferSelect;
 
 export const epochs = pgTable("epochs", {
   id: bigint("id", { mode: "number" }).primaryKey(),
+  status: text("status").notNull().default("active"), // 'active' or 'closed'
   graphRoot: text("graph_root"),
   seedRoot: text("seed_root"),
   paramsHash: text("params_hash"),
   scoresHash: text("scores_hash"),
   signature: text("signature"),
+  closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

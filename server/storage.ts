@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -31,6 +31,13 @@ export interface IStorage {
   getScore(address: string, epochId: number): Promise<Score | undefined>;
   getScoresByEpoch(epochId: number): Promise<Score[]>;
   deleteScoresByEpoch(epochId: number): Promise<void>;
+  
+  getCurrentEpoch(): Promise<Epoch | undefined>;
+  getEpoch(epochId: number): Promise<Epoch | undefined>;
+  createEpoch(epoch: InsertEpoch): Promise<Epoch>;
+  closeEpoch(epochId: number): Promise<void>;
+  advanceEpoch(): Promise<Epoch>;
+  deleteEpochData(epochId: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -210,6 +217,70 @@ export class MemStorage implements IStorage {
   async deleteEpochData(epochId: number): Promise<void> {
     await this.deleteScoresByEpoch(epochId);
     await this.deleteEpochHealth(epochId);
+  }
+
+  async getCurrentEpoch(): Promise<Epoch | undefined> {
+    const results = await db
+      .select()
+      .from(epochs)
+      .where(eq(epochs.status, "active"))
+      .orderBy(desc(epochs.id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getEpoch(epochId: number): Promise<Epoch | undefined> {
+    const results = await db
+      .select()
+      .from(epochs)
+      .where(eq(epochs.id, epochId))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async createEpoch(epoch: InsertEpoch): Promise<Epoch> {
+    const [dbEpoch] = await db
+      .insert(epochs)
+      .values(epoch)
+      .returning();
+    
+    return dbEpoch;
+  }
+
+  async closeEpoch(epochId: number): Promise<void> {
+    await db
+      .update(epochs)
+      .set({ 
+        status: "closed",
+        closedAt: new Date()
+      })
+      .where(eq(epochs.id, epochId));
+  }
+
+  async advanceEpoch(): Promise<Epoch> {
+    // Get current epoch
+    const currentEpoch = await this.getCurrentEpoch();
+    
+    if (currentEpoch) {
+      // Close the current epoch
+      await this.closeEpoch(Number(currentEpoch.id));
+    }
+    
+    // Create next epoch (epoch 0 if none exists, or current + 1)
+    const nextEpochId = currentEpoch ? Number(currentEpoch.id) + 1 : 0;
+    
+    return await this.createEpoch({
+      id: BigInt(nextEpochId),
+      status: "active",
+      graphRoot: null,
+      seedRoot: null,
+      paramsHash: null,
+      scoresHash: null,
+      signature: null,
+      closedAt: null,
+    });
   }
 }
 
