@@ -106,7 +106,7 @@ export class MemStorage implements IStorage {
       .limit(1);
 
     if (lastEndorsement.length === 0) {
-      return 0;
+      return -1;
     }
 
     return Number(lastEndorsement[0].nonce);
