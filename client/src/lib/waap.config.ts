@@ -1,7 +1,7 @@
 // WaaP (Human Wallet) configuration
 export const waapInitConfig = {
   config: {
-    authenticationMethods: ['email', 'phone', 'social', 'wallet'],
+    authenticationMethods: ['email', 'phone', 'social'],
     allowedSocials: ['google', 'twitter', 'discord', 'github'],
     styles: { 
       darkMode: true,
