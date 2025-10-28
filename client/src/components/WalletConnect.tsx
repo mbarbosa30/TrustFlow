@@ -4,13 +4,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { initWaaP } from "@human.tech/waap-sdk";
 import { waapConfig } from "@/lib/waap.config";
+import { useWallet } from "@/contexts/WalletContext";
 
 interface WalletConnectProps {
   onConnect?: (address: string) => void;
 }
 
 export function WalletConnect({ onConnect }: WalletConnectProps) {
-  const [address, setAddress] = useState<string | null>(null);
+  const { address, setAddress: setGlobalAddress } = useWallet();
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
@@ -42,7 +43,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       await waap.login();
       const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
       if (accounts && accounts.length > 0) {
-        setAddress(accounts[0]);
+        setGlobalAddress(accounts[0]);
         toast({
           title: "Wallet Connected",
           description: "Successfully connected with WaaP",
@@ -74,7 +75,7 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      setAddress(null);
+      setGlobalAddress(null);
       toast({
         title: "Wallet Disconnected",
         description: "Your wallet has been disconnected",

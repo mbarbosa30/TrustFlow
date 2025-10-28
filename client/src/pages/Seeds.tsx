@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Shield } from "lucide-react";
-import { useAccount, useSignMessage } from "wagmi";
+import { useWallet } from "@/contexts/WalletContext";
+import { initWaaP } from "@human.tech/waap-sdk";
+import { waapConfig } from "@/lib/waap.config";
 
 interface Seed {
   address: string;
@@ -21,8 +23,7 @@ export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
   const { toast } = useToast();
-  const { address: userAddress, isConnected } = useAccount();
-  const { signMessageAsync } = useSignMessage();
+  const { address: userAddress, isConnected } = useWallet();
 
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
     queryKey: ['/api/seeds'],
@@ -87,8 +88,12 @@ export default function Seeds() {
     if (!newAddress || !userAddress || !isConnected) return;
     
     try {
+      const waap = await initWaaP(waapConfig);
       const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
-      const signature = await signMessageAsync({ message });
+      const signature = await waap.request({
+        method: 'personal_sign',
+        params: [message, userAddress],
+      }) as string;
       
       addSeedMutation.mutate({
         address: newAddress.toLowerCase(),
@@ -113,8 +118,12 @@ export default function Seeds() {
     
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
       try {
+        const waap = await initWaaP(waapConfig);
         const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
-        const signature = await signMessageAsync({ message });
+        const signature = await waap.request({
+          method: 'personal_sign',
+          params: [message, userAddress],
+        }) as string;
         
         deleteSeedMutation.mutate({
           address,
