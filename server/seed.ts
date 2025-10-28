@@ -95,6 +95,54 @@ const ENDORSEMENTS: EndorsementEdge[] = [
   { endorser: WALLETS[11], endorsee: WALLETS[4] }, // Layer 3 -> Layer 1
 ];
 
+/**
+ * Generate random endorsements between existing wallet addresses
+ * Creates a denser network with more connections
+ */
+function generateRandomEndorsements(count: number): EndorsementEdge[] {
+  const edges: EndorsementEdge[] = [];
+  const usedPairs = new Set<string>();
+  
+  // Add existing endorsements to the set to avoid duplicates
+  ENDORSEMENTS.forEach(edge => {
+    usedPairs.add(`${edge.endorser.toLowerCase()}-${edge.endorsee.toLowerCase()}`);
+  });
+  
+  let attempts = 0;
+  const maxAttempts = count * 3; // Prevent infinite loops
+  
+  while (edges.length < count && attempts < maxAttempts) {
+    attempts++;
+    
+    // Pick two random different wallets
+    const endorserIdx = Math.floor(Math.random() * WALLETS.length);
+    let endorseeIdx = Math.floor(Math.random() * WALLETS.length);
+    
+    // Ensure endorser and endorsee are different
+    while (endorseeIdx === endorserIdx) {
+      endorseeIdx = Math.floor(Math.random() * WALLETS.length);
+    }
+    
+    const endorser = WALLETS[endorserIdx];
+    const endorsee = WALLETS[endorseeIdx];
+    const pairKey = `${endorser.toLowerCase()}-${endorsee.toLowerCase()}`;
+    
+    // Only add if this pair hasn't been used yet
+    if (!usedPairs.has(pairKey)) {
+      edges.push({ endorser, endorsee });
+      usedPairs.add(pairKey);
+    }
+  }
+  
+  return edges;
+}
+
+// Generate 50 additional random endorsements
+const RANDOM_ENDORSEMENTS = generateRandomEndorsements(50);
+
+// Combine all endorsements
+const ALL_ENDORSEMENTS = [...ENDORSEMENTS, ...RANDOM_ENDORSEMENTS];
+
 async function seedDatabase() {
   console.log("\n🌱 Starting database seed...\n");
   
@@ -138,7 +186,7 @@ async function seedDatabase() {
     let addedCount = 0;
     let skippedCount = 0;
     
-    for (const edge of ENDORSEMENTS) {
+    for (const edge of ALL_ENDORSEMENTS) {
       const key = `${edge.endorser.toLowerCase()}-${edge.endorsee.toLowerCase()}-${currentEpoch.id}`;
       
       if (!endorsementSet.has(key)) {
@@ -162,7 +210,7 @@ async function seedDatabase() {
         });
         
         addedCount++;
-        if (addedCount % 5 === 0) {
+        if (addedCount % 10 === 0) {
           console.log(`  ✓ Added ${addedCount} endorsements...`);
         }
       } else {
@@ -173,8 +221,9 @@ async function seedDatabase() {
     console.log(`\n✅ Seed complete!`);
     console.log(`  - Seeds: ${SEED_ADDRESSES.length} configured`);
     console.log(`  - Endorsements: ${addedCount} added, ${skippedCount} already existed`);
+    console.log(`  - Total endorsements: ${ALL_ENDORSEMENTS.length} (${ENDORSEMENTS.length} structured + ${RANDOM_ENDORSEMENTS.length} random)`);
     console.log(`  - Total wallets: ${WALLETS.length}`);
-    console.log(`  - Network depth: 4+ layers from seeds`);
+    console.log(`  - Network depth: 4+ layers from seeds with random cross-connections`);
     console.log(`\n💡 Next steps:`);
     console.log(`  1. Go to the Seeds page`);
     console.log(`  2. Click "Compute Scores" to run max-flow algorithm`);
@@ -199,4 +248,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
-export { seedDatabase, WALLETS, SEED_ADDRESSES, ENDORSEMENTS };
+export { seedDatabase, WALLETS, SEED_ADDRESSES, ENDORSEMENTS, ALL_ENDORSEMENTS };
