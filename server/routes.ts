@@ -132,6 +132,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/epoch/current", async (req, res) => {
+    try {
+      let currentEpoch = await storage.getCurrentEpoch();
+      
+      // If no active epoch exists, create epoch 0
+      if (!currentEpoch) {
+        currentEpoch = await storage.createEpoch({
+          id: BigInt(0),
+          status: "active",
+          graphRoot: null,
+          seedRoot: null,
+          paramsHash: null,
+          scoresHash: null,
+          signature: null,
+          closedAt: null,
+        });
+      }
+      
+      return res.status(200).json({
+        epochId: Number(currentEpoch.id),
+        status: currentEpoch.status,
+        createdAt: currentEpoch.createdAt,
+        closedAt: currentEpoch.closedAt,
+      });
+    } catch (error) {
+      console.error("Error fetching current epoch:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/epoch/advance", async (req, res) => {
+    try {
+      const newEpoch = await storage.advanceEpoch();
+      
+      return res.status(200).json({
+        message: "Epoch advanced successfully",
+        newEpochId: Number(newEpoch.id),
+        status: newEpoch.status,
+        createdAt: newEpoch.createdAt,
+      });
+    } catch (error) {
+      console.error("Error advancing epoch:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/epoch/:id/health", async (req, res) => {
     try {
       const epochId = parseInt(req.params.id);
