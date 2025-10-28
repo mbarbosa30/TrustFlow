@@ -20,42 +20,41 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
-  // On mount, check if WaaP already has an active session (auto-reconnect)
   useEffect(() => {
-    const checkExistingConnection = async () => {
+    const restoreSession = async () => {
+      if (!window.waap || !window.__waapInited) {
+        return;
+      }
+
       try {
-        // Guard against HMR double-initialization
-        if (window.__waapInited) {
-          // WaaP already initialized, check if connected
-          if (window.ethereum) {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
-            if (accounts && accounts.length > 0) {
-              setGlobalAddress(accounts[0]);
-            }
-          }
-          return;
-        }
-
-        // Initialize WaaP once
-        const { initWaaP } = await import("@human.tech/waap-sdk");
-        const { waapConfig } = await import("@/lib/waap.config");
-        
-        await initWaaP(waapConfig);
-        window.__waapInited = true;
-
-        // Check if there's an existing session (auto-reconnect)
-        if (window.ethereum) {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
-          if (accounts && accounts.length > 0) {
-            setGlobalAddress(accounts[0]);
-          }
+        const accounts = await window.waap.request({ method: 'eth_requestAccounts' }) as string[];
+        if (accounts && accounts.length > 0) {
+          setGlobalAddress(accounts[0]);
         }
       } catch (error) {
-        console.error("Error checking WaaP connection:", error);
+        console.log("No existing session to restore");
       }
     };
 
-    checkExistingConnection();
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts && accounts.length > 0) {
+        setGlobalAddress(accounts[0]);
+      } else {
+        setGlobalAddress(null);
+      }
+    };
+
+    if (window.waap) {
+      window.waap.on?.('accountsChanged', handleAccountsChanged);
+    }
+
+    restoreSession();
+
+    return () => {
+      if (window.waap) {
+        window.waap.removeListener?.('accountsChanged', handleAccountsChanged);
+      }
+    };
   }, [setGlobalAddress]);
 
   useEffect(() => {
@@ -72,21 +71,11 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
         throw new Error("WaaP not initialized");
       }
 
-      // Optional: clear any previous session for a fresh start
-      try {
-        await window.waap.logout();
-      } catch (e) {
-        // Ignore logout errors
-      }
-
-      // Open WaaP login modal (user chooses auth method)
       const loginType = await window.waap.login();
       if (!loginType) {
-        // User cancelled
         return;
       }
 
-      // Request accounts only after successful login
       const accounts = await window.waap.request({ method: 'eth_requestAccounts' }) as string[];
       if (accounts && accounts.length > 0) {
         setGlobalAddress(accounts[0]);
