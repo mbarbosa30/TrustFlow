@@ -93,6 +93,13 @@ export default function Seeds() {
       ]);
       
       const waap = await initWaaP(waapConfig);
+      
+      // Request account authorization first
+      const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No wallet account available");
+      }
+      
       const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
       const signature = await waap.request({
         method: 'personal_sign',
@@ -129,6 +136,13 @@ export default function Seeds() {
         ]);
         
         const waap = await initWaaP(waapConfig);
+        
+        // Request account authorization first
+        const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+        if (!accounts || accounts.length === 0) {
+          throw new Error("No wallet account available");
+        }
+        
         const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
         const signature = await waap.request({
           method: 'personal_sign',

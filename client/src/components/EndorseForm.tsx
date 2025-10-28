@@ -106,6 +106,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       
       const waap = await initWaaP(waapConfig);
       
+      // Request account authorization first
+      const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No wallet account available");
+      }
+      
       // Convert BigInt to string for JSON serialization
       const messageForSigning = {
         endorser: address,
