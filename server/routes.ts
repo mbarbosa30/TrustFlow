@@ -31,6 +31,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: fieldValidation.error });
       }
 
+      // Check that the epoch being endorsed for is active
+      const targetEpoch = await storage.getEpoch(Number(endorsement.epoch));
+      if (targetEpoch && targetEpoch.status === "closed") {
+        return res.status(400).json({ 
+          error: `Cannot create endorsements for closed Epoch ${endorsement.epoch}. Please use the current active epoch.` 
+        });
+      }
+
       const nonceValidation = await validateNonce(
         endorsement.endorser,
         Number(endorsement.epoch),
