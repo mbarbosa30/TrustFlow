@@ -13,6 +13,11 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
+  // On mount, ensure we start with no address (ignore any WaaP auto-connect)
+  useEffect(() => {
+    setGlobalAddress(null);
+  }, [setGlobalAddress]);
+
   useEffect(() => {
     if (address && onConnect) {
       onConnect(address);
