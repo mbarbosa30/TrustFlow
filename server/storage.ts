@@ -29,7 +29,9 @@ export interface IStorage {
   
   createScore(score: InsertScore): Promise<Score>;
   getScore(address: string, epochId: number): Promise<Score | undefined>;
+  getLatestScore(address: string): Promise<Score | undefined>;
   getScoresByEpoch(epochId: number): Promise<Score[]>;
+  getAllScores(): Promise<Score[]>;
   deleteScoresByEpoch(epochId: number): Promise<void>;
   
   getCurrentEpoch(): Promise<Epoch | undefined>;
@@ -199,11 +201,29 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getLatestScore(address: string): Promise<Score | undefined> {
+    const results = await db
+      .select()
+      .from(scores)
+      .where(eq(scores.address, address))
+      .orderBy(desc(scores.epochId))
+      .limit(1);
+    
+    return results[0];
+  }
+
   async getScoresByEpoch(epochId: number): Promise<Score[]> {
     return await db
       .select()
       .from(scores)
       .where(eq(scores.epochId, epochId));
+  }
+
+  async getAllScores(): Promise<Score[]> {
+    return await db
+      .select()
+      .from(scores)
+      .orderBy(desc(scores.epochId));
   }
 
   async deleteScoresByEpoch(epochId: number): Promise<void> {
