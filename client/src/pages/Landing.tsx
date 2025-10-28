@@ -2,16 +2,21 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Network, Shield, GitBranch, Lock, CheckCircle2, TrendingUp, Users, ArrowRight } from "lucide-react";
+import { Network, Shield, GitBranch, CheckCircle2, TrendingUp, Users, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletConnect } from "@/components/WalletConnect";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Landing() {
-  const mockStats = {
-    totalUsers: 12453,
-    totalEndorsements: 28917,
-    avgScore: 58,
-  };
+  const { data: stats } = useQuery<{
+    totalUsers: number;
+    totalEndorsements: number;
+    totalEndorsers: number;
+    totalEndorsees: number;
+    avgSTS: number;
+  }>({
+    queryKey: ['/api/stats'],
+  });
 
   return (
     <div className="min-h-screen">
@@ -63,8 +68,8 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert peer endorsements into verifiable trust scores using network flow computation. 
-            Not simple vote counting—real graph algorithms that resist manipulation.
+            Convert public peer vouches into verifiable trust scores using network flow computation. 
+            Not simple vote counting—real graph algorithms with complete transparency.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -83,15 +88,21 @@ export default function Landing() {
 
           <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div className="text-center" data-testid="stat-users">
-              <div className="text-3xl md:text-4xl font-bold">{mockStats.totalUsers.toLocaleString()}</div>
+              <div className="text-3xl md:text-4xl font-bold">
+                {stats?.totalUsers.toLocaleString() || "—"}
+              </div>
               <div className="text-sm text-muted-foreground mt-1">Network Users</div>
             </div>
             <div className="text-center" data-testid="stat-endorsements">
-              <div className="text-3xl md:text-4xl font-bold">{mockStats.totalEndorsements.toLocaleString()}</div>
-              <div className="text-sm text-muted-foreground mt-1">Total Endorsements</div>
+              <div className="text-3xl md:text-4xl font-bold">
+                {stats?.totalEndorsements.toLocaleString() || "—"}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">Total Vouches</div>
             </div>
             <div className="text-center" data-testid="stat-avg-score">
-              <div className="text-3xl md:text-4xl font-bold">{mockStats.avgScore}</div>
+              <div className="text-3xl md:text-4xl font-bold">
+                {stats?.avgSTS ? Math.round(stats.avgSTS) : "—"}
+              </div>
               <div className="text-sm text-muted-foreground mt-1">Average STS</div>
             </div>
           </div>
@@ -147,18 +158,18 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-privacy">
+            <Card data-testid="card-feature-transparency">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Lock className="w-6 h-6 text-primary" />
+                  <CheckCircle2 className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Privacy-First</CardTitle>
+                <CardTitle>Fully Transparent</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Endorsements stored as cryptographic commitments (salted hashes). 
-                  Graph computation happens server-side. Only aggregated scores are published—your social 
-                  graph stays private unless both parties consent.
+                  All vouches are publicly visible and stored on-chain in a Merkle transparency log. 
+                  This enables complete auditability and independent verification of trust scores. 
+                  Trust through transparency, not obscurity.
                 </p>
               </CardContent>
             </Card>
@@ -198,12 +209,11 @@ export default function Landing() {
                 1
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Endorse People You Trust</h3>
+                <h3 className="text-xl font-semibold mb-2">Vouch for People You Trust</h3>
                 <p className="text-muted-foreground">
-                  Mark others as <span className="font-medium">Human</span> (0.5 weight), 
-                  <span className="font-medium"> Known</span> (0.8 weight), or 
-                  <span className="font-medium"> Trusted</span> (1.0 weight). 
-                  Stored as commitments to preserve privacy.
+                  Simple binary vouches—you either vouch for someone or you don't. 
+                  All vouches are public and permanently recorded on-chain in the Merkle transparency log 
+                  for complete auditability.
                 </p>
               </div>
             </div>
@@ -256,7 +266,7 @@ export default function Landing() {
             Ready to Build Your Trust Score?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join the privacy-first trust network and start earning verifiable credentials based on 
+            Join the transparent trust network and start earning verifiable credentials based on 
             graph algorithms, not popularity contests.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

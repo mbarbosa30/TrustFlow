@@ -12,7 +12,7 @@ export function Footer() {
               <span>TrustFlow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Privacy-first trust network using max-flow scoring to issue verifiable attestations.
+              Transparent trust network using max-flow scoring to issue verifiable attestations.
             </p>
           </div>
 
@@ -62,22 +62,37 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm">Resources</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a 
+                  href="https://github.com/trustflow" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   GitHub
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                  API Docs
-                </a>
+                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Documentation
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a 
+                  href="https://trustflow.io/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Privacy
                 </a>
               </li>
               <li>
-                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a 
+                  href="https://trustflow.io/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Terms
                 </a>
               </li>
@@ -87,7 +102,7 @@ export function Footer() {
 
         <div className="pt-8 border-t">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong>Disclaimer:</strong> TrustFlow issues portable, privacy-preserving trust attestations computed from a curated seed set. Endorsements are private by default. Scores update by epoch. Do not rely on TrustFlow for high-stakes decisions without additional checks.
+            <strong>Disclaimer:</strong> TrustFlow issues portable, verifiable trust attestations computed from a curated seed set using max-flow/min-cut algorithms. All vouches are publicly visible on-chain in the Merkle transparency log. Scores update by epoch. Do not rely on TrustFlow for high-stakes decisions without additional verification.
           </p>
         </div>
       </div>

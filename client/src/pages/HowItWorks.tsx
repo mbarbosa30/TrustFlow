@@ -48,9 +48,10 @@ export default function HowItWorks() {
               <li>Split each user <span className="font-mono">u</span> into <span className="font-mono">u<sup>−</sup> → u<sup>+</sup></span> with node capacity <span className="font-mono">c(d)</span> based on BFS distance <span className="font-mono">d</span> from any seed:
                 <ul className="font-mono text-xs mt-2 space-y-1">
                   <li>c(0) = 800 (seeds)</li>
-                  <li>c(1) = 200 (1 hop)</li>
-                  <li>c(2) = 50 (2 hops)</li>
-                  <li>c(≥3) = 20 (3+ hops)</li>
+                  <li>c(1) = 240 (1 hop, 30% decay)</li>
+                  <li>c(2) = 96 (2 hops, 40% decay)</li>
+                  <li>c(3) = 48 (3 hops, 50% decay)</li>
+                  <li>c(≥4) = 24 (4+ hops)</li>
                 </ul>
               </li>
               <li>Add <span className="font-mono">u<sup>−</sup> → SINK</span> with capacity 1 (first unit = acceptance)</li>
@@ -68,9 +69,14 @@ export default function HowItWorks() {
           <CardContent>
             <div className="space-y-3">
               <div>
-                <div className="font-semibold mb-2">Accepted</div>
-                <p className="text-sm text-muted-foreground font-mono">
-                  flow to u<sup>−</sup> ≥ 1 (or min-cut ≥ 1)
+                <div className="font-semibold mb-2">Accepted (Levien Spec)</div>
+                <p className="text-sm text-muted-foreground font-mono space-y-1">
+                  <span className="block">min-cut ≥ 2</span>
+                  <span className="block">AND seed-coverage ≥ 2</span>
+                  <span className="block">AND two edge-disjoint paths</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Stricter than classic "flow ≥ 1" to prevent single-seed blast-radius and distance-inflation attacks.
                 </p>
               </div>
               
