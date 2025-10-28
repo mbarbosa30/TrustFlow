@@ -98,16 +98,13 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce,
       };
 
-      // Dynamically import WaaP SDK
-      const [{ initWaaP }, { waapConfig }] = await Promise.all([
-        import("@human.tech/waap-sdk"),
-        import("@/lib/waap.config")
-      ]);
-      
-      const waap = await initWaaP(waapConfig);
+      // Use already-initialized WaaP instance
+      if (!window.ethereum) {
+        throw new Error("Wallet not connected. Please connect your wallet first.");
+      }
       
       // Request account authorization first
-      const accounts = await waap.request({ method: 'eth_requestAccounts' }) as string[];
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' }) as string[];
       if (!accounts || accounts.length === 0) {
         throw new Error("No wallet account available");
       }
@@ -120,7 +117,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         nonce: nonce.toString(),
       };
       
-      const signature = await waap.request({
+      const signature = await window.ethereum.request({
         method: 'eth_signTypedData_v4',
         params: [
           address,
