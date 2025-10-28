@@ -159,7 +159,7 @@ export class TrustScorer {
       graph.addEdge(`${endorser}+`, `${endorsee}-`, 1.0);
     }
 
-    graph.addEdge(`${user}+`, SINK, 1);
+    graph.addEdge(`${user}+`, SINK, Infinity);
 
     return graph;
   }
@@ -176,8 +176,13 @@ export class TrustScorer {
       if (!node) continue;
 
       for (const edge of node.edges) {
-        if (!reachableSet.has(edge.to) && edge.capacity > edge.flow) {
-          cutSize++;
+        if (!reachableSet.has(edge.to)) {
+          if (edge.capacity === Infinity) {
+            continue;
+          }
+          if (edge.flow > 0) {
+            cutSize++;
+          }
         }
       }
     }

@@ -10,6 +10,7 @@ import { computeUserConfidence } from "./health/ghi";
 import { sql } from "drizzle-orm";
 import { verifyMessage } from "viem";
 import type { Address, Hex } from "viem";
+import { epochComputation } from "./algorithm/compute";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
@@ -326,6 +327,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error("Error deleting seed:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.post("/api/epoch/:epochId/compute", async (req, res) => {
+    try {
+      const epochId = parseInt(req.params.epochId, 10);
+      
+      if (isNaN(epochId) || epochId < 0) {
+        return res.status(400).json({ error: "Invalid epoch ID" });
+      }
+
+      const alreadyComputed = await epochComputation.hasComputedScores(epochId);
+      
+      if (alreadyComputed) {
+        return res.status(400).json({ 
+          error: "Epoch already computed",
+          message: "Delete existing scores first if you want to recompute"
+        });
+      }
+
+      await epochComputation.computeEpochScores(epochId);
+      
+      const summary = await epochComputation.getComputationSummary(epochId);
+      
+      return res.status(200).json({ 
+        success: true,
+        summary
+      });
+    } catch (error: any) {
+      console.error("Error computing epoch:", error);
+      return res.status(500).json({ 
+        error: "Failed to compute epoch",
+        message: error.message 
+      });
+    }
+  });
+
+  app.get("/api/epoch/:epochId/summary", async (req, res) => {
+    try {
+      const epochId = parseInt(req.params.epochId, 10);
+      
+      if (isNaN(epochId) || epochId < 0) {
+        return res.status(400).json({ error: "Invalid epoch ID" });
+      }
+
+      const summary = await epochComputation.getComputationSummary(epochId);
+      
+      return res.status(200).json(summary);
+    } catch (error) {
+      console.error("Error fetching epoch summary:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
