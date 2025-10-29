@@ -102,6 +102,21 @@ export interface IStorage {
   // Subsidy ledger operations
   createSubsidyLedger(subsidyData: InsertSubsidyLedger): Promise<SubsidyLedger>;
   getSubsidyLedger(loanId: number, installmentIdx: number): Promise<SubsidyLedger | undefined>;
+  updateSubsidyLedger(id: number, updates: Partial<InsertSubsidyLedger>): Promise<void>;
+  
+  // Assist operations
+  createAssist(assistData: any): Promise<number>;
+  getAssist(id: number): Promise<any | undefined>;
+  updateAssist(id: number, updates: any): Promise<void>;
+  getAssistsByLoan(loanId: number): Promise<any[]>;
+  
+  // Guarantee operations
+  createGuarantee(guaranteeData: any): Promise<void>;
+  getGuarantee(communityId: number): Promise<any | undefined>;
+  updateGuarantee(communityId: number, updates: any): Promise<void>;
+  
+  // General installment update
+  updateInstallment(id: number, updates: Partial<InsertInstallment>): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -905,6 +920,71 @@ export class MemStorage implements IStorage {
       .limit(1);
     
     return results[0];
+  }
+
+  async updateSubsidyLedger(id: number, updates: Partial<InsertSubsidyLedger>): Promise<void> {
+    await db
+      .update(subsidyLedger)
+      .set(updates)
+      .where(eq(subsidyLedger.id, id));
+  }
+
+  async updateInstallment(id: number, updates: Partial<InsertInstallment>): Promise<void> {
+    await db
+      .update(installment)
+      .set(updates)
+      .where(eq(installment.id, id));
+  }
+
+  async createAssist(assistData: any): Promise<number> {
+    const [result] = await db
+      .insert(assist)
+      .values(assistData)
+      .returning();
+    return result.id;
+  }
+
+  async getAssist(id: number): Promise<any | undefined> {
+    const results = await db
+      .select()
+      .from(assist)
+      .where(eq(assist.id, id))
+      .limit(1);
+    return results[0];
+  }
+
+  async updateAssist(id: number, updates: any): Promise<void> {
+    await db
+      .update(assist)
+      .set(updates)
+      .where(eq(assist.id, id));
+  }
+
+  async getAssistsByLoan(loanId: number): Promise<any[]> {
+    return db
+      .select()
+      .from(assist)
+      .where(eq(assist.loanId, loanId));
+  }
+
+  async createGuarantee(guaranteeData: any): Promise<void> {
+    await db.insert(guarantee).values(guaranteeData);
+  }
+
+  async getGuarantee(communityId: number): Promise<any | undefined> {
+    const results = await db
+      .select()
+      .from(guarantee)
+      .where(eq(guarantee.communityId, communityId))
+      .limit(1);
+    return results[0];
+  }
+
+  async updateGuarantee(communityId: number, updates: any): Promise<void> {
+    await db
+      .update(guarantee)
+      .set(updates)
+      .where(eq(guarantee.communityId, communityId));
   }
 }
 
