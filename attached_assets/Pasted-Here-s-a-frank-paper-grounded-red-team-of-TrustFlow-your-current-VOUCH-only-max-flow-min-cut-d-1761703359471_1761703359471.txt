@@ -1,0 +1,65 @@
+Here’s a frank, paper-grounded “red-team” of TrustFlow (your current VOUCH-only + max-flow/min-cut design), and concrete fixes. I’m tying each key point back to Levien & Aiken’s USENIX’98 model so you can see exactly where attackers would try to squeeze through.
+
+How I’d try to game it
+	1.	Two-seed social-engineering (edge attacks)
+	•	The metric is strongest when few confused (mislabeling) certifiers are near the target; if I can trick/bribe just a couple of seed-adjacent people to vouch, I can often satisfy your “min-cut ≥ 2 & seed-coverage ≥ 2” gates. Levien explicitly distinguishes node vs edge attacks and shows the flow metric is optimized to resist edge attacks—but the residual risk is proportional to how many confused certifiers are near me.  ￼
+	2.	“Bridge hub” amplification
+	•	If your acceptance check uses edge-disjoint paths, I can route two paths through the same high-capacity person near seeds (two different edges, one articulation vertex), creating fake redundancy. Levien notes that multiple edge-independent paths can still be compromised by attacking one bottleneck vertex. You need vertex-disjoint paths to avoid this.  ￼
+	3.	Distance inflation → capacity jackpot
+	•	In Levien’s construction, node capacities depend on distance from seeds; getting one hop closer multiplies my forwarding budget. If capacities are computed on the current graph, I can time endorsements to shorten distance and cascade capacity outward in the same scoring run. (Levien’s analysis shows best attacker strategy targets keys nearest the victim—distance matters a lot.)  ￼
+	4.	Dust-flow seed coverage
+	•	Your “seed-coverage ≥ 2” can be satisfied by tiny ε-flows sourced from multiple seeds via the same corridor. I can sprinkle dust-flows so coverage counts as “2” while 90% still comes from one hub.
+	5.	Normalization games (percentiles)
+	•	If STS uses per-snapshot percentiles (F95/C95), I can try to flood many very-low-flow accounts to nudge anchors and slightly inflate my percentile. (This is weak in practice if you use robust anchors and accepted-set-only stats, but it’s a vector.)
+	6.	Last-minute flips (if you skip finalization)
+	•	Without finalized snapshots (“epochs” as labels), I can push vouches just before a claim/gate to cross the acceptance line, then have endorsers revoke. (You said time-free math; that’s fine, but you still need checkpointing for fairness.)
+	7.	Seed saturation
+	•	Over-reliance on a single seed’s outflow makes a big blast-radius: compromise (or confuse) one popular seed, and many targets ride its corridor. Levien’s baseline shows resistance is bounded by the number/capacity of such compromised/“confused” nodes.  ￼
+
+⸻
+
+Concrete improvements (surgical and fast)
+
+A) Upgrade “redundancy” from edge- to vertex-independence
+	•	Acceptance rule: require ≥2 vertex-disjoint seed→user paths (excluding seeds and the user). Implement by running a second max-flow on the unit-capacity, vertex-split graph and require flow ≥ 2. This blocks the “one hub, two edges” trick Levien warns about.  ￼
+
+B) Lag distances one snapshot
+	•	Compute node capacities c(d) from the previous finalized snapshot’s distances, not live data. This prevents “distance inflation → instant capacity” cascades in the same run and aligns with Levien’s observation that optimal attacks push near the victim/seed boundary.  ￼
+
+C) Put a real floor under seed-coverage
+	•	Replace “coverage ≥ 2” with per-seed minimum flow share: e.g., “at least 0.3 of the acceptance unit (of 1.0) must originate from each of ≥2 distinct seeds/regions.” This kills dust-flow games.
+
+D) Tame the capacity schedule
+	•	Use a shallower decay (e.g., 800, 240, 96, 48, 24…) and a low cap after distance ≥3 so one hop closer isn’t a massive jackpot. Levien’s model uses distance-based node capacities; making steps gentler reduces attacker leverage per hop.  ￼
+
+E) Vertex-cut certificate (auditable proofs)
+	•	For every accepted user, publish a cut witness: the small set of intermediate vertices whose removal (capacity sum) separates the user from seeds, plus Merkle proofs to the log. Levien’s theorem equates max-flow and min-cut—give verifiers the cut so they can check you’re not counting two paths through one vertex.  ￼
+
+F) Seed saturation guardrail
+	•	Track max seed outflow share; if a single seed exceeds, say, 40–50% of total delivered flow, throttle its effective cap next snapshot (publish this in params). This reduces single-seed blast-radius and improves global health.
+
+G) Snapshot discipline (even if math is time-free)
+	•	Keep “Finalized snapshot N” for anything binding (attestations/claims) and allow a “Preview” that updates live for UX. This prevents last-minute flips without forcing time-based scoring.
+
+H) Optional incentives (if you later want strong guarantees)
+	•	Bonded VOUCH (small) for near-seed endorsers; slash if their vouchees are flagged (duplicate/Sybil) by governance. Levien’s analysis assumes honest vs confused certifiers; small bonds reduce confusion incentives.  ￼
+
+⸻
+
+Quick checklist you can ship now
+	•	Change acceptance from “min-cut ≥ 2 + seed-coverage ≥ 2 + edge-disjoint” to
+“min-cut ≥ 2 + seed-coverage(≥2 seeds, ≥0.3 each) + vertex-disjoint ≥ 2.”
+	•	Compute capacities using lagged distances (prev snapshot).
+	•	Adjust capacity schedule to shallower decay + cap after distance ≥3.
+	•	Publish cut witnesses per user in the epoch bundle.
+	•	Add seed saturation metric & throttle rule to params.json.
+	•	Keep Finalized snapshots for claims; show Preview in UI.
+
+⸻
+
+Why these map cleanly to the paper
+	•	Levien/Aiken formalize node vs edge attacks and show a max-flow metric is optimal under their model; it relies critically on independent certification sources and warns that edge-independent paths can still share a single bottleneck vertex (your vertex-disjoint fix addresses that).  ￼
+	•	The best attacker strategy is to compromise/vary certifications nearest the victim—hence the value of lagged distances and gentler capacity steps.  ￼
+	•	Their overall bound is expressed in terms of how many keys/edges you corrupt (“confused” certifiers). Your seed-coverage floor + saturation guardrail make that bound expensive to hit in practice.  ￼
+
+If you want, I can turn this into concrete diffs for your policy JSON and add a tiny verify-cut.ts so anyone can validate the published vertex-cut witness for any accepted user.
