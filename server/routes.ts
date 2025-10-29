@@ -1136,7 +1136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/bluesky/analyze", async (req, res) => {
     try {
-      const { identifier, maxFollows = 100, maxFollowers = 100 } = req.body;
+      const { identifier } = req.body;
       
       if (!identifier) {
         return res.status(400).json({ error: "identifier (DID or handle) is required" });
@@ -1154,21 +1154,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: `Could not find Bluesky user: ${identifier}` });
       }
 
-      // Fetch follows and followers in parallel
-      const [followsResult, followersResult] = await Promise.all([
-        agent.getFollows({ actor: did, limit: Math.min(maxFollows, 100) }),
-        agent.getFollowers({ actor: did, limit: Math.min(maxFollowers, 100) })
+      // Helper to paginate through all results
+      async function fetchAllPages<T>(
+        fetchFn: (cursor?: string) => Promise<{ data: { follows?: T[]; followers?: T[]; cursor?: string } }>
+      ): Promise<T[]> {
+        const results: T[] = [];
+        let cursor: string | undefined;
+        let pageCount = 0;
+        const maxPages = 50; // Safety limit: 50 pages * 100 items = 5000 max
+        
+        do {
+          const response = await fetchFn(cursor);
+          const items = (response.data.follows || response.data.followers || []) as T[];
+          results.push(...items);
+          cursor = response.data.cursor;
+          pageCount++;
+          
+          // Add small delay to avoid rate limiting
+          if (cursor && pageCount < maxPages) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } while (cursor && pageCount < maxPages);
+        
+        return results;
+      }
+
+      // Fetch ALL follows and followers using pagination
+      const [follows, followers] = await Promise.all([
+        fetchAllPages<{ did: string }>(cursor => 
+          agent.getFollows({ actor: did, limit: 100, cursor })
+        ),
+        fetchAllPages<{ did: string }>(cursor => 
+          agent.getFollowers({ actor: did, limit: 100, cursor })
+        )
       ]);
 
-      const follows = followsResult.data.follows.map(f => f.did);
-      const followers = followersResult.data.followers.map(f => f.did);
+      const followDids = follows.map(f => f.did);
+      const followerDids = followers.map(f => f.did);
 
       // Transform Bluesky graph to TrustFlow endorsement format
       // Each follow relationship becomes an endorsement from follower → followed
       const endorsements: Array<{ endorser: string; endorsee: string; epoch: number }> = [];
       
       // Add endorsements from the target user to their follows
-      for (const followDid of follows) {
+      for (const followDid of followDids) {
         endorsements.push({
           endorser: did.toLowerCase(),
           endorsee: followDid.toLowerCase(),
@@ -1177,7 +1206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Add endorsements from followers to the target user
-      for (const followerDid of followers) {
+      for (const followerDid of followerDids) {
         endorsements.push({
           endorser: followerDid.toLowerCase(),
           endorsee: did.toLowerCase(),
@@ -1199,31 +1228,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate basic stats
       const totalUsers = results.scores.size;
-      const acceptedUsers = Array.from(results.scores.values()).filter(s => s.tier !== null).length;
+      const acceptedScores = Array.from(results.scores.values()).filter(s => s.tier !== null);
+      const acceptedUsers = acceptedScores.length;
       const scores = Array.from(results.scores.values());
       const avgSTS = scores.length > 0 
         ? scores.reduce((sum, s) => sum + s.sts, 0) / scores.length 
         : 0;
 
+      // Advanced network analysis: Identify bottlenecks and centralization risks
+      // Bottleneck = users with low min-cut relative to their flow (vulnerable single points)
+      const bottlenecks = acceptedScores
+        .filter(s => s.components.flow > 0)
+        .map(s => ({
+          address: s.address,
+          minCut: s.components.minCut,
+          flow: s.components.flow,
+          vulnerabilityScore: s.components.minCut / s.components.flow, // Lower = more vulnerable
+          sts: s.sts,
+        }))
+        .filter(b => b.vulnerabilityScore < 0.5) // Significant bottleneck
+        .sort((a, b) => a.vulnerabilityScore - b.vulnerabilityScore)
+        .slice(0, 10);
+
+      // Centralization: Check flow concentration among accepted users
+      const flowValues = acceptedScores.map(s => s.components.flow).sort((a, b) => b - a);
+      const totalFlow = flowValues.reduce((sum, f) => sum + f, 0);
+      const top10FlowShare = flowValues.slice(0, Math.min(10, flowValues.length))
+        .reduce((sum, f) => sum + f, 0) / totalFlow;
+
+      // Identify high-influence nodes (high flow relative to depth)
+      const influentialNodes = acceptedScores
+        .map(s => ({
+          address: s.address,
+          flow: s.components.flow,
+          depth: s.components.depth,
+          influence: s.components.flow / Math.max(1, s.components.depth), // Flow per hop
+          sts: s.sts,
+        }))
+        .sort((a, b) => b.influence - a.influence)
+        .slice(0, 10);
+
+      // Return ALL scores, not just top 50
+      const allScores = Array.from(results.scores.entries()).map(([address, score]) => ({
+        address,
+        sts: Math.round(score.sts * 10) / 10,
+        tier: score.tier,
+        flow: Math.round(score.components.flow * 100) / 100,
+        minCut: score.components.minCut,
+        depth: score.components.depth,
+        stability: Math.round(score.components.stability * 100) / 100,
+      })).sort((a, b) => b.sts - a.sts);
+
       return res.status(200).json({
         identifier,
         did,
         stats: {
-          follows: follows.length,
-          followers: followers.length,
+          follows: followDids.length,
+          followers: followerDids.length,
           totalUsers,
           acceptedUsers,
           avgSTS: Math.round(avgSTS * 10) / 10,
         },
         networkMetrics: results.networkMetrics,
-        scores: Array.from(results.scores.entries()).map(([address, score]) => ({
-          address,
-          sts: Math.round(score.sts * 10) / 10,
-          tier: score.tier,
-          flow: Math.round(score.components.flow * 100) / 100,
-          minCut: score.components.minCut,
-          depth: score.components.depth,
-        })).sort((a, b) => b.sts - a.sts).slice(0, 50), // Top 50 scores
+        advancedAnalysis: {
+          bottlenecks: bottlenecks.map(b => ({
+            address: b.address.substring(0, 30) + '...',
+            minCut: b.minCut,
+            flow: Math.round(b.flow * 100) / 100,
+            vulnerabilityScore: Math.round(b.vulnerabilityScore * 100) / 100,
+            sts: Math.round(b.sts * 10) / 10,
+          })),
+          centralization: {
+            top10FlowShare: Math.round(top10FlowShare * 100) / 100,
+            status: top10FlowShare > 0.7 ? 'high' : top10FlowShare > 0.5 ? 'moderate' : 'low',
+          },
+          influentialNodes: influentialNodes.map(n => ({
+            address: n.address.substring(0, 30) + '...',
+            flow: Math.round(n.flow * 100) / 100,
+            depth: n.depth,
+            influence: Math.round(n.influence * 100) / 100,
+            sts: Math.round(n.sts * 10) / 10,
+          })),
+        },
+        scores: allScores,
       });
     } catch (error) {
       console.error("Error analyzing Bluesky network:", error);
