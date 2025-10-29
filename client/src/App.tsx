@@ -32,9 +32,7 @@ const appNavItems = [
   { path: "/wallet", label: "My Wallet" },
   { path: "/credit", label: "Credit" },
   { path: "/support", label: "Support" },
-  { path: "/dashboard", label: "Dashboard" },
   { path: "/communities", label: "Communities" },
-  { path: "/status", label: "Status" },
 ];
 
 function Router() {
