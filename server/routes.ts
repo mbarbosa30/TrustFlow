@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import type { IStorage } from "./storage";
 import { db } from "./db";
 import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndorsement } from "./crypto/eip712";
 import { validateNonce } from "./crypto/nonce";
@@ -12,6 +13,93 @@ import { verifyMessage } from "viem";
 import type { Address, Hex } from "viem";
 import { epochComputation } from "./algorithm/compute";
 import lendingRouter from "./routes/lending";
+
+/**
+ * Apply assist ARS credits to reduce interest on upcoming installments
+ * Distributes credits proportionally across unpaid installments
+ * Accounts for existing subsidies to prevent over-crediting
+ * @returns Total ARS amount applied to installments
+ */
+async function applyAssistToInstallments(
+  storage: IStorage,
+  loanId: number,
+  arsCredit: number
+): Promise<number> {
+  // Get all installments for this loan
+  const installments = await storage.getInstallmentsByLoan(loanId);
+  
+  // Filter to unpaid installments only
+  const unpaidInstallments = installments.filter(
+    inst => inst.status === 'pending' || inst.status === 'grace'
+  );
+
+  if (unpaidInstallments.length === 0) {
+    return 0; // No upcoming installments to apply to
+  }
+
+  // Get existing subsidies for each installment
+  const installmentSubsidies = new Map<number, number>();
+  for (const inst of unpaidInstallments) {
+    const ledger = await storage.getSubsidyLedger(loanId, inst.idx);
+    installmentSubsidies.set(inst.idx, ledger?.ibdApplied ?? 0);
+  }
+
+  // Calculate total interest remaining AFTER existing subsidies
+  let totalInterestRemaining = 0;
+  for (const inst of unpaidInstallments) {
+    const existingSubsidy = installmentSubsidies.get(inst.idx) ?? 0;
+    const remaining = Math.max(0, inst.interestDue - inst.interestPaid - existingSubsidy);
+    totalInterestRemaining += remaining;
+  }
+
+  if (totalInterestRemaining <= 0) {
+    return 0; // No interest to reduce (already fully subsidized)
+  }
+
+  // Distribute assist credits proportionally to each installment's unsubsidized interest
+  let totalApplied = 0;
+  const maxCredit = Math.min(arsCredit, totalInterestRemaining);
+
+  for (const inst of unpaidInstallments) {
+    const existingSubsidy = installmentSubsidies.get(inst.idx) ?? 0;
+    const interestRemaining = Math.max(0, inst.interestDue - inst.interestPaid - existingSubsidy);
+    
+    if (interestRemaining <= 0) continue;
+
+    // Proportional share of assist credit for this installment
+    const proportion = interestRemaining / totalInterestRemaining;
+    const creditForThisInstallment = maxCredit * proportion;
+    
+    // Clamp to prevent exceeding interest due (safety check)
+    const newTotalSubsidy = existingSubsidy + creditForThisInstallment;
+    const maxAllowedSubsidy = inst.interestDue - inst.interestPaid;
+    const clampedCredit = Math.min(creditForThisInstallment, maxAllowedSubsidy - existingSubsidy);
+
+    // Get or create subsidy ledger record
+    let ledger = await storage.getSubsidyLedger(loanId, inst.idx);
+    
+    if (ledger) {
+      // Update existing ledger
+      await storage.updateSubsidyLedger(ledger.id, {
+        ibdApplied: ledger.ibdApplied + clampedCredit,
+      });
+    } else {
+      // Create new ledger record
+      await storage.createSubsidyLedger({
+        loanId,
+        installmentIdx: inst.idx,
+        ibdApplied: clampedCredit,
+        voucherApplied: 0,
+        assistCovered: 0,
+        assistPremium: 0,
+      });
+    }
+
+    totalApplied += clampedCredit;
+  }
+
+  return totalApplied;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
@@ -2164,15 +2252,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         aaveTxHash: MOCK_AAVE_TX_HASH,
       });
 
-      // TODO: Credit ARS to loan installments (reduce future interest)
-      // This will be implemented in task 4 (yield application)
+      // Apply ARS credit to reduce future interest on upcoming installments
+      const appliedAmount = await applyAssistToInstallments(
+        storage, 
+        Number(loanId), 
+        arsCredit
+      );
 
       res.json({
         assistId: assist.id,
         usdcAmount: assist.usdcAmount,
         arsCredit: assist.arsCredit,
+        arsApplied: appliedAmount,
         aaveTxHash: assist.aaveTxHash,
-        message: "USDC assist successful - yield will reduce future interest",
+        message: `USDC assist successful - ${appliedAmount.toFixed(2)} ARS credited to reduce future interest`,
       });
     } catch (error) {
       console.error("Error confirming assist:", error);
