@@ -16,7 +16,7 @@ export function STSHistogram({ distribution, percentiles, isLoading = false }: S
           STS Distribution
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Histogram with percentile markers (P25, P50, P75, P95)
+          Score distribution in current epoch with percentile markers
         </p>
       </CardHeader>
       <CardContent>

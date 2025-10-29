@@ -310,18 +310,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         allParticipants.add(e.endorsee);
       });
 
-      // Aggregate trusted users and average STS across ALL epochs
+      // Calculate trusted users and average STS using LATEST epoch score per user
       const allScoresResult = await db
         .select()
         .from(scores);
 
-      const acceptedScores = allScoresResult.filter(s => s.isAccepted);
-      const trustedUsers = acceptedScores.length;
+      // Group scores by LOWERCASE user address to handle case-insensitive deduplication
+      const latestScoresByUser = new Map<string, typeof allScoresResult[0]>();
+      allScoresResult.forEach(score => {
+        const normalizedAddress = score.address.toLowerCase();
+        const existing = latestScoresByUser.get(normalizedAddress);
+        if (!existing || Number(score.epochId) > Number(existing.epochId)) {
+          latestScoresByUser.set(normalizedAddress, score);
+        }
+      });
+
+      // Count unique trusted users (those with isAccepted in their latest epoch)
+      const latestScores = Array.from(latestScoresByUser.values());
+      const trustedUsers = latestScores.filter(s => s.isAccepted).length;
       
+      // Calculate average STS using only latest epoch scores
       let avgScore = 0;
-      if (acceptedScores.length > 0) {
-        const totalSts = acceptedScores.reduce((sum, s) => sum + s.sts, 0);
-        avgScore = totalSts / acceptedScores.length;
+      const acceptedLatestScores = latestScores.filter(s => s.isAccepted);
+      if (acceptedLatestScores.length > 0) {
+        const totalSts = acceptedLatestScores.reduce((sum, s) => sum + s.sts, 0);
+        avgScore = totalSts / acceptedLatestScores.length;
       }
 
       return res.status(200).json({
@@ -677,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             flow: parseFloat((avgFlow * 100).toFixed(2)),
             cut: parseFloat((avgMinCut * 100).toFixed(2)),
             stability: parseFloat((avgStability * 100).toFixed(2)),
-            depth: parseFloat((avgDepth * 100).toFixed(2)),
+            depth: parseFloat(avgDepth.toFixed(2)),
           };
         })
         .filter(d => d !== null);
@@ -900,21 +913,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pairKey = `${endorser.toLowerCase()}-${endorsee.toLowerCase()}`;
         if (existingPairs.has(pairKey)) continue;
 
-        const nonce = BigInt(Date.now() + added);
+        const nonce = Date.now() + added;
         const sig = '0x' + '00'.repeat(65);
         const { computeLeafHash } = await import('./crypto/merkle');
         const leafHash = computeLeafHash({
           endorser,
           endorsee,
-          epoch: BigInt(currentEpoch.id),
-          nonce,
+          epoch: BigInt(Number(currentEpoch.id)),
+          nonce: BigInt(nonce),
           sig,
         });
 
         await storage.createEndorsement({
           endorser,
           endorsee,
-          epoch: currentEpoch.id,
+          epoch: Number(currentEpoch.id),
           nonce,
           leafHash,
           sig,
@@ -942,21 +955,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const pairKey = `${endorser.toLowerCase()}-${newMember.toLowerCase()}`;
           if (existingPairs.has(pairKey)) continue;
 
-          const nonce = BigInt(Date.now() + added);
+          const nonce = Date.now() + added;
           const sig = '0x' + '00'.repeat(65);
           const { computeLeafHash } = await import('./crypto/merkle');
           const leafHash = computeLeafHash({
             endorser,
             endorsee: newMember,
-            epoch: BigInt(currentEpoch.id),
-            nonce,
+            epoch: BigInt(Number(currentEpoch.id)),
+            nonce: BigInt(nonce),
             sig,
           });
 
           await storage.createEndorsement({
             endorser,
             endorsee: newMember,
-            epoch: currentEpoch.id,
+            epoch: Number(currentEpoch.id),
             nonce,
             leafHash,
             sig,
@@ -978,21 +991,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pairKey = `${endorser.toLowerCase()}-${endorsee.toLowerCase()}`;
         if (existingPairs.has(pairKey)) continue;
 
-        const nonce = BigInt(Date.now() + added);
+        const nonce = Date.now() + added;
         const sig = '0x' + '00'.repeat(65);
         const { computeLeafHash } = await import('./crypto/merkle');
         const leafHash = computeLeafHash({
           endorser,
           endorsee,
-          epoch: BigInt(currentEpoch.id),
-          nonce,
+          epoch: BigInt(Number(currentEpoch.id)),
+          nonce: BigInt(nonce),
           sig,
         });
 
         await storage.createEndorsement({
           endorser,
           endorsee,
-          epoch: currentEpoch.id,
+          epoch: Number(currentEpoch.id),
           nonce,
           leafHash,
           sig,

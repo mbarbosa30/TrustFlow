@@ -19,7 +19,7 @@ export function TrustDistribution({ distribution, isLoading = false }: TrustDist
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Tier Distribution</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Network breakdown by achievement tier
+          Current epoch breakdown by achievement tier
         </p>
       </CardHeader>
       <CardContent>
