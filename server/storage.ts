@@ -124,6 +124,12 @@ export interface IStorage {
   getPendingTrustEvents(communityId: number): Promise<any[]>;
   markTrustEventApplied(eventId: number, epochId: number): Promise<void>;
   getTrustEventsByUser(communityId: number, userAddress: string): Promise<any[]>;
+  
+  // Support API operations
+  getActiveLoans(): Promise<any[]>;
+  getLateInstallments(): Promise<any[]>;
+  getPledgesBySupporter(supporterAddress: string): Promise<any[]>;
+  getAssistsBySupporter(supporterAddress: string): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1038,6 +1044,55 @@ export class MemStorage implements IStorage {
         )
       )
       .orderBy(desc(trustEvent.createdAt));
+  }
+
+  async getActiveLoans(): Promise<any[]> {
+    return db
+      .select()
+      .from(loan)
+      .where(eq(loan.status, "ACTIVE"))
+      .orderBy(desc(loan.createdAt));
+  }
+
+  async getLateInstallments(): Promise<any[]> {
+    const results = await db
+      .select({
+        installmentId: installment.id,
+        loanId: installment.loanId,
+        idx: installment.idx,
+        borrowerAddress: loan.borrowerAddress,
+        dueDate: installment.dueDate,
+        totalDue: installment.totalDue,
+        totalPaid: installment.totalPaid,
+        status: installment.status,
+      })
+      .from(installment)
+      .innerJoin(loan, eq(installment.loanId, loan.id))
+      .where(eq(installment.status, "LATE"));
+
+    return results.map((row) => ({
+      ...row,
+      outstandingAmount: row.totalDue - row.totalPaid,
+      daysLate: Math.floor(
+        (new Date().getTime() - new Date(row.dueDate).getTime()) / (1000 * 60 * 60 * 24)
+      ),
+    }));
+  }
+
+  async getPledgesBySupporter(supporterAddress: string): Promise<any[]> {
+    return db
+      .select()
+      .from(pledge)
+      .where(eq(pledge.donorAddress, supporterAddress))
+      .orderBy(desc(pledge.createdAt));
+  }
+
+  async getAssistsBySupporter(supporterAddress: string): Promise<any[]> {
+    return db
+      .select()
+      .from(assist)
+      .where(eq(assist.supporterAddress, supporterAddress))
+      .orderBy(desc(assist.createdAt));
   }
 }
 

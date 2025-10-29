@@ -2270,6 +2270,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Support API endpoints
+  // Get active loans available for Interest Buy-Down support
+  app.get("/api/support/available-loans", async (req, res) => {
+    try {
+      const loans = await storage.getActiveLoans();
+      res.json(loans);
+    } catch (error) {
+      console.error("Error getting available loans:", error);
+      res.status(500).json({ error: "Failed to get available loans" });
+    }
+  });
+
+  // Get late installments that need Repay-Assist support
+  app.get("/api/support/late-installments", async (req, res) => {
+    try {
+      const lateInstallments = await storage.getLateInstallments();
+      res.json(lateInstallments);
+    } catch (error) {
+      console.error("Error getting late installments:", error);
+      res.status(500).json({ error: "Failed to get late installments" });
+    }
+  });
+
+  // Get supporter's portfolio (pledges and assists)
+  app.get("/api/support/portfolio/:address", async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      const pledges = await storage.getPledgesBySupporter(address);
+      const assists = await storage.getAssistsBySupporter(address);
+
+      res.json({ pledges, assists });
+    } catch (error) {
+      console.error("Error getting support portfolio:", error);
+      res.status(500).json({ error: "Failed to get support portfolio" });
+    }
+  });
+
   // Lending routes
   app.use("/api/loans", lendingRouter);
 
