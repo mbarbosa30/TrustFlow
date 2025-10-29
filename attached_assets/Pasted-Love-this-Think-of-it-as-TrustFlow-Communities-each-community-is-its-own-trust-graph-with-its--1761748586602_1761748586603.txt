@@ -1,0 +1,134 @@
+Love this. Think of it as **TrustFlow Communities**: each community is its own trust graph with its own seed(s), policy, and a custom “vouch prompt” that shapes behavior for that use-case—while still plugging into the global guardrails and verification rails.
+
+Here’s a crisp blueprint you can ship.
+
+# 1) Core concept
+
+* **Per-community graph (namespace):** `community_id` defines a separate graph, its own SOURCE, seed set, policy, scoring, and snapshot stream.
+* **Creator as initial seed:** the wallet that creates the community is `seed[0]` with default capacity; additional seeds can be added by policy.
+* **Custom vouch question:** free-text prompt that defines *what* the vouch means (e.g., “I would hire this person for a small bug fix,” “I will lend $50 to this merchant,” “Member has delivered 3 trades w/o dispute,” etc.).
+
+# 2) What’s inherited vs. configurable
+
+**Inherited from global (non-negotiable guardrails)**
+
+* Max-flow/min-cut machinery
+* Acceptance requires: **min-cut ≥ 2**, **≥2 vertex-disjoint** seed→user paths, **per-seed min share ≥ 0.30**
+* Signed snapshots + cut-witness proofs for audit
+* Optional EigenTrust/PPR shaping **capped** (±10–15%) and ≤5% of score
+
+**Configurable per community**
+
+* Seeds & seed scoring policy (e.g., min SeedScore to count toward coverage)
+* Node-capacity schedule (distance decay) and lagged/non-lagged toggle
+* Whether to enable EigenTrust (if the community has tx/outcomes)
+* The **vouch prompt** text + optional additional fields
+* Tier labels (e.g., Bronze/Silver/Gold or Tier 1/2/3)
+* Visibility: public directory or invite-only
+* Moderation rules & join requirements
+
+# 3) Data/attestation schema (portable & verifiable)
+
+**Endorsement (EIP-712 / EAS)**
+
+```
+message Endorsement {
+  bytes32 community_id;
+  address endorser;
+  address endorsee;
+  string  prompt_hash;        // hash(prompt_text)
+  uint64  epoch;              // snapshot id or block-height window
+  uint64  nonce;
+}
+```
+
+* Sign and append to that community’s **append-only log**; publish Merkle roots (STH).
+* *Prompt changes* update `prompt_hash`—old endorsements remain valid under the old prompt.
+
+**Snapshot bundle (per community)**
+
+* `params.json` (policyId, capacities, toggles)
+* `seeds.json` (or Merkle root)
+* `scores.jsonl` (flow, min-cut, STS, tier)
+* `cut_witnesses/` (per-user minimal vertex cut)
+* `manifest.json` + signature
+
+# 4) UX that guides behavior (and avoids farming)
+
+* **Community header:** name, description, **vouch prompt** (plain sentence), seed avatars, policy badge.
+* **Vouch modal:** shows the prompt verbatim + “This is public & permanent.”
+* **Why accepted:** “2 vertex-disjoint paths via A and D; seeds S1,S3 (≥0.30 each); min-cut=3.”
+* **How to improve:** actionables tied to the prompt (e.g., “earn a vouch from marketplace moderator”).
+* **Community health mini-dashboard:** seed saturation, λ₂, conductance, PR-Gini.
+
+# 5) Federation: how communities roll up to a global view
+
+* **Isolation by default:** each community’s acceptance/tiers stand alone.
+* **Bridges (optional, safely capped):** a community can publish a **Bridge Attestation** that maps its accepted users to a **global namespace** with a small, fixed **bridge capacity cap** (e.g., 0.3 of the 1.0 acceptance unit). Multiple communities can contribute, but none can dominate.
+* **Global score = union-of-flows with caps:** run max-flow in the global graph using bridged capacities; gates remain the same.
+
+# 6) Seed management in communities
+
+* **Seed add/remove policy:** creator only, multisig, or token-vote; always with a **1-snapshot timelock**.
+* **Seed scoring inside community:** compute `SeedScore_c(s)` from that community’s outcomes (resilience of paths, complaint rates, diversity).
+* **Influence of seed score:** SOURCE→seed cap scaled by `(0.7 + 0.6 * SeedScore_c)` and only seeds ≥ threshold count to coverage.
+
+# 7) Templates (one-click presets)
+
+* **Hiring circle:** Prompt: “I would hire this person for a 1–3h task.”
+  – Capacities: stricter per-seed share (≥0.4), EigenTrust off.
+* **Micro-lending pool:** Prompt: “I would lend this member $50 for 14 days.”
+  – Enable EigenTrust with loan outcomes; require ≥1 successful repayment among neighbors.
+* **Marketplace vendor guild:** Prompt: “This vendor fulfilled at least 3 orders dispute-free.”
+  – EigenTrust on (deliveries), add articulation penalty, higher min-cut (≥3).
+
+# 8) API sketch
+
+* `POST /communities` → `{community_id, txHash}`
+  body: `{name, description, prompt_text, policyId, initial_seeds?: [addr]}`
+* `POST /communities/:id/endorse` → append signed vouch
+* `GET /communities/:id/snapshot/:n/scores`
+* `GET /communities/:id/proofs/:user` → cut witness + Merkle proofs
+* `POST /communities/:id/seed` (governed) → add/remove with timelock
+* `POST /bridges` → publish a capped bridge from community → global
+
+# 9) Safety & anti-abuse specifics
+
+* **Vertex-disjoint ≥2** always enforced.
+* **Per-seed min share (≥0.30)**—no dust coverage.
+* **Lagged distances ON** by default; communities can’t turn this off unless private.
+* **Endorsement reciprocity cooldown** (24–48h) to avoid ping-pong.
+* **Community risk flags** (show in directory): high seed saturation, low λ₂, high PR-Gini, many articulation-reliant acceptances.
+
+# 10) Minimal policy JSON (community)
+
+```json
+{
+  "policyId": "community-vouch-v1",
+  "promptHash": "0x...",
+  "acceptance": {
+    "minCut": 2,
+    "vertexDisjoint": 2,
+    "seedCoverage": { "minSeeds": 2, "perSeedMinShare": 0.30, "minSeedScore": 0.6 }
+  },
+  "nodeCap": { "distance": [400,160,64,32,16], "laggedDistances": true },
+  "eigentrust": { "enabled": false, "alpha": 0.85, "clip": [0.9,1.1] },
+  "tiers": [ "Tier 1", "Tier 2", "Tier 3" ],
+  "visibility": "public"
+}
+```
+
+# 11) Rollout plan
+
+1. Ship **Community MVP** with: create → seed=creator → vouch prompt → snapshots → public proofs.
+2. Add **seed governance** & **templates**.
+3. Enable **bridges** (capped) to global.
+4. Later: opt-in EigenTrust where transactions exist.
+
+# 12) Why this works
+
+* You get **fit-for-purpose trust** (prompt shapes behavior) without sacrificing the **formal guarantees** (min-cut, vertex-disjoint, per-seed share, proofs).
+* Communities can flourish independently, yet **compose** safely into a global reputation via **capped bridges**.
+* Seeds are **earned** (scored), not assumed—reducing collusion in fragile contexts.
+
+If you want, I can turn this into a tiny PRD + route stubs for your Next.js API and a migration for `communities`, `prompts`, and `bridges` tables.
