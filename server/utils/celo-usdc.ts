@@ -45,7 +45,8 @@ export function generateNonce(): `0x${string}` {
 }
 
 /**
- * Create a deterministic nonce based on parameters to prevent duplicate auths
+ * Create a deterministic nonce based on stable parameters to prevent duplicate auths
+ * SECURITY: No timestamp included - this ensures replay protection by hash collision
  */
 export function createDeterministicNonce(
   communityId: number,
@@ -54,25 +55,26 @@ export function createDeterministicNonce(
   toAddress: string,
   amount: number
 ): `0x${string}` {
-  const data = `${communityId}:${epochId}:${userAddress}:${toAddress}:${amount}:${Date.now()}`;
+  // Only hash stable parameters - no Date.now() to ensure deterministic deduplication
+  const data = `${communityId}:${epochId}:${userAddress.toLowerCase()}:${toAddress.toLowerCase()}:${amount}`;
   return keccak256(toHex(data));
 }
 
 /**
  * Create transfer authorization message for EIP-712 signing
+ * SECURITY: nonce is REQUIRED to ensure deterministic replay protection
  */
 export function createTransferAuthMessage(params: {
   from: string;
   to: string;
   value: bigint;
+  nonce: `0x${string}`; // REQUIRED - must use createDeterministicNonce
   validAfter?: number;
   validBefore?: number;
-  nonce?: `0x${string}`;
 }) {
   const now = Math.floor(Date.now() / 1000);
   const validAfter = params.validAfter ?? 0;
   const validBefore = params.validBefore ?? now + 3600; // 1 hour default
-  const nonce = params.nonce ?? generateNonce();
 
   return {
     from: params.from as `0x${string}`,
@@ -80,7 +82,7 @@ export function createTransferAuthMessage(params: {
     value: params.value,
     validAfter: BigInt(validAfter),
     validBefore: BigInt(validBefore),
-    nonce,
+    nonce: params.nonce, // Use the required deterministic nonce
   };
 }
 

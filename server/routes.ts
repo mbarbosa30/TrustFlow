@@ -1965,15 +1965,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Generate EIP-3009 authorization
-      const { createTransferAuthMessage, parseUSDC, generateNonce } = await import("./utils/celo-usdc");
+      const { createTransferAuthMessage, parseUSDC, createDeterministicNonce } = await import("./utils/celo-usdc");
       
-      const nonce = generateNonce();
+      // SECURITY: Use deterministic nonce to prevent replay attacks
+      const treasuryAddress = "0x0000000000000000000000000000000000000000";
+      const nonce = createDeterministicNonce(
+        parsedCommunityId,
+        Number(currentEpoch.id),
+        treasuryAddress,
+        userAddress,
+        remainingAllowance
+      );
+
+      // Check if authorization already exists (server-side replay protection)
+      const existingAuth = await storage.getAuth3009(nonce);
+      if (existingAuth) {
+        return res.status(400).json({ 
+          error: "Claim already processed for this epoch",
+          authId: existingAuth.id
+        });
+      }
+
       const now = Math.floor(Date.now() / 1000);
       const validAfter = 0;
       const validBefore = now + 3600; // 1 hour validity
 
       const authMessage = createTransferAuthMessage({
-        from: "0x0000000000000000000000000000000000000000", // Treasury placeholder
+        from: treasuryAddress,
         to: userAddress,
         value: parseUSDC(remainingAllowance),
         validAfter,
@@ -1985,7 +2003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const auth = await storage.createAuth3009({
         communityId: parsedCommunityId,
         epochId: Number(currentEpoch.id),
-        fromAddress: "0x0000000000000000000000000000000000000000", // Treasury
+        fromAddress: treasuryAddress,
         toAddress: userAddress,
         amount: remainingAllowance,
         validAfter,
@@ -2075,15 +2093,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // Generate EIP-3009 authorization
-      const { createTransferAuthMessage, parseUSDC, generateNonce } = await import("./utils/celo-usdc");
+      const { createTransferAuthMessage, parseUSDC, createDeterministicNonce } = await import("./utils/celo-usdc");
       
-      const nonce = generateNonce();
+      // SECURITY: Use deterministic nonce to prevent replay attacks
+      const treasuryAddress = "0x0000000000000000000000000000000000000000";
+      const nonce = createDeterministicNonce(
+        parsedCommunityId,
+        Number(currentEpoch.id),
+        treasuryAddress,
+        merchantAddress,
+        parsedAmount
+      );
+
+      // Check if authorization already exists (server-side replay protection)
+      const existingAuth = await storage.getAuth3009(nonce);
+      if (existingAuth) {
+        return res.status(400).json({ 
+          error: "This exact payment has already been authorized",
+          authId: existingAuth.id
+        });
+      }
+
       const now = Math.floor(Date.now() / 1000);
       const validAfter = 0;
       const validBefore = now + 3600; // 1 hour validity
 
       const authMessage = createTransferAuthMessage({
-        from: "0x0000000000000000000000000000000000000000", // Treasury placeholder
+        from: treasuryAddress,
         to: merchantAddress,
         value: parseUSDC(parsedAmount),
         validAfter,
@@ -2095,7 +2131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const auth = await storage.createAuth3009({
         communityId: parsedCommunityId,
         epochId: Number(currentEpoch.id),
-        fromAddress: "0x0000000000000000000000000000000000000000",
+        fromAddress: treasuryAddress,
         toAddress: merchantAddress,
         amount: parsedAmount,
         validAfter,
