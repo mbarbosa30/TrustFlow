@@ -130,6 +130,13 @@ export const scores = pgTable("scores", {
   minCut: doublePrecision("min_cut").notNull(),
   stability: doublePrecision("stability").notNull(),
   depth: doublePrecision("depth").notNull(),
+  pageRank: doublePrecision("page_rank").default(0).notNull(),
+  // Normalized components (0-1) for UI display
+  normalizedFlow: doublePrecision("normalized_flow"),
+  normalizedMinCut: doublePrecision("normalized_min_cut"),
+  normalizedStability: doublePrecision("normalized_stability"),
+  normalizedDepth: doublePrecision("normalized_depth"),
+  normalizedPageRank: doublePrecision("normalized_page_rank"),
   tier: text("tier"),
   percentile: doublePrecision("percentile").notNull(),
   isAccepted: boolean("is_accepted").notNull().default(false),

@@ -171,6 +171,7 @@ export class TrustScorer {
         address: user,
         sts,
         components,
+        normalizedComponents,
         tier,
         percentile: 0, // Will calculate after all scores are computed
         isAccepted,
@@ -205,6 +206,7 @@ export class TrustScorer {
           p95Flow,
           p95MinCut
         );
+        userScore.normalizedComponents = normalizedComponents;
         userScore.sts = this.calculateSTS(normalizedComponents);
         userScore.tier = this.assignTier(userScore.sts, userScore.components.minCut, userScore.components.stability);
       }

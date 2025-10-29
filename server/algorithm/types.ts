@@ -31,7 +31,8 @@ export interface TrustScoreComponents {
 export interface UserScore {
   address: Address;
   sts: number;
-  components: TrustScoreComponents;
+  components: TrustScoreComponents; // Raw component values
+  normalizedComponents?: TrustScoreComponents; // Normalized (0-1) values for UI display
   tier: "Connected" | "Verified" | "Trusted" | null;
   percentile: number;
   isAccepted: boolean;

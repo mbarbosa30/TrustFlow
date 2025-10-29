@@ -274,6 +274,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           depth: userScore.depth,
           pageRank: userScore.pageRank || 0,
         },
+        normalizedComponents: userScore.normalizedFlow !== null && userScore.normalizedFlow !== undefined ? {
+          flow: userScore.normalizedFlow!,
+          minCut: userScore.normalizedMinCut!,
+          stability: userScore.normalizedStability!,
+          depth: userScore.normalizedDepth!,
+          pageRank: userScore.normalizedPageRank!,
+        } : undefined,
         confidence: {
           percent: confidence.percent,
           global: epochHealth ? {

@@ -18,6 +18,13 @@ export default function WhyScore() {
       depth: number;
       pageRank: number;
     };
+    normalizedComponents?: {
+      flow: number;
+      minCut: number;
+      stability: number;
+      depth: number;
+      pageRank: number;
+    };
     tier: string | null;
     percentile: number;
     isAccepted: boolean;
@@ -105,9 +112,9 @@ export default function WhyScore() {
           </CardContent>
         </Card>
 
-        {isConnected && scoreData?.components ? (
+        {isConnected && scoreData?.normalizedComponents ? (
           <ComponentsBreakdown 
-            components={scoreData.components}
+            components={scoreData.normalizedComponents}
             isLoading={isLoadingScore}
           />
         ) : (
