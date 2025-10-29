@@ -25,6 +25,7 @@ export interface TrustScoreComponents {
   minCut: number;
   stability: number;
   depth: number;
+  pageRank: number;
 }
 
 export interface UserScore {
@@ -51,6 +52,15 @@ export interface SeedQualityMetrics {
   meetsQualityThreshold: boolean;
 }
 
+export interface PageRankMetrics {
+  prSkew: number; // 1 - Gini coefficient (higher = less skewed = healthier)
+  seedConcentration: number; // Fraction of PR held by seeds (lower = better distribution)
+  maxScore: number; // Maximum normalized PR score
+  p95Score: number; // 95th percentile PR score
+  iterations: number; // Number of iterations until convergence
+  converged: boolean; // Whether algorithm converged
+}
+
 export interface EpochComputationResult {
   epoch: number;
   scores: Map<Address, UserScore>;
@@ -66,4 +76,5 @@ export interface EpochComputationResult {
     };
   };
   seedQuality?: Map<Address, SeedQualityMetrics>;
+  pageRankMetrics?: PageRankMetrics;
 }

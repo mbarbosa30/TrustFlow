@@ -1,8 +1,9 @@
 import type { Address } from "viem";
 import { FlowGraph } from "./graph";
 import { DinicMaxFlow } from "./maxflow";
-import type { TrustScoreComponents, UserScore, EpochComputationResult, SeedQualityMetrics } from "./types";
+import type { TrustScoreComponents, UserScore, EpochComputationResult, SeedQualityMetrics, PageRankMetrics } from "./types";
 import { SeedScorer } from "./seedScoring";
+import { PageRankScorer } from "./pagerank";
 
 export interface Endorsement {
   endorser: Address;
@@ -15,6 +16,7 @@ export interface ScoringConfig {
   cutWeight: number;
   stabilityWeight: number;
   depthWeight: number;
+  pageRankWeight: number; // 0-5%, default 0%
   maxDepth: number;
 }
 
@@ -23,6 +25,7 @@ const DEFAULT_CONFIG: ScoringConfig = {
   cutWeight: 0.25,
   stabilityWeight: 0.10,
   depthWeight: 0.10,
+  pageRankWeight: 0.00, // Default: 0% (disabled)
   maxDepth: 6,
 };
 
@@ -138,6 +141,7 @@ export class TrustScorer {
         minCut,
         stability,
         depth,
+        pageRank: 0, // Will be computed after identifying accepted users
       };
 
       const normalizedComponents = this.normalizeComponents(
@@ -173,14 +177,51 @@ export class TrustScorer {
       });
     }
 
-    this.assignPercentiles(userScores);
-
-    // Compute seed quality scores
+    // Compute PageRank scores (only for accepted users)
     const acceptedUserSet = new Set<Address>(
       Array.from(userScores.entries())
         .filter(([, score]) => score.isAccepted)
         .map(([address]) => address.toLowerCase() as Address)
     );
+
+    let pageRankMetrics: PageRankMetrics | undefined;
+    
+    if (this.config.pageRankWeight > 0 && acceptedUserSet.size > 0) {
+      const pageRankScorer = new PageRankScorer();
+      const pageRankResult = pageRankScorer.computeSeedPersonalizedPageRank(
+        endorsements,
+        seeds,
+        acceptedUserSet
+      );
+
+      // Update components with PageRank scores and recalculate STS
+      for (const [address, userScore] of Array.from(userScores.entries())) {
+        const prScore = pageRankResult.scores.get(address) || 0;
+        userScore.components.pageRank = prScore;
+
+        // Recalculate STS with PageRank included
+        const normalizedComponents = this.normalizeComponents(
+          userScore.components,
+          p95Flow,
+          p95MinCut
+        );
+        userScore.sts = this.calculateSTS(normalizedComponents);
+        userScore.tier = this.assignTier(userScore.sts, userScore.components.minCut, userScore.components.stability);
+      }
+
+      pageRankMetrics = {
+        prSkew: pageRankResult.metrics.prSkew,
+        seedConcentration: pageRankResult.metrics.seedConcentration,
+        maxScore: pageRankResult.metrics.maxScore,
+        p95Score: pageRankResult.metrics.p95Score,
+        iterations: pageRankResult.iterations,
+        converged: pageRankResult.converged,
+      };
+    }
+
+    this.assignPercentiles(userScores);
+
+    // Compute seed quality scores
 
     const seedScorer = new SeedScorer();
     const seedScores = seedScorer.computeSeedScores(
@@ -212,6 +253,7 @@ export class TrustScorer {
         p95Flow,
       },
       seedQuality: seedQualityMetrics,
+      pageRankMetrics,
     };
   }
 
@@ -440,26 +482,42 @@ export class TrustScorer {
     // Stability is already normalized
     const normalizedStability = Math.min(1, components.stability);
 
+    // PageRank is already normalized to [0,1] by PageRankScorer
+    const normalizedPageRank = Math.min(1, components.pageRank);
+
     return {
       flow: normalizedFlow,
       minCut: normalizedMinCut,
       stability: normalizedStability,
       depth: normalizedDepth,
+      pageRank: normalizedPageRank,
     };
   }
 
   /**
    * Calculate final STS score from normalized components
+   * 
+   * When pageRankWeight = 0 (default):
+   *   STS = 100 * (0.55*F + 0.25*C + 0.10*S + 0.10*D)
+   * 
+   * When pageRankWeight > 0 (e.g., 0.05):
+   *   STS = 100 * (0.52*F + 0.24*C + 0.10*S + 0.09*D + 0.05*PR)
+   *   (Weights are auto-adjusted to sum to 1.0)
    */
   private calculateSTS(normalized: TrustScoreComponents): number {
-    const { flowWeight, cutWeight, stabilityWeight, depthWeight } = this.config;
+    const { flowWeight, cutWeight, stabilityWeight, depthWeight, pageRankWeight } = this.config;
+    
+    // Auto-adjust weights to sum to 1.0 when PageRank is enabled
+    const totalWeight = flowWeight + cutWeight + stabilityWeight + depthWeight + pageRankWeight;
+    const scale = totalWeight > 0 ? 1.0 / totalWeight : 1.0;
 
     const sts =
       100 *
-      (flowWeight * normalized.flow +
-        cutWeight * normalized.minCut +
-        stabilityWeight * normalized.stability +
-        depthWeight * normalized.depth);
+      (flowWeight * scale * normalized.flow +
+        cutWeight * scale * normalized.minCut +
+        stabilityWeight * scale * normalized.stability +
+        depthWeight * scale * normalized.depth +
+        pageRankWeight * scale * normalized.pageRank);
 
     return Math.round(sts * 100) / 100;
   }

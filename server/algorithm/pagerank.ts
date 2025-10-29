@@ -166,7 +166,7 @@ export class PageRankScorer {
     const rawScores = new Map<Address, number>();
     const acceptedScores: number[] = [];
     
-    for (const user of acceptedUsers) {
+    for (const user of Array.from(acceptedUsers)) {
       const userLower = user.toLowerCase();
       const score = rank.get(userLower) || 0;
       rawScores.set(user, score);
