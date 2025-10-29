@@ -16,7 +16,7 @@ import { useState } from "react";
 export default function Credit() {
   const { address } = useAccount();
   const { toast } = useToast();
-  const [selectedAmount, setSelectedAmount] = useState<number>(160);
+  const [selectedAmount, setSelectedAmount] = useState<number>(160000); // Default 160k ARS
   const [selectedTenor, setSelectedTenor] = useState<number>(6);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
 
@@ -88,12 +88,12 @@ export default function Credit() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Loan created successfully!", description: "Your loan has been disbursed" });
+      toast({ title: "Préstamo creado exitosamente", description: "Tu préstamo ha sido desembolsado" });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/borrower/${communityId}/${address}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/eligibility/${communityId}/${address}`] });
     },
     onError: (error: any) => {
-      toast({ title: "Failed to create loan", description: error.message, variant: "destructive" });
+      toast({ title: "Error al crear el préstamo", description: error.message, variant: "destructive" });
     },
   });
 
@@ -116,13 +116,13 @@ export default function Credit() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Payment successful!", description: "Your payment has been processed" });
+      toast({ title: "Pago exitoso", description: "Tu pago ha sido procesado" });
       setPaymentAmount("");
       queryClient.invalidateQueries({ queryKey: [`/api/loans/${activeLoan?.id}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/borrower/${communityId}/${address}`] });
     },
     onError: (error: any) => {
-      toast({ title: "Payment failed", description: error.message, variant: "destructive" });
+      toast({ title: "Error en el pago", description: error.message, variant: "destructive" });
     },
   });
 
@@ -131,8 +131,8 @@ export default function Credit() {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-[400px]" data-testid="card-connect-wallet">
           <CardHeader>
-            <CardTitle>Connect Wallet</CardTitle>
-            <CardDescription>Please connect your wallet to access credit</CardDescription>
+            <CardTitle>Conectar Billetera</CardTitle>
+            <CardDescription>Por favor conectá tu billetera para acceder al crédito</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -144,7 +144,7 @@ export default function Credit() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Clock className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p>Loading credit information...</p>
+          <p>Cargando información de crédito...</p>
         </div>
       </div>
     );
@@ -154,23 +154,23 @@ export default function Credit() {
     <div className="container mx-auto py-8 space-y-6" data-testid="page-credit">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Credit</h1>
-          <p className="text-muted-foreground">Access microcredit loans based on your trust score</p>
+          <h1 className="text-3xl font-bold">Crédito</h1>
+          <p className="text-muted-foreground">Accedé a microcréditos según tu puntaje de confianza</p>
         </div>
       </div>
 
       <Tabs defaultValue={activeLoan ? "active" : "apply"}>
         <TabsList data-testid="tabs-credit">
           <TabsTrigger value="apply" data-testid="tab-apply">
-            Apply for Loan
+            Solicitar Préstamo
           </TabsTrigger>
           {activeLoan && (
             <TabsTrigger value="active" data-testid="tab-active-loan">
-              Active Loan
+              Préstamo Activo
             </TabsTrigger>
           )}
           <TabsTrigger value="history" data-testid="tab-history">
-            History
+            Historial
           </TabsTrigger>
         </TabsList>
 
@@ -178,15 +178,15 @@ export default function Credit() {
           {/* Trust Profile Card (Advisory Only) */}
           <Card data-testid="card-trust-profile">
             <CardHeader>
-              <CardTitle>Trust Profile</CardTitle>
-              <CardDescription>Your trust metrics (informational only)</CardDescription>
+              <CardTitle>Perfil de Confianza</CardTitle>
+              <CardDescription>Tus métricas de confianza (solo informativas)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {eligibility?.trustMetrics ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Sybil Resistance</p>
+                      <p className="text-sm text-muted-foreground">Resistencia Sybil</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" data-testid="badge-mincut">
                           Min-Cut: {eligibility.trustMetrics.minCut || 0}
@@ -194,7 +194,7 @@ export default function Credit() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Health Index</p>
+                      <p className="text-sm text-muted-foreground">Índice de Salud</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" data-testid="badge-ghi">
                           GHI: {eligibility.trustMetrics.ghi || 0}
@@ -205,18 +205,18 @@ export default function Credit() {
                   {eligibility.trustMetrics.isAccepted && (
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-muted-foreground">Vouched member of the trust network</span>
+                      <span className="text-muted-foreground">Miembro avalado de la red de confianza</span>
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground italic">
-                    These metrics are for informational purposes. All members can apply for loans during the pilot phase.
+                    Estas métricas son solo informativas. Todos los miembros pueden solicitar préstamos durante la fase piloto.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">No trust metrics available yet</p>
+                  <p className="text-sm text-muted-foreground">No hay métricas de confianza disponibles aún</p>
                   <p className="text-xs text-muted-foreground italic">
-                    You can still apply for loans during the pilot phase. Get vouched by trusted members to build your profile.
+                    Aún podés solicitar préstamos durante la fase piloto. Conseguí avales de miembros confiables para construir tu perfil.
                   </p>
                 </div>
               )}
@@ -227,12 +227,12 @@ export default function Credit() {
           {!activeLoan && (
             <Card data-testid="card-loan-application">
               <CardHeader>
-                <CardTitle>Apply for Loan</CardTitle>
-                <CardDescription>Select loan amount and repayment period</CardDescription>
+                <CardTitle>Solicitar Préstamo</CardTitle>
+                <CardDescription>Seleccioná el monto y período de pago</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Loan Amount (USDC)</Label>
+                  <Label htmlFor="amount">Monto del Préstamo (ARS)</Label>
                   <Select
                     value={selectedAmount.toString()}
                     onValueChange={(v) => setSelectedAmount(parseInt(v))}
@@ -241,9 +241,9 @@ export default function Credit() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {[160, 240, 320, 400, 480, 560, 640, 720, 800].map((amount: number) => (
+                      {[160000, 240000, 400000, 600000, 800000].map((amount: number) => (
                         <SelectItem key={amount} value={amount.toString()}>
-                          ${amount} USDC (≈ ${amount * 1000} ARS)
+                          ${(amount / 1000).toFixed(0)}k ARS
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -251,15 +251,15 @@ export default function Credit() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tenor">Repayment Period</Label>
+                  <Label htmlFor="tenor">Período de Pago</Label>
                   <Select value={selectedTenor.toString()} onValueChange={(v) => setSelectedTenor(parseInt(v))}>
                     <SelectTrigger id="tenor" data-testid="select-tenor">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="6">6 months</SelectItem>
-                      <SelectItem value="9">9 months</SelectItem>
-                      <SelectItem value="12">12 months</SelectItem>
+                      <SelectItem value="6">6 meses</SelectItem>
+                      <SelectItem value="9">9 meses</SelectItem>
+                      <SelectItem value="12">12 meses</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -271,7 +271,7 @@ export default function Credit() {
                     className="w-full"
                     data-testid="button-apply-loan"
                   >
-                    {createLoanMutation.isPending ? "Processing..." : "Apply for Loan"}
+                    {createLoanMutation.isPending ? "Procesando..." : "Solicitar Préstamo"}
                   </Button>
                 </div>
               </CardContent>
@@ -285,17 +285,17 @@ export default function Credit() {
               {/* Loan Overview */}
               <Card data-testid="card-loan-overview">
                 <CardHeader>
-                  <CardTitle>Active Loan</CardTitle>
+                  <CardTitle>Préstamo Activo</CardTitle>
                   <CardDescription>
-                    ${loanDetails.loan.principalUsdc} USDC • {loanDetails.loan.tenorMonths} months •{" "}
-                    {(loanDetails.loan.aprNominal * 100).toFixed(0)}% APR
+                    ${(loanDetails.loan.principalUsdc / 1000).toFixed(0)}k ARS • {loanDetails.loan.tenorMonths} meses •{" "}
+                    {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Repayment Progress</span>
+                    <span className="text-sm text-muted-foreground">Progreso de Pago</span>
                     <span className="text-sm font-medium">
-                      ${loanDetails.totalPaid.toFixed(2)} / ${loanDetails.totalDue.toFixed(2)}
+                      ${(loanDetails.totalPaid / 1000).toFixed(1)}k / ${(loanDetails.totalDue / 1000).toFixed(1)}k ARS
                     </span>
                   </div>
                   <Progress value={(loanDetails.totalPaid / loanDetails.totalDue) * 100} />
@@ -304,10 +304,10 @@ export default function Credit() {
                     <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
                       <DollarSign className="h-5 w-5" />
                       <div>
-                        <p className="font-medium">Next Payment</p>
+                        <p className="font-medium">Próximo Pago</p>
                         <p className="text-sm text-muted-foreground">
-                          ${loanDetails.nextInstallment.totalDue.toFixed(2)} due on{" "}
-                          {new Date(loanDetails.nextInstallment.dueDate).toLocaleDateString()}
+                          ${(loanDetails.nextInstallment.totalDue / 1000).toFixed(1)}k ARS vence el{" "}
+                          {new Date(loanDetails.nextInstallment.dueDate).toLocaleDateString('es-AR')}
                         </p>
                       </div>
                     </div>
@@ -319,12 +319,12 @@ export default function Credit() {
               {loanDetails.nextInstallment && (
                 <Card data-testid="card-make-payment">
                   <CardHeader>
-                    <CardTitle>Make Payment</CardTitle>
-                    <CardDescription>Pay your next installment</CardDescription>
+                    <CardTitle>Realizar Pago</CardTitle>
+                    <CardDescription>Pagá tu próxima cuota</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="payment">Payment Amount (USDC)</Label>
+                      <Label htmlFor="payment">Monto del Pago (ARS)</Label>
                       <Input
                         id="payment"
                         type="number"
@@ -341,7 +341,7 @@ export default function Credit() {
                       className="w-full"
                       data-testid="button-make-payment"
                     >
-                      {makePaymentMutation.isPending ? "Processing..." : "Make Payment"}
+                      {makePaymentMutation.isPending ? "Procesando..." : "Realizar Pago"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -353,12 +353,12 @@ export default function Credit() {
         <TabsContent value="history">
           <Card data-testid="card-loan-history">
             <CardHeader>
-              <CardTitle>Loan History</CardTitle>
-              <CardDescription>Your past and current loans</CardDescription>
+              <CardTitle>Historial de Préstamos</CardTitle>
+              <CardDescription>Tus préstamos pasados y actuales</CardDescription>
             </CardHeader>
             <CardContent>
               {loans.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No loans yet</p>
+                <p className="text-center text-muted-foreground py-8">Aún no tenés préstamos</p>
               ) : (
                 <div className="space-y-4">
                   {loans.map((loan: any) => (
@@ -368,13 +368,13 @@ export default function Credit() {
                       data-testid={`loan-${loan.id}`}
                     >
                       <div>
-                        <p className="font-medium">${loan.principalUsdc} USDC</p>
+                        <p className="font-medium">${(loan.principalUsdc / 1000).toFixed(0)}k {loan.currency || 'ARS'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {loan.tenorMonths} months • {(loan.aprNominal * 100).toFixed(0)}% APR
+                          {loan.tenorMonths} meses • {(loan.aprNominal * 100).toFixed(0)}% TNA
                         </p>
                       </div>
                       <Badge variant={loan.status === "PAID" ? "default" : loan.status === "ACTIVE" ? "secondary" : "destructive"}>
-                        {loan.status}
+                        {loan.status === "PAID" ? "PAGADO" : loan.status === "ACTIVE" ? "ACTIVO" : "IMPAGO"}
                       </Badge>
                     </div>
                   ))}
