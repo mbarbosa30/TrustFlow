@@ -21,11 +21,13 @@ import Communities from "@/pages/Communities";
 import CreateCommunity from "@/pages/CreateCommunity";
 import CommunityDetail from "@/pages/CommunityDetail";
 import MyWallet from "@/pages/MyWallet";
+import Credit from "@/pages/Credit";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
   { path: "/overview", label: "Overview" },
   { path: "/wallet", label: "My Wallet" },
+  { path: "/credit", label: "Credit" },
   { path: "/dashboard", label: "Dashboard" },
   { path: "/communities", label: "Communities" },
   { path: "/status", label: "Status" },
@@ -38,6 +40,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
       <Route path="/wallet" component={MyWallet} />
+      <Route path="/credit" component={Credit} />
       <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />

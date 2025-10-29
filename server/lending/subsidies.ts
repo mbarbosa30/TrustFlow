@@ -83,6 +83,9 @@ export async function applyInterestVoucher(
 /**
  * Create Repay-Assist intervention when supporter covers late installment
  * Records the intervention and updates installment status
+ * 
+ * SECURITY: Supporter must cover the FULL outstanding amount to mark installment as PAID
+ * Partial coverage is rejected to prevent accounting errors
  */
 export async function createRepayAssist(
   intervention: RAIntervention
@@ -99,15 +102,27 @@ export async function createRepayAssist(
     throw new Error(`Installment is not late (status: ${installment.status})`);
   }
 
-  const normalizedAddress = supporterAddress.toLowerCase();
-  const totalClaim = amountUsdc * (1 + premiumRate);
+  // Calculate outstanding amount (total due minus what's already paid)
+  const outstandingAmount = installment.totalDue - installment.totalPaid;
 
-  // Create assist record
+  // CRITICAL: Amount must match exactly the outstanding amount (no under/overpayments)
+  // Overpayments inflate subsidy ledgers and supporter claims beyond actual obligation
+  if (amountUsdc !== outstandingAmount) {
+    throw new Error(
+      `Repay-Assist must exactly match outstanding amount. Outstanding: $${outstandingAmount.toFixed(2)}, Provided: $${amountUsdc.toFixed(2)}`
+    );
+  }
+
+  const normalizedAddress = supporterAddress.toLowerCase();
+  // totalClaim uses the exact outstanding amount (no overpayment inflation)
+  const totalClaim = outstandingAmount * (1 + premiumRate);
+
+  // Create assist record using exact outstanding amount (preventing overpayment inflation)
   const assistRecord: InsertAssist = {
     loanId: installment.loanId,
     installmentIdx: installment.idx,
     supporterAddress: normalizedAddress,
-    amountUsdc,
+    amountUsdc: outstandingAmount, // Use validated outstanding amount, not raw input
     premiumRate,
     totalClaim,
     amountRepaid: 0,
@@ -116,7 +131,7 @@ export async function createRepayAssist(
 
   const assistId = await storage.createAssist(assistRecord);
 
-  // Update subsidy ledger
+  // Update subsidy ledger with exact amounts (no overpayment inflation)
   let ledger = await storage.getSubsidyLedger(
     installment.loanId,
     installment.idx
@@ -128,20 +143,21 @@ export async function createRepayAssist(
       installmentIdx: installment.idx,
       ibdApplied: 0,
       voucherApplied: 0,
-      assistCovered: amountUsdc,
-      assistPremium: totalClaim - amountUsdc,
+      assistCovered: outstandingAmount, // Exact outstanding, not overpayment
+      assistPremium: totalClaim - outstandingAmount, // Premium on actual coverage
     };
     await storage.createSubsidyLedger(newLedger);
   } else {
     await storage.updateSubsidyLedger(ledger.id, {
-      assistCovered: ledger.assistCovered + amountUsdc,
-      assistPremium: ledger.assistPremium + (totalClaim - amountUsdc),
+      assistCovered: ledger.assistCovered + outstandingAmount, // Exact amounts only
+      assistPremium: ledger.assistPremium + (totalClaim - outstandingAmount),
     });
   }
 
-  // Mark installment as paid (covered by assist)
+  // Mark installment as fully paid (covered by assist)
+  // Safe now because we validated amountUsdc === outstandingAmount exactly
   await storage.updateInstallment(installmentId, {
-    totalPaid: installment.totalDue,
+    totalPaid: installment.totalDue, // Total due = already paid + outstanding (exact)
     principalPaid: installment.principalDue,
     interestPaid: installment.interestDue,
     status: "PAID",

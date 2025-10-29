@@ -28,45 +28,7 @@ router.get("/eligibility/:communityId/:userAddress", async (req, res) => {
 });
 
 /**
- * Create a new loan
- * POST /api/loans/:communityId
- * Body: { userAddress, amountUsdc, tenorMonths }
- */
-router.post("/:communityId", async (req, res) => {
-  try {
-    const communityId = parseInt(req.params.communityId);
-    const { userAddress, amountUsdc, tenorMonths } = req.body;
-
-    if (!userAddress || !amountUsdc || !tenorMonths) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const result = await createLoan(communityId, userAddress, amountUsdc, tenorMonths);
-
-    res.json(result);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-/**
- * Get loan details with payment status
- * GET /api/loans/:loanId
- */
-router.get("/:loanId", async (req, res) => {
-  try {
-    const loanId = parseInt(req.params.loanId);
-
-    const result = await getLoanPaymentStatus(loanId);
-
-    res.json(result);
-  } catch (error: any) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-/**
- * Get loans by borrower
+ * Get loans by borrower (MUST come before /:loanId to avoid route collision)
  * GET /api/loans/borrower/:communityId/:userAddress
  */
 router.get("/borrower/:communityId/:userAddress", async (req, res) => {
@@ -83,7 +45,7 @@ router.get("/borrower/:communityId/:userAddress", async (req, res) => {
 });
 
 /**
- * Get all loans for a community
+ * Get all loans for a community (MUST come before /:loanId)
  * GET /api/loans/community/:communityId
  */
 router.get("/community/:communityId", async (req, res) => {
@@ -99,17 +61,117 @@ router.get("/community/:communityId", async (req, res) => {
 });
 
 /**
+ * Create a new loan
+ * POST /api/loans/:communityId
+ * Body: { userAddress, amountUsdc, tenorMonths }
+ */
+router.post("/:communityId", async (req, res) => {
+  try {
+    const communityId = parseInt(req.params.communityId);
+    const { userAddress, amountUsdc, tenorMonths } = req.body;
+
+    if (!userAddress || !amountUsdc || !tenorMonths) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Get lending policy to get APR
+    const community = await storage.getCommunity(communityId);
+    const policyJson = community?.lendingPolicyJson as string | null | undefined;
+    
+    if (!policyJson) {
+      return res.status(400).json({ error: "Lending not enabled for this community" });
+    }
+
+    const policy = JSON.parse(policyJson);
+    
+    const result = await createLoan({
+      communityId,
+      borrowerAddress: userAddress,
+      principalUsdc: amountUsdc,
+      tenorMonths,
+      aprNominal: policy.aprNominal,
+    });
+
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Get loan details with payment status
+ * GET /api/loans/:loanId
+ * NOTE: This MUST come after specific routes like /borrower and /community
+ */
+router.get("/:loanId", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+
+    const result = await getLoanPaymentStatus(loanId);
+
+    res.json(result);
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+/**
  * Make a payment on an installment
  * POST /api/loans/:loanId/pay
- * Body: { installmentId, amountUsdc }
+ * Body: { installmentId, amountUsdc, payerAddress }
+ * 
+ * SECURITY WARNING: payerAddress is currently UNAUTHENTICATED - client can claim any address
+ * 
+ * TODO: Add wallet signature verification or session-based authentication
+ * Production implementation should:
+ * 1. Verify EIP-712 signature from payerAddress proving control of private key
+ * 2. Or use session middleware that validates authenticated wallet matches payerAddress
+ * 3. Current implementation trusts client-provided address - vulnerable to spoofing
+ * 
+ * Temporary mitigation: Only the borrower or supporters with active assists can make payments
+ * But an attacker can still masquerade as these authorized users
  */
 router.post("/:loanId/pay", async (req, res) => {
   try {
     const loanId = parseInt(req.params.loanId);
-    const { installmentId, amountUsdc } = req.body;
+    const { installmentId, amountUsdc, payerAddress } = req.body;
 
-    if (!installmentId || !amountUsdc) {
+    if (!installmentId || !amountUsdc || !payerAddress) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // TODO: Add signature verification here
+    // Example: await verifyEIP712Signature(payerAddress, signature, message)
+
+    // Get loan and installment to verify ownership
+    const loan = await storage.getLoan(loanId);
+    const installment = await storage.getInstallmentById(installmentId);
+
+    if (!loan || !installment) {
+      return res.status(404).json({ error: "Loan or installment not found" });
+    }
+
+    if (installment.loanId !== loanId) {
+      return res.status(400).json({ error: "Installment does not belong to this loan" });
+    }
+
+    // Verify payer is borrower or has an active assist on this installment
+    // NOTE: This check is incomplete without signature verification
+    const normalizedPayer = payerAddress.toLowerCase();
+    const normalizedBorrower = loan.borrowerAddress.toLowerCase();
+
+    if (normalizedPayer !== normalizedBorrower) {
+      // Check if payer is a supporter with an active assist
+      const allAssists = await storage.getAssistsByLoan(loanId);
+      const hasActiveAssist = allAssists.some(
+        (a: any) => a.installmentId === installmentId && a.supporterAddress.toLowerCase() === normalizedPayer && a.repaidAt === null
+      );
+
+      if (!hasActiveAssist) {
+        return res.status(403).json({ 
+          error: "Unauthorized: Only the borrower or supporters with active assists can make payments" 
+        });
+      }
     }
 
     const result = await processInstallmentPayment(installmentId, amountUsdc);
