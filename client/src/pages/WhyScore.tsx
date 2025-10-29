@@ -1,8 +1,30 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWallet } from '@/hooks/useWallet';
+import { ComponentsBreakdown } from "@/components/ComponentsBreakdown";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { Info, Network, Shield, GitBranch } from "lucide-react";
 
 export default function WhyScore() {
-  const { isConnected } = useWallet();
+  const { isConnected, address } = useWallet();
+
+  const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
+    didResolved: string;
+    sts: number;
+    components: {
+      flow: number;
+      minCut: number;
+      stability: number;
+      depth: number;
+      pageRank: number;
+    };
+    tier: string | null;
+    percentile: number;
+    isAccepted: boolean;
+  } | null>({
+    queryKey: [`/api/score/${address}`],
+    enabled: isConnected && !!address,
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -42,15 +64,33 @@ export default function WhyScore() {
               <div className="pt-4 border-t">
                 <h3 className="font-semibold mb-2">Standardized Trust Score (STS)</h3>
                 <p className="text-sm text-muted-foreground">
-                  The <strong>STS</strong> normalizes flow to a 0-100 scale for easier interpretation and 
-                  comparison. It's calculated using percentile ranking within the current epoch's distribution.
+                  The <strong>STS</strong> combines five normalized components into a 0-100 scale for easier interpretation. 
+                  It's not just flow - it's a weighted combination of multiple security and network quality metrics.
                 </p>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside mt-2">
-                  <li>Always between 0 and 100</li>
-                  <li>Relative to other users in the current epoch</li>
-                  <li>Easier for humans to interpret</li>
-                  <li>Aligned with tier badges (Connected, Verified, Trusted)</li>
-                </ul>
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  <div className="p-2 rounded bg-muted/30">
+                    <div className="text-xs font-semibold">Flow (55%)</div>
+                    <div className="text-xs text-muted-foreground">Max-flow capacity</div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/30">
+                    <div className="text-xs font-semibold">Min-Cut (25%)</div>
+                    <div className="text-xs text-muted-foreground">Path redundancy</div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/30">
+                    <div className="text-xs font-semibold">Stability (5%)</div>
+                    <div className="text-xs text-muted-foreground">Network resilience</div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/30">
+                    <div className="text-xs font-semibold">Depth (10%)</div>
+                    <div className="text-xs text-muted-foreground">Proximity to seeds</div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/30 col-span-2">
+                    <div className="text-xs font-semibold flex items-center gap-1">
+                      PageRank (5%) <Badge variant="outline" className="text-[0.6rem]">New</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">Network embeddedness</div>
+                  </div>
+                </div>
               </div>
 
               <div className="pt-4 border-t bg-muted rounded-lg p-4">
@@ -65,41 +105,49 @@ export default function WhyScore() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Score Explainability</CardTitle>
-            <CardDescription>
-              Trust scores and their breakdowns are calculated during epoch computations
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="py-8">
-            {!isConnected ? (
-              <p className="text-sm text-muted-foreground text-center">
-                Connect your wallet to view your trust score breakdown
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Your score breakdown will appear here after:
+        {isConnected && scoreData?.components ? (
+          <ComponentsBreakdown 
+            components={scoreData.components}
+            isLoading={isLoadingScore}
+          />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Score Components</CardTitle>
+              <CardDescription>
+                Detailed breakdown of the factors contributing to your STS
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="py-8">
+              {!isConnected ? (
+                <p className="text-sm text-muted-foreground text-center">
+                  Connect your wallet to view your trust score breakdown
                 </p>
-                <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-                  <li>You receive vouches from users in the network</li>
-                  <li>An epoch computation runs to calculate max-flow paths</li>
-                  <li>Your STS (Standardized Trust Score) components are computed</li>
-                </ul>
-                <p className="text-sm text-muted-foreground pt-4">
-                  The score breakdown will show:
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-                  <li><strong>Flow (F):</strong> Max-flow reaching you from seeds</li>
-                  <li><strong>Cut (C):</strong> Min-cut size (path redundancy)</li>
-                  <li><strong>Stability (S):</strong> Resistance to edge removal</li>
-                  <li><strong>Depth (D):</strong> Proximity to trust roots</li>
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Your score breakdown will appear here after:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                    <li>You receive vouches from users in the network</li>
+                    <li>An epoch computation runs to calculate max-flow paths</li>
+                    <li>Your STS (Standardized Trust Score) components are computed</li>
+                  </ul>
+                  <p className="text-sm text-muted-foreground pt-4">
+                    The score breakdown will show five weighted components:
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                    <li><strong>Flow (55%):</strong> Max-flow capacity from seeds</li>
+                    <li><strong>Min-Cut (25%):</strong> Path redundancy and attack resistance</li>
+                    <li><strong>Stability (5%):</strong> Resilience to seed removal</li>
+                    <li><strong>Depth (10%):</strong> Proximity to trust sources</li>
+                    <li><strong>PageRank (5%):</strong> Network embeddedness score</li>
+                  </ul>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

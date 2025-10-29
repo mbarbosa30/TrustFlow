@@ -23,9 +23,9 @@ export interface ScoringConfig {
 const DEFAULT_CONFIG: ScoringConfig = {
   flowWeight: 0.55,
   cutWeight: 0.25,
-  stabilityWeight: 0.10,
+  stabilityWeight: 0.05,
   depthWeight: 0.10,
-  pageRankWeight: 0.00, // Default: 0% (disabled)
+  pageRankWeight: 0.05, // 5% weight for PageRank
   maxDepth: 6,
 };
 
@@ -233,7 +233,7 @@ export class TrustScorer {
 
     // Convert to SeedQualityMetrics format
     const seedQualityMetrics = new Map<Address, SeedQualityMetrics>();
-    for (const [seedAddress, seedScore] of seedScores.entries()) {
+    for (const [seedAddress, seedScore] of Array.from(seedScores.entries())) {
       seedQualityMetrics.set(seedAddress, {
         seedAddress,
         score: seedScore.score,
@@ -497,12 +497,17 @@ export class TrustScorer {
   /**
    * Calculate final STS score from normalized components
    * 
-   * When pageRankWeight = 0 (default):
-   *   STS = 100 * (0.55*F + 0.25*C + 0.10*S + 0.10*D)
+   * Current configuration (default):
+   *   STS = 100 * (0.55*F + 0.25*C + 0.05*S + 0.10*D + 0.05*PR)
    * 
-   * When pageRankWeight > 0 (e.g., 0.05):
-   *   STS = 100 * (0.52*F + 0.24*C + 0.10*S + 0.09*D + 0.05*PR)
-   *   (Weights are auto-adjusted to sum to 1.0)
+   * Where:
+   *   F = Flow (55%): Max-flow capacity from seeds
+   *   C = Min-Cut (25%): Minimum edges to disconnect from seeds
+   *   S = Stability (5%): Resilience to seed removal
+   *   D = Depth (10%): Shortest path distance from seeds
+   *   PR = PageRank (5%): Seed-personalized PageRank score
+   * 
+   * Weights are auto-normalized to sum to 1.0
    */
   private calculateSTS(normalized: TrustScoreComponents): number {
     const { flowWeight, cutWeight, stabilityWeight, depthWeight, pageRankWeight } = this.config;
