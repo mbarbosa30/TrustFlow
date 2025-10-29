@@ -131,7 +131,7 @@ export default function Communities() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-sm">
-                    <span className="text-muted-foreground">Prompt: </span>
+                    <span className="text-muted-foreground">{t('communities.prompt')}: </span>
                     <span className="font-medium">"{community.promptText}"</span>
                   </div>
 
@@ -144,7 +144,7 @@ export default function Communities() {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t">
                     <div className="flex items-center gap-1">
                       <Users className="w-3.5 h-3.5" />
-                      <span>Community {community.id}</span>
+                      <span>{t('communities.community')} {community.id}</span>
                     </div>
                   </div>
                 </CardContent>

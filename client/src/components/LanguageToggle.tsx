@@ -3,7 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Languages } from "lucide-react";
 
 export function LanguageToggle() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'es' : 'en');
@@ -21,7 +21,7 @@ export function LanguageToggle() {
       <span className="absolute bottom-0 right-0 text-[10px] font-bold">
         {language.toUpperCase()}
       </span>
-      <span className="sr-only">Toggle language</span>
+      <span className="sr-only">{t('common.toggleLanguage')}</span>
     </Button>
   );
 }
