@@ -56,8 +56,9 @@ export function PageRankMetrics({ data, isLoading = false }: PageRankMetricsProp
   }
 
   const getSkewStatus = (skew: number): { status: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    if (skew < 2.0) return { status: 'Low Skew', color: 'text-green-600 dark:text-green-400', variant: 'default' };
-    if (skew < 4.0) return { status: 'Moderate Skew', color: 'text-yellow-600 dark:text-yellow-400', variant: 'secondary' };
+    // prSkew = 1 - Gini coefficient, range 0-1, higher = better (more equal distribution)
+    if (skew >= 0.7) return { status: 'Low Skew', color: 'text-green-600 dark:text-green-400', variant: 'default' };
+    if (skew >= 0.4) return { status: 'Moderate Skew', color: 'text-yellow-600 dark:text-yellow-400', variant: 'secondary' };
     return { status: 'High Skew', color: 'text-red-600 dark:text-red-400', variant: 'destructive' };
   };
 
@@ -127,12 +128,13 @@ export function PageRankMetrics({ data, isLoading = false }: PageRankMetricsProp
               <div className="space-y-2">
                 <div className="font-semibold text-sm">PageRank Skew</div>
                 <div className="text-xs text-muted-foreground">
-                  Measures how evenly PageRank scores are distributed. Lower values indicate more even distribution 
-                  of trust across the network. Calculated as max_score / p95_score.
+                  Measures how evenly PageRank scores are distributed. Calculated as 1 - Gini coefficient. 
+                  Higher values (closer to 1) indicate more equal distribution of trust across the network, 
+                  which is healthier. Lower values indicate concentrated trust in few users.
                 </div>
                 <div className="text-xs pt-2 border-t">
-                  <div>Max: {data.maxScore.toFixed(4)}</div>
-                  <div>P95: {data.p95Score.toFixed(4)}</div>
+                  <div>Scale: 0.0 (highly concentrated) to 1.0 (perfectly equal)</div>
+                  <div>Healthy threshold: ≥ 0.7</div>
                 </div>
               </div>
             </TooltipContent>
