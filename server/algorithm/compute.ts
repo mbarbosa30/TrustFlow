@@ -2,6 +2,8 @@ import type { Address } from "viem";
 import { TrustScorer } from "./scoring";
 import { storage } from "../storage";
 import type { InsertScore } from "@shared/schema";
+import { computeHealthMetrics } from "../health/metrics";
+import { computeGHI } from "../health/ghi";
 
 export class EpochComputation {
   private scorer: TrustScorer;
@@ -73,25 +75,31 @@ export class EpochComputation {
 
     const { totalAccepted, avgMinCut, avgFlow } = result.networkMetrics;
     
-    const computeSizeN = (count: number): number => {
-      if (count < 10) return 0;
-      if (count < 50) return 40;
-      if (count < 200) return 60;
-      if (count < 500) return 80;
-      return 100;
-    };
-
-    const computeCutN = (avgCut: number): number => {
-      if (avgCut < 1.5) return 0;
-      if (avgCut < 2) return 50;
-      if (avgCut < 3) return 75;
-      return 100;
-    };
-
-    const sizeN = computeSizeN(totalAccepted);
-    const cutN = computeCutN(avgMinCut);
-    const churnN = 100;
-    const ghi = Math.round(0.30 * sizeN + 0.50 * cutN + 0.20 * churnN);
+    // Get current epoch's accepted users
+    const currentAcceptedUsers = scoreInserts
+      .filter(s => s.isAccepted)
+      .map(s => s.address.toLowerCase());
+    
+    // Get previous epoch's accepted users for churn calculation
+    let previousAcceptedUsers: string[] | null = null;
+    if (epochId > 0) {
+      const previousScores = await storage.getScoresByEpoch(epochId - 1);
+      if (previousScores.length > 0) {
+        previousAcceptedUsers = previousScores
+          .filter(s => s.isAccepted)
+          .map(s => (s.address as string).toLowerCase());
+        console.log(`Previous epoch ${epochId - 1} had ${previousAcceptedUsers.length} accepted users`);
+      }
+    }
+    
+    // Compute health metrics using real churn calculation
+    const metrics = computeHealthMetrics(
+      currentAcceptedUsers,
+      avgMinCut,
+      previousAcceptedUsers
+    );
+    
+    const ghi = computeGHI(metrics);
 
     const existingHealth = await storage.getEpochHealth(epochId);
     
@@ -99,12 +107,12 @@ export class EpochComputation {
       await storage.createEpochHealth({
         epochId,
         ghi,
-        sizeN,
-        cutN,
-        churnN,
-        rawAcceptedCount: totalAccepted,
-        rawAvgMinCut: avgMinCut,
-        rawChurnStability: 1.0,
+        sizeN: metrics.sizeN,
+        cutN: metrics.cutN,
+        churnN: metrics.churnN,
+        rawAcceptedCount: metrics.rawAcceptedCount,
+        rawAvgMinCut: metrics.rawAvgMinCut,
+        rawChurnStability: metrics.rawChurnStability,
       });
     }
 
