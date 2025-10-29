@@ -35,7 +35,7 @@ export default function CreateCommunity() {
 
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; description: string; promptText: string; templateId: string; creator: string }) => {
-      return await apiRequest("/api/communities", "POST", data);
+      return await apiRequest("POST", "/api/communities", data);
     },
     onSuccess: (response: any) => {
       toast({
