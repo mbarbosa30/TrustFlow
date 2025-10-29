@@ -22,7 +22,6 @@ import { Footer } from "@/components/Footer";
 const appNavItems = [
   { path: "/overview", label: "Overview" },
   { path: "/dashboard", label: "Dashboard" },
-  { path: "/bluesky", label: "Bluesky Explorer" },
   { path: "/status", label: "Status" },
 ];
 

@@ -73,8 +73,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <Link href="/how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Documentation
+                <Link href="/bluesky" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-bluesky">
+                  Bluesky Explorer
                 </Link>
               </li>
               <li>
