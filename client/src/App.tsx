@@ -19,6 +19,7 @@ import TermsPrivacy from "@/pages/TermsPrivacy";
 import BlueskyExplorer from "@/pages/BlueskyExplorer";
 import Communities from "@/pages/Communities";
 import CreateCommunity from "@/pages/CreateCommunity";
+import CommunityDetail from "@/pages/CommunityDetail";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
@@ -45,6 +46,7 @@ function Router() {
       <Route path="/terms-privacy" component={TermsPrivacy} />
       <Route path="/communities" component={Communities} />
       <Route path="/communities/create" component={CreateCommunity} />
+      <Route path="/communities/:id" component={CommunityDetail} />
       <Route component={NotFound} />
     </Switch>
   );
