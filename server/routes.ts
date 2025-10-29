@@ -810,48 +810,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/path-diversity", async (req, res) => {
     try {
-      // Get the latest epoch health
-      const latestHealth = await storage.getEpochHealth(0);
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth) {
-        return res.status(200).json({ data: [] });
-      }
+      // Group scores by epoch
+      const scoresByEpoch = allScores.reduce((acc, score) => {
+        const epochId = Number(score.epochId);
+        if (!acc[epochId]) {
+          acc[epochId] = [];
+        }
+        acc[epochId].push(score);
+        return acc;
+      }, {} as Record<number, typeof allScores>);
 
-      // Get accepted scores for the epoch
-      const acceptedScores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const accepted = acceptedScores.filter(s => s.isAccepted);
-      
-      if (accepted.length === 0) {
-        return res.status(200).json({ data: [] });
-      }
-
-      // Calculate path diversity index for each user: minCut / max(flow, 1)
-      // This represents the fraction of flow that is redundant/diverse
-      const diversityValues = accepted
-        .map(s => {
-          const flow = s.flow || 1;
-          const minCut = s.minCut || 0;
-          // Cap at 1.0 since diversity can't exceed 100%
-          return Math.min(minCut / Math.max(flow, 1), 1.0);
-        })
-        .sort((a, b) => a - b);
-
-      // Calculate percentiles
+      // Calculate percentiles helper
       const calculatePercentile = (values: number[], percentile: number): number => {
         const index = Math.ceil(values.length * percentile) - 1;
         return values[Math.max(0, index)] || 0;
       };
 
-      const data = [
-        {
-          epoch: `Epoch ${latestHealth.epochId}`,
-          min: diversityValues[0] || 0,
-          p25: calculatePercentile(diversityValues, 0.25),
-          median: calculatePercentile(diversityValues, 0.50),
-          p75: calculatePercentile(diversityValues, 0.75),
-          max: diversityValues[diversityValues.length - 1] || 0,
-        }
-      ];
+      const data = Object.keys(scoresByEpoch)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epochId => {
+          const epochScores = scoresByEpoch[Number(epochId)];
+          const accepted = epochScores.filter(s => s.isAccepted);
+          
+          if (accepted.length === 0) {
+            return null;
+          }
+
+          // Calculate path diversity index for each user: minCut / max(flow, 1)
+          // This represents the fraction of flow that is redundant/diverse
+          const diversityValues = accepted
+            .map(s => {
+              const flow = s.flow || 1;
+              const minCut = s.minCut || 0;
+              // Cap at 1.0 since diversity can't exceed 100%
+              return Math.min(minCut / Math.max(flow, 1), 1.0);
+            })
+            .sort((a, b) => a - b);
+
+          return {
+            epoch: `Epoch ${epochId}`,
+            min: diversityValues[0] || 0,
+            p25: calculatePercentile(diversityValues, 0.25),
+            median: calculatePercentile(diversityValues, 0.50),
+            p75: calculatePercentile(diversityValues, 0.75),
+            max: diversityValues[diversityValues.length - 1] || 0,
+          };
+        })
+        .filter(d => d !== null);
 
       return res.status(200).json({ data });
     } catch (error) {
