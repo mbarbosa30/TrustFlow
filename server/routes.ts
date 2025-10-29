@@ -1268,6 +1268,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => b.influence - a.influence)
         .slice(0, 10);
 
+      // Network Health Metrics
+      const connectivityRate = totalUsers > 0 ? acceptedUsers / totalUsers : 0;
+      const depths = acceptedScores.map(s => s.components.depth).filter(d => d > 0);
+      const avgPathLength = depths.length > 0 
+        ? depths.reduce((sum, d) => sum + d, 0) / depths.length 
+        : 0;
+      const networkDiameter = depths.length > 0 ? Math.max(...depths) : 0;
+      
+      // Graph density: actual edges / possible edges
+      const uniqueUsers = new Set([...followDids, ...followerDids, did.toLowerCase()]);
+      const possibleEdges = uniqueUsers.size * (uniqueUsers.size - 1);
+      const graphDensity = possibleEdges > 0 ? endorsements.length / possibleEdges : 0;
+
+      // Robustness Metrics
+      const minCutValues = acceptedScores.map(s => s.components.minCut).filter(mc => mc > 0);
+      const redundancyScore = minCutValues.length > 0
+        ? minCutValues.reduce((sum, mc) => sum + mc, 0) / minCutValues.length
+        : 0;
+
+      // Gini coefficient for flow inequality (0=perfect equality, 1=complete inequality)
+      const sortedFlows = flowValues.slice().sort((a, b) => a - b);
+      let giniSum = 0;
+      let totalFlowForGini = 0;
+      for (let i = 0; i < sortedFlows.length; i++) {
+        giniSum += (i + 1) * sortedFlows[i];
+        totalFlowForGini += sortedFlows[i];
+      }
+      const giniCoefficient = sortedFlows.length > 0 && totalFlowForGini > 0
+        ? (2 * giniSum) / (sortedFlows.length * totalFlowForGini) - (sortedFlows.length + 1) / sortedFlows.length
+        : 0;
+
+      // Clustering coefficient (how interconnected are neighbors)
+      // For each accepted user, count triangles (mutual connections)
+      const adjacencyMap = new Map<string, Set<string>>();
+      for (const edge of endorsements) {
+        if (!adjacencyMap.has(edge.endorser)) {
+          adjacencyMap.set(edge.endorser, new Set());
+        }
+        adjacencyMap.get(edge.endorser)!.add(edge.endorsee);
+      }
+
+      let totalClustering = 0;
+      let nodesWithNeighbors = 0;
+      for (const score of acceptedScores) {
+        const neighbors = adjacencyMap.get(score.address.toLowerCase()) || new Set();
+        if (neighbors.size > 1) {
+          let triangles = 0;
+          const neighborsArray = Array.from(neighbors);
+          for (let i = 0; i < neighborsArray.length; i++) {
+            for (let j = i + 1; j < neighborsArray.length; j++) {
+              const neighborNeighbors = adjacencyMap.get(neighborsArray[i]) || new Set();
+              if (neighborNeighbors.has(neighborsArray[j])) {
+                triangles++;
+              }
+            }
+          }
+          const possibleTriangles = (neighbors.size * (neighbors.size - 1)) / 2;
+          totalClustering += possibleTriangles > 0 ? triangles / possibleTriangles : 0;
+          nodesWithNeighbors++;
+        }
+      }
+      const clusteringCoefficient = nodesWithNeighbors > 0 
+        ? totalClustering / nodesWithNeighbors 
+        : 0;
+
+      // Calculate health score (composite metric 0-100)
+      const healthScore = Math.round(
+        (connectivityRate * 25) + // 25% weight on connectivity
+        (Math.min(redundancyScore / 3, 1) * 25) + // 25% weight on redundancy (target min-cut ~3)
+        ((1 - Math.min(giniCoefficient, 1)) * 25) + // 25% weight on equality
+        (clusteringCoefficient * 25) // 25% weight on clustering
+      );
+
+      // Depth distribution for visualization
+      const depthDistribution = new Map<number, number>();
+      for (const score of acceptedScores) {
+        const depth = score.components.depth;
+        depthDistribution.set(depth, (depthDistribution.get(depth) || 0) + 1);
+      }
+
+      // Min-cut distribution for visualization
+      const minCutDistribution = new Map<number, number>();
+      for (const score of acceptedScores) {
+        const minCut = score.components.minCut;
+        minCutDistribution.set(minCut, (minCutDistribution.get(minCut) || 0) + 1);
+      }
+
       // Return ALL scores, not just top 50
       const allScores = Array.from(results.scores.entries()).map(([address, score]) => ({
         address,
@@ -1290,6 +1377,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           avgSTS: Math.round(avgSTS * 10) / 10,
         },
         networkMetrics: results.networkMetrics,
+        healthMetrics: {
+          healthScore,
+          connectivityRate: Math.round(connectivityRate * 100) / 100,
+          avgPathLength: Math.round(avgPathLength * 100) / 100,
+          networkDiameter,
+          graphDensity: Math.round(graphDensity * 1000) / 1000,
+        },
+        robustnessMetrics: {
+          redundancyScore: Math.round(redundancyScore * 100) / 100,
+          giniCoefficient: Math.round(giniCoefficient * 100) / 100,
+          clusteringCoefficient: Math.round(clusteringCoefficient * 100) / 100,
+        },
+        distributions: {
+          depth: Array.from(depthDistribution.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map(([depth, count]) => ({ depth, count })),
+          minCut: Array.from(minCutDistribution.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map(([minCut, count]) => ({ minCut, count })),
+        },
         advancedAnalysis: {
           bottlenecks: bottlenecks.map(b => ({
             address: b.address.substring(0, 30) + '...',
