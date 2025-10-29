@@ -1,0 +1,84 @@
+Correct — no “claims” at all. The product is pure microcredit with optional supporter assists and community Aave yield helping the portfolio. Here’s the tight, final shape you can ship:
+
+What stays (core)
+	•	Loans in ARS (160k–800k) for 6/9/12 months at ~40% APR (fixed cuotas).
+	•	Seeds/board review & approve; cash ARS disbursement tracked in-app.
+	•	Borrower UI: schedule, next cuota, repay-cash recording, receipts.
+	•	Trust deltas (small): on-time +0.3 / any 7d+ late −1 (once per loan) / default −12.
+
+New support mechanisms (no claims)
+	•	Assist (USDC → Aave + ARS credit): supporters send USDC; backend:
+	1.	locks FX,
+	2.	credits ARS to the loan (interest → principal),
+	3.	supplies USDC to Aave v3 on the community vault (gets aUSDC),
+	4.	emits a receipt (USDC, FX, ARS credited, Aave tx).
+	•	Monthly yield split (from aUSDC growth only):
+	•	Subsidy → interest buy-down on upcoming cuotas (automatic; proportional to interest due).
+	•	Reserve → loss buffer.
+	•	Seed rewards → small KPI-based USDC payout.
+	•	Borrowers never see yield balances; they only see smaller interest (when subsidy applies) and normal repayment progress.
+
+Remove / do NOT build
+	•	❌ “Claim” buttons, daily allowances, faucets, UBI screens.
+	•	❌ Per-user “savings/yield” pots.
+	•	❌ Any token airdrop/claim mechanics.
+
+Minimal API (final)
+
+GET  /v1/community/:cid/loans
+GET  /v1/loans/:loanId/overview
+POST /v1/loans/:loanId/repay-cash              { amountARS }
+POST /v1/assist/quote                          { loanId, mode:"coverNext"|"amountARS", amountARS? }
+POST /v1/assist/confirm                        { quoteId, payment:"eip3009"|"erc20", payload:{...} }
+GET  /v1/treasury/:cid/summary
+# Admin (seeds)
+GET  /v1/applications?community=:cid&status=pending
+GET  /v1/applications/:id
+POST /v1/applications/:id/decision             { approve:true, amountARS, tenorMonths } | { approve:false, reason }
+POST /v1/loans/:id/disburse
+POST /v1/yield/split/:cid?month=YYYY-MM        # runs monthly split
+
+DB (only what’s needed)
+	•	application, loan, installment, receipt
+	•	assist(community_id, loan_id, supporter, usdc_amount, fx_rate, ars_credit, aave_tx_hash, ts)
+	•	treasury_snapshot(community_id, ts, ausdc_balance_usd, est_yield_usd)
+	•	subsidy_ledger(community_id, month, loan_id, interest_due_ars, buydown_applied_ars)
+	•	reserve_month(...), seed_reward_month(...)
+	•	trust_event(user, epoch, type, delta, evidence)
+
+Jobs
+	•	Daily (local 09:00): mark DPD, late, default; send reminders.
+	•	Monthly (end): compute aUSDC growth → split yield into subsidy/reserve/seed-rewards; write ledgers; (optionally) pay seed rewards.
+
+FX policy
+	•	Lock a single USD→ARS rate per quote (e.g., noon “blue” mid), 10-minute expiry.
+	•	Apply locked FX to ARS credit; store fx_rate in assist.
+	•	Pause assists if FX source down.
+
+Aave integration (one call)
+	•	Receive USDC (EIP-3009 or ERC-20).
+	•	Pool.supply(USDC, amount, communityVault, 0) → store tx hash.
+	•	If supply fails: keep USDC in vault, still credit ARS, auto-retry supply.
+
+UI (copy you can paste)
+	•	Loan card: “Próxima cuota ARS 100.000 • Vence 31 Oct • Saldo ARS 540.000.”
+	•	Assist modal (public): “Enviá $80 USDC → acreditamos ARS 100.000 (FX 1.250). Depositamos tu USDC en el Aave de la comunidad.”
+	•	Receipt line: “Assist @alice • ARS 100.000 (FX 1.250) • Aave tx 0x…”
+	•	Borrower banner: “Sin ‘claims’. Solo crédito en ARS con cuotas fijas; algunas cuotas pueden tener subsidio de interés gracias a supporters.”
+
+Seed/Board dashboard (panels)
+	•	Applications (approve/decline, disburse),
+	•	Active loans & late queue,
+	•	Assists stream (USDC→Aave with FX & ARS credit),
+	•	Treasury (aUSDC balance, est. yield),
+	•	Metrics (on-time rate, DPD buckets, defaults, subsidy applied).
+
+Acceptance tests
+	1.	Approve 400k ARS, 12m → disburse → schedule 12 cuotas.
+	2.	Record cash ARS repay → schedule updates, receipt issued.
+	3.	Assist quote/confirm → USDC received, Aave supply tx stored, ARS credited at locked FX, receipt ok.
+	4.	Overpay guard → ARS credit capped to outstanding; USDC pull reduced.
+	5.	Monthly split → interest buy-downs posted to next cuotas; reserve & seed rewards updated.
+	6.	Trust deltas applied only on verifiable events.
+
+If Replit builds only this, you’ll have a clean microcredit product with supporter repayment assists and community Aave yield improving sustainability—no claiming mechanics anywhere.
