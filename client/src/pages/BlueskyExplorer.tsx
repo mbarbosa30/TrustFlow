@@ -200,7 +200,7 @@ export default function BlueskyExplorer() {
             Bluesky Trust Explorer
           </h1>
           <p className="text-lg text-muted-foreground" data-testid="text-description">
-            Analyze Bluesky social graphs using TrustFlow's max-flow scoring algorithm
+            Analyze how a user's network connects using TrustFlow's max-flow scoring algorithm
           </p>
         </div>
 
@@ -208,7 +208,7 @@ export default function BlueskyExplorer() {
           <CardHeader>
             <CardTitle>Analyze a Bluesky Account</CardTitle>
             <CardDescription>
-              Enter a Bluesky handle (e.g., alice.bsky.social) or DID to analyze their network
+              Enter a Bluesky handle (e.g., alice.bsky.social) or DID to analyze how their followers and connections form a trust network
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -239,7 +239,7 @@ export default function BlueskyExplorer() {
                 <Alert data-testid="alert-loading">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Fetching network data from Bluesky... This may take a moment for large networks.
+                    Building 2-hop network graph from Bluesky... Fetching followers and their connections. This may take a minute for large networks.
                   </AlertDescription>
                 </Alert>
               )}
@@ -261,8 +261,11 @@ export default function BlueskyExplorer() {
             <Card>
               <CardHeader>
                 <CardTitle>Network Overview</CardTitle>
-                <CardDescription className="font-mono text-xs">
-                  {result.identifier} ({result.did})
+                <CardDescription className="space-y-1">
+                  <div className="font-mono text-xs">{result.identifier} ({result.did})</div>
+                  <div className="text-xs text-muted-foreground">
+                    Analysis of how this user's followers and connections form a trust network (user excluded from results)
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -309,7 +312,7 @@ export default function BlueskyExplorer() {
                     </Badge>
                   </CardTitle>
                   <CardDescription>
-                    Overall trust network assessment for @{result.identifier}
+                    Overall trust network assessment for @{result.identifier}'s peer connections
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

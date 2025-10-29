@@ -1179,7 +1179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return results;
       }
 
-      // Fetch ALL follows and followers using pagination
+      // Fetch ALL follows and followers using pagination (1st hop from seed)
       const [follows, followers] = await Promise.all([
         fetchAllPages<{ did: string }>(cursor => 
           agent.getFollows({ actor: did, limit: 100, cursor })
@@ -1191,30 +1191,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const followDids = follows.map(f => f.did);
       const followerDids = followers.map(f => f.did);
+      
+      // Combine all 1st-hop peers (people the seed follows or who follow the seed)
+      const firstHopPeers = new Set([...followDids, ...followerDids]);
+      console.log(`Found ${firstHopPeers.size} 1st-hop peers for ${did}`);
 
-      // Transform Bluesky graph to TrustFlow endorsement format
-      // Each follow relationship becomes an endorsement from follower → followed
+      // Fetch 2nd hop: get followers for each 1st-hop peer
+      // This builds the complete network graph
       const endorsements: Array<{ endorser: string; endorsee: string; epoch: number }> = [];
+      const allDiscoveredUsers = new Set<string>(firstHopPeers);
       
-      // Add endorsements from the target user to their follows
-      for (const followDid of followDids) {
+      // Add bidirectional edges connecting seed to ALL 1st-hop peers
+      // This ensures flow can reach everyone regardless of follow direction
+      for (const peerDid of firstHopPeers) {
+        const peerDidLower = peerDid.toLowerCase();
+        const seedDidLower = did.toLowerCase();
+        
+        // Seed → peer (outbound)
         endorsements.push({
-          endorser: did.toLowerCase(),
-          endorsee: followDid.toLowerCase(),
+          endorser: seedDidLower,
+          endorsee: peerDidLower,
+          epoch: 0
+        });
+        
+        // Peer → seed (inbound)
+        endorsements.push({
+          endorser: peerDidLower,
+          endorsee: seedDidLower,
           epoch: 0
         });
       }
       
-      // Add endorsements from followers to the target user
-      for (const followerDid of followerDids) {
-        endorsements.push({
-          endorser: followerDid.toLowerCase(),
-          endorsee: did.toLowerCase(),
-          epoch: 0
-        });
+      let processedPeers = 0;
+      for (const peerDid of firstHopPeers) {
+        try {
+          const peerDidLower = peerDid.toLowerCase();
+          
+          // Fetch this peer's followers AND follows to build complete 2-hop graph
+          // Use pagination to get ALL connections (not just first 100)
+          const [peerFollowers, peerFollows] = await Promise.all([
+            fetchAllPages<{ did: string }>(cursor => 
+              agent.getFollowers({ actor: peerDid, limit: 100, cursor })
+            ),
+            fetchAllPages<{ did: string }>(cursor => 
+              agent.getFollows({ actor: peerDid, limit: 100, cursor })
+            )
+          ]);
+          
+          // Add BIDIRECTIONAL edges for followers
+          for (const follower of peerFollowers) {
+            const followerDid = follower.did.toLowerCase();
+            allDiscoveredUsers.add(followerDid);
+            
+            // Follower → peer
+            endorsements.push({
+              endorser: followerDid,
+              endorsee: peerDidLower,
+              epoch: 0
+            });
+            
+            // Peer → follower (allows flow to reach follower)
+            endorsements.push({
+              endorser: peerDidLower,
+              endorsee: followerDid,
+              epoch: 0
+            });
+          }
+          
+          // Add BIDIRECTIONAL edges for follows
+          for (const follow of peerFollows) {
+            const followDid = follow.did.toLowerCase();
+            allDiscoveredUsers.add(followDid);
+            
+            // Peer → follow
+            endorsements.push({
+              endorser: peerDidLower,
+              endorsee: followDid,
+              epoch: 0
+            });
+            
+            // Follow → peer (allows flow back to peer)
+            endorsements.push({
+              endorser: followDid,
+              endorsee: peerDidLower,
+              epoch: 0
+            });
+          }
+          
+          processedPeers++;
+          
+          // Rate limiting: small delay every 5 peers (more API calls now)
+          if (processedPeers % 5 === 0) {
+            console.log(`Processed ${processedPeers}/${firstHopPeers.size} peers...`);
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch connections for ${peerDid}:`, error);
+          // Continue with other peers even if one fails
+        }
       }
+      
+      console.log(`Built graph with ${endorsements.length} edges among ${allDiscoveredUsers.size} users`);
 
-      // Use the target user as the only seed for this analysis
+      // Use the seed as the seed for scoring
       const seeds = [did.toLowerCase()];
 
       // Run TrustFlow scoring algorithm in-memory
@@ -1226,11 +1305,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         0
       );
 
-      // Calculate basic stats
-      const totalUsers = results.scores.size;
-      const acceptedScores = Array.from(results.scores.values()).filter(s => s.tier !== null);
+      // Calculate basic stats (excluding the seed from all analysis)
+      const seedDid = did.toLowerCase();
+      const allScoresExcludingSeed = Array.from(results.scores.entries())
+        .filter(([address]) => address.toLowerCase() !== seedDid);
+      
+      const totalUsers = allScoresExcludingSeed.length;
+      const acceptedScores = allScoresExcludingSeed
+        .map(([, score]) => score)
+        .filter(s => s.tier !== null);
       const acceptedUsers = acceptedScores.length;
-      const scores = Array.from(results.scores.values());
+      const scores = allScoresExcludingSeed.map(([, score]) => score);
       const avgSTS = scores.length > 0 
         ? scores.reduce((sum, s) => sum + s.sts, 0) / scores.length 
         : 0;
@@ -1276,9 +1361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 0;
       const networkDiameter = depths.length > 0 ? Math.max(...depths) : 0;
       
-      // Graph density: actual edges / possible edges
-      const uniqueUsers = new Set([...followDids, ...followerDids, did.toLowerCase()]);
-      const possibleEdges = uniqueUsers.size * (uniqueUsers.size - 1);
+      // Graph density: actual edges / possible edges (excluding seed)
+      const uniqueUsersExcludingSeed = Array.from(firstHopPeers);
+      const possibleEdges = uniqueUsersExcludingSeed.length * (uniqueUsersExcludingSeed.length - 1);
       const graphDensity = possibleEdges > 0 ? endorsements.length / possibleEdges : 0;
 
       // Robustness Metrics
@@ -1378,8 +1463,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Return ALL scores, not just top 50
-      const allScores = Array.from(results.scores.entries()).map(([address, score]) => ({
+      // Return ALL scores (excluding seed), not just top 50
+      const allScores = allScoresExcludingSeed.map(([address, score]) => ({
         address,
         handle: handleMap.get(address.toLowerCase()) || null,
         sts: Math.round(score.sts * 10) / 10,
