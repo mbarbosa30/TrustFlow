@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Briefcase, Coins, ShoppingBag, Settings, Check } from "lucide-react";
+import { Briefcase, Coins, ShoppingBag, Settings, Check, ChevronDown } from "lucide-react";
 import type { CommunityTemplate } from "@shared/community-types";
 
 const templateIcons = {
@@ -28,6 +29,7 @@ export default function CreateCommunity() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [promptText, setPromptText] = useState("");
+  const [policyPreviewOpen, setPolicyPreviewOpen] = useState(false);
 
   const { data: templatesData } = useQuery<{ templates: CommunityTemplate[] }>({
     queryKey: ["/api/communities/templates"],
@@ -182,69 +184,79 @@ export default function CreateCommunity() {
 
         <div className="space-y-6">
           <Card data-testid="card-policy-preview">
-            <CardHeader>
-              <CardTitle>Policy Preview</CardTitle>
-              <CardDescription>Sybil-resistance configuration</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {template && (
-                <>
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2">Acceptance Criteria</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-3 rounded-lg bg-accent">
-                          <div className="text-xs text-muted-foreground">Min Cut</div>
-                          <div className="text-lg font-semibold">{template.policy.acceptance.minCut}</div>
-                        </div>
-                        <div className="p-3 rounded-lg bg-accent">
-                          <div className="text-xs text-muted-foreground">Vertex Disjoint</div>
-                          <div className="text-lg font-semibold">{template.policy.acceptance.vertexDisjoint}</div>
-                        </div>
-                        <div className="p-3 rounded-lg bg-accent">
-                          <div className="text-xs text-muted-foreground">Min Seeds</div>
-                          <div className="text-lg font-semibold">{template.policy.acceptance.seedCoverage.minSeeds}</div>
-                        </div>
-                        <div className="p-3 rounded-lg bg-accent">
-                          <div className="text-xs text-muted-foreground">Seed Quality</div>
-                          <div className="text-lg font-semibold">{(template.policy.acceptance.seedCoverage.minSeedScore * 100).toFixed(0)}%</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2">Trust Tiers</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {template.policy.tiers.map((tier: string, idx: number) => (
-                          <Badge key={idx} variant="secondary">
-                            {tier}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-semibold mb-2">Capacity Decay</h4>
-                      <div className="flex gap-1">
-                        {template.policy.nodeCap.distance.map((cap: number, idx: number) => (
-                          <div key={idx} className="flex-1 p-2 rounded bg-accent text-center">
-                            <div className="text-xs text-muted-foreground">d={idx}</div>
-                            <div className="text-sm font-semibold">{cap}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+            <Collapsible open={policyPreviewOpen} onOpenChange={setPolicyPreviewOpen}>
+              <CardHeader>
+                <CollapsibleTrigger className="flex w-full items-center justify-between text-left hover-elevate p-2 -m-2 rounded" data-testid="button-toggle-policy-preview">
+                  <div>
+                    <CardTitle>Policy Preview</CardTitle>
+                    <CardDescription>Sybil-resistance configuration</CardDescription>
                   </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${policyPreviewOpen ? 'rotate-180' : ''}`} />
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  {template && (
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Acceptance Criteria</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="p-3 rounded-lg bg-accent">
+                            <div className="text-xs text-muted-foreground">Min Cut</div>
+                            <div className="text-lg font-semibold">{template.policy.acceptance.minCut}</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-accent">
+                            <div className="text-xs text-muted-foreground">Vertex Disjoint</div>
+                            <div className="text-lg font-semibold">{template.policy.acceptance.vertexDisjoint}</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-accent">
+                            <div className="text-xs text-muted-foreground">Min Seeds</div>
+                            <div className="text-lg font-semibold">{template.policy.acceptance.seedCoverage.minSeeds}</div>
+                          </div>
+                          <div className="p-3 rounded-lg bg-accent">
+                            <div className="text-xs text-muted-foreground">Seed Quality</div>
+                            <div className="text-lg font-semibold">{(template.policy.acceptance.seedCoverage.minSeedScore * 100).toFixed(0)}%</div>
+                          </div>
+                        </div>
+                      </div>
 
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={createMutation.isPending || !name.trim() || !address}
-                    className="w-full"
-                    data-testid="button-create-community"
-                  >
-                    {createMutation.isPending ? "Creating..." : !address ? "Connect Wallet" : "Create Community"}
-                  </Button>
-                </>
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Trust Tiers</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {template.policy.tiers.map((tier: string, idx: number) => (
+                            <Badge key={idx} variant="secondary">
+                              {tier}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Capacity Decay</h4>
+                        <div className="flex gap-1">
+                          {template.policy.nodeCap.distance.map((cap: number, idx: number) => (
+                            <div key={idx} className="flex-1 p-2 rounded bg-accent text-center">
+                              <div className="text-xs text-muted-foreground">d={idx}</div>
+                              <div className="text-sm font-semibold">{cap}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Collapsible>
+            <CardContent className="pt-0">
+              {template && (
+                <Button
+                  onClick={handleSubmit}
+                  disabled={createMutation.isPending || !name.trim() || !address}
+                  className="w-full"
+                  data-testid="button-create-community"
+                >
+                  {createMutation.isPending ? "Creating..." : !address ? "Connect Wallet" : "Create Community"}
+                </Button>
               )}
             </CardContent>
           </Card>
