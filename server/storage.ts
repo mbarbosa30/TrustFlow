@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Budget, type InsertBudget, budget, type Allowance, type InsertAllowance, allowance, type Payment, type InsertPayment, payment, type Pledge, type InsertPledge, pledge, type Auth3009, type InsertAuth3009, auth3009 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -46,6 +46,32 @@ export interface IStorage {
   closeEpoch(epochId: number, communityId?: number): Promise<void>;
   advanceEpoch(communityId?: number): Promise<Epoch>;
   deleteEpochData(epochId: number, communityId?: number): Promise<void>;
+  
+  // Economic layer operations
+  createBudget(budget: InsertBudget): Promise<Budget>;
+  getBudget(epochId: number, communityId?: number): Promise<Budget | undefined>;
+  getLatestBudget(communityId?: number): Promise<Budget | undefined>;
+  
+  createAllowance(allowance: InsertAllowance): Promise<Allowance>;
+  getAllowance(userAddress: string, epochId: number, communityId?: number): Promise<Allowance | undefined>;
+  getLatestAllowance(userAddress: string, communityId?: number): Promise<Allowance | undefined>;
+  getAllowancesByEpoch(epochId: number, communityId?: number): Promise<Allowance[]>;
+  updateAllowanceClaimed(userAddress: string, epochId: number, claimedAmount: number, communityId?: number): Promise<void>;
+  
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getPayment(id: number): Promise<Payment | undefined>;
+  getPaymentsByUser(userAddress: string, communityId?: number): Promise<Payment[]>;
+  updatePaymentStatus(id: number, status: string, txHash?: string): Promise<void>;
+  
+  createPledge(pledge: InsertPledge): Promise<Pledge>;
+  getPledge(id: number): Promise<Pledge | undefined>;
+  getPledgesByCommunity(communityId: number): Promise<Pledge[]>;
+  getPledgesByDonor(donorAddress: string): Promise<Pledge[]>;
+  updatePledgePaused(id: number, paused: boolean): Promise<void>;
+  
+  createAuth3009(auth: InsertAuth3009): Promise<Auth3009>;
+  getAuth3009(nonce: string): Promise<Auth3009 | undefined>;
+  markAuth3009Used(nonce: string, txHash: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -387,6 +413,243 @@ export class MemStorage implements IStorage {
     }
     
     return await query;
+  }
+
+  // Economic layer implementations
+  
+  async createBudget(budgetData: InsertBudget): Promise<Budget> {
+    const [dbBudget] = await db
+      .insert(budget)
+      .values(budgetData)
+      .returning();
+    
+    return dbBudget;
+  }
+
+  async getBudget(epochId: number, communityId: number = 0): Promise<Budget | undefined> {
+    const results = await db
+      .select()
+      .from(budget)
+      .where(and(eq(budget.epochId, epochId), eq(budget.communityId, communityId)))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getLatestBudget(communityId: number = 0): Promise<Budget | undefined> {
+    const results = await db
+      .select()
+      .from(budget)
+      .where(eq(budget.communityId, communityId))
+      .orderBy(desc(budget.epochId))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async createAllowance(allowanceData: InsertAllowance): Promise<Allowance> {
+    // Normalize address to lowercase
+    const normalized = {
+      ...allowanceData,
+      userAddress: allowanceData.userAddress.toLowerCase(),
+    };
+    
+    const [dbAllowance] = await db
+      .insert(allowance)
+      .values(normalized)
+      .returning();
+    
+    return dbAllowance;
+  }
+
+  async getAllowance(userAddress: string, epochId: number, communityId: number = 0): Promise<Allowance | undefined> {
+    const normalizedAddress = userAddress.toLowerCase();
+    const results = await db
+      .select()
+      .from(allowance)
+      .where(and(
+        eq(allowance.userAddress, normalizedAddress),
+        eq(allowance.epochId, epochId),
+        eq(allowance.communityId, communityId)
+      ))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getLatestAllowance(userAddress: string, communityId: number = 0): Promise<Allowance | undefined> {
+    const normalizedAddress = userAddress.toLowerCase();
+    const results = await db
+      .select()
+      .from(allowance)
+      .where(and(
+        eq(allowance.userAddress, normalizedAddress),
+        eq(allowance.communityId, communityId)
+      ))
+      .orderBy(desc(allowance.epochId))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getAllowancesByEpoch(epochId: number, communityId: number = 0): Promise<Allowance[]> {
+    return await db
+      .select()
+      .from(allowance)
+      .where(and(eq(allowance.epochId, epochId), eq(allowance.communityId, communityId)));
+  }
+
+  async updateAllowanceClaimed(userAddress: string, epochId: number, claimedAmount: number, communityId: number = 0): Promise<void> {
+    const normalizedAddress = userAddress.toLowerCase();
+    await db
+      .update(allowance)
+      .set({ claimedToday: claimedAmount })
+      .where(and(
+        eq(allowance.userAddress, normalizedAddress),
+        eq(allowance.epochId, epochId),
+        eq(allowance.communityId, communityId)
+      ));
+  }
+
+  async createPayment(paymentData: InsertPayment): Promise<Payment> {
+    // Normalize addresses to lowercase
+    const normalized = {
+      ...paymentData,
+      userAddress: paymentData.userAddress.toLowerCase(),
+      payeeAddress: paymentData.payeeAddress.toLowerCase(),
+    };
+    
+    const [dbPayment] = await db
+      .insert(payment)
+      .values(normalized)
+      .returning();
+    
+    return dbPayment;
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    const results = await db
+      .select()
+      .from(payment)
+      .where(eq(payment.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getPaymentsByUser(userAddress: string, communityId?: number): Promise<Payment[]> {
+    const normalizedAddress = userAddress.toLowerCase();
+    
+    if (communityId !== undefined) {
+      return await db
+        .select()
+        .from(payment)
+        .where(and(
+          eq(payment.userAddress, normalizedAddress),
+          eq(payment.communityId, communityId)
+        ))
+        .orderBy(desc(payment.createdAt));
+    }
+    
+    return await db
+      .select()
+      .from(payment)
+      .where(eq(payment.userAddress, normalizedAddress))
+      .orderBy(desc(payment.createdAt));
+  }
+
+  async updatePaymentStatus(id: number, status: string, txHash?: string): Promise<void> {
+    const updates: any = { status };
+    if (txHash) {
+      updates.txHash = txHash;
+    }
+    
+    await db
+      .update(payment)
+      .set(updates)
+      .where(eq(payment.id, id));
+  }
+
+  async createPledge(pledgeData: InsertPledge): Promise<Pledge> {
+    // Normalize donor address to lowercase
+    const normalized = {
+      ...pledgeData,
+      donorAddress: pledgeData.donorAddress.toLowerCase(),
+    };
+    
+    const [dbPledge] = await db
+      .insert(pledge)
+      .values(normalized)
+      .returning();
+    
+    return dbPledge;
+  }
+
+  async getPledge(id: number): Promise<Pledge | undefined> {
+    const results = await db
+      .select()
+      .from(pledge)
+      .where(eq(pledge.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getPledgesByCommunity(communityId: number): Promise<Pledge[]> {
+    return await db
+      .select()
+      .from(pledge)
+      .where(eq(pledge.communityId, communityId))
+      .orderBy(desc(pledge.createdAt));
+  }
+
+  async getPledgesByDonor(donorAddress: string): Promise<Pledge[]> {
+    const normalizedAddress = donorAddress.toLowerCase();
+    return await db
+      .select()
+      .from(pledge)
+      .where(eq(pledge.donorAddress, normalizedAddress))
+      .orderBy(desc(pledge.createdAt));
+  }
+
+  async updatePledgePaused(id: number, paused: boolean): Promise<void> {
+    await db
+      .update(pledge)
+      .set({ paused })
+      .where(eq(pledge.id, id));
+  }
+
+  async createAuth3009(authData: InsertAuth3009): Promise<Auth3009> {
+    // Normalize addresses to lowercase
+    const normalized = {
+      ...authData,
+      fromAddress: authData.fromAddress.toLowerCase(),
+      toAddress: authData.toAddress.toLowerCase(),
+    };
+    
+    const [dbAuth] = await db
+      .insert(auth3009)
+      .values(normalized)
+      .returning();
+    
+    return dbAuth;
+  }
+
+  async getAuth3009(nonce: string): Promise<Auth3009 | undefined> {
+    const results = await db
+      .select()
+      .from(auth3009)
+      .where(eq(auth3009.nonce, nonce))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async markAuth3009Used(nonce: string, txHash: string): Promise<void> {
+    await db
+      .update(auth3009)
+      .set({ used: true, txHash })
+      .where(eq(auth3009.nonce, nonce));
   }
 }
 

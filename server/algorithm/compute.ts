@@ -131,6 +131,90 @@ export class EpochComputation {
     const duration = Date.now() - startTime;
     console.log(`Epoch ${epochId} computation completed in ${duration}ms`);
     console.log(`Network health: GHI=${ghi}, Size=${totalAccepted}, AvgMinCut=${avgMinCut.toFixed(2)}`);
+
+    // Economic Layer: Compute budget and allowances for accepted users
+    await this.computeEconomicBudget(epochId, communityId, scoreInserts);
+  }
+
+  /**
+   * Compute economic budget and allowances for accepted users
+   * Linear distribution by STS: share = (userSTS / sumSTS) × dailyBudget
+   */
+  private async computeEconomicBudget(
+    epochId: number,
+    communityId: number,
+    scoreInserts: InsertScore[]
+  ): Promise<void> {
+    console.log(`Computing economic budget for epoch ${epochId}, community ${communityId}...`);
+
+    // Economic parameters (configurable per community)
+    const RHO = 0.005; // 0.5% daily run-rate
+    const PER_USER_CAP = 5.0; // $5 per user per day
+    
+    // TODO: Get real treasury balance from Celo USDC contract
+    // For now, use mock treasury balance (will be replaced with actual contract call)
+    const MOCK_TREASURY = 10000.0; // $10,000 USDC mock balance
+
+    const treasuryRemaining = MOCK_TREASURY;
+    const dailyBudget = RHO * treasuryRemaining;
+
+    console.log(`Treasury: $${treasuryRemaining}, Daily budget (${RHO * 100}%): $${dailyBudget.toFixed(2)}`);
+
+    // Filter accepted users only
+    const acceptedUsers = scoreInserts.filter(s => s.isAccepted);
+    
+    if (acceptedUsers.length === 0) {
+      console.log('No accepted users, skipping economic computation');
+      return;
+    }
+
+    // Calculate total STS for normalization
+    const totalSTS = acceptedUsers.reduce((sum, s) => sum + s.sts, 0);
+
+    if (totalSTS === 0) {
+      console.log('Total STS is zero, skipping economic computation');
+      return;
+    }
+
+    // Store budget record
+    await storage.createBudget({
+      communityId,
+      epochId,
+      rho: RHO,
+      treasuryRemaining,
+      dailyBudget,
+    });
+
+    // Calculate and store allowances
+    let totalAllowanceBeforeCap = 0;
+    let totalAllowanceAfterCap = 0;
+
+    for (const user of acceptedUsers) {
+      // Linear share proportional to STS
+      const rawShare = (user.sts / totalSTS) * dailyBudget;
+      
+      // Apply per-user cap
+      const allowanceAmount = Math.min(rawShare, PER_USER_CAP);
+
+      totalAllowanceBeforeCap += rawShare;
+      totalAllowanceAfterCap += allowanceAmount;
+
+      await storage.createAllowance({
+        communityId,
+        epochId,
+        userAddress: user.address,
+        share: rawShare,
+        cap: PER_USER_CAP,
+        allowanceAmount,
+        claimedToday: 0,
+      });
+    }
+
+    console.log(`Economic computation complete:`);
+    console.log(`  - ${acceptedUsers.length} eligible users`);
+    console.log(`  - Total allowance (before cap): $${totalAllowanceBeforeCap.toFixed(2)}`);
+    console.log(`  - Total allowance (after cap): $${totalAllowanceAfterCap.toFixed(2)}`);
+    console.log(`  - Budget utilization: ${((totalAllowanceAfterCap / dailyBudget) * 100).toFixed(1)}%`);
   }
 
   /**
