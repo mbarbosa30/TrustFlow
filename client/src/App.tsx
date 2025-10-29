@@ -17,11 +17,14 @@ import Status from "@/pages/Status";
 import Seeds from "@/pages/Seeds";
 import TermsPrivacy from "@/pages/TermsPrivacy";
 import BlueskyExplorer from "@/pages/BlueskyExplorer";
+import Communities from "@/pages/Communities";
+import CreateCommunity from "@/pages/CreateCommunity";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
   { path: "/overview", label: "Overview" },
   { path: "/dashboard", label: "Dashboard" },
+  { path: "/communities", label: "Communities" },
   { path: "/status", label: "Status" },
 ];
 
@@ -40,6 +43,8 @@ function Router() {
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/use-cases" component={UseCases} />
       <Route path="/terms-privacy" component={TermsPrivacy} />
+      <Route path="/communities" component={Communities} />
+      <Route path="/communities/create" component={CreateCommunity} />
       <Route component={NotFound} />
     </Switch>
   );

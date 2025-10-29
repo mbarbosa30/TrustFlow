@@ -13,19 +13,21 @@ export class EpochComputation {
   }
 
   /**
-   * Run trust score computation for a specific epoch
+   * Run trust score computation for a specific epoch and community
+   * @param epochId - The epoch to compute scores for
+   * @param communityId - The community to compute scores for (defaults to 0 for global network)
    */
-  async computeEpochScores(epochId: number): Promise<void> {
-    console.log(`Starting epoch ${epochId} computation...`);
+  async computeEpochScores(epochId: number, communityId: number = 0): Promise<void> {
+    console.log(`Starting epoch ${epochId} computation for community ${communityId}...`);
 
     const startTime = Date.now();
 
     const [endorsements, seedsData] = await Promise.all([
-      storage.getEndorsements({ epoch: epochId, limit: 100000 }),
-      storage.getSeeds(),
+      storage.getEndorsements({ epoch: epochId, limit: 100000, communityId }),
+      storage.getSeeds(communityId),
     ]);
 
-    console.log(`Loaded ${endorsements.length} endorsements and ${seedsData.length} seeds`);
+    console.log(`Loaded ${endorsements.length} endorsements and ${seedsData.length} seeds for community ${communityId}`);
 
     if (seedsData.length === 0) {
       throw new Error("Cannot compute scores: No seeds defined in the network");
@@ -35,7 +37,7 @@ export class EpochComputation {
 
     // SECURITY: Compute lagged depths from previous epoch's accepted subgraph
     // This prevents distance-inflation attacks per Levien/Ruderman
-    const laggedDepths = await this.computeLaggedDepths(epochId, seeds);
+    const laggedDepths = await this.computeLaggedDepths(epochId, seeds, communityId);
     this.scorer.setLaggedDepths(laggedDepths);
     console.log(`Using lagged depths from previous epoch (${laggedDepths ? laggedDepths.size : 0} users)`);
 
@@ -49,13 +51,14 @@ export class EpochComputation {
 
     console.log(`Computed scores for ${result.scores.size} users`);
 
-    await storage.deleteScoresByEpoch(epochId);
+    await storage.deleteScoresByEpoch(epochId, communityId);
 
     const scoreInserts: InsertScore[] = [];
     for (const [address, userScore] of Array.from(result.scores.entries())) {
       scoreInserts.push({
         address,
         epochId,
+        communityId,
         sts: userScore.sts,
         flow: userScore.components.flow,
         minCut: userScore.components.minCut,
@@ -89,7 +92,7 @@ export class EpochComputation {
     // Get previous epoch's accepted users for churn calculation
     let previousAcceptedUsers: string[] | null = null;
     if (epochId > 0) {
-      const previousScores = await storage.getScoresByEpoch(epochId - 1);
+      const previousScores = await storage.getScoresByEpoch(epochId - 1, communityId);
       if (previousScores.length > 0) {
         previousAcceptedUsers = previousScores
           .filter(s => s.isAccepted)
@@ -107,11 +110,12 @@ export class EpochComputation {
     
     const ghi = computeGHI(metrics);
 
-    const existingHealth = await storage.getEpochHealth(epochId);
+    const existingHealth = await storage.getEpochHealth(epochId, communityId);
     
     if (!existingHealth) {
       await storage.createEpochHealth({
         epochId,
+        communityId,
         ghi,
         sizeN: metrics.sizeN,
         cutN: metrics.cutN,
@@ -136,7 +140,8 @@ export class EpochComputation {
    */
   private async computeLaggedDepths(
     currentEpochId: number,
-    seeds: Address[]
+    seeds: Address[],
+    communityId: number = 0
   ): Promise<Map<Address, number> | null> {
     // For epoch 0, no previous epoch exists
     if (currentEpochId === 0) {
@@ -148,8 +153,8 @@ export class EpochComputation {
     
     // Get previous epoch's accepted users and their endorsements
     const [previousScores, previousEndorsements] = await Promise.all([
-      storage.getScoresByEpoch(previousEpochId),
-      storage.getEndorsements({ epoch: previousEpochId, limit: 100000 }),
+      storage.getScoresByEpoch(previousEpochId, communityId),
+      storage.getEndorsements({ epoch: previousEpochId, limit: 100000, communityId }),
     ]);
 
     if (previousScores.length === 0) {
@@ -210,22 +215,22 @@ export class EpochComputation {
   }
 
   /**
-   * Check if scores exist for an epoch
+   * Check if scores exist for an epoch in a specific community
    */
-  async hasComputedScores(epochId: number): Promise<boolean> {
-    const scores = await storage.getScoresByEpoch(epochId);
+  async hasComputedScores(epochId: number, communityId: number = 0): Promise<boolean> {
+    const scores = await storage.getScoresByEpoch(epochId, communityId);
     return scores.length > 0;
   }
 
   /**
-   * Get computation summary for an epoch
+   * Get computation summary for an epoch in a specific community
    */
-  async getComputationSummary(epochId: number) {
+  async getComputationSummary(epochId: number, communityId: number = 0) {
     const [scores, health, endorsements, seeds] = await Promise.all([
-      storage.getScoresByEpoch(epochId),
-      storage.getEpochHealth(epochId),
-      storage.getEndorsements({ epoch: epochId }),
-      storage.getSeeds(),
+      storage.getScoresByEpoch(epochId, communityId),
+      storage.getEpochHealth(epochId, communityId),
+      storage.getEndorsements({ epoch: epochId, communityId }),
+      storage.getSeeds(communityId),
     ]);
 
     // Calculate network metrics from scores (using Levien acceptance criteria)

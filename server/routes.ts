@@ -22,6 +22,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      // Parse and validate communityId (defaults to 0 for global network)
+      const communityId = body.communityId !== undefined ? parseInt(body.communityId, 10) : 0;
+      if (isNaN(communityId) || communityId < 0) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      // Verify community exists and get its policy
+      const community = await storage.getCommunity(communityId);
+      if (!community) {
+        return res.status(404).json({ error: `Community ${communityId} not found` });
+      }
+
+      // Verify promptHash matches community's expected hash
+      const expectedPromptHash = community.promptHash;
+      const providedPromptHash = body.promptHash;
+      
+      if (providedPromptHash && providedPromptHash !== expectedPromptHash) {
+        return res.status(400).json({ 
+          error: "Prompt hash mismatch",
+          message: "The endorsement was signed with a different prompt than the community's current prompt",
+          expected: expectedPromptHash,
+          provided: providedPromptHash
+        });
+      }
+
       // Safely parse BigInt fields with error handling
       let endorsement: SignedEndorsement;
       try {
@@ -84,6 +109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sig: endorsement.sig,
         leafHash,
         note: body.note || null,
+        communityId,
+        promptHash: expectedPromptHash,
       });
 
       const created = await storage.createEndorsement(insertData);
@@ -436,12 +463,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/epoch/:epochId/compute", async (req, res) => {
     try {
       const epochId = parseInt(req.params.epochId, 10);
+      const communityId = req.body.communityId !== undefined ? parseInt(req.body.communityId, 10) : 0;
       
       if (isNaN(epochId) || epochId < 0) {
         return res.status(400).json({ error: "Invalid epoch ID" });
       }
 
-      const alreadyComputed = await epochComputation.hasComputedScores(epochId);
+      if (isNaN(communityId) || communityId < 0) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const alreadyComputed = await epochComputation.hasComputedScores(epochId, communityId);
       
       if (alreadyComputed) {
         return res.status(400).json({ 
@@ -450,9 +482,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      await epochComputation.computeEpochScores(epochId);
+      await epochComputation.computeEpochScores(epochId, communityId);
       
-      const summary = await epochComputation.getComputationSummary(epochId);
+      const summary = await epochComputation.getComputationSummary(epochId, communityId);
       
       return res.status(200).json({ 
         success: true,
@@ -493,12 +525,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/epoch/:epochId/summary", async (req, res) => {
     try {
       const epochId = parseInt(req.params.epochId, 10);
+      const communityId = req.query.communityId ? parseInt(req.query.communityId as string, 10) : 0;
       
       if (isNaN(epochId) || epochId < 0) {
         return res.status(400).json({ error: "Invalid epoch ID" });
       }
 
-      const summary = await epochComputation.getComputationSummary(epochId);
+      if (isNaN(communityId) || communityId < 0) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const summary = await epochComputation.getComputationSummary(epochId, communityId);
       
       return res.status(200).json(summary);
     } catch (error) {
@@ -1758,6 +1795,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get templates (must be before /:id route)
+  app.get("/api/communities/templates", async (req, res) => {
+    try {
+      const { COMMUNITY_TEMPLATES } = await import("@shared/community-types");
+      res.json({ templates: COMMUNITY_TEMPLATES });
+    } catch (error) {
+      console.error("Error getting templates:", error);
+      res.status(500).json({ error: "Failed to get templates" });
+    }
+  });
+
   // Get a specific community
   app.get("/api/communities/:id", async (req, res) => {
     try {
@@ -1793,17 +1841,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting community:", error);
       res.status(500).json({ error: "Failed to get community" });
-    }
-  });
-
-  // Get templates
-  app.get("/api/communities/templates", async (req, res) => {
-    try {
-      const { COMMUNITY_TEMPLATES } = await import("@shared/community-types");
-      res.json({ templates: COMMUNITY_TEMPLATES });
-    } catch (error) {
-      console.error("Error getting templates:", error);
-      res.status(500).json({ error: "Failed to get templates" });
     }
   });
 
