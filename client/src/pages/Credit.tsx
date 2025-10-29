@@ -23,13 +23,24 @@ export default function Credit() {
   const communityId = 0; // Global community
 
   // Check loan eligibility
-  const { data: eligibility, isLoading: loadingEligibility } = useQuery({
+  const { data: eligibility, isLoading: loadingEligibility } = useQuery<{
+    eligible: boolean;
+    reasons: string[];
+    trustMetrics?: {
+      minCut: number;
+      ghi: number;
+      sts: number;
+      tier: string;
+      isAccepted: boolean;
+    };
+    amounts?: number[];
+  }>({
     queryKey: [`/api/loans/eligibility/${communityId}/${address}`],
     enabled: !!address,
   });
 
   // Get user's loans
-  const { data: loansData, isLoading: loadingLoans } = useQuery({
+  const { data: loansData, isLoading: loadingLoans } = useQuery<{ loans: any[] }>({
     queryKey: [`/api/loans/borrower/${communityId}/${address}`],
     enabled: !!address,
   });
@@ -38,7 +49,22 @@ export default function Credit() {
   const activeLoan = loans.find((l: any) => l.status === "ACTIVE");
 
   // Get active loan details
-  const { data: loanDetails } = useQuery({
+  const { data: loanDetails } = useQuery<{
+    loan: {
+      id: number;
+      principalUsdc: number;
+      tenorMonths: number;
+      aprNominal: number;
+      status: string;
+    };
+    totalPaid: number;
+    totalDue: number;
+    nextInstallment?: {
+      id: number;
+      dueDate: string;
+      totalDue: number;
+    };
+  }>({
     queryKey: [`/api/loans/${activeLoan?.id}`],
     enabled: !!activeLoan,
   });
@@ -46,14 +72,20 @@ export default function Credit() {
   // Create loan mutation
   const createLoanMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/loans/${communityId}`, {
+      const response = await fetch(`/api/loans/${communityId}`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userAddress: address,
           amountUsdc: selectedAmount,
           tenorMonths: selectedTenor,
         }),
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create loan");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Loan created successfully!", description: "Your loan has been disbursed" });
@@ -68,14 +100,20 @@ export default function Credit() {
   // Make payment mutation
   const makePaymentMutation = useMutation({
     mutationFn: async (installmentId: number) => {
-      return apiRequest(`/api/loans/${activeLoan.id}/pay`, {
+      const response = await fetch(`/api/loans/${activeLoan.id}/pay`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           installmentId,
           amountUsdc: parseFloat(paymentAmount),
           payerAddress: address,
         }),
       });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Payment failed");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Payment successful!", description: "Your payment has been processed" });
@@ -137,49 +175,56 @@ export default function Credit() {
         </TabsList>
 
         <TabsContent value="apply" className="space-y-4">
-          {/* Eligibility Card */}
-          <Card data-testid="card-eligibility">
+          {/* Trust Profile Card (Advisory Only) */}
+          <Card data-testid="card-trust-profile">
             <CardHeader>
-              <CardTitle>Loan Eligibility</CardTitle>
-              <CardDescription>Check if you qualify for a microcredit loan</CardDescription>
+              <CardTitle>Trust Profile</CardTitle>
+              <CardDescription>Your trust metrics (informational only)</CardDescription>
             </CardHeader>
-            <CardContent>
-              {eligibility?.eligible ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-green-600">
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span className="font-medium">You are eligible for a loan!</span>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Available loan amounts:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {eligibility.amounts?.map((amount: number) => (
-                        <Badge key={amount} variant="secondary" data-testid={`badge-amount-${amount}`}>
-                          ${amount} USDC
+            <CardContent className="space-y-4">
+              {eligibility?.trustMetrics ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Sybil Resistance</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" data-testid="badge-mincut">
+                          Min-Cut: {eligibility.trustMetrics.minCut || 0}
                         </Badge>
-                      ))}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">Health Index</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" data-testid="badge-ghi">
+                          GHI: {eligibility.trustMetrics.ghi || 0}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
+                  {eligibility.trustMetrics.isAccepted && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <TrendingUp className="h-4 w-4 text-green-600" />
+                      <span className="text-muted-foreground">Vouched member of the trust network</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground italic">
+                    These metrics are for informational purposes. All members can apply for loans during the pilot phase.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-red-600">
-                    <XCircle className="h-5 w-5" />
-                    <span className="font-medium">Not eligible for a loan</span>
-                  </div>
-                  {eligibility?.reasons?.map((reason: string, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <span>{reason}</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">No trust metrics available yet</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    You can still apply for loans during the pilot phase. Get vouched by trusted members to build your profile.
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Loan Application Form */}
-          {eligibility?.eligible && !activeLoan && (
+          {!activeLoan && (
             <Card data-testid="card-loan-application">
               <CardHeader>
                 <CardTitle>Apply for Loan</CardTitle>
@@ -196,7 +241,7 @@ export default function Credit() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {eligibility.amounts?.map((amount: number) => (
+                      {[160, 240, 320, 400, 480, 560, 640, 720, 800].map((amount: number) => (
                         <SelectItem key={amount} value={amount.toString()}>
                           ${amount} USDC (≈ ${amount * 1000} ARS)
                         </SelectItem>
