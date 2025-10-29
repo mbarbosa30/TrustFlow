@@ -1227,11 +1227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const peerDidLower = peerDid.toLowerCase();
           
-          // Fetch first 20 followers only for speed
-          // This gives us a good sample while keeping the graph manageable
+          // Fetch first 50 followers per peer for 2-hop network
+          // This balances network coverage with performance
           const peerFollowersResponse = await agent.getFollowers({ 
             actor: peerDid, 
-            limit: 20 
+            limit: 50 
           });
           const peerFollowers = peerFollowersResponse.data.followers;
           
