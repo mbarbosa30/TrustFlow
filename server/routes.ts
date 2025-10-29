@@ -1227,18 +1227,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const peerDidLower = peerDid.toLowerCase();
           
-          // Fetch this peer's followers AND follows to build complete 2-hop graph
-          // Use pagination to get ALL connections (not just first 100)
-          const [peerFollowers, peerFollows] = await Promise.all([
-            fetchAllPages<{ did: string }>(cursor => 
-              agent.getFollowers({ actor: peerDid, limit: 100, cursor })
-            ),
-            fetchAllPages<{ did: string }>(cursor => 
-              agent.getFollows({ actor: peerDid, limit: 100, cursor })
-            )
-          ]);
+          // Fetch first page of peer's followers only (100 max) for speed
+          // This gives us a good sample of the 2-hop network without excessive API calls
+          const peerFollowersResponse = await agent.getFollowers({ 
+            actor: peerDid, 
+            limit: 100 
+          });
+          const peerFollowers = peerFollowersResponse.data.followers;
           
-          // Add BIDIRECTIONAL edges for followers
+          // Add BIDIRECTIONAL edges for followers (faster - only followers, not follows)
           for (const follower of peerFollowers) {
             const followerDid = follower.did.toLowerCase();
             allDiscoveredUsers.add(followerDid);
@@ -1258,32 +1255,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // Add BIDIRECTIONAL edges for follows
-          for (const follow of peerFollows) {
-            const followDid = follow.did.toLowerCase();
-            allDiscoveredUsers.add(followDid);
-            
-            // Peer → follow
-            endorsements.push({
-              endorser: peerDidLower,
-              endorsee: followDid,
-              epoch: 0
-            });
-            
-            // Follow → peer (allows flow back to peer)
-            endorsements.push({
-              endorser: followDid,
-              endorsee: peerDidLower,
-              epoch: 0
-            });
-          }
-          
           processedPeers++;
           
-          // Rate limiting: small delay every 5 peers (more API calls now)
-          if (processedPeers % 5 === 0) {
+          // Progress logging every 10 peers
+          if (processedPeers % 10 === 0) {
             console.log(`Processed ${processedPeers}/${firstHopPeers.size} peers...`);
-            await new Promise(resolve => setTimeout(resolve, 300));
           }
         } catch (error) {
           console.warn(`Failed to fetch connections for ${peerDid}:`, error);
