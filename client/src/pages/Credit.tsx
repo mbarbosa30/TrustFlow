@@ -79,6 +79,7 @@ export default function Credit() {
           userAddress: address,
           amountUsdc: selectedAmount,
           tenorMonths: selectedTenor,
+          currency: 'ARS', // Default to ARS for Argentine market
         }),
       });
       if (!response.ok) {

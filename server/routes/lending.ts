@@ -63,12 +63,12 @@ router.get("/community/:communityId", async (req, res) => {
 /**
  * Create a new loan
  * POST /api/loans/:communityId
- * Body: { userAddress, amountUsdc, tenorMonths }
+ * Body: { userAddress, amountUsdc, tenorMonths, currency? }
  */
 router.post("/:communityId", async (req, res) => {
   try {
     const communityId = parseInt(req.params.communityId);
-    const { userAddress, amountUsdc, tenorMonths } = req.body;
+    const { userAddress, amountUsdc, tenorMonths, currency } = req.body;
 
     if (!userAddress || !amountUsdc || !tenorMonths) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -88,6 +88,7 @@ router.post("/:communityId", async (req, res) => {
       communityId,
       borrowerAddress: userAddress,
       principalUsdc: amountUsdc,
+      currency: currency || 'ARS', // Default to ARS if not provided
       tenorMonths,
       aprNominal: policy.aprNominal,
     });
