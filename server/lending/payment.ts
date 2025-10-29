@@ -1,6 +1,6 @@
 import { storage } from "../storage";
 import type { Loan, Installment } from "@shared/schema";
-import { calculateEffectiveInterest, repayAssistClaim, executeDefaultWaterfall } from "./subsidies";
+import { calculateEffectiveInterest, executeDefaultWaterfall } from "./subsidies";
 
 export interface PaymentResult {
   installmentId: number;
@@ -64,28 +64,11 @@ export async function processInstallmentPayment(
   let amountToApply = Math.min(paymentAmountUsdc, remainingDue);
   let remainingPayment = amountToApply;
 
-  // Priority 1: Repay outstanding RA claims first (with premium)
-  const assists = await storage.getAssistsByLoan(installment.loanId);
-  const installmentAssists = assists.filter(
-    (a) => a.installmentIdx === installment.idx && a.status === "OPEN"
-  );
-
-  const assistRepayments: { assistId: number; amountRepaid: number }[] = [];
-
-  for (const assist of installmentAssists) {
-    if (remainingPayment <= 0) break;
-
-    const repayResult = await repayAssistClaim(assist.id, remainingPayment);
-    
-    assistRepayments.push({
-      assistId: assist.id,
-      amountRepaid: repayResult.repaid,
-    });
-
-    remainingPayment = repayResult.remaining;
-  }
-
-  // Priority 2: Pay remaining installment (principal + interest)
+  // NOTE: Old Repay-Assist repayment logic removed
+  // New USDC assists apply credits directly to subsidy_ledger.ibdApplied
+  // which is already accounted for in calculateEffectiveInterest()
+  
+  // Pay installment (principal + interest)
   let principalPaid = 0;
   let interestPaid = 0;
 
@@ -127,7 +110,7 @@ export async function processInstallmentPayment(
       ibdApplied: effectiveInterest.ibdApplied,
       voucherApplied: effectiveInterest.voucherApplied,
     },
-    assistRepaymentsProcessed: assistRepayments,
+    assistRepaymentsProcessed: [], // Old RA model removed - assists apply via subsidy ledger
     newStatus,
     remainingBalance: totalDueFromBorrower - newTotalPaid,
   };
@@ -210,17 +193,27 @@ export async function checkLateInstallments(
   return results;
 }
 
+export interface InstallmentWithSubsidies extends Installment {
+  subsidies: {
+    ibdApplied: number;
+    voucherApplied: number;
+    effectiveInterest: number;
+    originalInterest: number;
+  };
+}
+
 /**
- * Get loan status with payment progress
+ * Get loan status with payment progress and subsidy information
  */
 export async function getLoanPaymentStatus(loanId: number): Promise<{
   loan: Loan;
-  totalDue: number;
+  totalDue: number; // Subsidized total (what borrower actually owes)
+  totalDueOriginal: number; // Original total before subsidies
   totalPaid: number;
-  remainingBalance: number;
-  nextInstallment: Installment | null;
+  remainingBalance: number; // Based on subsidized total
+  nextInstallment: InstallmentWithSubsidies | null;
   daysOverdue: number;
-  installments: Installment[];
+  installments: InstallmentWithSubsidies[];
 }> {
   const loan = await storage.getLoan(loanId);
   
@@ -230,11 +223,41 @@ export async function getLoanPaymentStatus(loanId: number): Promise<{
 
   const installments = await storage.getInstallmentsByLoan(loanId);
 
-  const totalDue = installments.reduce((sum, i) => sum + i.totalDue, 0);
-  const totalPaid = installments.reduce((sum, i) => sum + i.totalPaid, 0);
-  const remainingBalance = totalDue - totalPaid;
+  // Enrich installments with subsidy information
+  const enrichedInstallments: InstallmentWithSubsidies[] = await Promise.all(
+    installments.map(async (inst) => {
+      const effectiveInterest = await calculateEffectiveInterest(
+        loanId,
+        inst.idx,
+        inst.interestDue
+      );
 
-  const nextInstallment = installments
+      return {
+        ...inst,
+        subsidies: {
+          ibdApplied: effectiveInterest.ibdApplied,
+          voucherApplied: effectiveInterest.voucherApplied,
+          effectiveInterest: effectiveInterest.effectiveInterest,
+          originalInterest: inst.interestDue,
+        },
+      };
+    })
+  );
+
+  // Calculate totals both with and without subsidies
+  const totalDueOriginal = installments.reduce((sum, i) => sum + i.totalDue, 0);
+  const totalPaid = installments.reduce((sum, i) => sum + i.totalPaid, 0);
+  
+  // Calculate subsidized total (what borrower actually owes)
+  const totalDueSubsidized = enrichedInstallments.reduce(
+    (sum, i) => sum + i.principalDue + i.subsidies.effectiveInterest, 
+    0
+  );
+  
+  // Remaining balance should be based on subsidized total
+  const remainingBalance = totalDueSubsidized - totalPaid;
+
+  const nextInstallment = enrichedInstallments
     .filter((i) => i.status !== "PAID")
     .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())[0] || null;
 
@@ -251,12 +274,13 @@ export async function getLoanPaymentStatus(loanId: number): Promise<{
 
   return {
     loan,
-    totalDue,
+    totalDue: totalDueSubsidized, // What borrower actually owes
+    totalDueOriginal, // Original amount before subsidies
     totalPaid,
-    remainingBalance,
+    remainingBalance, // Based on subsidized total
     nextInstallment,
     daysOverdue,
-    installments,
+    installments: enrichedInstallments,
   };
 }
 
