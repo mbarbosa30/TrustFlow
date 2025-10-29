@@ -1,0 +1,197 @@
+Love it—let’s lock decisions so you can start building without bikeshedding. Here are crisp answers + a phased plan, schema, and the **MVP-critical user flow**.
+
+# Quick answers (recommended defaults)
+
+**Scope (MVP):**
+Start **without bridges**. Ship **isolated communities** first (cleaner mental model, faster to audit). Add bridges in Phase 3.
+
+**Storage approach:**
+
+* `community_id` FK on **endorsements**, **snapshots**, **scores**, **params**.
+* **Separate scoring per community** (each has its own SOURCE/seeds/snapshots).
+* **Policy JSON**: store as **JSONB** per community with versioning (`policy_id`, `effective_from_snapshot`).
+* Append-only **transparency log** per community (Merkle roots per snapshot).
+
+**UI priority (MVP flow):**
+
+1. **Create community → auto-seed (creator)**
+2. **Invite / share link → members join**
+3. **Vouch (with prompt shown)**
+4. **Run snapshot → see “Why accepted” + tier**
+   (“Browse communities” can be a simple directory in v1; joining is just appearing in that community’s graph once vouched.)
+
+**Backward compatibility:**
+Treat the existing global graph as **Community 0 (default)**. Same machinery, just `community_id = 0`. Keeps code paths unified.
+
+**Templates:**
+Ship **3 templates** (Hiring, Lending, Marketplace) **plus Custom**. Templates = just prefilled **policy JSON** + **prompt text**—easy win, strong guidance.
+
+---
+
+# Phase plan (ship fast, stay safe)
+
+**Phase 1 — Communities MVP (isolated graphs, no bridges)**
+
+* Tables & APIs, community creation, prompt hash in EIP-712 endorsement, snapshots, min-cut≥2 + **vertex-disjoint≥2** + **per-seed share≥0.30** gates, cut-witness proofs, simple directory.
+
+**Phase 2 — Templates & seed governance**
+
+* Templates (3 presets), seed add/remove with 1-snapshot timelock, seed scoring telemetry in UI (read-only).
+
+**Phase 3 — Bridges to global**
+
+* Capped bridge attestations (per-community → global), global roll-up scoring, bridge directory & health metrics.
+
+---
+
+# Minimal schema (Postgres)
+
+```sql
+-- communities
+CREATE TABLE community (
+  id             BIGSERIAL PRIMARY KEY,
+  name           TEXT NOT NULL,
+  description    TEXT,
+  prompt_text    TEXT NOT NULL,
+  prompt_hash    BYTEA NOT NULL,
+  policy_id      TEXT NOT NULL,
+  policy_json    JSONB NOT NULL,
+  visibility     TEXT DEFAULT 'public', -- public|invite
+  creator        BYTEA NOT NULL,        -- wallet addr
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- endorsements (append-only log)
+CREATE TABLE endorsement (
+  id             BIGSERIAL PRIMARY KEY,
+  community_id   BIGINT NOT NULL REFERENCES community(id),
+  endorser       BYTEA NOT NULL,
+  endorsee       BYTEA NOT NULL,
+  prompt_hash    BYTEA NOT NULL,
+  epoch_hint     BIGINT,                -- optional
+  signature      BYTEA NOT NULL,        -- EIP-712
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ON endorsement(community_id, endorser);
+CREATE INDEX ON endorsement(community_id, endorsee);
+
+-- snapshots (finalized)
+CREATE TABLE snapshot (
+  community_id   BIGINT NOT NULL REFERENCES community(id),
+  id             BIGINT NOT NULL,       -- monotonically increasing per community
+  params_hash    BYTEA NOT NULL,
+  log_root       BYTEA NOT NULL,        -- Merkle STH of endorsements included
+  manifest_hash  BYTEA NOT NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (community_id, id)
+);
+
+-- scores (per snapshot)
+CREATE TABLE score (
+  community_id   BIGINT NOT NULL,
+  snapshot_id    BIGINT NOT NULL,
+  address        BYTEA NOT NULL,
+  accepted       BOOLEAN NOT NULL,
+  sts            INTEGER NOT NULL,      -- 0..100
+  min_cut        INTEGER NOT NULL,
+  seeds_used     BYTEA[] NOT NULL,      -- list of seed addresses
+  per_seed_share JSONB NOT NULL,        -- {seed: share}
+  vertex_disjoint_paths JSONB NOT NULL, -- witnesses
+  cut_witness    JSONB NOT NULL,        -- minimal vertex cut
+  PRIMARY KEY (community_id, snapshot_id, address)
+);
+
+-- params history (policy changes)
+CREATE TABLE policy_history (
+  community_id   BIGINT NOT NULL,
+  policy_id      TEXT NOT NULL,
+  policy_json    JSONB NOT NULL,
+  effective_snapshot BIGINT NOT NULL,
+  PRIMARY KEY (community_id, effective_snapshot)
+);
+```
+
+---
+
+# EIP-712 endorsement (community-aware)
+
+```ts
+// domain: { name: "TrustFlow", version: "1", chainId, verifyingContract }
+types Endorsement = {
+  community_id: bytes32,
+  endorser: address,
+  endorsee: address,
+  prompt_hash: bytes32,   // keccak256(prompt_text)
+  epoch: uint64,          // optional; for anchoring
+  nonce: uint64
+}
+```
+
+* Verify on ingest; **reject** if `prompt_hash` ≠ community.prompt_hash.
+* Store in community’s transparency log; include in snapshot by log index range.
+
+---
+
+# Scoring job (per community)
+
+1. **Freeze set** of endorsements for this snapshot (by log index).
+2. Build node-split graph; capacities from policy (distance-decay; **lagged distances ON**).
+3. Max-flow; compute **min-cut**, **vertex-disjoint≥2** (Suurballe on node-split), **per-seed share**.
+4. Mark accepted; compute STS (optionally with ≤5% seed-PPR/EigenTrust).
+5. Emit `scores.jsonl`, `cut_witnesses/`, `manifest.json` (signed).
+6. Insert `snapshot` + `score` rows.
+
+---
+
+# MVP UI flow (prioritized)
+
+1. **Create Community**
+
+   * Name, description, **prompt text** (shows preview; displays “Public & permanent”).
+   * Choose template (**Hiring/Lending/Marketplace/Custom**).
+   * Submit → **you’re Seed #0**; get invite link.
+
+2. **Invite & Vouch**
+
+   * Members arrive on community page; see **prompt** atop the vouch button.
+   * Vouch modal shows prompt + public/permanent note; sign EIP-712.
+
+3. **Snapshot**
+
+   * Auto finalize daily/hourly (or manual button in MVP).
+   * Page shows **Accepted** badge and “**Why**”:
+     “2 vertex-disjoint paths via A & D; seeds S1,S3 (≥0.30 each); min-cut=3.”
+   * “How to improve” hints (diversify seed regions, reduce hub reliance, etc.)
+
+4. **Directory (simple)**
+
+   * List of communities with **health chips**: seed saturation, λ₂, coverage.
+
+---
+
+# Backward compatibility
+
+* Migrate existing data to **Community 0** (name: “Global”).
+* Set its `prompt_text` to your current global prompt; `prompt_hash` = keccak(prompt).
+* Everything else “just works” with `community_id = 0`.
+
+---
+
+# Guardrails to keep from day one
+
+* **Acceptance gates:** min-cut ≥2, **vertex-disjoint ≥2**, per-seed share ≥0.30.
+* **Lagged distances** (capacities use previous snapshot’s distances).
+* **Cut-witness proofs** (publish per accepted address).
+* **Reciprocity cooldown** (24–48h) for risk flags/eligibility (if you add incentives).
+
+---
+
+# Phase sequencing (recommend)
+
+* **Phase 1 (2–3 weeks):** Schema + API + UI + isolated scoring + proofs + directory.
+* **Phase 2 (1–2 weeks):** Templates, seed governance (multisig or allowlist, 1-snapshot timelock), seed telemetry surfaced.
+* **Phase 3 (2 weeks):** Capped **bridges** + global roll-up (Community 0) + bridge health panel.
+
+---
+
+If you want, I can draft the actual SQL migration, a `POST /communities` + `POST /endorse` route skeleton, and the scoring job signature so your team can start coding today.
