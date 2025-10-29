@@ -1,10 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TierBadge, type Tier } from "./TierBadge";
 import { Copy, Download, Info, HelpCircle, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QRCodeDialog } from "./QRCodeDialog";
 import {
   Tooltip,
@@ -12,20 +13,39 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface ScoreCardProps {
+export interface CommunityScore {
+  communityId: number;
+  communityName: string;
   tier: Tier;
   sts: number;
   flow?: number;
   percentile: number;
   minCutSize: number;
   epochTimestamp: string;
-  walletAddress?: string;
-  onExportAttestation?: () => void;
   confidence?: {
     percent: number;
     ghi: number;
     localMincutN: number;
   };
+}
+
+interface ScoreCardProps {
+  // Legacy single-score mode (for backward compatibility)
+  tier?: Tier;
+  sts?: number;
+  flow?: number;
+  percentile?: number;
+  minCutSize?: number;
+  epochTimestamp?: string;
+  confidence?: {
+    percent: number;
+    ghi: number;
+    localMincutN: number;
+  };
+  // Multi-community mode
+  communityScores?: CommunityScore[];
+  walletAddress?: string;
+  onExportAttestation?: () => void;
 }
 
 export function ScoreCard({
@@ -38,9 +58,39 @@ export function ScoreCard({
   walletAddress,
   onExportAttestation,
   confidence,
+  communityScores,
 }: ScoreCardProps) {
   const { toast } = useToast();
   const [showQRCode, setShowQRCode] = useState(false);
+  
+  // Multi-community mode: find highest score by default
+  const highestScore = communityScores && communityScores.length > 0 
+    ? communityScores.reduce((max, score) => score.sts > max.sts ? score : max)
+    : null;
+  
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("");
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // Initialize selected community to highest score when data first loads
+  useEffect(() => {
+    if (highestScore && !hasInitialized) {
+      setSelectedCommunityId(String(highestScore.communityId));
+      setHasInitialized(true);
+    }
+  }, [highestScore, hasInitialized]);
+
+  // Get current score to display (either from multi-community or legacy props)
+  const currentScore = communityScores && communityScores.length > 0
+    ? communityScores.find(s => String(s.communityId) === selectedCommunityId) || highestScore
+    : null;
+
+  const displayTier = currentScore?.tier || tier || "Connected";
+  const displaySts = currentScore?.sts ?? sts ?? 0;
+  const displayFlow = currentScore?.flow ?? flow;
+  const displayPercentile = currentScore?.percentile ?? percentile ?? 0;
+  const displayMinCut = currentScore?.minCutSize ?? minCutSize ?? 0;
+  const displayEpochTimestamp = currentScore?.epochTimestamp || epochTimestamp || new Date().toISOString();
+  const displayConfidence = currentScore?.confidence ?? confidence;
 
   const handleExport = () => {
     if (onExportAttestation) {
@@ -55,29 +105,50 @@ export function ScoreCard({
   return (
     <Card className="p-8 rounded-2xl" data-testid="card-score">
       <CardContent className="p-0 space-y-6">
+        {communityScores && communityScores.length > 0 && (
+          <div>
+            <label className="text-xs text-muted-foreground mb-2 block">Community</label>
+            <Select value={selectedCommunityId} onValueChange={setSelectedCommunityId}>
+              <SelectTrigger data-testid="select-community-score">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {communityScores.map((score) => (
+                  <SelectItem 
+                    key={score.communityId} 
+                    value={String(score.communityId)}
+                  >
+                    {score.communityName} (STS: {score.sts})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex items-start justify-between">
-          <TierBadge tier={tier} size="lg" />
+          <TierBadge tier={displayTier} size="lg" />
           <span className="text-xs text-muted-foreground" data-testid="text-epoch-timestamp">
-            {new Date(epochTimestamp).toLocaleString()}
+            {new Date(displayEpochTimestamp).toLocaleString()}
           </span>
         </div>
 
-        <div className={flow !== undefined ? "grid grid-cols-2 gap-6" : ""}>
+        <div className={displayFlow !== undefined ? "grid grid-cols-2 gap-6" : ""}>
           <div>
             <div className="text-5xl font-bold tracking-tight" data-testid="text-score">
-              {sts}
+              {displaySts}
             </div>
             <div className="text-sm text-muted-foreground mt-2">
-              Standardized Trust Score {flow === undefined ? "(0-100)" : ""}
+              Standardized Trust Score {displayFlow === undefined ? "(0-100)" : ""}
             </div>
           </div>
-          {flow !== undefined && (
+          {displayFlow !== undefined && (
             <div>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="cursor-help">
                     <div className="text-5xl font-bold tracking-tight text-primary" data-testid="text-flow">
-                      {flow.toFixed(2)}
+                      {displayFlow.toFixed(2)}
                     </div>
                     <div className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
                       Raw Flow
@@ -103,24 +174,24 @@ export function ScoreCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2" data-testid="text-percentile">
               <span className="text-sm text-muted-foreground">Percentile:</span>
-              <span className="text-lg font-semibold">{percentile}th</span>
+              <span className="text-lg font-semibold">{displayPercentile}th</span>
             </div>
             <div className="flex items-center gap-2" data-testid="text-mincut">
               <Info className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm">
-                <span className="font-medium">{minCutSize}</span>
+                <span className="font-medium">{displayMinCut}</span>
                 <span className="text-muted-foreground"> min-cut</span>
               </span>
             </div>
           </div>
 
-          {confidence && (
+          {displayConfidence && (
             <div className="flex items-center justify-between pt-3 border-t">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-2 cursor-help" data-testid="text-confidence">
                     <span className="text-sm text-muted-foreground">Confidence:</span>
-                    <span className="text-lg font-semibold">{confidence.percent}%</span>
+                    <span className="text-lg font-semibold">{displayConfidence.percent}%</span>
                     <Info className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </TooltipTrigger>
@@ -130,11 +201,11 @@ export function ScoreCard({
                     <div className="text-xs space-y-1">
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">Global Health (GHI):</span>
-                        <span className="font-mono">{confidence.ghi}</span>
+                        <span className="font-mono">{displayConfidence.ghi}</span>
                       </div>
                       <div className="flex justify-between gap-4">
                         <span className="text-muted-foreground">Local Adjustment:</span>
-                        <span className="font-mono">{confidence.localMincutN}</span>
+                        <span className="font-mono">{displayConfidence.localMincutN}</span>
                       </div>
                       <div className="pt-1 border-t">
                         <span className="text-muted-foreground">

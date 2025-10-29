@@ -1806,6 +1806,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's communities (ones they're scored in)
+  app.get("/api/communities/user/:address", async (req, res) => {
+    try {
+      const userAddress = req.params.address.toLowerCase();
+      
+      // Get all scores for this user across all communities
+      const scores = await storage.getAllScoresForUser(userAddress);
+      
+      if (scores.length === 0) {
+        return res.json({ communities: [] });
+      }
+      
+      // Get unique community IDs
+      const communityIds = Array.from(new Set(scores.map(s => s.communityId)));
+      
+      // Fetch community details
+      const communities = await Promise.all(
+        communityIds.map(id => storage.getCommunity(id))
+      );
+
+      // Filter out null results and return
+      const validCommunities = communities.filter(c => c !== null);
+
+      res.json({ communities: validCommunities });
+    } catch (error) {
+      console.error("Error getting user communities:", error);
+      res.status(500).json({ error: "Failed to get user communities" });
+    }
+  });
+
   // Get a specific community
   app.get("/api/communities/:id", async (req, res) => {
     try {

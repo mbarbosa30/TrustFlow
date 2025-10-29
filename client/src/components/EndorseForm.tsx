@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, QrCode } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,7 @@ import type { Address } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { QRScanner } from "./QRScanner";
+import { useQuery } from "@tanstack/react-query";
 
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
@@ -34,6 +36,7 @@ const ENDORSEMENT_TYPES = {
 export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [note, setNote] = useState("");
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("0");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -41,6 +44,12 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
   const chainId = useChainId();
+
+  // Fetch user's communities (ones they're scored in or created)
+  const { data: userCommunities, isLoading: isLoadingCommunities } = useQuery<{ communities: any[] }>({
+    queryKey: ['/api/communities/user', address],
+    enabled: !!address,
+  });
   
   // ENS resolution uses Ethereum mainnet (standard practice)
   const publicClient = createPublicClient({
@@ -108,6 +117,14 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         timestamp,
       };
 
+      // Fetch community to get its prompt hash
+      const communityResponse = await fetch(`/api/communities/${selectedCommunityId}`);
+      if (!communityResponse.ok) {
+        throw new Error("Failed to fetch community details");
+      }
+      const communityData = await communityResponse.json();
+      const promptHash = communityData.community.promptHash;
+
       // Sign with wagmi using user's current chain
       // The chainId is used for signature security, not network enforcement
       const signature = await signTypedDataAsync({
@@ -137,6 +154,8 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         timestamp: timestamp.toString(),
         sig: signature,
         chainId: chainId, // Include chainId so backend can verify with correct domain
+        communityId: parseInt(selectedCommunityId, 10),
+        promptHash,
         note: note || undefined,
       });
 
@@ -168,6 +187,30 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         <CardTitle className="text-lg font-semibold">Vouch for Someone in the Network</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="community-select">Community</Label>
+          <Select 
+            value={selectedCommunityId} 
+            onValueChange={setSelectedCommunityId}
+            disabled={isLoadingCommunities}
+          >
+            <SelectTrigger className="mt-2" data-testid="select-community">
+              <SelectValue placeholder="Select community" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Global Network</SelectItem>
+              {userCommunities?.communities?.map((community: any) => (
+                <SelectItem key={community.id} value={community.id.toString()}>
+                  {community.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            Choose which community this vouch is for
+          </p>
+        </div>
+
         <div>
           <Label htmlFor="search-address">Wallet Address or ENS</Label>
           <div className="relative mt-2 flex gap-2">
