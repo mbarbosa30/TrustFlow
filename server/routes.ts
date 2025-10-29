@@ -1290,7 +1290,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log(`Built graph with ${endorsements.length} edges among ${allDiscoveredUsers.size} users`);
+      console.log(`Built 2-hop graph with ${endorsements.length} edges among ${allDiscoveredUsers.size} users`);
+
+      // === SELECTIVE 3RD HOP: Fetch followers for top influential depth-2 users ===
+      // This increases network depth while keeping size manageable
+      
+      // Identify depth-2 users (all users except seed and depth-1)
+      const depth2Users = Array.from(allDiscoveredUsers).filter(
+        userDid => userDid !== did.toLowerCase() && !firstHopPeers.has(userDid)
+      );
+      
+      if (depth2Users.length > 0) {
+        console.log(`Analyzing ${depth2Users.length} depth-2 users to find most influential...`);
+        
+        // Fetch profiles for depth-2 users to get follower counts (in batches of 25)
+        const depth2FollowerCounts = new Map<string, number>();
+        const batchSize = 25;
+        
+        for (let i = 0; i < depth2Users.length; i += batchSize) {
+          const batch = depth2Users.slice(i, Math.min(i + batchSize, depth2Users.length));
+          try {
+            const profilesResponse = await agent.getProfiles({ actors: batch });
+            for (const profile of profilesResponse.data.profiles) {
+              const followersCount = (profile as any).followersCount || 0;
+              depth2FollowerCounts.set(profile.did.toLowerCase(), followersCount);
+            }
+            // Small delay to avoid rate limiting
+            if (i + batchSize < depth2Users.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch profiles for depth-2 batch ${i}-${i + batchSize}`);
+          }
+        }
+        
+        // Sort depth-2 users by follower count and take top 25 most influential
+        const influentialDepth2 = depth2Users
+          .map(userDid => ({
+            did: userDid,
+            followersCount: depth2FollowerCounts.get(userDid) || 0
+          }))
+          .sort((a, b) => b.followersCount - a.followersCount)
+          .slice(0, 25);
+        
+        console.log(`Fetching 3rd hop for top ${influentialDepth2.length} influential depth-2 users...`);
+        
+        // Fetch top 5 followers for each influential depth-2 user
+        let processed3rdHop = 0;
+        for (const { did: depth2Did } of influentialDepth2) {
+          try {
+            // Fetch up to 20 followers, then select top 5 most influential
+            const followersResponse = await agent.getFollowers({ 
+              actor: depth2Did, 
+              limit: 20 
+            });
+            const followers = followersResponse.data.followers;
+            
+            // Get profiles to find most influential followers
+            let topFollowers = followers;
+            if (followers.length > 0) {
+              try {
+                const followerDids = followers.map(f => f.did);
+                const profilesResponse = await agent.getProfiles({ actors: followerDids });
+                
+                const followerCounts = new Map<string, number>();
+                for (const profile of profilesResponse.data.profiles) {
+                  const followersCount = (profile as any).followersCount || 0;
+                  followerCounts.set(profile.did, followersCount);
+                }
+                
+                // Sort by influence and take top 5
+                topFollowers = followers
+                  .sort((a, b) => {
+                    const countA = followerCounts.get(a.did) || 0;
+                    const countB = followerCounts.get(b.did) || 0;
+                    return countB - countA;
+                  })
+                  .slice(0, 5);
+              } catch (error) {
+                console.warn(`Failed to fetch profiles for ${depth2Did} followers, using first 5`);
+                topFollowers = followers.slice(0, 5);
+              }
+            }
+            
+            // Add BIDIRECTIONAL edges for depth-3 followers
+            for (const follower of topFollowers) {
+              const followerDid = follower.did.toLowerCase();
+              allDiscoveredUsers.add(followerDid);
+              
+              // Follower → depth-2 user
+              endorsements.push({
+                endorser: followerDid,
+                endorsee: depth2Did,
+                epoch: 0
+              });
+              
+              // Depth-2 user → follower
+              endorsements.push({
+                endorser: depth2Did,
+                endorsee: followerDid,
+                epoch: 0
+              });
+            }
+            
+            processed3rdHop++;
+            
+            // Progress logging every 5 users
+            if (processed3rdHop % 5 === 0) {
+              console.log(`  Processed ${processed3rdHop}/${influentialDepth2.length} depth-3 expansions...`);
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch 3rd hop for ${depth2Did}:`, error);
+          }
+        }
+        
+        console.log(`Added 3rd hop: now ${endorsements.length} edges among ${allDiscoveredUsers.size} users`);
+      }
+      
+      console.log(`Final graph: ${endorsements.length} edges among ${allDiscoveredUsers.size} users`);
 
       // Use the seed as the seed for scoring
       const seeds = [did.toLowerCase()];
