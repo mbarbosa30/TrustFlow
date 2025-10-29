@@ -10,6 +10,7 @@ import { AverageSTSChart } from "@/components/AverageSTSChart";
 import { NetworkDensityChart } from "@/components/NetworkDensityChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
 import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
+import { PageRankMetrics } from "@/components/PageRankMetrics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
@@ -85,9 +86,21 @@ export default function Dashboard() {
   });
 
   const { data: scoreComponentsData, isLoading: isLoadingScoreComponents } = useQuery<{
-    data: Array<{ epoch: string; flow: number; cut: number; stability: number; depth: number }>;
+    data: Array<{ epoch: string; flow: number; cut: number; stability: number; depth: number; pageRank: number }>;
   }>({
     queryKey: ['/api/analytics/score-components'],
+  });
+
+  const { data: pageRankMetricsData, isLoading: isLoadingPageRankMetrics } = useQuery<{
+    prSkew: number;
+    seedConcentration: number;
+    maxScore: number;
+    p95Score: number;
+    iterations: number;
+    converged: boolean;
+  } | null>({
+    queryKey: [`/api/epoch/${currentEpochId}/pagerank-metrics`],
+    enabled: currentEpochId !== undefined,
   });
 
   const { data: averageSTSData, isLoading: isLoadingAverageSTS } = useQuery<{
@@ -295,10 +308,16 @@ export default function Dashboard() {
           />
         </div>
 
-        <NetworkSecurityHealth 
-          data={securityHealthData || null}
-          isLoading={isLoadingSecurityHealth}
-        />
+        <div className="grid md:grid-cols-2 gap-6">
+          <NetworkSecurityHealth 
+            data={securityHealthData || null}
+            isLoading={isLoadingSecurityHealth}
+          />
+          <PageRankMetrics 
+            data={pageRankMetricsData || null}
+            isLoading={isLoadingPageRankMetrics}
+          />
+        </div>
         
         <RecentActivity activities={recentActivities} />
       </div>
