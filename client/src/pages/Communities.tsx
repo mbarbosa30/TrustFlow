@@ -3,14 +3,24 @@ import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Plus, Globe, Lock } from "lucide-react";
+import { Users, Plus, Globe, Lock, LayoutDashboard } from "lucide-react";
+import { useWallet } from "@/hooks/useWallet";
+import { Separator } from "@/components/ui/separator";
 
 export default function Communities() {
+  const { address, isConnected } = useWallet();
+  
   const { data, isLoading } = useQuery<{ communities: any[] }>({
     queryKey: ["/api/communities"],
   });
 
+  const { data: userCommunitiesData, isLoading: isLoadingUserCommunities } = useQuery<{ communities: any[] }>({
+    queryKey: ['/api/communities/user', address],
+    enabled: !!address && isConnected,
+  });
+
   const communities = data?.communities || [];
+  const userCommunities = userCommunitiesData?.communities || [];
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
@@ -28,6 +38,50 @@ export default function Communities() {
           </Button>
         </Link>
       </div>
+
+      {/* My Communities Section */}
+      {isConnected && userCommunities.length > 0 && (
+        <>
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">My Communities</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {userCommunities.map((community) => (
+                <Card key={community.id} className="hover-elevate" data-testid={`card-my-community-${community.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <CardTitle className="text-lg">{community.name}</CardTitle>
+                      {community.visibility === "public" ? (
+                        <Globe className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      )}
+                    </div>
+                    <CardDescription className="line-clamp-2">{community.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex gap-2">
+                      <Link href={`/communities/${community.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full" data-testid={`button-view-community-${community.id}`}>
+                          View Details
+                        </Button>
+                      </Link>
+                      <Link href={`/lending/${community.id}`} className="flex-1">
+                        <Button variant="default" size="sm" className="w-full gap-2" data-testid={`button-dashboard-${community.id}`}>
+                          <LayoutDashboard className="w-4 h-4" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <Separator className="my-8" />
+        </>
+      )}
+
+      <h2 className="text-2xl font-bold mb-4">All Communities</h2>
 
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

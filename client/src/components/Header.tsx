@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Network } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
 
@@ -75,6 +76,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
 
           <div className="flex items-center gap-2">
             <WalletConnect onConnect={(address) => console.log('Wallet connected:', address)} />
+            <LanguageToggle />
             <ThemeToggle />
           </div>
         </div>
