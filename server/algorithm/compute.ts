@@ -73,7 +73,7 @@ export class EpochComputation {
 
     console.log(`Stored ${scoreInserts.length} scores in database`);
 
-    const { totalAccepted, avgMinCut, avgFlow } = result.networkMetrics;
+    const { totalAccepted, avgMinCut, avgFlow, seedSaturation } = result.networkMetrics;
     
     // Get current epoch's accepted users
     const currentAcceptedUsers = scoreInserts
@@ -113,6 +113,8 @@ export class EpochComputation {
         rawAcceptedCount: metrics.rawAcceptedCount,
         rawAvgMinCut: metrics.rawAvgMinCut,
         rawChurnStability: metrics.rawChurnStability,
+        maxSeedShare: seedSaturation?.maxSeedShare || null,
+        maxSeedAddress: seedSaturation?.maxSeedAddress || null,
       });
     }
 

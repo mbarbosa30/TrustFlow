@@ -94,6 +94,8 @@ export const epochHealth = pgTable("epoch_health", {
   rawAcceptedCount: integer("raw_accepted_count").notNull(),
   rawAvgMinCut: doublePrecision("raw_avg_min_cut").notNull(),
   rawChurnStability: doublePrecision("raw_churn_stability").notNull(),
+  maxSeedShare: doublePrecision("max_seed_share"),
+  maxSeedAddress: text("max_seed_address"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

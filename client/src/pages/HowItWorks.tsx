@@ -229,6 +229,90 @@ export default function HowItWorks() {
             <p>Anyone can recompute and confirm byte-exact results.</p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Security Model & Attack Resistance</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              TrustFlow's max-flow/min-cut algorithm is grounded in the Levien & Aiken (USENIX '98) trust metric model, which provides formal resistance against Sybil attacks. Understanding the security model helps explain both current defenses and planned enhancements.
+            </p>
+
+            <div className="mt-4">
+              <h4 className="font-semibold text-base mb-2">Current Defenses</h4>
+              <ul className="space-y-2">
+                <li>
+                  <strong>Epoch-Lagged Capacities:</strong> Node capacities are computed from the previous epoch's accepted subgraph, preventing distance-inflation attacks where attackers manipulate their proximity to seeds within a single scoring run.
+                </li>
+                <li>
+                  <strong>Min-Cut ≥ 2 Requirement:</strong> In medium/large networks, users must have at least 2 units of min-cut, ensuring some redundancy in trust paths.
+                </li>
+                <li>
+                  <strong>Seed Coverage ≥ 2:</strong> For large networks, flow must originate from at least 2 distinct seeds, reducing single-seed blast radius.
+                </li>
+                <li>
+                  <strong>Edge-Disjoint Paths:</strong> Large networks require two edge-disjoint paths from seeds to user, providing path independence.
+                </li>
+                <li>
+                  <strong>Public Vouches:</strong> Full transparency in the Merkle log enables community detection of suspicious vouch patterns.
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <h4 className="font-semibold text-sm mb-2 text-amber-600 dark:text-amber-400">
+                Known Attack Vectors & Planned Enhancements
+              </h4>
+              <div className="text-sm text-muted-foreground space-y-3">
+                <div>
+                  <strong className="text-foreground">1. Bridge Hub Amplification</strong>
+                  <p className="mt-1">
+                    Current edge-disjoint requirement can be satisfied by two paths through the same high-capacity intermediary (one articulation vertex). 
+                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Planned fix:</span> Upgrade to vertex-disjoint path checking, requiring paths that don't share intermediate nodes.
+                  </p>
+                </div>
+
+                <div>
+                  <strong className="text-foreground">2. Dust-Flow Seed Coverage</strong>
+                  <p className="mt-1">
+                    Current "coverage ≥ 2 seeds" can be satisfied with tiny flows (e.g., 0.01 from seed A, 0.99 from seed B). 
+                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Planned fix:</span> Require minimum flow share per seed (≥30% from each of ≥2 seeds).
+                  </p>
+                </div>
+
+                <div>
+                  <strong className="text-foreground">3. Seed Saturation</strong>
+                  <p className="mt-1">
+                    Over-reliance on a single seed's outflow creates large blast radius if that seed is compromised. 
+                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Planned fix:</span> Monitor max seed outflow share; throttle seeds exceeding 40-50% of total network flow.
+                  </p>
+                </div>
+
+                <div>
+                  <strong className="text-foreground">4. Cut Witness Auditability</strong>
+                  <p className="mt-1">
+                    Currently, verifiers must recompute entire max-flow to validate scores. 
+                    <span className="text-amber-600 dark:text-amber-400 font-medium"> Planned enhancement:</span> Publish vertex-cut witnesses per accepted user (small set of nodes whose removal separates user from seeds) with Merkle proofs for efficient verification.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <h4 className="font-semibold text-sm mb-2 text-blue-600 dark:text-blue-400">
+                Why These Defenses Matter
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                Per Levien & Aiken's analysis, the max-flow metric's security bound is proportional to the number of "confused" (mislabeling) certifiers an attacker can control near the target. Our defenses—vertex-disjoint paths, seed-coverage floors, saturation limits, and lagged capacities—make these attacks expensive by requiring attackers to compromise multiple independent, well-positioned nodes across different network regions.
+              </p>
+            </div>
+
+            <div className="mt-4 text-sm text-muted-foreground">
+              <strong>Current Security Health:</strong> Check the Dashboard's Network Security Health metrics to monitor seed saturation, path diversity, and other indicators of Sybil resistance in real-time.
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

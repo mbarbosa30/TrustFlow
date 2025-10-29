@@ -808,6 +808,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/analytics/security-health", async (req, res) => {
+    try {
+      const currentEpoch = await storage.getCurrentEpoch();
+      if (!currentEpoch) {
+        return res.status(200).json({
+          seedSaturation: null,
+          pathDiversity: null,
+          avgMinCut: null,
+        });
+      }
+
+      const [healthData, scores] = await Promise.all([
+        storage.getEpochHealth(currentEpoch.id),
+        storage.getScoresByEpoch(currentEpoch.id),
+      ]);
+
+      const acceptedScores = scores.filter(s => s.isAccepted);
+
+      // Calculate path diversity (minCut / flow ratio)
+      const diversityValues = acceptedScores
+        .map(s => {
+          const flow = s.flow || 1;
+          const minCut = s.minCut || 0;
+          return Math.min(minCut / Math.max(flow, 1), 1.0);
+        })
+        .filter(v => v > 0);
+
+      const avgPathDiversity = diversityValues.length > 0
+        ? diversityValues.reduce((a, b) => a + b, 0) / diversityValues.length
+        : 0;
+
+      // Calculate average min-cut for accepted users
+      const minCutValues = acceptedScores.map(s => s.minCut);
+      const avgMinCut = minCutValues.length > 0
+        ? minCutValues.reduce((a, b) => a + b, 0) / minCutValues.length
+        : 0;
+
+      return res.status(200).json({
+        seedSaturation: healthData?.maxSeedShare 
+          ? {
+              maxShare: Math.round((healthData.maxSeedShare || 0) * 100),
+              maxSeedAddress: healthData.maxSeedAddress,
+              status: (healthData.maxSeedShare || 0) > 0.5 ? 'warning' : (healthData.maxSeedShare || 0) > 0.4 ? 'caution' : 'healthy'
+            }
+          : null,
+        pathDiversity: {
+          average: parseFloat((avgPathDiversity * 100).toFixed(1)),
+          status: avgPathDiversity >= 0.8 ? 'healthy' : avgPathDiversity >= 0.5 ? 'moderate' : 'low'
+        },
+        avgMinCut: {
+          value: parseFloat(avgMinCut.toFixed(2)),
+          status: avgMinCut >= 3 ? 'strong' : avgMinCut >= 2 ? 'adequate' : 'weak'
+        },
+        acceptedUsers: acceptedScores.length,
+        epochId: currentEpoch.id,
+      });
+    } catch (error) {
+      console.error("Error fetching security health:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/analytics/path-diversity", async (req, res) => {
     try {
       const allScores = await storage.getAllScores();

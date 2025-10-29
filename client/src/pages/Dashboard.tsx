@@ -9,6 +9,7 @@ import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
 import { AverageSTSChart } from "@/components/AverageSTSChart";
 import { NetworkDensityChart } from "@/components/NetworkDensityChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
+import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 
@@ -105,6 +106,26 @@ export default function Dashboard() {
     data: Array<{ epoch: string; min: number; p25: number; median: number; p75: number; max: number }>;
   }>({
     queryKey: ['/api/analytics/path-diversity'],
+  });
+
+  const { data: securityHealthData, isLoading: isLoadingSecurityHealth } = useQuery<{
+    seedSaturation: {
+      maxShare: number;
+      maxSeedAddress: string | null;
+      status: 'healthy' | 'caution' | 'warning';
+    } | null;
+    pathDiversity: {
+      average: number;
+      status: 'healthy' | 'moderate' | 'low';
+    };
+    avgMinCut: {
+      value: number;
+      status: 'strong' | 'adequate' | 'weak';
+    };
+    acceptedUsers: number;
+    epochId: number;
+  }>({
+    queryKey: ['/api/analytics/security-health'],
   });
 
   const recentActivities = recentEndorsementsData?.endorsements.map(e => ({
@@ -273,6 +294,11 @@ export default function Dashboard() {
             isLoading={isLoadingPathDiversity}
           />
         </div>
+
+        <NetworkSecurityHealth 
+          data={securityHealthData || null}
+          isLoading={isLoadingSecurityHealth}
+        />
         
         <RecentActivity activities={recentActivities} />
       </div>

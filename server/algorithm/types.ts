@@ -44,5 +44,10 @@ export interface EpochComputationResult {
     avgFlow: number;
     avgMinCut: number;
     p95Flow: number;
+    seedSaturation?: {
+      maxSeedShare: number;
+      maxSeedAddress: Address | null;
+      seedFlowDistribution: Map<Address, number>;
+    };
   };
 }
