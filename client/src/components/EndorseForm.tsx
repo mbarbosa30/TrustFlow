@@ -206,8 +206,8 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
             onChange={(e) => setNote(e.target.value)}
             data-testid="input-note"
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Private and only visible to you. Can be used for future trust strength assessment.
+          <p className="text-xs text-muted-foreground mt-2">
+            Private and only visible to you.
           </p>
         </div>
 
