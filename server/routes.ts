@@ -1134,6 +1134,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/bluesky/analyze", async (req, res) => {
+    try {
+      const { identifier, maxFollows = 100, maxFollowers = 100 } = req.body;
+      
+      if (!identifier) {
+        return res.status(400).json({ error: "identifier (DID or handle) is required" });
+      }
+
+      const { BskyAgent } = await import('@atproto/api');
+      const agent = new BskyAgent({ service: 'https://public.api.bsky.app' });
+
+      // Resolve handle to DID if needed
+      let did: string;
+      try {
+        const profile = await agent.getProfile({ actor: identifier });
+        did = profile.data.did;
+      } catch (error) {
+        return res.status(404).json({ error: `Could not find Bluesky user: ${identifier}` });
+      }
+
+      // Fetch follows and followers in parallel
+      const [followsResult, followersResult] = await Promise.all([
+        agent.getFollows({ actor: did, limit: Math.min(maxFollows, 100) }),
+        agent.getFollowers({ actor: did, limit: Math.min(maxFollowers, 100) })
+      ]);
+
+      const follows = followsResult.data.follows.map(f => f.did);
+      const followers = followersResult.data.followers.map(f => f.did);
+
+      // Transform Bluesky graph to TrustFlow endorsement format
+      // Each follow relationship becomes an endorsement from follower → followed
+      const endorsements: Array<{ endorser: string; endorsee: string; epoch: number }> = [];
+      
+      // Add endorsements from the target user to their follows
+      for (const followDid of follows) {
+        endorsements.push({
+          endorser: did.toLowerCase(),
+          endorsee: followDid.toLowerCase(),
+          epoch: 0
+        });
+      }
+      
+      // Add endorsements from followers to the target user
+      for (const followerDid of followers) {
+        endorsements.push({
+          endorser: followerDid.toLowerCase(),
+          endorsee: did.toLowerCase(),
+          epoch: 0
+        });
+      }
+
+      // Use the target user as the only seed for this analysis
+      const seeds = [did.toLowerCase()];
+
+      // Run TrustFlow scoring algorithm in-memory
+      const { TrustScorer } = await import('./algorithm/scoring');
+      const scorer = new TrustScorer();
+      const results = scorer.computeScores(
+        endorsements as any,
+        seeds as any,
+        0
+      );
+
+      // Calculate basic stats
+      const totalUsers = results.scores.size;
+      const acceptedUsers = Array.from(results.scores.values()).filter(s => s.tier !== null).length;
+      const scores = Array.from(results.scores.values());
+      const avgSTS = scores.length > 0 
+        ? scores.reduce((sum, s) => sum + s.sts, 0) / scores.length 
+        : 0;
+
+      return res.status(200).json({
+        identifier,
+        did,
+        stats: {
+          follows: follows.length,
+          followers: followers.length,
+          totalUsers,
+          acceptedUsers,
+          avgSTS: Math.round(avgSTS * 10) / 10,
+        },
+        networkMetrics: results.networkMetrics,
+        scores: Array.from(results.scores.entries()).map(([address, score]) => ({
+          address,
+          sts: Math.round(score.sts * 10) / 10,
+          tier: score.tier,
+          flow: Math.round(score.components.flow * 100) / 100,
+          minCut: score.components.minCut,
+          depth: score.components.depth,
+        })).sort((a, b) => b.sts - a.sts).slice(0, 50), // Top 50 scores
+      });
+    } catch (error) {
+      console.error("Error analyzing Bluesky network:", error);
+      return res.status(500).json({ 
+        error: "Failed to analyze Bluesky network",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -16,11 +16,13 @@ import UseCases from "@/pages/UseCases";
 import Status from "@/pages/Status";
 import Seeds from "@/pages/Seeds";
 import TermsPrivacy from "@/pages/TermsPrivacy";
+import BlueskyExplorer from "@/pages/BlueskyExplorer";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
   { path: "/overview", label: "Overview" },
   { path: "/dashboard", label: "Dashboard" },
+  { path: "/bluesky", label: "Bluesky Explorer" },
   { path: "/status", label: "Status" },
 ];
 
@@ -30,6 +32,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
+      <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
       <Route path="/seeds" component={Seeds} />
