@@ -29,6 +29,17 @@ const tierConfig = {
 export function TierBadge({ tier, size = "md" }: TierBadgeProps) {
   const normalizedTier = (tier.charAt(0).toUpperCase() + tier.slice(1).toLowerCase()) as Tier;
   const config = tierConfig[normalizedTier];
+  
+  if (!config) {
+    console.error(`Invalid tier: ${tier}, normalized: ${normalizedTier}`);
+    return (
+      <Badge variant="secondary" className={`${size === "sm" ? "text-xs px-2 py-1" : size === "lg" ? "text-base px-4 py-2" : "text-sm px-3 py-1.5"} gap-1.5`}>
+        <Shield className={size === "sm" ? "w-3 h-3" : size === "lg" ? "w-5 h-5" : "w-4 h-4"} />
+        <span>{normalizedTier}</span>
+      </Badge>
+    );
+  }
+  
   const Icon = config.icon;
   
   const sizeClasses = {
