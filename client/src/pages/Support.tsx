@@ -103,8 +103,8 @@ export default function Support() {
     },
     onSuccess: () => {
       toast({
-        title: "Interest Buy-Down Created",
-        description: "Your monthly pledge has been activated to reduce the borrower's interest rate.",
+        title: "Reducción de Interés Creada",
+        description: "Tu compromiso mensual ha sido activado para reducir la tasa de interés del prestatario.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
       queryClient.invalidateQueries({ queryKey: ["/api/support/available-loans"] });
@@ -113,7 +113,7 @@ export default function Support() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to Create Pledge",
+        title: "Error al Crear Compromiso",
         description: error.message,
         variant: "destructive",
       });
@@ -131,15 +131,15 @@ export default function Support() {
     },
     onSuccess: () => {
       toast({
-        title: "Repay-Assist Activated",
-        description: "You've covered the late installment. The borrower will repay you with 6% premium.",
+        title: "Ayuda de Pago Activada",
+        description: "Cubriste la cuota atrasada. El prestatario te reembolsará con 6% de premio.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
       queryClient.invalidateQueries({ queryKey: ["/api/support/late-installments"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to Cover Installment",
+        title: "Error al Cubrir Cuota",
         description: error.message,
         variant: "destructive",
       });
@@ -153,15 +153,15 @@ export default function Support() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <HandHeart className="h-6 w-6" />
-              Support Borrowers
+              Apoyar a Prestatarios
             </CardTitle>
             <CardDescription>
-              Connect your wallet to support borrowers through Interest Buy-Down and Repay-Assist
+              Conectá tu billetera para apoyar a prestatarios con Reducción de Interés y Ayuda de Pago
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Please connect your wallet to access supporter features.
+              Por favor conectá tu billetera para acceder a funciones de apoyo.
             </p>
           </CardContent>
         </Card>
@@ -175,10 +175,10 @@ export default function Support() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <HandHeart className="h-8 w-8 text-primary" />
-            Support Borrowers
+            Apoyar a Prestatarios
           </h1>
           <p className="text-muted-foreground mt-1">
-            Help community members access affordable credit through subsidies
+            Ayudá a miembros de la comunidad a acceder a crédito accesible mediante subsidios
           </p>
         </div>
       </div>
@@ -187,31 +187,31 @@ export default function Support() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="ibd" data-testid="tab-interest-buydown">
             <TrendingUp className="h-4 w-4 mr-2" />
-            Interest Buy-Down
+            Reducción de Interés
           </TabsTrigger>
           <TabsTrigger value="ra" data-testid="tab-repay-assist">
             <HandHeart className="h-4 w-4 mr-2" />
-            Repay-Assist
+            Ayuda de Pago
           </TabsTrigger>
           <TabsTrigger value="portfolio" data-testid="tab-portfolio">
             <Wallet className="h-4 w-4 mr-2" />
-            My Portfolio
+            Mi Portafolio
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ibd" className="space-y-4">
           <Card data-testid="card-ibd-info">
             <CardHeader>
-              <CardTitle>Interest Buy-Down</CardTitle>
+              <CardTitle>Reducción de Interés</CardTitle>
               <CardDescription>
-                Pledge monthly USDC to reduce a borrower's interest rate. You'll earn community trust and help make credit more affordable.
+                Comprometete mensualmente con ARS para reducir la tasa de interés del prestatario. Ganarás confianza en la comunidad y ayudarás a hacer el crédito más accesible.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loansLoading ? (
-                <p className="text-muted-foreground">Loading available loans...</p>
+                <p className="text-muted-foreground">Cargando préstamos disponibles...</p>
               ) : !availableLoans || availableLoans.length === 0 ? (
-                <p className="text-muted-foreground">No active loans available for Interest Buy-Down support.</p>
+                <p className="text-muted-foreground">No hay préstamos activos disponibles para Reducción de Interés.</p>
               ) : (
                 <div className="space-y-4">
                   <div className="grid gap-3">
@@ -231,13 +231,13 @@ export default function Support() {
                                 {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
                               </p>
                               <p className="text-lg font-semibold">
-                                ${loan.principalUsdc.toFixed(2)} USDC
+                                ${(loan.principalUsdc / 1000).toFixed(0)}k ARS
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {loan.tenorMonths} months @ {(loan.aprBps / 100).toFixed(1)}% APR
+                                {loan.tenorMonths} meses @ {(loan.aprBps / 100).toFixed(1)}% TNA
                               </p>
                             </div>
-                            <Badge variant="secondary">{loan.status}</Badge>
+                            <Badge variant="secondary">{loan.status === "ACTIVE" ? "ACTIVO" : loan.status}</Badge>
                           </div>
                         </CardContent>
                       </Card>
@@ -247,16 +247,16 @@ export default function Support() {
                   {selectedLoan && (
                     <Card data-testid="card-ibd-pledge">
                       <CardHeader>
-                        <CardTitle className="text-lg">Set Monthly Pledge</CardTitle>
+                        <CardTitle className="text-lg">Establecer Compromiso Mensual</CardTitle>
                         <CardDescription>
-                          Choose how much to contribute each month to reduce the borrower's interest rate
+                          Elegí cuánto contribuir cada mes para reducir la tasa de interés del prestatario
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <label className="text-sm font-medium">Monthly Amount</label>
-                            <span className="text-lg font-semibold">${ibdAmount[0]} USDC</span>
+                            <label className="text-sm font-medium">Monto Mensual</label>
+                            <span className="text-lg font-semibold">${ibdAmount[0] * 10}k ARS</span>
                           </div>
                           <Slider
                             value={ibdAmount}
@@ -267,7 +267,7 @@ export default function Support() {
                             data-testid="slider-ibd-amount"
                           />
                           <p className="text-xs text-muted-foreground">
-                            Pledge between $10 - $200 USDC per month
+                            Comprometete entre $100k - $2M ARS por mes
                           </p>
                         </div>
 
@@ -282,7 +282,7 @@ export default function Support() {
                           className="w-full"
                           data-testid="button-create-pledge"
                         >
-                          {pledgeMutation.isPending ? "Creating Pledge..." : "Activate Monthly Pledge"}
+                          {pledgeMutation.isPending ? "Creando Compromiso..." : "Activar Compromiso Mensual"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -296,29 +296,29 @@ export default function Support() {
         <TabsContent value="ra" className="space-y-4">
           <Card data-testid="card-ra-info">
             <CardHeader>
-              <CardTitle>Repay-Assist</CardTitle>
+              <CardTitle>Ayuda de Pago</CardTitle>
               <CardDescription>
-                Cover late installments for borrowers. They'll repay you with 6% premium when they resume payments.
+                Cubrí cuotas atrasadas de prestatarios. Te reembolsarán con 6% de premio cuando reanuden los pagos.
               </CardDescription>
             </CardHeader>
             <CardContent>
               {installmentsLoading ? (
-                <p className="text-muted-foreground">Loading late installments...</p>
+                <p className="text-muted-foreground">Cargando cuotas atrasadas...</p>
               ) : !lateInstallments || lateInstallments.length === 0 ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  <p>All installments are on time. No Repay-Assist opportunities available.</p>
+                  <p>Todas las cuotas están al día. No hay oportunidades de Ayuda de Pago disponibles.</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Borrower</TableHead>
-                      <TableHead>Due Date</TableHead>
-                      <TableHead>Days Late</TableHead>
-                      <TableHead>Outstanding</TableHead>
-                      <TableHead>Your Return (6%)</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead>Prestatario</TableHead>
+                      <TableHead>Fecha de Vencimiento</TableHead>
+                      <TableHead>Días de Atraso</TableHead>
+                      <TableHead>Pendiente</TableHead>
+                      <TableHead>Tu Retorno (6%)</TableHead>
+                      <TableHead>Acción</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -334,13 +334,13 @@ export default function Support() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="destructive">{installment.daysLate} days</Badge>
+                          <Badge variant="destructive">{installment.daysLate} días</Badge>
                         </TableCell>
                         <TableCell className="font-semibold">
-                          ${installment.outstandingAmount.toFixed(2)}
+                          ${(installment.outstandingAmount / 1000).toFixed(1)}k ARS
                         </TableCell>
                         <TableCell className="text-green-600 font-semibold">
-                          ${(installment.outstandingAmount * 1.06).toFixed(2)}
+                          ${((installment.outstandingAmount * 1.06) / 1000).toFixed(1)}k ARS
                         </TableCell>
                         <TableCell>
                           <Button
@@ -354,7 +354,7 @@ export default function Support() {
                             disabled={assistMutation.isPending}
                             data-testid={`button-assist-${installment.installmentId}`}
                           >
-                            {assistMutation.isPending ? "Covering..." : "Cover Now"}
+                            {assistMutation.isPending ? "Cubriendo..." : "Cubrir Ahora"}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -372,35 +372,35 @@ export default function Support() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Active Interest Pledges
+                  Compromisos de Interés Activos
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {portfolioLoading ? (
-                  <p className="text-muted-foreground">Loading portfolio...</p>
+                  <p className="text-muted-foreground">Cargando portafolio...</p>
                 ) : !portfolio?.pledges || portfolio.pledges.length === 0 ? (
-                  <p className="text-muted-foreground">No active Interest Buy-Down pledges.</p>
+                  <p className="text-muted-foreground">No hay compromisos de Reducción de Interés activos.</p>
                 ) : (
                   <div className="space-y-3">
                     {portfolio.pledges.map((pledge) => (
                       <Card key={pledge.id} data-testid={`pledge-${pledge.id}`}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Loan #{pledge.loanId}</span>
-                            <Badge variant="secondary">{pledge.status}</Badge>
+                            <span className="text-sm text-muted-foreground">Préstamo #{pledge.loanId}</span>
+                            <Badge variant="secondary">{pledge.status === "ACTIVE" ? "ACTIVO" : pledge.status}</Badge>
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Monthly:</span>
-                              <span className="font-semibold">${pledge.monthlyUsdc.toFixed(2)}</span>
+                              <span className="text-sm">Mensual:</span>
+                              <span className="font-semibold">${(pledge.monthlyUsdc / 1000).toFixed(1)}k ARS</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Remaining:</span>
-                              <span className="font-semibold">{pledge.remainingMonths} months</span>
+                              <span className="text-sm">Restante:</span>
+                              <span className="font-semibold">{pledge.remainingMonths} meses</span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Applied: ${pledge.totalApplied.toFixed(2)}</span>
-                              <span>Total: ${pledge.totalPledged.toFixed(2)}</span>
+                              <span>Aplicado: ${(pledge.totalApplied / 1000).toFixed(1)}k</span>
+                              <span>Total: ${(pledge.totalPledged / 1000).toFixed(1)}k</span>
                             </div>
                           </div>
                         </CardContent>
@@ -415,14 +415,14 @@ export default function Support() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <HandHeart className="h-5 w-5" />
-                  Active Repay-Assists
+                  Ayudas de Pago Activas
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {portfolioLoading ? (
-                  <p className="text-muted-foreground">Loading portfolio...</p>
+                  <p className="text-muted-foreground">Cargando portafolio...</p>
                 ) : !portfolio?.assists || portfolio.assists.length === 0 ? (
-                  <p className="text-muted-foreground">No active Repay-Assist claims.</p>
+                  <p className="text-muted-foreground">No hay reclamos de Ayuda de Pago activos.</p>
                 ) : (
                   <div className="space-y-3">
                     {portfolio.assists.map((assist) => (
@@ -430,27 +430,27 @@ export default function Support() {
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm text-muted-foreground">
-                              Loan #{assist.loanId} / Installment #{assist.installmentIdx}
+                              Préstamo #{assist.loanId} / Cuota #{assist.installmentIdx}
                             </span>
                             <Badge variant={assist.status === "OPEN" ? "default" : "secondary"}>
-                              {assist.status}
+                              {assist.status === "OPEN" ? "ABIERTO" : assist.status === "REPAID" ? "REEMBOLSADO" : assist.status}
                             </Badge>
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Covered:</span>
-                              <span className="font-semibold">${assist.amountUsdc.toFixed(2)}</span>
+                              <span className="text-sm">Cubierto:</span>
+                              <span className="font-semibold">${(assist.amountUsdc / 1000).toFixed(1)}k ARS</span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm">Total Claim (6%):</span>
+                              <span className="text-sm">Reclamo Total (6%):</span>
                               <span className="font-semibold text-green-600">
-                                ${assist.totalClaim.toFixed(2)}
+                                ${(assist.totalClaim / 1000).toFixed(1)}k ARS
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>Repaid: ${assist.amountRepaid.toFixed(2)}</span>
+                              <span>Reembolsado: ${(assist.amountRepaid / 1000).toFixed(1)}k</span>
                               <span>
-                                Remaining: ${(assist.totalClaim - assist.amountRepaid).toFixed(2)}
+                                Restante: ${((assist.totalClaim - assist.amountRepaid) / 1000).toFixed(1)}k
                               </span>
                             </div>
                           </div>
@@ -468,31 +468,27 @@ export default function Support() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Portfolio Summary
+                  Resumen del Portafolio
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div>
-                    <p className="text-sm text-muted-foreground">Total IBD Applied</p>
+                    <p className="text-sm text-muted-foreground">Total RI Aplicado</p>
                     <p className="text-2xl font-bold">
-                      $
-                      {portfolio.pledges
-                        .reduce((sum, p) => sum + p.totalApplied, 0)
-                        .toFixed(2)}
+                      ${(portfolio.pledges
+                        .reduce((sum, p) => sum + p.totalApplied, 0) / 1000).toFixed(1)}k ARS
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">RA Outstanding Claims</p>
+                    <p className="text-sm text-muted-foreground">Reclamos AP Pendientes</p>
                     <p className="text-2xl font-bold text-green-600">
-                      $
-                      {portfolio.assists
-                        .reduce((sum, a) => sum + (a.totalClaim - a.amountRepaid), 0)
-                        .toFixed(2)}
+                      ${(portfolio.assists
+                        .reduce((sum, a) => sum + (a.totalClaim - a.amountRepaid), 0) / 1000).toFixed(1)}k ARS
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total RA ROI</p>
+                    <p className="text-sm text-muted-foreground">ROI Total AP</p>
                     <p className="text-2xl font-bold">
                       {portfolio.assists.length > 0
                         ? (
