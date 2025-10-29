@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, bigint, integer, timestamp, bigserial, smallint, boolean, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, bigint, integer, timestamp, bigserial, smallint, boolean, doublePrecision, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,14 +17,38 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Communities table - each community is an isolated trust graph
+export const communities = pgTable("communities", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  promptText: text("prompt_text").notNull(),
+  promptHash: text("prompt_hash").notNull(),
+  policyId: text("policy_id").notNull(),
+  policyJson: jsonb("policy_json").notNull(), // JSONB for proper policy storage
+  visibility: text("visibility").notNull().default("public"), // 'public' | 'invite'
+  creator: text("creator").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunitySchema = createInsertSchema(communities).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
+export type Community = typeof communities.$inferSelect;
+
 export const publicEndorsements = pgTable("public_endorsements", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().default(0), // 0 = global graph
   endorser: text("endorser").notNull(),
   endorsee: text("endorsee").notNull(),
   epoch: bigint("epoch", { mode: "number" }).notNull(),
   nonce: bigint("nonce", { mode: "number" }).notNull(),
   sig: text("sig").notNull(),
   leafHash: text("leaf_hash").notNull(),
+  promptHash: text("prompt_hash"), // keccak256(prompt_text) for verification
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -68,7 +92,8 @@ export type InsertTreeHead = z.infer<typeof insertTreeHeadSchema>;
 export type TreeHead = typeof treeHeads.$inferSelect;
 
 export const epochs = pgTable("epochs", {
-  id: bigint("id", { mode: "number" }).primaryKey(),
+  id: bigint("id", { mode: "number" }).notNull(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().default(0), // 0 = global graph
   status: text("status").notNull().default("active"), // 'active' or 'closed'
   graphRoot: text("graph_root"),
   seedRoot: text("seed_root"),
@@ -77,7 +102,9 @@ export const epochs = pgTable("epochs", {
   signature: text("signature"),
   closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  pk: { primaryKey: [table.communityId, table.id] },
+}));
 
 export const insertEpochSchema = createInsertSchema(epochs).omit({
   createdAt: true,
@@ -87,7 +114,8 @@ export type InsertEpoch = z.infer<typeof insertEpochSchema>;
 export type Epoch = typeof epochs.$inferSelect;
 
 export const epochHealth = pgTable("epoch_health", {
-  epochId: bigint("epoch_id", { mode: "number" }).primaryKey(),
+  epochId: bigint("epoch_id", { mode: "number" }).notNull(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().default(0),
   ghi: integer("ghi").notNull(),
   sizeN: integer("size_n").notNull(),
   cutN: integer("cut_n").notNull(),
@@ -98,7 +126,9 @@ export const epochHealth = pgTable("epoch_health", {
   maxSeedShare: doublePrecision("max_seed_share"),
   maxSeedAddress: text("max_seed_address"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  pk: { primaryKey: [table.communityId, table.epochId] },
+}));
 
 export const insertEpochHealthSchema = createInsertSchema(epochHealth).omit({
   createdAt: true,
@@ -108,11 +138,14 @@ export type InsertEpochHealth = z.infer<typeof insertEpochHealthSchema>;
 export type EpochHealth = typeof epochHealth.$inferSelect;
 
 export const seeds = pgTable("seeds", {
-  address: text("address").primaryKey(),
+  address: text("address").notNull(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().default(0),
   addedBy: text("added_by"),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  pk: { primaryKey: [table.communityId, table.address] },
+}));
 
 export const insertSeedSchema = createInsertSchema(seeds).omit({
   createdAt: true,
@@ -123,6 +156,7 @@ export type Seed = typeof seeds.$inferSelect;
 
 export const scores = pgTable("scores", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().default(0),
   address: text("address").notNull(),
   epochId: bigint("epoch_id", { mode: "number" }).notNull(),
   sts: doublePrecision("sts").notNull(),

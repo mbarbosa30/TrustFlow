@@ -1663,6 +1663,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // COMMUNITY ROUTES
+  // ============================================================================
+
+  // Create a new community
+  app.post("/api/communities", async (req, res) => {
+    try {
+      const { name, description, promptText, templateId, visibility, creator } = req.body;
+
+      if (!name || !promptText || !creator) {
+        return res.status(400).json({ error: "name, promptText, and creator are required" });
+      }
+
+      // Import templates and crypto
+      const { getTemplate, CUSTOM_TEMPLATE } = await import("@shared/community-types");
+      const { createPromptHash } = await import("./crypto/keccak");
+
+      // Get template policy or use custom
+      let policy;
+      if (templateId && templateId !== "custom-v1") {
+        const template = getTemplate(templateId);
+        if (!template) {
+          return res.status(400).json({ error: `Invalid templateId: ${templateId}` });
+        }
+        policy = template.policy;
+      } else {
+        policy = CUSTOM_TEMPLATE.policy;
+      }
+
+      // Create prompt hash using keccak256
+      const promptHash = createPromptHash(promptText);
+
+      // Update policy with actual promptHash
+      const policyWithHash = {
+        ...policy,
+        promptHash,
+        visibility: visibility || "public",
+      };
+
+      // Create community (policyJson will be stored as JSONB)
+      const community = await storage.createCommunity({
+        name,
+        description: description || null,
+        promptText,
+        promptHash,
+        policyId: policy.policyId,
+        policyJson: policyWithHash as any, // Will be stored as JSONB
+        visibility: visibility || "public",
+        creator: creator.toLowerCase(),
+      });
+
+      // Automatically add creator as first seed
+      await storage.createSeed({
+        address: creator.toLowerCase(),
+        communityId: community.id,
+        addedBy: creator.toLowerCase(),
+        note: "Community creator (auto-added)",
+      });
+
+      res.status(201).json({
+        community,
+        message: "Community created successfully. You have been added as the first seed.",
+      });
+    } catch (error) {
+      console.error("Error creating community:", error);
+      res.status(500).json({ error: "Failed to create community" });
+    }
+  });
+
+  // List all communities
+  app.get("/api/communities", async (req, res) => {
+    try {
+      const { visibility, creator } = req.query;
+
+      const filters: {
+        visibility?: "public" | "invite";
+        creator?: string;
+      } = {};
+
+      if (visibility && (visibility === "public" || visibility === "invite")) {
+        filters.visibility = visibility;
+      }
+      if (creator && typeof creator === "string") {
+        filters.creator = creator.toLowerCase();
+      }
+
+      const communities = await storage.listCommunities(filters);
+
+      res.json({ communities });
+    } catch (error) {
+      console.error("Error listing communities:", error);
+      res.status(500).json({ error: "Failed to list communities" });
+    }
+  });
+
+  // Get a specific community
+  app.get("/api/communities/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const community = await storage.getCommunity(id);
+
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      // policyJson is already deserialized by Drizzle (JSONB type)
+      const policy = community.policyJson;
+
+      // Get seeds for this community
+      const seeds = await storage.getSeeds(id);
+
+      // Get latest epoch for this community
+      const latestEpoch = await storage.getCurrentEpoch(id);
+
+      res.json({
+        community: {
+          ...community,
+          policy,
+        },
+        seeds,
+        latestEpoch,
+      });
+    } catch (error) {
+      console.error("Error getting community:", error);
+      res.status(500).json({ error: "Failed to get community" });
+    }
+  });
+
+  // Get templates
+  app.get("/api/communities/templates", async (req, res) => {
+    try {
+      const { COMMUNITY_TEMPLATES } = await import("@shared/community-types");
+      res.json({ templates: COMMUNITY_TEMPLATES });
+    } catch (error) {
+      console.error("Error getting templates:", error);
+      res.status(500).json({ error: "Failed to get templates" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

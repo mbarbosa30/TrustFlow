@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -8,38 +8,44 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
+  // Community operations
+  createCommunity(community: InsertCommunity): Promise<Community>;
+  getCommunity(id: number): Promise<Community | undefined>;
+  listCommunities(filters?: { visibility?: 'public' | 'invite'; creator?: string }): Promise<Community[]>;
+  
   createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement>;
   getEndorsements(filters?: {
     endorser?: string;
     endorsee?: string;
     epoch?: number;
+    communityId?: number;
     limit?: number;
     offset?: number;
   }): Promise<PublicEndorsement[]>;
-  getMaxNonce(endorser: string, epoch: number): Promise<number>;
+  getMaxNonce(endorser: string, epoch: number, communityId?: number): Promise<number>;
   
   createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth>;
-  getEpochHealth(epochId: number): Promise<EpochHealth | undefined>;
-  getLatestEpochHealth(): Promise<EpochHealth | undefined>;
+  getEpochHealth(epochId: number, communityId?: number): Promise<EpochHealth | undefined>;
+  getLatestEpochHealth(communityId?: number): Promise<EpochHealth | undefined>;
   
   createSeed(seed: InsertSeed): Promise<Seed>;
-  getSeeds(): Promise<Seed[]>;
-  deleteSeed(address: string): Promise<void>;
-  isSeed(address: string): Promise<boolean>;
+  getSeeds(communityId?: number): Promise<Seed[]>;
+  deleteSeed(address: string, communityId?: number): Promise<void>;
+  isSeed(address: string, communityId?: number): Promise<boolean>;
   
   createScore(score: InsertScore): Promise<Score>;
-  getScore(address: string, epochId: number): Promise<Score | undefined>;
-  getLatestScore(address: string): Promise<Score | undefined>;
-  getScoresByEpoch(epochId: number): Promise<Score[]>;
-  getAllScores(): Promise<Score[]>;
-  deleteScoresByEpoch(epochId: number): Promise<void>;
+  getScore(address: string, epochId: number, communityId?: number): Promise<Score | undefined>;
+  getLatestScore(address: string, communityId?: number): Promise<Score | undefined>;
+  getScoresByEpoch(epochId: number, communityId?: number): Promise<Score[]>;
+  getAllScores(communityId?: number): Promise<Score[]>;
+  deleteScoresByEpoch(epochId: number, communityId?: number): Promise<void>;
   
-  getCurrentEpoch(): Promise<Epoch | undefined>;
-  getEpoch(epochId: number): Promise<Epoch | undefined>;
+  getCurrentEpoch(communityId?: number): Promise<Epoch | undefined>;
+  getEpoch(epochId: number, communityId?: number): Promise<Epoch | undefined>;
   createEpoch(epoch: InsertEpoch): Promise<Epoch>;
-  closeEpoch(epochId: number): Promise<void>;
-  advanceEpoch(): Promise<Epoch>;
-  deleteEpochData(epochId: number): Promise<void>;
+  closeEpoch(epochId: number, communityId?: number): Promise<void>;
+  advanceEpoch(communityId?: number): Promise<Epoch>;
+  deleteEpochData(epochId: number, communityId?: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -86,6 +92,7 @@ export class MemStorage implements IStorage {
     endorser?: string;
     endorsee?: string;
     epoch?: number;
+    communityId?: number;
     limit?: number;
     offset?: number;
   }): Promise<PublicEndorsement[]> {
@@ -101,6 +108,9 @@ export class MemStorage implements IStorage {
     if (filters?.epoch !== undefined) {
       conditions.push(eq(publicEndorsements.epoch, filters.epoch));
     }
+    if (filters?.communityId !== undefined) {
+      conditions.push(eq(publicEndorsements.communityId, filters.communityId));
+    }
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as any;
@@ -113,7 +123,7 @@ export class MemStorage implements IStorage {
     return results;
   }
 
-  async getMaxNonce(endorser: string, epoch: number): Promise<number> {
+  async getMaxNonce(endorser: string, epoch: number, communityId: number = 0): Promise<number> {
     const normalizedEndorser = endorser.toLowerCase();
     const lastEndorsement = await db
       .select({ nonce: publicEndorsements.nonce })
@@ -121,7 +131,8 @@ export class MemStorage implements IStorage {
       .where(
         and(
           eq(publicEndorsements.endorser, normalizedEndorser),
-          eq(publicEndorsements.epoch, epoch)
+          eq(publicEndorsements.epoch, epoch),
+          eq(publicEndorsements.communityId, communityId)
         )
       )
       .orderBy(desc(publicEndorsements.nonce))
@@ -143,20 +154,21 @@ export class MemStorage implements IStorage {
     return dbHealth;
   }
 
-  async getEpochHealth(epochId: number): Promise<EpochHealth | undefined> {
+  async getEpochHealth(epochId: number, communityId: number = 0): Promise<EpochHealth | undefined> {
     const results = await db
       .select()
       .from(epochHealth)
-      .where(eq(epochHealth.epochId, epochId))
+      .where(and(eq(epochHealth.epochId, epochId), eq(epochHealth.communityId, communityId)))
       .limit(1);
     
     return results[0];
   }
 
-  async getLatestEpochHealth(): Promise<EpochHealth | undefined> {
+  async getLatestEpochHealth(communityId: number = 0): Promise<EpochHealth | undefined> {
     const results = await db
       .select()
       .from(epochHealth)
+      .where(eq(epochHealth.communityId, communityId))
       .orderBy(desc(epochHealth.epochId))
       .limit(1);
     
@@ -168,7 +180,7 @@ export class MemStorage implements IStorage {
     const normalizedSeed = {
       ...seed,
       address: seed.address.toLowerCase(),
-      addedBy: seed.addedBy.toLowerCase(),
+      addedBy: seed.addedBy ? seed.addedBy.toLowerCase() : null,
     };
     
     const [dbSeed] = await db
@@ -179,21 +191,24 @@ export class MemStorage implements IStorage {
     return dbSeed;
   }
 
-  async getSeeds(): Promise<Seed[]> {
-    return await db.select().from(seeds);
+  async getSeeds(communityId: number = 0): Promise<Seed[]> {
+    return await db
+      .select()
+      .from(seeds)
+      .where(eq(seeds.communityId, communityId));
   }
 
-  async deleteSeed(address: string): Promise<void> {
+  async deleteSeed(address: string, communityId: number = 0): Promise<void> {
     const normalizedAddress = address.toLowerCase();
-    await db.delete(seeds).where(eq(seeds.address, normalizedAddress));
+    await db.delete(seeds).where(and(eq(seeds.address, normalizedAddress), eq(seeds.communityId, communityId)));
   }
 
-  async isSeed(address: string): Promise<boolean> {
+  async isSeed(address: string, communityId: number = 0): Promise<boolean> {
     const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(seeds)
-      .where(eq(seeds.address, normalizedAddress))
+      .where(and(eq(seeds.address, normalizedAddress), eq(seeds.communityId, communityId)))
       .limit(1);
     
     return results.length > 0;
@@ -214,72 +229,73 @@ export class MemStorage implements IStorage {
     return dbScore;
   }
 
-  async getScore(address: string, epochId: number): Promise<Score | undefined> {
+  async getScore(address: string, epochId: number, communityId: number = 0): Promise<Score | undefined> {
     const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(scores)
-      .where(and(eq(scores.address, normalizedAddress), eq(scores.epochId, epochId)))
+      .where(and(eq(scores.address, normalizedAddress), eq(scores.epochId, epochId), eq(scores.communityId, communityId)))
       .limit(1);
     
     return results[0];
   }
 
-  async getLatestScore(address: string): Promise<Score | undefined> {
+  async getLatestScore(address: string, communityId: number = 0): Promise<Score | undefined> {
     const normalizedAddress = address.toLowerCase();
     const results = await db
       .select()
       .from(scores)
-      .where(eq(scores.address, normalizedAddress))
+      .where(and(eq(scores.address, normalizedAddress), eq(scores.communityId, communityId)))
       .orderBy(desc(scores.epochId))
       .limit(1);
     
     return results[0];
   }
 
-  async getScoresByEpoch(epochId: number): Promise<Score[]> {
+  async getScoresByEpoch(epochId: number, communityId: number = 0): Promise<Score[]> {
     return await db
       .select()
       .from(scores)
-      .where(eq(scores.epochId, epochId));
+      .where(and(eq(scores.epochId, epochId), eq(scores.communityId, communityId)));
   }
 
-  async getAllScores(): Promise<Score[]> {
+  async getAllScores(communityId: number = 0): Promise<Score[]> {
     return await db
       .select()
       .from(scores)
+      .where(eq(scores.communityId, communityId))
       .orderBy(desc(scores.epochId));
   }
 
-  async deleteScoresByEpoch(epochId: number): Promise<void> {
-    await db.delete(scores).where(eq(scores.epochId, epochId));
+  async deleteScoresByEpoch(epochId: number, communityId: number = 0): Promise<void> {
+    await db.delete(scores).where(and(eq(scores.epochId, epochId), eq(scores.communityId, communityId)));
   }
 
-  async deleteEpochHealth(epochId: number): Promise<void> {
-    await db.delete(epochHealth).where(eq(epochHealth.epochId, epochId));
+  async deleteEpochHealth(epochId: number, communityId: number = 0): Promise<void> {
+    await db.delete(epochHealth).where(and(eq(epochHealth.epochId, epochId), eq(epochHealth.communityId, communityId)));
   }
 
-  async deleteEpochData(epochId: number): Promise<void> {
-    await this.deleteScoresByEpoch(epochId);
-    await this.deleteEpochHealth(epochId);
+  async deleteEpochData(epochId: number, communityId: number = 0): Promise<void> {
+    await this.deleteScoresByEpoch(epochId, communityId);
+    await this.deleteEpochHealth(epochId, communityId);
   }
 
-  async getCurrentEpoch(): Promise<Epoch | undefined> {
+  async getCurrentEpoch(communityId: number = 0): Promise<Epoch | undefined> {
     const results = await db
       .select()
       .from(epochs)
-      .where(eq(epochs.status, "active"))
+      .where(and(eq(epochs.status, "active"), eq(epochs.communityId, communityId)))
       .orderBy(desc(epochs.id))
       .limit(1);
     
     return results[0];
   }
 
-  async getEpoch(epochId: number): Promise<Epoch | undefined> {
+  async getEpoch(epochId: number, communityId: number = 0): Promise<Epoch | undefined> {
     const results = await db
       .select()
       .from(epochs)
-      .where(eq(epochs.id, epochId))
+      .where(and(eq(epochs.id, epochId), eq(epochs.communityId, communityId)))
       .limit(1);
     
     return results[0];
@@ -294,30 +310,31 @@ export class MemStorage implements IStorage {
     return dbEpoch;
   }
 
-  async closeEpoch(epochId: number): Promise<void> {
+  async closeEpoch(epochId: number, communityId: number = 0): Promise<void> {
     await db
       .update(epochs)
       .set({ 
         status: "closed",
         closedAt: new Date()
       })
-      .where(eq(epochs.id, epochId));
+      .where(and(eq(epochs.id, epochId), eq(epochs.communityId, communityId)));
   }
 
-  async advanceEpoch(): Promise<Epoch> {
+  async advanceEpoch(communityId: number = 0): Promise<Epoch> {
     // Get current epoch
-    const currentEpoch = await this.getCurrentEpoch();
+    const currentEpoch = await this.getCurrentEpoch(communityId);
     
     if (currentEpoch) {
       // Close the current epoch
-      await this.closeEpoch(Number(currentEpoch.id));
+      await this.closeEpoch(Number(currentEpoch.id), communityId);
     }
     
     // Create next epoch (epoch 0 if none exists, or current + 1)
     const nextEpochId = currentEpoch ? Number(currentEpoch.id) + 1 : 0;
     
     return await this.createEpoch({
-      id: BigInt(nextEpochId),
+      id: nextEpochId,
+      communityId: communityId,
       status: "active",
       graphRoot: null,
       seedRoot: null,
@@ -326,6 +343,50 @@ export class MemStorage implements IStorage {
       signature: null,
       closedAt: null,
     });
+  }
+
+  // Community operations
+  async createCommunity(community: InsertCommunity): Promise<Community> {
+    // Normalize creator address to lowercase for consistent storage
+    const normalizedCommunity = {
+      ...community,
+      creator: community.creator.toLowerCase(),
+    };
+    
+    const [dbCommunity] = await db
+      .insert(communities)
+      .values(normalizedCommunity)
+      .returning();
+    
+    return dbCommunity;
+  }
+
+  async getCommunity(id: number): Promise<Community | undefined> {
+    const results = await db
+      .select()
+      .from(communities)
+      .where(eq(communities.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async listCommunities(filters?: { visibility?: 'public' | 'invite'; creator?: string }): Promise<Community[]> {
+    let query = db.select().from(communities);
+    
+    const conditions = [];
+    if (filters?.visibility) {
+      conditions.push(eq(communities.visibility, filters.visibility));
+    }
+    if (filters?.creator) {
+      conditions.push(eq(communities.creator, filters.creator.toLowerCase()));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query;
   }
 }
 
