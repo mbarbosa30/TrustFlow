@@ -272,6 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           minCut: userScore.minCut,
           stability: userScore.stability,
           depth: userScore.depth,
+          pageRank: userScore.pageRank || 0,
         },
         confidence: {
           percent: confidence.percent,
