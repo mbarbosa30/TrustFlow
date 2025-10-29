@@ -1,0 +1,115 @@
+Here’s a crisp, seed-operator **Community Dashboard** you can ship now. It surfaces *network health*, *credit performance*, and *governance actions* without exposing private graphs.
+
+# At-a-glance (header KPIs)
+
+* **Accepted users** (today / Δ7d / Δ30d)
+* **Trust health index** (composite of min-cut, path diversity, seed coverage; 0–100)
+* **On-time repayment rate** (rolling 90d) · **PAR30** · **Default rate**
+* **Subsidy runway** (days at current sponsor/ yield pace) · **Guarantee cap remaining**
+
+Tooltips link to “How calculated”.
+
+# Network health (trust)
+
+* **Min-cut distribution** (histogram across accepted users)
+* **Vertex-disjoint coverage** (share with ≥2 disjoint seed→user paths)
+* **Seed coverage share** (per seed, stacked bar; warns if any seed >40%)
+* **Path diversity index** over time (line)
+* **Reciprocity heatmap** (vouch A↔B within 24–48h; flags ring behavior)
+* **Hub & articulation risk** (top 10 nodes whose removal drops acceptance; drill-down shows *witness*, not raw social edges)
+
+Alerts:
+
+* “Seed S2 >45% coverage two epochs”
+* “Reciprocity rings detected (k=5, depth≤2)”
+
+# Seed performance (your seed(s))
+
+* **Outgoing endorsements** (count, Δ) · **Conversion** (endorsed → accepted %)
+* **False-positive risk** (endorsed who later defaulted / were slashed)
+* **Capacity saturation** (if using Advogato-style node capacity)
+* **Impact**: new accepted attributed to your seed’s independent paths
+
+Actions:
+
+* Review **pending/flagged** endorsements
+* Revoke/annotate (requires reason; logged)
+* Invite new endorsers (pre-seeded copy & link)
+
+# Credit performance (community)
+
+* **Active loans** · **Avg ticket** · **Tenor mix (6/9/12m)**
+* **Repayment funnel** (on-time / grace / late / default)
+* **Cohorts** (by month: on-time %, PAR30, default %, recovery %)
+* **Subsidy impact**
+
+  * Interest buy-down applied (ARS / borrowers)
+  * Repay-Assist: covered cuotas, premiums repaid, open claims
+  * **Effective APR** distribution (after subsidies)
+* **Guarantee usage** (calls YTD; remaining cap)
+
+Drill-downs show *aggregates*; per-loan views hide PII but link to receipts/attestations.
+
+# Funding & runway
+
+* **Supporters** (count, active pledges)
+* **USD yield → ARS budget** (daily line; FX noted)
+* **Daily allocation vs take-up** (budget used %)
+* **Projected runway** at current issuance & default rates
+
+# Governance & policy
+
+* **Current policy id** (eligibility gates, APR, tenors, late/default rules)
+* **Change log** (who, what, when; timelock countdown)
+* **Seed set** (list, join date, last activity)
+* **Proposals**: add/remove seed, adjust caps, pause payouts (with quorum & vote)
+
+# Safety & integrity
+
+* **Circuit breaker state** (community payouts / credit pause)
+* **Anomaly feed** (spikes in endorsements, same-IP clusters if available, sudden acceptance surges)
+* **Reproducibility** (% of epochs re-computed byte-exact by external verifiers)
+* **Transparency hashes** (params.json, scores.jsonl, credit_offers.jsonl, receipts) with copy buttons
+
+# Notifications (configurable)
+
+* Coverage skew >40%
+* PAR30 > X% or Default > Y%
+* Guarantee cap < threshold days
+* Recurring reciprocity ring flagged
+* External recompute fails
+
+# Seed-facing actions (primary CTAs)
+
+* **Approve/flag endorsements** (batched)
+* **Post seed note** (context/guidance shown on vouch modal)
+* **Start proposal** (policy/seed change)
+* **Export** CSV/JSON of aggregates (min-cut bins, PAR30, subsidy usage)
+
+# Privacy defaults
+
+* No raw edge lists; show *proof objects* (min-cut witness, path count, seed share) and **receipts** only.
+* Per-user drill-down requires explicit consent or admin role and still hides counterparties (except consenting parties).
+
+---
+
+## Minimal API to power it
+
+* `GET /v1/dashboard/overview?community=:cid`
+* `GET /v1/dashboard/trust-health?cid=:cid`
+* `GET /v1/dashboard/seed-performance?cid=:cid&seed=:addr`
+* `GET /v1/dashboard/credit-metrics?cid=:cid&period=90d`
+* `GET /v1/dashboard/funding-runway?cid=:cid`
+* `GET /v1/governance/policy?cid=:cid` + `GET /v1/governance/changes?cid=:cid`
+* `GET /v1/transparency/hashes?cid=:cid&snapshot=:id`
+
+---
+
+## UI microcopy (pasteable)
+
+* **Trust health index:** “Composite of redundancy (min-cut), independent paths, and seed balance. 70+ is healthy.”
+* **Seed coverage share:** “Share of accepted users whose flow depends ≥30% on this seed.”
+* **PAR30:** “Portfolio At Risk >30 days: principal outstanding with ≥30 days delay.”
+* **Guarantee cap:** “First-loss coverage remaining; calls reduce this.”
+
+This gives seeds a **command center**: they can see whether trust is *diverse and resilient*, whether credit is *healthy and subsidized*, and take **governance actions**—all without exposing anyone’s private graph.

@@ -186,95 +186,10 @@ export const insertScoreSchema = createInsertSchema(scores).omit({
 export type InsertScore = z.infer<typeof insertScoreSchema>;
 export type Score = typeof scores.$inferSelect;
 
-// Economic Layer Tables
+// REMOVED: Economic Layer Tables (budget, allowance, payment, pledge)
+// Replaced by Assist system - see below
 
-// Budget - Daily budget computed per community
-export const budget = pgTable("budget", {
-  communityId: bigint("community_id", { mode: "number" }).notNull(),
-  epochId: bigint("epoch_id", { mode: "number" }).notNull(),
-  rho: doublePrecision("rho").notNull(), // run-rate (e.g., 0.005 for 0.5%)
-  treasuryRemaining: doublePrecision("treasury_remaining").notNull(), // USDC balance
-  dailyBudget: doublePrecision("daily_budget").notNull(), // rho × treasuryRemaining
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  pk: { primaryKey: [table.communityId, table.epochId] },
-}));
-
-export const insertBudgetSchema = createInsertSchema(budget).omit({
-  createdAt: true,
-});
-
-export type InsertBudget = z.infer<typeof insertBudgetSchema>;
-export type Budget = typeof budget.$inferSelect;
-
-// Allowance - Per-user daily share
-export const allowance = pgTable("allowance", {
-  communityId: bigint("community_id", { mode: "number" }).notNull(),
-  epochId: bigint("epoch_id", { mode: "number" }).notNull(),
-  userAddress: text("user_address").notNull(),
-  share: doublePrecision("share").notNull(), // pre-cap share
-  cap: doublePrecision("cap").notNull(), // per-user daily cap
-  allowanceAmount: doublePrecision("allowance_amount").notNull(), // min(share, cap)
-  claimedToday: doublePrecision("claimed_today").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  pk: { primaryKey: [table.communityId, table.epochId, table.userAddress] },
-}));
-
-export const insertAllowanceSchema = createInsertSchema(allowance).omit({
-  createdAt: true,
-});
-
-export type InsertAllowance = z.infer<typeof insertAllowanceSchema>;
-export type Allowance = typeof allowance.$inferSelect;
-
-// Pledge - Donor JIT funding commitments
-export const pledge = pgTable("pledge", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  communityId: bigint("community_id", { mode: "number" }).notNull(),
-  donorAddress: text("donor_address").notNull(),
-  dailyCap: doublePrecision("daily_cap").notNull(), // USDC per day
-  perTxCap: doublePrecision("per_tx_cap").notNull(), // USDC per transaction
-  totalCap: doublePrecision("total_cap"), // optional total limit
-  allowlist: jsonb("allowlist"), // optional: allowed merchant addresses
-  validUntil: timestamp("valid_until"), // optional expiry
-  paused: boolean("paused").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertPledgeSchema = createInsertSchema(pledge).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertPledge = z.infer<typeof insertPledgeSchema>;
-export type Pledge = typeof pledge.$inferSelect;
-
-// Payment - Payment/claim ledger
-export const payment = pgTable("payment", {
-  id: bigserial("id", { mode: "number" }).primaryKey(),
-  communityId: bigint("community_id", { mode: "number" }).notNull(),
-  epochId: bigint("epoch_id", { mode: "number" }).notNull(),
-  userAddress: text("user_address").notNull(),
-  payeeAddress: text("payee_address").notNull(), // user (claim) or merchant (pay)
-  amount: doublePrecision("amount").notNull(),
-  source: text("source").notNull(), // 'TREASURY' | 'PLEDGE'
-  pledgeId: bigint("pledge_id", { mode: "number" }), // if source=PLEDGE
-  status: text("status").notNull(), // 'APPROVED' | 'SENT' | 'CONFIRMED' | 'FAILED'
-  txHash: text("tx_hash"),
-  memo: text("memo"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertPaymentSchema = createInsertSchema(payment).omit({
-  id: true,
-  createdAt: true,
-});
-
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-export type Payment = typeof payment.$inferSelect;
-
-// Auth3009 - EIP-3009 authorization tracking
+// Auth3009 - EIP-3009 authorization tracking (kept for USDC assists)
 export const auth3009 = pgTable("auth_3009", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   communityId: bigint("community_id", { mode: "number" }).notNull(),
@@ -374,19 +289,19 @@ export const insertSubsidyLedgerSchema = createInsertSchema(subsidyLedger).omit(
 export type InsertSubsidyLedger = z.infer<typeof insertSubsidyLedgerSchema>;
 export type SubsidyLedger = typeof subsidyLedger.$inferSelect;
 
-// Assist - Repay-Assist coverage from supporters
+// ===== ASSIST SYSTEM =====
+
+// Assist - Supporter USDC assists applied to loans
 export const assist = pgTable("assist", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
   loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
-  installmentIdx: integer("installment_idx").notNull(),
   supporterAddress: text("supporter_address").notNull(),
-  amountUsdc: doublePrecision("amount_usdc").notNull(),
-  premiumRate: doublePrecision("premium_rate").notNull(), // e.g., 0.06 for 6%
-  totalClaim: doublePrecision("total_claim").notNull(), // amount × (1 + premium)
-  amountRepaid: doublePrecision("amount_repaid").notNull().default(0),
-  status: text("status").notNull(), // 'OPEN' | 'REPAID' | 'LOST'
+  usdcAmount: doublePrecision("usdc_amount").notNull(),
+  fxRate: doublePrecision("fx_rate").notNull(), // USD to ARS rate locked
+  arsCredit: doublePrecision("ars_credit").notNull(), // ARS credited to loan
+  aaveTxHash: text("aave_tx_hash"), // Aave supply transaction
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  repaidAt: timestamp("repaid_at"),
 });
 
 export const insertAssistSchema = createInsertSchema(assist).omit({
@@ -396,6 +311,21 @@ export const insertAssistSchema = createInsertSchema(assist).omit({
 
 export type InsertAssist = z.infer<typeof insertAssistSchema>;
 export type Assist = typeof assist.$inferSelect;
+
+// FXQuote - FX rate quotes with expiry
+export const fxQuote = pgTable("fx_quote", {
+  id: text("id").primaryKey(), // UUID
+  rate: doublePrecision("rate").notNull(), // USD to ARS
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertFXQuoteSchema = createInsertSchema(fxQuote).omit({
+  createdAt: true,
+});
+
+export type InsertFXQuote = z.infer<typeof insertFXQuoteSchema>;
+export type FXQuote = typeof fxQuote.$inferSelect;
 
 // Guarantee - First-Loss Guarantee pool per community
 export const guarantee = pgTable("guarantee", {
