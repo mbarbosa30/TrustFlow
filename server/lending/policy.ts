@@ -1,5 +1,6 @@
 export interface LendingPolicy {
   enabled: boolean;
+  currency: string; // 'ARS' | 'USDC' | 'USD' | etc
   eligibility: {
     minCut: number;
     vertexDisjoint: number;
@@ -7,7 +8,7 @@ export interface LendingPolicy {
     perSeedMinShare: number;
     minGHI: number; // Graph Health Index threshold (0-100)
   };
-  loanButtonsUsdc: number[]; // Available loan amounts
+  loanButtonsUsdc: number[]; // Available loan amounts (despite name, in currency specified above)
   tenorsMonths: number[]; // Available loan durations
   aprNominal: number; // Annual percentage rate (e.g., 0.40 for 40%)
   late: {
@@ -51,6 +52,7 @@ export interface LendingPolicy {
 
 export const DEFAULT_LENDING_POLICY: LendingPolicy = {
   enabled: false, // Disabled by default until community admin enables
+  currency: "ARS", // Default to ARS for Argentina microcredit
   eligibility: {
     // IMPORTANT: These thresholds MUST match the community's scoring policy thresholds
     // The scoring algorithm (server/algorithm/compute.ts) enforces:
@@ -69,7 +71,7 @@ export const DEFAULT_LENDING_POLICY: LendingPolicy = {
     perSeedMinShare: 0.30,  // Must match scoring policy
     minGHI: 60, // Require healthy network
   },
-  loanButtonsUsdc: [160, 240, 400, 600, 800], // USDC amounts (equivalent to ARS 160k-800k at ~1000 ARS/USD)
+  loanButtonsUsdc: [160000, 240000, 400000, 600000, 800000], // ARS amounts (160k-800k)
   tenorsMonths: [6, 9, 12],
   aprNominal: 0.40, // 40% annual
   late: {

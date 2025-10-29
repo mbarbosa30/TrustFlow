@@ -1,0 +1,199 @@
+Awesome—here’s a **microcredit-first** design that matches your ranges (ARS 160k–800k, 6–12 months, ~40% APR) and cleanly adds **supporter subsidies + default backstops**, with **trust effects** tied to borrower and supporter behavior.
+
+# 1) Plain goals
+
+* **Access:** short, clear ARS loans sized by **TrustFlow** eligibility.
+* **Subsidy:** supporters can **lower the borrower’s cost** (interest buy-down) and/or **cover late installments** (repay-assist).
+* **Accountability:** on-time payments nudge trust **up**; defaults/assists nudge trust **down** (conservatively, with proofs).
+* **Simplicity:** one “Credit” tab next to Vouch/Score; one admin JSON policy.
+
+---
+
+# 2) Loan presets (simple & aligned with your ranges)
+
+* **Amounts (ARS):** 160k · 240k · 400k · 600k · 800k
+* **Tenors:** 6, 9, 12 months
+* **Nominal APR (ARS):** 40% (annualized, flat; equal monthly installments)
+* **One active loan at a time.**
+* **Eligibility:** your existing gates (min-cut ≥ 2, ≥ 2 vertex-disjoint paths, per-seed share ≥ 0.30).
+
+(Keep pricing one line: “40% anual; cuotas fijas”. Supporters change the **effective** rate via subsidies/backstops—see below.)
+
+---
+
+# 3) How supporters help (four simple rails)
+
+Pick one or combine—same UX:
+
+### A) Interest Buy-Down (IBD)
+
+Supporter pledges **X ARS/month** (or USD-yield equivalent) to **reduce borrower’s interest**.
+
+* In app: “This loan’s interest reduced **from 40% → 24%** thanks to sponsors.”
+* Implementation: each month, apply `min(interest_due, ibd_pool_share)` as **credit** before charging borrower.
+
+### B) Repay-Assist (RA)
+
+If an installment is **late**, a supporter can **cover it instantly** and earns a **small premium** (e.g., 5–8%) repaid **first** when the borrower resumes.
+
+* In app: “Ana’s cuota 3 is late (ARS xx). Cover now, you’ll receive **xx×1.06** first.”
+* If the loan finally defaults, remaining RA claims convert to **first-loss covered by guarantee** (see D) or are written down—your policy choice (below).
+
+### C) Interest Vouchers (IV)
+
+Supporters fund **voucher codes** that wipe **N months of interest** for targeted segments (e.g., first-time borrowers, on-time streaks).
+
+* In app: “Voucher applied: **2 months** of interest waived.”
+
+### D) First-Loss Guarantee (FLG)
+
+Supporters (or a reserve) post a **cap** (e.g., ARS 2M) that covers **first defaults** up to that cap.
+
+* Simple waterfall: **Guarantee → Repay-Assist claims → Pool**.
+* Publish daily: remaining guarantee capacity.
+
+> All four rails are **off-chain-ledger + receipts** friendly and can be funded by **USD yield** or direct ARS without changing borrower UX.
+
+---
+
+# 4) Trust effects (straightforward, conservative)
+
+Use only **verifiable events**; update **at epoch** (no real-time flapping).
+
+**Borrower:**
+
+* **+** On-time installment: `+δ_on` (e.g., +0.3 per paid month, cap per loan)
+* **–** Late > 7 days (recovered): `–δ_late` (e.g., –1 once per loan if any 7d+ late)
+* **––** Default (≥30/60 days late, your policy): `–Δ_default` (e.g., –8 to –15)
+
+**Supporter (Repay-Assist / Guarantee):**
+
+* **+** Assist covered → borrower fully repaid later: `+δ_assist_success` (e.g., +0.5 per assisted installment)
+* **–** Assist covered → loan defaulted: `–δ_assist_loss` (e.g., –0.5 to –1; bounded so risk-taking isn’t punished excessively)
+* **+** Guarantee active with no calls → small periodic + (participation credit)
+
+**Seeds (if you want meta-governance):**
+
+* If their region repeatedly spawns defaults with low diversity, slight **seed weight trim** next epoch.
+
+> Keep trust adjustments **small** vs. social-graph signals. Publish the **event→delta** table for transparency.
+
+---
+
+# 5) Borrower UX (one “Credit” tab)
+
+**Top section:**
+
+* **Eligibility chip** (✅ / ❌ with reason)
+* **Offer selector:** buttons for **amount** and **tenor**; shows **monthly cuota** @ 40% APR
+* **Sponsor impact line:** “Sponsors reduce your effective rate from **40% → 28%**.”
+
+**Active loan card:**
+
+* Progress bar (e.g., 3/12 paid), next due date & amount
+* **Pagar ahora** (partial/full) with quick amounts
+* **Receipts** list (each links to an attestation)
+
+**History:** past loans with on-time/late/default status (green/yellow/red dot)
+
+---
+
+# 6) Supporter UX (two simple tabs)
+
+**“Sponsor interest”**
+
+* Slider “Contribute **ARS / USD-yield per month**”
+* Toggle “Target: **first-time borrowers / on-time streaks**”
+* Progress: “This month reduced **156 loans** by avg **12 pp**”
+
+**“Cover a late cuota”**
+
+* Table of **late installments** (loan age, days late, borrower on-time history)
+* “Cover ARS xx → claim ARS xx×1.06 when borrower pays next”
+* Portfolio summary: assists, premiums earned, losses (if any)
+
+**Transparency chips:** remaining **guarantee cap**, default rate, repayment rate, receipts link.
+
+---
+
+# 7) Minimal policy JSON (admins can tune—no math wall)
+
+```json
+{
+  "eligibility": { "minCut": 2, "vertexDisjoint": 2, "minSeedCount": 2, "perSeedMinShare": 0.30 },
+  "loanButtonsARS": [160000, 240000, 400000, 600000, 800000],
+  "tenorsMonths": [6, 9, 12],
+  "aprNominal": 0.40,
+  "late": { "graceDays": 5, "lateFeeMonthly": 0.01, "defaultAfterDaysLate": 60 },
+  "subsidy": {
+    "interestBuydown": { "enabled": true, "pool": "ARS|USD-yield", "priority": 1 },
+    "repayAssist": { "enabled": true, "premium": 0.06, "priority": 2 },
+    "vouchers": { "enabled": true, "monthsFree": [1,2] },
+    "firstLossGuarantee": { "enabled": true, "capARS": 2000000 }
+  },
+  "trustAdjust": {
+    "borrower": { "onTimeMonthly": 0.3, "anyLate7d": -1.0, "default": -12.0 },
+    "supporter": { "assistSuccess": 0.5, "assistLoss": -0.7, "guaranteeMonthly": 0.1 },
+    "maxPerEpoch": 2.0
+  }
+}
+```
+
+---
+
+# 8) Data you need (small, readable)
+
+* **loan**(id, borrower, principal_ars, apr, tenor_months, start_date, status)
+* **installment**(loan_id, idx, due_date, due_ars, paid_ars, status)
+* **subsidy_ledger**(loan_id, month_idx, ibd_applied, voucher_applied, assist_covered, assist_premium)
+* **assist**(id, supporter, loan_id, inst_idx, amount_ars, premium, status: OPEN|REPAID|LOST)
+* **guarantee**(cap_ars, cap_remaining_ars)
+* **trust_events**(user, type, delta, epoch, evidence_link)
+
+---
+
+# 9) Simple monthly engine (how money moves)
+
+On each borrower’s **due date**:
+
+1. **Compute borrower charge:** cuota + late fee (if any).
+2. **Apply subsidies in order:**
+
+   * **IBD pool** for that month → reduce interest portion
+   * **Voucher** (if month matches) → zero interest this month
+   * If **late** and supporter opted to **RA**, an assist may **cover** the cuota now (record a claim = amount×1.06).
+3. **If unpaid** after grace → mark **Late**, send reminders; **after 60d** → **Default**:
+
+   * Use **First-Loss Guarantee** (if enabled) to cover remaining principal (up to cap).
+   * Mark supporter RA claims: if still outstanding, your policy decides—pay from guarantee or mark **lost** (then apply supporter trust delta).
+
+Everything gets a **receipt** (attestation or signed log).
+
+---
+
+# 10) Trust updates (end of month/epoch)
+
+* Summarize events → compute capped deltas → write to **trust_events** and include in the **epoch bundle** (auditable).
+* UI nudge: “Your trust increased **+0.9** this month (3 on-time payments).”
+
+---
+
+# 11) Copy you can use (concise)
+
+* **Borrower banner:** “Crédito en ARS basado en tu confianza. Cuotas fijas. Si pagás a tiempo, tu próxima oferta crece. Parte del interés puede ser cubierto por sponsors.”
+* **Supporter banner:** “Podés **bajar el interés** mensual de muchas personas o **cubrir una cuota atrasada** y recuperar tu aporte con un pequeño premio cuando la persona retome pagos.”
+* **Trust note:** “Los pagos a tiempo aumentan tu confianza; atrasos prolongados la reducen.”
+
+---
+
+# 12) Rollout path (fast)
+
+1. Ship **loan presets + repayment schedule** (no subsidies yet).
+2. Add **Interest Buy-Down pool** (one slider for sponsors).
+3. Add **Repay-Assist** with 6% premium + receipts.
+4. Add **First-Loss Guarantee** counter and waterfall.
+5. Turn on **trust deltas** (start small; publish the table).
+
+---
+
+**Result:** Borrowers get **clear ARS loans** and can see their path to larger limits; supporters have **two obvious buttons** to help (lower rates or cover missed cuotas); and the **trust graph** earns/loses small, transparent adjustments from real repayment behavior—no heavy math, no confusion.

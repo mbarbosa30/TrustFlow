@@ -4,7 +4,8 @@ import type { InsertLoan, InsertInstallment, InsertSubsidyLedger, Loan, Installm
 export interface LoanRequest {
   communityId: number;
   borrowerAddress: string;
-  principalUsdc: number;
+  principalUsdc: number; // Amount (despite name, can be ARS/USDC/etc)
+  currency?: string; // 'ARS' | 'USDC' | 'USD' | etc (defaults to ARS)
   tenorMonths: number;
   aprNominal: number;
 }
@@ -105,7 +106,7 @@ export function generateInstallmentSchedule(
 export async function createLoan(
   request: LoanRequest
 ): Promise<LoanWithInstallments> {
-  const { communityId, borrowerAddress, principalUsdc, tenorMonths, aprNominal } = request;
+  const { communityId, borrowerAddress, principalUsdc, currency = 'ARS', tenorMonths, aprNominal } = request;
   
   // Use a transaction to ensure atomicity - either both loan and installments are created, or neither
   return await storage.createLoanWithInstallments({
@@ -113,6 +114,7 @@ export async function createLoan(
       communityId,
       borrowerAddress: borrowerAddress.toLowerCase(),
       principalUsdc,
+      currency,
       aprNominal,
       tenorMonths,
       status: 'ACTIVE',

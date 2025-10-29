@@ -306,7 +306,8 @@ export const loan = pgTable("loan", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   communityId: bigint("community_id", { mode: "number" }).notNull(),
   borrowerAddress: text("borrower_address").notNull(),
-  principalUsdc: doublePrecision("principal_usdc").notNull(),
+  principalUsdc: doublePrecision("principal_usdc").notNull(), // Amount (despite name, can be ARS/USDC/etc)
+  currency: text("currency").notNull().default("ARS"), // 'ARS' | 'USDC' | 'USD' | etc
   aprNominal: doublePrecision("apr_nominal").notNull(), // e.g., 0.40 for 40%
   tenorMonths: integer("tenor_months").notNull(),
   status: text("status").notNull(), // 'ACTIVE' | 'PAID' | 'DEFAULTED'
