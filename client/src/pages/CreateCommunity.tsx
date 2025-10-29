@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useAccount } from "wagmi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,17 +23,18 @@ const templateIcons = {
 export default function CreateCommunity() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { address } = useAccount();
   const [selectedTemplate, setSelectedTemplate] = useState<string>("hiring-v1");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [promptText, setPromptText] = useState("");
 
-  const { data: templatesData } = useQuery({
+  const { data: templatesData } = useQuery<{ templates: CommunityTemplate[] }>({
     queryKey: ["/api/communities/templates"],
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string; promptText: string; templateId: string }) => {
+    mutationFn: async (data: { name: string; description: string; promptText: string; templateId: string; creator: string }) => {
       return await apiRequest("/api/communities", "POST", data);
     },
     onSuccess: (response: any) => {
@@ -56,6 +58,15 @@ export default function CreateCommunity() {
   const template = templates.find((t: CommunityTemplate) => t.id === selectedTemplate);
 
   const handleSubmit = () => {
+    if (!address) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to create a community",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!name.trim()) {
       toast({
         title: "Name required",
@@ -74,6 +85,7 @@ export default function CreateCommunity() {
       description,
       promptText: promptText || template?.defaultPrompt || "",
       templateId: selectedTemplate,
+      creator: address,
     });
   };
 
@@ -225,11 +237,11 @@ export default function CreateCommunity() {
 
                   <Button
                     onClick={handleSubmit}
-                    disabled={createMutation.isPending || !name.trim()}
+                    disabled={createMutation.isPending || !name.trim() || !address}
                     className="w-full"
                     data-testid="button-create-community"
                   >
-                    {createMutation.isPending ? "Creating..." : "Create Community"}
+                    {createMutation.isPending ? "Creating..." : !address ? "Connect Wallet" : "Create Community"}
                   </Button>
                 </>
               )}
