@@ -51,6 +51,8 @@ Preferred communication style: Simple, everyday language.
 **Multi-Network Support**: Flexible authentication via Reown AppKit, no forced network switching.
 **Epoch Progression System**: Proper lifecycle management for epochs (`getCurrentEpoch()`, `createEpoch()`, `closeEpoch()`, `advanceEpoch()`), ensuring immutability of historical data.
 **Address Normalization**: All Ethereum addresses are normalized to lowercase throughout the system to prevent case-sensitivity issues in scoring and user identification.
+**Seed Quality Scoring**: Seeds are continuously scored (0-1) on four metrics: predictive validity (35%), downstream quality (30%), diversity lift (20%), and centralization penalty (15%). Seed scores affect their SOURCE→seed capacity (0.7x-1.3x multiplier) and whether they count toward the "≥2 seeds" coverage requirement (threshold: 0.6). This creates a feedback loop where quality seeds strengthen the network while weak seeds self-throttle, preventing compromised seeds from polluting the graph—especially critical for vulnerable communities facing high collusion risk.
+**Bluesky Explorer Demo**: Read-only Bluesky network analysis using AT Protocol API. Fetches seed user's followers (1st hop), then for each peer fetches top 10 most influential followers by follower count (2nd hop), then for top 25 influential depth-2 users fetches their top 5 followers (selective 3rd hop). Creates bidirectional edges throughout. Network size kept under ~800 users for fast Dinic's max-flow scoring. Seed excluded from all results. Analysis shows "network around" the seed with influence-weighted selection at each depth.
 
 ## External Dependencies
 
