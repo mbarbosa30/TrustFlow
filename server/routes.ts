@@ -2062,6 +2062,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FX Quote API - Get locked exchange rate with expiry
+  app.get("/api/fx/quote", async (req, res) => {
+    try {
+      const { ars } = req.query;
+      
+      if (!ars || isNaN(Number(ars))) {
+        res.status(400).json({ error: "Valid ARS amount required" });
+        return;
+      }
+
+      const arsAmount = Number(ars);
+      
+      // Mock FX rate service - TODO: Replace with real API (e.g., dolarapi.com)
+      const MOCK_USD_TO_ARS_RATE = 1000; // 1 USD = 1000 ARS
+      const usdcAmount = arsAmount / MOCK_USD_TO_ARS_RATE;
+      
+      // Create quote with 5 minute expiry
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      const quoteId = randomUUID();
+      
+      const quote = await storage.createFxQuote({
+        id: quoteId,
+        rate: MOCK_USD_TO_ARS_RATE,
+        expiresAt,
+      });
+
+      res.json({
+        quoteId: quote.id,
+        rate: quote.rate,
+        arsAmount,
+        usdcAmount,
+        expiresAt: quote.expiresAt.toISOString(),
+      });
+    } catch (error) {
+      console.error("Error creating FX quote:", error);
+      res.status(500).json({ error: "Failed to create FX quote" });
+    }
+  });
+
+  // Assist Confirm API - Receive USDC, supply to Aave, credit ARS to loan
+  app.post("/api/assist/confirm", async (req, res) => {
+    try {
+      const { 
+        quoteId, 
+        loanId, 
+        supporterAddress,
+        // EIP-3009 params (for future implementation)
+        // from, to, value, validAfter, validBefore, nonce, v, r, s
+      } = req.body;
+
+      // Validate inputs
+      if (!quoteId || !loanId || !supporterAddress) {
+        res.status(400).json({ 
+          error: "quoteId, loanId, and supporterAddress required" 
+        });
+        return;
+      }
+
+      // Get and validate quote
+      const quote = await storage.getValidFxQuote(quoteId);
+      if (!quote) {
+        res.status(400).json({ error: "Invalid or expired quote" });
+        return;
+      }
+
+      // Get loan
+      const loan = await storage.getLoan(Number(loanId));
+      if (!loan) {
+        res.status(404).json({ error: "Loan not found" });
+        return;
+      }
+
+      // Calculate ARS credit from USDC amount
+      // Quote was created with: arsAmount / rate = usdcAmount
+      // So we need to get usdcAmount from somewhere - let's add it to the request
+      const { usdcAmount } = req.body;
+      if (!usdcAmount || isNaN(Number(usdcAmount))) {
+        res.status(400).json({ error: "Valid usdcAmount required" });
+        return;
+      }
+
+      const arsCredit = Number(usdcAmount) * quote.rate;
+
+      // TODO: EIP-3009 USDC transfer verification (future)
+      // const auth = await verifyEIP3009Transfer({ from, to, value, ... });
+      // await storage.createAuth3009({ nonce, ... });
+
+      // TODO: Supply USDC to Aave v3 on Celo (future)
+      // const aaveTxHash = await supplyToAave(usdcAmount, loan.communityId);
+      const MOCK_AAVE_TX_HASH = `0x${randomUUID().replace(/-/g, '')}`;
+
+      // Create assist record
+      const assist = await storage.createAssist({
+        communityId: loan.communityId,
+        loanId: Number(loanId),
+        supporterAddress: supporterAddress.toLowerCase(),
+        usdcAmount: Number(usdcAmount),
+        fxRate: quote.rate,
+        arsCredit,
+        aaveTxHash: MOCK_AAVE_TX_HASH,
+      });
+
+      // TODO: Credit ARS to loan installments (reduce future interest)
+      // This will be implemented in task 4 (yield application)
+
+      res.json({
+        assistId: assist.id,
+        usdcAmount: assist.usdcAmount,
+        arsCredit: assist.arsCredit,
+        aaveTxHash: assist.aaveTxHash,
+        message: "USDC assist successful - yield will reduce future interest",
+      });
+    } catch (error) {
+      console.error("Error confirming assist:", error);
+      res.status(500).json({ error: "Failed to confirm assist" });
+    }
+  });
+
   // Lending routes
   app.use("/api/loans", lendingRouter);
 

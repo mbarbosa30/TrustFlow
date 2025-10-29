@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, assist, guarantee, trustEvent } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -85,11 +85,17 @@ export interface IStorage {
   getSubsidyLedger(loanId: number, installmentIdx: number): Promise<SubsidyLedger | undefined>;
   updateSubsidyLedger(id: number, updates: Partial<InsertSubsidyLedger>): Promise<void>;
   
-  // Assist operations
-  createAssist(assistData: any): Promise<number>;
-  getAssist(id: number): Promise<any | undefined>;
-  updateAssist(id: number, updates: any): Promise<void>;
-  getAssistsByLoan(loanId: number): Promise<any[]>;
+  // Assist operations (USDC → Aave + ARS credit)
+  createAssist(assistData: InsertAssist): Promise<Assist>;
+  getAssist(id: number): Promise<Assist | undefined>;
+  getAssistsByLoan(loanId: number): Promise<Assist[]>;
+  getAssistsByCommunity(communityId: number): Promise<Assist[]>;
+  getAssistsBySupporter(supporterAddress: string): Promise<Assist[]>;
+  
+  // FX Quote operations
+  createFxQuote(quoteData: InsertFXQuote): Promise<FXQuote>;
+  getFxQuote(id: string): Promise<FXQuote | undefined>;
+  getValidFxQuote(id: string): Promise<FXQuote | undefined>;
   
   // Guarantee operations
   createGuarantee(guaranteeData: any): Promise<void>;
@@ -108,7 +114,6 @@ export interface IStorage {
   // Support API operations
   getActiveLoans(): Promise<any[]>;
   getLateInstallments(): Promise<any[]>;
-  getAssistsBySupporter(supporterAddress: string): Promise<any[]>;
   
   // Lending Dashboard operations
   getLendingStats(communityId: number): Promise<any>;
@@ -744,15 +749,15 @@ export class MemStorage implements IStorage {
       .where(eq(installment.id, id));
   }
 
-  async createAssist(assistData: any): Promise<number> {
+  async createAssist(assistData: InsertAssist): Promise<Assist> {
     const [result] = await db
       .insert(assist)
       .values(assistData)
       .returning();
-    return result.id;
+    return result;
   }
 
-  async getAssist(id: number): Promise<any | undefined> {
+  async getAssist(id: number): Promise<Assist | undefined> {
     const results = await db
       .select()
       .from(assist)
@@ -761,18 +766,57 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
-  async updateAssist(id: number, updates: any): Promise<void> {
-    await db
-      .update(assist)
-      .set(updates)
-      .where(eq(assist.id, id));
-  }
-
-  async getAssistsByLoan(loanId: number): Promise<any[]> {
+  async getAssistsByLoan(loanId: number): Promise<Assist[]> {
     return db
       .select()
       .from(assist)
-      .where(eq(assist.loanId, loanId));
+      .where(eq(assist.loanId, loanId))
+      .orderBy(desc(assist.createdAt));
+  }
+
+  async getAssistsByCommunity(communityId: number): Promise<Assist[]> {
+    return db
+      .select()
+      .from(assist)
+      .where(eq(assist.communityId, communityId))
+      .orderBy(desc(assist.createdAt));
+  }
+
+  async getAssistsBySupporter(supporterAddress: string): Promise<Assist[]> {
+    return db
+      .select()
+      .from(assist)
+      .where(eq(assist.supporterAddress, supporterAddress.toLowerCase()))
+      .orderBy(desc(assist.createdAt));
+  }
+
+  async createFxQuote(quoteData: InsertFXQuote): Promise<FXQuote> {
+    const [result] = await db
+      .insert(fxQuote)
+      .values(quoteData)
+      .returning();
+    return result;
+  }
+
+  async getFxQuote(id: string): Promise<FXQuote | undefined> {
+    const results = await db
+      .select()
+      .from(fxQuote)
+      .where(eq(fxQuote.id, id))
+      .limit(1);
+    return results[0];
+  }
+
+  async getValidFxQuote(id: string): Promise<FXQuote | undefined> {
+    const quote = await this.getFxQuote(id);
+    if (!quote) return undefined;
+    
+    // Check if expired
+    if (quote.expiresAt < new Date()) {
+      return undefined;
+    }
+    
+    return quote;
   }
 
   async createGuarantee(guaranteeData: any): Promise<void> {
@@ -864,13 +908,6 @@ export class MemStorage implements IStorage {
     }));
   }
 
-  async getAssistsBySupporter(supporterAddress: string): Promise<any[]> {
-    return db
-      .select()
-      .from(assist)
-      .where(eq(assist.supporterAddress, supporterAddress))
-      .orderBy(desc(assist.createdAt));
-  }
 
   async getLendingStats(communityId: number): Promise<any> {
     // Get community info for GHI threshold and lending status
