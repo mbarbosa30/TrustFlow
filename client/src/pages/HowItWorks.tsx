@@ -232,6 +232,52 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Seed Quality Scoring</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              Seeds are not static—they're continuously scored on the quality of their influence. Each seed receives a <strong>Seed Score (S<sub>s</sub>) ∈ [0,1]</strong> based on four components:
+            </p>
+
+            <ul className="space-y-3">
+              <li>
+                <strong>Predictive Validity (35% weight):</strong> Fraction of users influenced by this seed who remain accepted when the seed's edges are removed. Measures network resilience.
+              </li>
+              <li>
+                <strong>Downstream Quality (30% weight):</strong> Average trust score (STS) of users primarily influenced by this seed. Quality seeds build quality networks.
+              </li>
+              <li>
+                <strong>Diversity Lift (20% weight):</strong> Number of distinct communities/neighborhoods reached by this seed. Prevents single-group capture.
+              </li>
+              <li>
+                <strong>Centralization Penalty (15% weight):</strong> Penalty applied when a seed carries &gt;50% of total seed outflow. Reduces over-reliance risk.
+              </li>
+            </ul>
+
+            <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-sm mb-2">
+                <strong>How Seed Scores Affect the Graph</strong>
+              </p>
+              <ul className="text-sm space-y-1.5 mb-0">
+                <li><strong>Capacity Multiplier:</strong> SOURCE→seed capacity = base_capacity × (0.7 + 0.6 × S<sub>s</sub>) ∈ [0.7x, 1.3x]</li>
+                <li><strong>Coverage Threshold:</strong> Only seeds with S<sub>s</sub> ≥ 0.6 count toward the "≥2 seeds" acceptance requirement</li>
+                <li><strong>Feedback Loop:</strong> Good seeds strengthen their capacity; weak seeds self-throttle</li>
+              </ul>
+            </div>
+
+            <div className="mt-4 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold mb-2">
+                🔒 Why This Matters for Vulnerable Communities
+              </p>
+              <p className="text-sm text-muted-foreground mb-0">
+                In communities lacking identity systems and facing high collusion risk, seed scoring prevents a few compromised seeds from polluting the entire graph. Attackers must now compromise <strong>multiple high-quality seeds across diverse communities</strong>—dramatically harder than capturing 1-2 traditional seeds.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Security Model & Attack Resistance</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">

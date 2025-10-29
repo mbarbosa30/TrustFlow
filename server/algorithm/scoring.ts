@@ -1,7 +1,8 @@
 import type { Address } from "viem";
 import { FlowGraph } from "./graph";
 import { DinicMaxFlow } from "./maxflow";
-import type { TrustScoreComponents, UserScore, EpochComputationResult } from "./types";
+import type { TrustScoreComponents, UserScore, EpochComputationResult, SeedQualityMetrics } from "./types";
+import { SeedScorer } from "./seedScoring";
 
 export interface Endorsement {
   endorser: Address;
@@ -174,6 +175,33 @@ export class TrustScorer {
 
     this.assignPercentiles(userScores);
 
+    // Compute seed quality scores
+    const acceptedUserSet = new Set<Address>(
+      Array.from(userScores.entries())
+        .filter(([, score]) => score.isAccepted)
+        .map(([address]) => address.toLowerCase() as Address)
+    );
+
+    const seedScorer = new SeedScorer();
+    const seedScores = seedScorer.computeSeedScores(
+      endorsements,
+      seeds,
+      acceptedUserSet,
+      userScores
+    );
+
+    // Convert to SeedQualityMetrics format
+    const seedQualityMetrics = new Map<Address, SeedQualityMetrics>();
+    for (const [seedAddress, seedScore] of seedScores.entries()) {
+      seedQualityMetrics.set(seedAddress, {
+        seedAddress,
+        score: seedScore.score,
+        components: seedScore.components,
+        capacityMultiplier: seedScorer.getSeedCapacityMultiplier(seedScore.score),
+        meetsQualityThreshold: seedScorer.seedMeetsQualityThreshold(seedScore.score),
+      });
+    }
+
     return {
       epoch,
       scores: userScores,
@@ -183,6 +211,7 @@ export class TrustScorer {
         avgMinCut: totalAccepted > 0 ? totalMinCut / totalAccepted : 0,
         p95Flow,
       },
+      seedQuality: seedQualityMetrics,
     };
   }
 

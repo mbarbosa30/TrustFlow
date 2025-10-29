@@ -1,0 +1,140 @@
+Absolutely—EigenTrust fits your roadmap well once there’s **transactional signal** between wallets. Here’s a tight design for (1) weaving EigenTrust into TrustFlow without weakening your **max-flow/min-cut** gate, and (2) **scoring/ranking seeds** so their quality measurably shapes the graph.
+
+---
+
+# 1) Data model for EigenTrust (from transactions)
+
+**Goal:** convert on-chain/off-chain interactions into *local trust* (c_{ij}) that EigenTrust needs.
+
+* For each pair ((i,j)) keep a rolling outcome score (s_{ij}\in[-1,1]).
+  Examples of “success” events: escrow released, delivery confirmed, dispute resolved in favor of j, loan installment repaid. Failures: slashed collateral, dispute lost, chargeback.
+* Build **robust** local trust (row-normalized, trimmed)
+  [
+  \hat{s}*{ij}=\text{winsorize}(s*{ij},p=0.05),\quad
+  c_{ij}=\frac{\max(0,\hat{s}*{ij})}{\sum_k \max(0,\hat{s}*{ik})}
+  ]
+  (No negatives in (c_{ij}); failures reduce mass but don’t create “negative trust” that can be weaponized.)
+* Optional Bayesian smoothing: start each (i) with Beta((\alpha,\beta)) prior so sparse users aren’t crushed.
+
+Then compute **EigenTrust** by power iteration (as in Kamvar–Schlosser–Garcia-Molina):
+[
+t=(1-\alpha),e+\alpha, C^\top t,\quad 0<\alpha<1
+]
+where (e) is a teleport/prior vector (we’ll load seeds into this), and (C) is the matrix ([c_{ij}]). ([nlp.stanford.edu][1])
+
+---
+
+# 2) How to combine EigenTrust with your flow model (safe)
+
+**Keep acceptance strictly cut-based.** Don’t let EigenTrust decide who’s “in.” Use it as **bounded shaping** + ranking:
+
+### A) Edge & node multipliers (clipped)
+
+* **Endorser quality multiplier (node-level):**
+  (g(i)=0.9+0.2,\tilde t_i\in[0.9,1.1]), where (\tilde t_i) is (t_i) normalized to ([0,1]).
+  Apply to **(i^{-}!\to i^{+})** (forwarding capacity) *after* distance caps.
+* **Pair quality multiplier (edge-level, optional):**
+  (h(i,j)=0.85+0.3,c_{ij}\in[0.85,1.15]) on the vouch edge (i^{+}!\to j^{-}).
+
+**Cap total effect** so EigenTrust can only adjust capacities by ~±15% and **cannot** bypass your gates.
+
+### B) Ranking/score smoothing (post-acceptance)
+
+Blend a small PR-style term (or (t_j)) into STS (≤ **5%** weight) so well-behaved transactors sort a bit higher, but **only among accepted users**.
+
+### C) Confidence & health
+
+Use distributional stats of (t) for:
+
+* **User confidence tweak** (+ small bump when (t_j) is high).
+* **GHI** (global health): add `eigenTrustGini` (1−Gini of (t)), `seedLeak` (sum of seed (t)), and `txCoverage` (% accepted with ≥N distinct counterparties).
+
+---
+
+# 3) Seed scoring/ranking that actually *matters*
+
+Seeds are not static; score them and wire the score into both EigenTrust and the flow network.
+
+### SeedScore (S_s\in[0,1]) (publish per epoch)
+
+Combine transparent components:
+
+* **Predictive validity:** among users influenced by seed (s), fraction that stay accepted **after removing** (s)’s edges (resilience).
+* **Downstream quality:** average (t_j) (EigenTrust) of users within H hops primarily fed by (s).
+* **Complaint/dispute rate:** penalize if vouchees have high failure/dispute rates.
+* **Diversity lift:** how many **communities/regions** (s) reaches (Leiden/Louvain).
+* **Centralization penalty:** if (s) carries >X% of total seed outflow, reduce (S_s).
+
+### Where (S_s) plugs in
+
+1. **SOURCE→seed capacity:**
+   (cap(\text{SOURCE}\to s^{-}) = cap_0 \cdot (0.7+0.6,S_s))  (∈[0.7,1.3]×cap₀).
+2. **EigenTrust teleport vector (e):** distribute prior mass across seeds proportional to (S_s).
+3. **Coverage rule:** require seed coverage from **seeds with (S_s\ge \tau)** (e.g., 0.6) to count toward the “≥2 seeds” gate.
+4. **STS fairness penalty:** small penalty if a user relies >60% on seeds with (S_s<\tau).
+
+This makes “good” seeds amplify healthy regions and “weak” seeds self-throttle—without subjective moderation. (You still keep your **vertex-disjoint ≥2** and **per-seed minimum share** gates.) For seed-quality telemetry you can cite and adapt the TrustRank idea—expert/seed priors + propagation. ([ilpubs.stanford.edu][2])
+
+---
+
+# 4) Collusion hardening (with EigenTrust in the loop)
+
+* **Row normalization & capping** in (C) prevents a cartel from minting infinite trust; you can also **clip per-pair contribution** so (c_{ij}\le 0.4).
+* **Community diversity in the gate:** keep your rule “≥2 communities contribute ≥0.3 of the 1.0 acceptance unit each.”
+* **Vertex-disjoint paths** (Suurballe on node-split graph) to stop “two edges, one hub” redundancy illusions. ([Wikipedia][3])
+* **SybilRank as risk input** (not a gate): flag low-rank regions by seeded random walks for moderation/audits. ([USENIX][4])
+
+---
+
+# 5) Policy knobs (JSON you can ship)
+
+```json
+{
+  "policyId": "vouch-eigentrust-v1",
+  "acceptance": {
+    "minCutRequired": 2,
+    "vertexDisjointPathsRequired": 2,
+    "seedCoverage": { "minSeeds": 2, "perSeedMinShare": 0.30, "minSeedScore": 0.6 }
+  },
+  "nodeCap": { "distance": [800, 240, 96, 48, 24], "laggedDistances": true },
+  "eigentrust": {
+    "alpha": 0.85,
+    "rowTrimP": 0.05,
+    "endorserNodeMultiplier": { "min": 0.9, "max": 1.1 },
+    "edgeMultiplier": { "enabled": true, "min": 0.85, "max": 1.15 }
+  },
+  "seedScoring": {
+    "seedCapMultiplier": { "min": 0.7, "max": 1.3 },
+    "minSeedScoreForCoverage": 0.6,
+    "centralizationCap": 0.5
+  },
+  "sts": { "weights": { "flow": 0.52, "cut": 0.24, "stability": 0.10, "distance": 0.09, "eigentrust": 0.05 } }
+}
+```
+
+---
+
+# 6) Minimal compute loop (snapshot)
+
+1. Build **transaction graph** → compute (C) and EigenTrust (t). ([nlp.stanford.edu][1])
+2. Score **seeds** → (S_s).
+3. Build **vouch flow graph** with node-split + distance-based caps, multiply caps by **(g(i))** and (optionally) edges by **(h(i,j))**.
+4. Run **max-flow**, get **min-cut**, check **vertex-disjoint ≥2**, **seed coverage** with per-seed min share and (S_s) threshold.
+5. Compute **STS** (add ≤5% EigenTrust).
+6. Publish **epoch bundle** (or “snapshot bundle”) with `eigentrust.json` (hash + params), `seedScores.json`, and cut witnesses.
+
+---
+
+## Why this works (and stays safe)
+
+* EigenTrust is excellent at **aggregating outcome history** into a global reputation (via power iteration), but on its own it’s not Sybil-proof. Your **cut-based gate** remains the barrier; EigenTrust just **shapes** capacity slightly and **ranks** inside the accepted set. ([nlp.stanford.edu][1])
+* Seed scoring ties **future influence** to **past predictive quality** and diversity, similar in spirit to **TrustRank**’s expert-seed propagation, but with measurable feedback. ([ilpubs.stanford.edu][2])
+* Vertex-disjoint paths and per-seed minimum shares harden against the classic collusion and bottleneck tricks; Suurballe/Tarjan gives you a linear-time check per sink after Dijkstra runs. ([Wikipedia][3])
+* For Sybil hunting at scale, **SybilRank** gives you a cheap risk score to feed into **Confidence/GHI** dashboards without dictating acceptance. ([USENIX][4])
+
+If you want, I can turn this into code stubs (`eigentrust.ts`, `seedScore.ts`, `flowBuilder.ts`) and a migration adding the new policy toggles.
+
+[1]: https://nlp.stanford.edu/pubs/eigentrust.pdf?utm_source=chatgpt.com "The EigenTrust Algorithm for Reputation Management in P2P ..."
+[2]: https://ilpubs.stanford.edu/638/1/2004-17.pdf?utm_source=chatgpt.com "Combating Web Spam with TrustRank"
+[3]: https://en.wikipedia.org/wiki/Suurballe%27s_algorithm?utm_source=chatgpt.com "Suurballe's algorithm"
+[4]: https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final42_2.pdf?utm_source=chatgpt.com "Aiding the Detection of Fake Accounts in Large Scale ..."

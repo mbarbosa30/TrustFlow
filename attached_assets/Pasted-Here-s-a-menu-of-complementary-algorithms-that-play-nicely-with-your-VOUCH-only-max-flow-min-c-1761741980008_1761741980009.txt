@@ -1,0 +1,107 @@
+Here’s a menu of **complementary algorithms** that play nicely with your VOUCH-only + max-flow/min-cut core. I’ve grouped them by **purpose** and noted exactly how to wire each in (gate vs. ranking vs. health/risk). Keep max-flow/min-cut as the **accept/reject guardrail**; use these as add-ons.
+
+---
+
+## A) Redundancy & cut structure (stronger gates & proofs)
+
+* **Vertex-disjoint paths (Suurballe/Tarjan + node-split).**
+  Use to *enforce* ≥2 **vertex**-disjoint seed→user paths (not just edge-disjoint). Gate: **Yes** (acceptance).
+* **Articulation points & biconnected components (Tarjan).**
+  Flag if a user’s acceptance depends on a single cut-vertex. Gate: **No** (risk flag), Health: **Yes**.
+* **Gomory–Hu tree (all-pairs min-cuts).**
+  Precompute a cut tree to get every user’s min-cut to seeds fast and publish **cut certificates**. Gate: **Yes** (makes audits cheap).
+
+---
+
+## B) Random-walk & centrality (post-accept ranking + risk)
+
+* **Seed-personalized PageRank / TrustRank.**
+  Smooth ranking within accepted set; or add ≤5% weight in STS. Gate: **No**.
+* **HITS / SALSA (authority–hub).**
+  Distinguish “endorsed by many” (authority) vs. “endorses many” (hub). Useful to down-weight hub-only farms. Risk: **Yes**.
+* **EigenTrust (on transactional edges, if/when you have tx history).**
+  Reputation propagation from signed outcomes; great for markets. Ranking: **Yes**.
+
+---
+
+## C) Social-graph Sybil defenses (risk scoring)
+
+* **SybilRank (seeded random walks).**
+  Scores proximity to the seed set; low scores → likely Sybils. Risk: **Yes** (feed Confidence/GHI), Gate: **No**.
+* **SybilInfer (Bayesian community model).**
+  Produces posterior “human vs. Sybil” probabilities; heavier, periodic. Risk: **Yes**.
+* **SybilLimit / GateKeeper variants.**
+  Fast, degree-bounded human region tests; good as a **pre-filter**.
+
+---
+
+## D) Spectral & connectivity health (system-level)
+
+* **Algebraic connectivity (λ₂ of Laplacian).**
+  Higher = better global robustness. Health: **Yes** (GHI).
+* **Conductance / small-set expansion.**
+  Detects tight Sybil clusters and single-seed corridors. Health: **Yes**.
+* **Effective resistance / commute time.**
+  “Electrical” redundancy from seeds to each user; great sanity check on path diversity. Health: **Yes**, Ranking: **light**.
+
+---
+
+## E) Core/cluster structure (diversity & anti-collusion)
+
+* **k-core / k-truss decomposition.**
+  Require accepted users to reach a minimal core (or just penalize low-core users). Gate: **Optional** (soft), Risk: **Yes**.
+* **Leiden/Louvain community detection.**
+  Enforce seed-**region** diversity: e.g., flow share from ≥2 distinct communities ≥30% each. Gate: **Yes**.
+
+---
+
+## F) Probabilistic & robustness-aware scoring
+
+* **Belief propagation / Beta-reputation (Jøsang).**
+  Treat each vouch as a noisy sensor; compute a posterior “legitimacy” (p). Use as a **cap** or **confidence** input, not as gate.
+* **Max-min fair flow / concurrent flow LP.**
+  Allocate seed capacity fairly across all nodes to reduce hub dominance; use to derive a **fairness penalty** in STS or GHI.
+
+---
+
+## G) Anomaly detection (farm/ring hunting)
+
+* **Egonet features (OddBall):** degree vs. edges-inside, star/ring scores.
+* **Local Outlier Factor (LOF)/isolation forest** on structural features.
+* **Reverse-PR** (on reversed edges) to catch broadcast-only farms.
+  Use for **risk flags** and to auto-review sudden waves.
+
+---
+
+## H) Path selection & reliability
+
+* **Most-reliable paths in probabilistic graphs.**
+  If you model vouch reliability (p_e), find two high-probability vertex-disjoint paths (Dijkstra on −log p). Gate: **Optional** for high-stakes uses.
+
+---
+
+## How to layer them (safe defaults)
+
+1. **Gate (hard rules):**
+   Max-flow/min-cut **+** ≥2 **vertex-disjoint** paths **+** seed-region diversity (≥2 communities with ≥0.3 share each).
+
+2. **Score (STS 0–100):**
+   Keep (Flow, Cut, Stability, Distance). Optional: **+5% PPR** cap, **−** fairness penalty if max seed dominates, **−** articulation reliance penalty.
+
+3. **Confidence (user) & GHI (global):**
+   Add **SybilRank**, **λ₂**, **conductance**, **effective resistance** spread, **PR Gini**, **seed saturation**.
+
+4. **Risk flags (ops & UI hints):**
+   Articulation reliance, ring/star egonets, reverse-PR spikes, LOF outliers, “two paths share one vertex.”
+
+---
+
+## Quick “what to add next” (minimal code lift)
+
+* Swap edge-disjoint → **vertex-disjoint** paths (Suurballe on node-split graph).
+* Compute **seed-PPR** once per snapshot; add ≤5% to STS.
+* Add **Tarjan articulation** detection; punish reliance.
+* Compute **conductance** & **λ₂** on the accepted subgraph and expose in GHI.
+* Build a **Gomory–Hu tree** to speed all min-cuts and publish cut witnesses.
+
+This keeps your **flow/min-cut core** intact (the part that makes it Sybil-resistant), while giving you better redundancy guarantees, smoother ranking, and strong system-health signals.

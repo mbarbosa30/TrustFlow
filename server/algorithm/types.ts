@@ -36,6 +36,21 @@ export interface UserScore {
   isAccepted: boolean;
 }
 
+export interface SeedScoreComponents {
+  predictiveValidity: number;
+  downstreamQuality: number;
+  diversityLift: number;
+  centralizationPenalty: number;
+}
+
+export interface SeedQualityMetrics {
+  seedAddress: Address;
+  score: number;
+  components: SeedScoreComponents;
+  capacityMultiplier: number;
+  meetsQualityThreshold: boolean;
+}
+
 export interface EpochComputationResult {
   epoch: number;
   scores: Map<Address, UserScore>;
@@ -50,4 +65,5 @@ export interface EpochComputationResult {
       seedFlowDistribution: Map<Address, number>;
     };
   };
+  seedQuality?: Map<Address, SeedQualityMetrics>;
 }

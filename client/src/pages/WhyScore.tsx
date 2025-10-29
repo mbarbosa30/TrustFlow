@@ -100,6 +100,74 @@ export default function WhyScore() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Seed Quality & Network Health</CardTitle>
+            <CardDescription>
+              Seeds are not static - they're continuously scored on their influence quality
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                In vulnerable communities lacking identity systems and access to finance, collusion risk is high. To prevent 
+                a few compromised seeds from polluting the entire network, <strong>seeds themselves are scored</strong> on multiple metrics:
+              </p>
+
+              <div className="grid gap-3">
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <h4 className="font-semibold text-sm mb-1">Predictive Validity</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Do users vouched by this seed stay accepted even if the seed is removed? High scores mean resilient, 
+                    well-connected communities.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <h4 className="font-semibold text-sm mb-1">Downstream Quality</h4>
+                  <p className="text-xs text-muted-foreground">
+                    What's the average trust score of users primarily influenced by this seed? Quality seeds build quality networks.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <h4 className="font-semibold text-sm mb-1">Diversity Lift</h4>
+                  <p className="text-xs text-muted-foreground">
+                    How many distinct communities does this seed reach? Diverse reach prevents capture by single groups.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/30">
+                  <h4 className="font-semibold text-sm mb-1">Centralization Check</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Seeds that dominate too much of the total flow get penalized to prevent over-reliance on any single source.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t">
+                <h4 className="font-semibold text-sm mb-2">How Seed Scores Work</h4>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Each seed gets a score from 0-1. This score:
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                  <li>Multiplies the seed's capacity (0.7x to 1.3x) - better seeds can vouch for more users</li>
+                  <li>Determines if it counts toward the "≥2 seeds" acceptance requirement (needs score ≥0.6)</li>
+                  <li>Creates a feedback loop: good seeds strengthen the network, weak seeds self-throttle</li>
+                </ul>
+              </div>
+
+              <div className="pt-3 border-t bg-primary/10 rounded-lg p-3">
+                <h4 className="font-semibold text-sm mb-1">Why This Matters for Vulnerable Communities</h4>
+                <p className="text-xs text-muted-foreground">
+                  Without seed scoring, compromising 1-2 seeds could pollute the entire graph. With it, attackers need to 
+                  compromise <strong>multiple high-quality seeds across different communities</strong> - dramatically harder.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

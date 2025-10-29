@@ -1,0 +1,82 @@
+Short answer: **yes—but as an auxiliary signal, not a replacement.** Keep **max-flow/min-cut** as the **gate** (accept/reject) and primary score driver; use **(personalized) PageRank** to (a) provide a *prior* about “how well-embedded” a node is, (b) smooth ranking *within* the accepted set, and (c) power health/risk checks. Here’s a practical way to combine them without opening new gaming angles.
+
+# Where PageRank helps
+
+1. **Prior about embedding (seed-personalized PageRank / “TrustRank”)**
+   Run PPR with teleport vector concentrated on **seeds**. Nodes that many independent vouched paths flow to (even outside the strict min-cut) get a gentle boost; isolated or ring-like clusters don’t.
+
+2. **Tie-breaks & micro-ranking (post-acceptance)**
+   Among users who already pass your **min-cut ≥ 2 + ≥2-seed coverage + vertex-disjoint ≥2** rules, PPR distinguishes “well-connected” from “edge-case accepted” without weakening the gate.
+
+3. **Risk & anomaly signals (for Confidence/GHI)**
+   Compare seed-personalized PR to **global PR** and to **reverse-PR** (on the graph with edges reversed). Rings and star-farms tend to show weird PR patterns (high global PR but low seed-PPR, or high reverse-PR because they mostly *send* edges to one hub).
+
+# What **not** to do
+
+* Don’t let PR decide **acceptance**. Acceptance must remain **cut-based** (flow/min-cut) to stay Sybil-resistant.
+* Don’t let PR rescale node capacities too much (keep the effect small and clipped) or you’ll create “rich-get-richer.”
+
+# Drop-in recipe
+
+## 1) Compute seed-personalized PageRank (PPR)
+
+Directed graph = VOUCH edges (matured). Column-normalize adjacency (P).
+[
+r = (1-\alpha),v ;+; \alpha, P^\top r,\quad \alpha\approx 0.85
+]
+
+* (v): teleport vector uniform over seeds.
+* Stop when (\lVert r^{(t)} - r^{(t-1)}\rVert_1 < 10^{-8}) (or 50–100 iters).
+
+Normalize to ([0,1]):
+(PR_i = \min!\big(1,\ \frac{\log(1+r_i)}{\log(1+r_{95})}\big)) using the 95th percentile (r_{95}) on the **accepted set**.
+
+## 2) Keep gates strictly flow-based
+
+Acceptance unchanged:
+
+* **min-cut ≥ 2**, **seed-coverage ≥ 2** (each contributing ≥30% of the 1.0 acceptance unit), **≥2 vertex-disjoint** seed→user paths.
+
+## 3) Blend PPR *lightly* into STS (optional)
+
+Keep your STS components (Flow (F), Cut (C), Stability (S), Distance (D)). Add a tiny PR term:
+[
+\text{STS}' = 100 \cdot \big( 0.52F + 0.24C + 0.10S + 0.09D + 0.05PR \big)
+]
+
+* Cap the PR contribution at **+5 points**. This smooths ranking but cannot drag a weak-cut node upward.
+
+## 4) Or use PPR only for Confidence & Health
+
+* **User-level Confidence tweak:**
+  (localAdj \mathrel{+}= 0.05 \cdot PR_i) (clipped).
+* **Global Health Index (GHI) additions:**
+
+  * `prSkew = 1 - Gini(PR over accepted)` (less skew = healthier)
+  * `seedLeak = sum(PR seeds)`: if this is too high, seeds hoard rank → centralization risk
+  * Track correlation between PR and degree; spikes suggest farming.
+
+## 5) Optional: tiny capacity shaping (careful!)
+
+If you *really* want PR to inform forwarding budgets, apply a **small, clipped multiplier** to node capacity after distance:
+[
+c'(u) = c(d(u)) \cdot \big( 0.9 + 0.2 \cdot PR_u \big) \quad\text{(∈ [0.9, 1.1])}
+]
+Max ±10% so you don’t create runaway advantages. Keep **lagged distances** (from prior snapshot), not PR, as the primary capacity driver.
+
+# Attack surface & why this is safe
+
+* **Ring inflation:** Rings can boost *global* PR, but seed-personalized PR stays low unless seeds flow in; your **seed-coverage** gate + **vertex-disjoint** rule already block ring-only paths.
+* **Hub abuse:** A single hub can’t fake **vertex-disjoint** paths; PR may raise its centrality but not acceptance of its neighbors without independent routes.
+* **Teleport gaming:** Because (v) is fixed on seeds, attackers can’t “buy” teleport mass; they must convince seed-adjacent humans—same as your flow model.
+
+# Defaults you can ship
+
+* ( \alpha = 0.85 ), seeds-only teleport, 75–95th percentile log-normalization.
+* **No PR in acceptance.**
+* **PR in STS ≤ 5% weight** (or 0% if you prefer to use it only for Confidence/GHI).
+* **Clipped capacity shaping** (±10%) = optional, off by default.
+
+---
+
+**Bottom line:** use **PageRank (seed-personalized)** as a **secondary, bounded** signal: great for ranking within the accepted set and for **health/risk diagnostics**. Keep **max-flow/min-cut** as the guardrail that actually makes the system Sybil-resistant.
