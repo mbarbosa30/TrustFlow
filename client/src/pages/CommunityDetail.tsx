@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { useAccount } from "wagmi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,24 +7,165 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { format } from "date-fns";
 import { 
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
-  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart 
+  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock
 } from "lucide-react";
+
+interface Loan {
+  id: number;
+  borrowerAddress: string;
+  communityId: number;
+  principalUsdc: number;
+  tenorMonths: number;
+  aprBps: number;
+  status: string;
+  nextInstallmentIdx?: number;
+  nextDueDate?: string;
+}
+
+interface LateInstallment {
+  installmentId: number;
+  loanId: number;
+  idx: number;
+  borrowerAddress: string;
+  dueDate: string;
+  totalDue: number;
+  totalPaid: number;
+  outstandingAmount: number;
+  daysLate: number;
+  status: string;
+}
+
+interface Pledge {
+  id: number;
+  loanId: number;
+  donorAddress: string;
+  monthlyUsdc: number;
+  remainingMonths: number;
+  totalPledged: number;
+  totalApplied: number;
+  status: string;
+  createdAt: string;
+}
+
+interface Assist {
+  id: number;
+  loanId: number;
+  supporterAddress: string;
+  usdcAmount: number;
+  arsCredit: number;
+  aaveTxHash: string | null;
+  createdAt: string;
+}
 
 export default function CommunityDetail() {
   const params = useParams();
   const communityId = Number(params.id) || 0;
   const { address } = useAccount();
+  const { toast } = useToast();
+
+  // Support tab state
+  const [supportTab, setSupportTab] = useState("loans");
+  const [selectedLoan, setSelectedLoan] = useState<number | null>(null);
+  const [ibdAmount, setIbdAmount] = useState([50]);
 
   const { data: communityData, isLoading: communityLoading } = useQuery<{ community: any }>({
     queryKey: ["/api/communities", communityId],
   });
 
   // Fetch loans for this community
-  const { data: loansData } = useQuery<{ loans: any[] }>({
-    queryKey: ["/api/loans"],
-    enabled: Boolean(address),
+  const { data: availableLoans, isLoading: loansLoading } = useQuery<Loan[]>({
+    queryKey: ["/api/support/available-loans"],
+    enabled: !!address,
+    select: (data) => data.filter((loan: Loan) => loan.communityId === communityId),
+  });
+
+  // Fetch late installments for this community
+  const { data: allLateInstallments, isLoading: installmentsLoading } = useQuery<LateInstallment[]>({
+    queryKey: ["/api/support/late-installments"],
+    enabled: !!address,
+  });
+
+  const lateInstallments = allLateInstallments?.filter(
+    (inst) => availableLoans?.some(loan => loan.id === inst.loanId && loan.communityId === communityId)
+  ) || [];
+
+  // Fetch supporter portfolio
+  const { data: portfolio, isLoading: portfolioLoading } = useQuery<{
+    pledges: Pledge[];
+    assists: Assist[];
+  }>({
+    queryKey: ["/api/support/portfolio", address],
+    enabled: !!address,
+  });
+
+  // Filter portfolio by community
+  const communityPledges = portfolio?.pledges.filter(
+    (p) => availableLoans?.some(loan => loan.id === p.loanId)
+  ) || [];
+
+  const communityAssists = portfolio?.assists.filter(
+    (a) => availableLoans?.some(loan => loan.id === a.loanId)
+  ) || [];
+
+  // IBD pledge mutation
+  const pledgeMutation = useMutation({
+    mutationFn: async (data: { loanId: number; monthlyUsdc: number }) => {
+      return await apiRequest("POST", "/api/subsidies/ibd", {
+        loanId: data.loanId,
+        donorAddress: address,
+        monthlyUsdc: data.monthlyUsdc,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Interest Buy-Down Created",
+        description: "Your monthly commitment has been activated to reduce the borrower's interest rate.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
+      queryClient.invalidateQueries({ queryKey: ["/api/support/available-loans"] });
+      setSelectedLoan(null);
+      setIbdAmount([50]);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Creating Commitment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Repay-Assist mutation
+  const assistMutation = useMutation({
+    mutationFn: async (data: { installmentId: number; amountUsdc: number }) => {
+      return await apiRequest("POST", "/api/subsidies/repay-assist", {
+        installmentId: data.installmentId,
+        supporterAddress: address,
+        amountUsdc: data.amountUsdc,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Repay-Assist Activated",
+        description: "You covered the late installment. The borrower will repay you with a 6% premium.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
+      queryClient.invalidateQueries({ queryKey: ["/api/support/late-installments"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error Covering Installment",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const { data: statusData } = useQuery<any>({
@@ -112,11 +254,6 @@ export default function CommunityDetail() {
 
   const healthMetrics = statusData?.communityHealth?.[communityId] || statusData?.health;
   const ghi = healthMetrics?.ghi || 0;
-
-  // Filter loans for this community
-  const communityLoans = loansData?.loans?.filter(
-    (loan: any) => loan.communityId === communityId && loan.status === "ACTIVE"
-  ) || [];
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -423,104 +560,294 @@ export default function CommunityDetail() {
           </TabsContent>
 
           <TabsContent value="support" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <HandHeart className="w-5 h-5" />
-                  Support Borrowers
-                </CardTitle>
-                <CardDescription>
-                  Help community members access affordable credit through USDC assists
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {!address ? (
-                  <div className="text-center py-12">
+            {!address ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center">
                     <HandHeart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
                       Please connect your wallet to view and support loans in this community
                     </p>
                   </div>
-                ) : communityLoans.length === 0 ? (
-                  <div className="text-center py-12">
-                    <HandHeart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No Active Loans</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      There are currently no active loans in this community.
-                      Check back later for opportunities to help borrowers.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-sm text-muted-foreground">
-                        {communityLoans.length} active {communityLoans.length === 1 ? 'loan' : 'loans'} in this community
-                      </p>
-                      <Link href="/support">
-                        <Button variant="outline" size="sm">
-                          View All Support Options
-                        </Button>
-                      </Link>
-                    </div>
-                    {communityLoans.map((loan: any) => (
-                      <Card key={loan.id} className="hover-elevate">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-sm text-muted-foreground">
-                                  {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
-                                </span>
-                                <Badge variant="secondary">{loan.status}</Badge>
-                              </div>
-                              <div className="flex items-center gap-4 text-sm">
-                                <span className="font-semibold">${(loan.principalUsdc / 1000).toFixed(0)}k ARS</span>
-                                <span className="text-muted-foreground">{loan.tenorMonths} months</span>
-                                <span className="text-muted-foreground">{(loan.aprBps / 100).toFixed(1)}% APR</span>
-                              </div>
-                            </div>
-                            <Link href="/support">
-                              <Button size="sm">
-                                <HandHeart className="h-4 w-4 mr-2" />
-                                Assist
-                              </Button>
-                            </Link>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {address && (
-              <Card className="bg-accent/50">
-                <CardHeader>
-                  <CardTitle className="text-base">How USDC Assists Work</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Send USDC to Aave v3 on Celo to generate yield</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Yield automatically reduces the borrower's interest payments</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Track your assists and their impact in the Support page</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Build trust in the community by helping borrowers succeed</span>
-                    </li>
-                  </ul>
                 </CardContent>
               </Card>
+            ) : (
+              <Tabs value={supportTab} onValueChange={setSupportTab}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="loans" data-testid="tab-interest-buydown">
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Interest Buy-Down
+                  </TabsTrigger>
+                  <TabsTrigger value="late" data-testid="tab-repay-assist">
+                    <HandHeart className="h-4 w-4 mr-2" />
+                    Repay-Assist
+                  </TabsTrigger>
+                  <TabsTrigger value="portfolio" data-testid="tab-portfolio">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    My Portfolio
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="loans" className="space-y-4 mt-4">
+                  <Card data-testid="card-ibd-info">
+                    <CardHeader>
+                      <CardTitle>Interest Buy-Down</CardTitle>
+                      <CardDescription>
+                        Commit monthly USDC to reduce the borrower's interest rate
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {loansLoading ? (
+                        <p className="text-muted-foreground">Loading loans...</p>
+                      ) : !availableLoans || availableLoans.length === 0 ? (
+                        <p className="text-muted-foreground">No active loans available for Interest Buy-Down in this community.</p>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid gap-3">
+                            {availableLoans.map((loan) => (
+                              <Card
+                                key={loan.id}
+                                className={`cursor-pointer transition-colors ${
+                                  selectedLoan === loan.id ? "border-primary" : ""
+                                }`}
+                                onClick={() => setSelectedLoan(loan.id)}
+                                data-testid={`card-loan-${loan.id}`}
+                              >
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-mono text-sm text-muted-foreground">
+                                        {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
+                                      </p>
+                                      <p className="text-lg font-semibold">
+                                        ${(loan.principalUsdc / 1000).toFixed(0)}k ARS
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {loan.tenorMonths} months @ {(loan.aprBps / 100).toFixed(1)}% APR
+                                      </p>
+                                    </div>
+                                    <Badge variant="secondary">{loan.status === "ACTIVE" ? "ACTIVE" : loan.status}</Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+
+                          {selectedLoan && (
+                            <Card data-testid="card-ibd-pledge">
+                              <CardHeader>
+                                <CardTitle className="text-lg">Set Monthly Commitment</CardTitle>
+                                <CardDescription>
+                                  Choose how much to contribute each month to reduce the borrower's interest rate
+                                </CardDescription>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium">Monthly Amount</label>
+                                    <span className="text-lg font-semibold">${ibdAmount[0] * 10}k ARS</span>
+                                  </div>
+                                  <Slider
+                                    value={ibdAmount}
+                                    onValueChange={setIbdAmount}
+                                    min={10}
+                                    max={200}
+                                    step={10}
+                                    data-testid="slider-ibd-amount"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    Commit between $100k - $2M ARS per month
+                                  </p>
+                                </div>
+
+                                <Button
+                                  onClick={() =>
+                                    pledgeMutation.mutate({
+                                      loanId: selectedLoan,
+                                      monthlyUsdc: ibdAmount[0],
+                                    })
+                                  }
+                                  disabled={pledgeMutation.isPending}
+                                  className="w-full"
+                                  data-testid="button-create-pledge"
+                                >
+                                  {pledgeMutation.isPending ? "Creating..." : "Activate Monthly Commitment"}
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="late" className="space-y-4 mt-4">
+                  <Card data-testid="card-ra-info">
+                    <CardHeader>
+                      <CardTitle>Repay-Assist</CardTitle>
+                      <CardDescription>
+                        Cover late installments. Borrower repays you with a 6% premium.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {installmentsLoading ? (
+                        <p className="text-muted-foreground">Loading late installments...</p>
+                      ) : !lateInstallments || lateInstallments.length === 0 ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <p>All installments are up to date. No Repay-Assist opportunities available in this community.</p>
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Borrower</TableHead>
+                              <TableHead>Due Date</TableHead>
+                              <TableHead>Days Late</TableHead>
+                              <TableHead>Outstanding</TableHead>
+                              <TableHead>Your Return (6%)</TableHead>
+                              <TableHead>Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {lateInstallments.map((installment) => (
+                              <TableRow key={installment.installmentId} data-testid={`row-late-${installment.installmentId}`}>
+                                <TableCell className="font-mono text-sm">
+                                  {installment.borrowerAddress.slice(0, 6)}...{installment.borrowerAddress.slice(-4)}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-orange-500" />
+                                    {format(new Date(installment.dueDate), "MMM d, yyyy")}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="destructive">{installment.daysLate} days</Badge>
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  ${(installment.outstandingAmount / 1000).toFixed(1)}k ARS
+                                </TableCell>
+                                <TableCell className="text-green-600 font-semibold">
+                                  ${((installment.outstandingAmount * 1.06) / 1000).toFixed(1)}k ARS
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      assistMutation.mutate({
+                                        installmentId: installment.installmentId,
+                                        amountUsdc: installment.outstandingAmount,
+                                      })
+                                    }
+                                    disabled={assistMutation.isPending}
+                                    data-testid={`button-assist-${installment.installmentId}`}
+                                  >
+                                    {assistMutation.isPending ? "Covering..." : "Cover Now"}
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="portfolio" className="space-y-4 mt-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card data-testid="card-active-pledges">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 h-5" />
+                          Active Interest Buy-Downs
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {portfolioLoading ? (
+                          <p className="text-muted-foreground">Loading portfolio...</p>
+                        ) : !communityPledges || communityPledges.length === 0 ? (
+                          <p className="text-muted-foreground">No active Interest Buy-Down commitments in this community.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {communityPledges.map((pledge) => (
+                              <Card key={pledge.id} data-testid={`pledge-${pledge.id}`}>
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-muted-foreground">Loan #{pledge.loanId}</span>
+                                    <Badge variant="secondary">{pledge.status === "ACTIVE" ? "ACTIVE" : pledge.status}</Badge>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm">Monthly:</span>
+                                      <span className="font-semibold">${(pledge.monthlyUsdc / 1000).toFixed(1)}k ARS</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm">Remaining:</span>
+                                      <span className="font-semibold">{pledge.remainingMonths} months</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                      <span>Applied: ${(pledge.totalApplied / 1000).toFixed(1)}k</span>
+                                      <span>Total: ${(pledge.totalPledged / 1000).toFixed(1)}k</span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card data-testid="card-active-assists">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <HandHeart className="h-5 h-5" />
+                          Active Assists
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {portfolioLoading ? (
+                          <p className="text-muted-foreground">Loading portfolio...</p>
+                        ) : !communityAssists || communityAssists.length === 0 ? (
+                          <p className="text-muted-foreground">No active assists in this community.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {communityAssists.map((assist) => (
+                              <Card key={assist.id} data-testid={`assist-${assist.id}`}>
+                                <CardContent className="p-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-muted-foreground">
+                                      Loan #{assist.loanId}
+                                    </span>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm">USDC Sent:</span>
+                                      <span className="font-semibold">${assist.usdcAmount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm">ARS Credit:</span>
+                                      <span className="font-semibold">${(assist.arsCredit / 1000).toFixed(1)}k</span>
+                                    </div>
+                                    {assist.aaveTxHash && (
+                                      <div className="text-xs text-muted-foreground truncate">
+                                        Tx: {assist.aaveTxHash}
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </TabsContent>
+              </Tabs>
             )}
           </TabsContent>
 
