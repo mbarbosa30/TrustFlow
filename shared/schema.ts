@@ -26,6 +26,7 @@ export const communities = pgTable("communities", {
   promptHash: text("prompt_hash").notNull(),
   policyId: text("policy_id").notNull(),
   policyJson: jsonb("policy_json").notNull(), // JSONB for proper policy storage
+  lendingPolicyJson: jsonb("lending_policy_json"), // Opt-in microcredit configuration
   visibility: text("visibility").notNull().default("public"), // 'public' | 'invite'
   creator: text("creator").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -297,3 +298,140 @@ export const insertAuth3009Schema = createInsertSchema(auth3009).omit({
 
 export type InsertAuth3009 = z.infer<typeof insertAuth3009Schema>;
 export type Auth3009 = typeof auth3009.$inferSelect;
+
+// ===== MICROCREDIT LENDING SYSTEM =====
+
+// Loan - Main loan record
+export const loan = pgTable("loan", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  borrowerAddress: text("borrower_address").notNull(),
+  principalUsdc: doublePrecision("principal_usdc").notNull(),
+  aprNominal: doublePrecision("apr_nominal").notNull(), // e.g., 0.40 for 40%
+  tenorMonths: integer("tenor_months").notNull(),
+  status: text("status").notNull(), // 'ACTIVE' | 'PAID' | 'DEFAULTED'
+  disbursedAt: timestamp("disbursed_at"),
+  closedAt: timestamp("closed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLoanSchema = createInsertSchema(loan).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLoan = z.infer<typeof insertLoanSchema>;
+export type Loan = typeof loan.$inferSelect;
+
+// Installment - Monthly payment schedule
+export const installment = pgTable("installment", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
+  idx: integer("idx").notNull(), // 0-based installment number
+  dueDate: timestamp("due_date").notNull(),
+  principalDue: doublePrecision("principal_due").notNull(),
+  interestDue: doublePrecision("interest_due").notNull(),
+  totalDue: doublePrecision("total_due").notNull(),
+  principalPaid: doublePrecision("principal_paid").notNull().default(0),
+  interestPaid: doublePrecision("interest_paid").notNull().default(0),
+  totalPaid: doublePrecision("total_paid").notNull().default(0),
+  lateFee: doublePrecision("late_fee").notNull().default(0),
+  status: text("status").notNull(), // 'PENDING' | 'PAID' | 'LATE' | 'DEFAULTED'
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  loanIdxUnique: { unique: [table.loanId, table.idx] },
+}));
+
+export const insertInstallmentSchema = createInsertSchema(installment).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertInstallment = z.infer<typeof insertInstallmentSchema>;
+export type Installment = typeof installment.$inferSelect;
+
+// Subsidy Ledger - Track subsidy applications per installment
+export const subsidyLedger = pgTable("subsidy_ledger", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
+  installmentIdx: integer("installment_idx").notNull(),
+  ibdApplied: doublePrecision("ibd_applied").notNull().default(0), // Interest Buy-Down
+  voucherApplied: doublePrecision("voucher_applied").notNull().default(0), // Interest Voucher
+  assistCovered: doublePrecision("assist_covered").notNull().default(0), // Repay-Assist
+  assistPremium: doublePrecision("assist_premium").notNull().default(0), // RA premium owed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  loanInstallmentUnique: { unique: [table.loanId, table.installmentIdx] },
+}));
+
+export const insertSubsidyLedgerSchema = createInsertSchema(subsidyLedger).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSubsidyLedger = z.infer<typeof insertSubsidyLedgerSchema>;
+export type SubsidyLedger = typeof subsidyLedger.$inferSelect;
+
+// Assist - Repay-Assist coverage from supporters
+export const assist = pgTable("assist", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
+  installmentIdx: integer("installment_idx").notNull(),
+  supporterAddress: text("supporter_address").notNull(),
+  amountUsdc: doublePrecision("amount_usdc").notNull(),
+  premiumRate: doublePrecision("premium_rate").notNull(), // e.g., 0.06 for 6%
+  totalClaim: doublePrecision("total_claim").notNull(), // amount × (1 + premium)
+  amountRepaid: doublePrecision("amount_repaid").notNull().default(0),
+  status: text("status").notNull(), // 'OPEN' | 'REPAID' | 'LOST'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  repaidAt: timestamp("repaid_at"),
+});
+
+export const insertAssistSchema = createInsertSchema(assist).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAssist = z.infer<typeof insertAssistSchema>;
+export type Assist = typeof assist.$inferSelect;
+
+// Guarantee - First-Loss Guarantee pool per community
+export const guarantee = pgTable("guarantee", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull().unique(),
+  capUsdc: doublePrecision("cap_usdc").notNull(),
+  capRemaining: doublePrecision("cap_remaining").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertGuaranteeSchema = createInsertSchema(guarantee).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGuarantee = z.infer<typeof insertGuaranteeSchema>;
+export type Guarantee = typeof guarantee.$inferSelect;
+
+// Trust Events - Verifiable events affecting trust scores
+export const trustEvent = pgTable("trust_event", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  userAddress: text("user_address").notNull(),
+  eventType: text("event_type").notNull(), // 'LOAN_ON_TIME' | 'LOAN_LATE' | 'LOAN_DEFAULT' | 'ASSIST_SUCCESS' | 'ASSIST_LOSS'
+  delta: doublePrecision("delta").notNull(), // trust score adjustment
+  evidenceId: bigint("evidence_id", { mode: "number" }), // loan_id or assist_id
+  evidenceType: text("evidence_type"), // 'LOAN' | 'ASSIST'
+  appliedInEpoch: bigint("applied_in_epoch", { mode: "number" }), // epoch where delta was applied
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertTrustEventSchema = createInsertSchema(trustEvent).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTrustEvent = z.infer<typeof insertTrustEventSchema>;
+export type TrustEvent = typeof trustEvent.$inferSelect;

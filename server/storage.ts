@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Budget, type InsertBudget, budget, type Allowance, type InsertAllowance, allowance, type Payment, type InsertPayment, payment, type Pledge, type InsertPledge, pledge, type Auth3009, type InsertAuth3009, auth3009 } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Budget, type InsertBudget, budget, type Allowance, type InsertAllowance, allowance, type Payment, type InsertPayment, payment, type Pledge, type InsertPledge, pledge, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -73,6 +73,35 @@ export interface IStorage {
   createAuth3009(auth: InsertAuth3009): Promise<Auth3009>;
   getAuth3009(nonce: string): Promise<Auth3009 | undefined>;
   markAuth3009Used(nonce: string, txHash: string): Promise<void>;
+  
+  // Lending operations
+  updateCommunityLendingPolicy(communityId: number, policy: any): Promise<void>;
+  getLendingPolicy(communityId: number): Promise<any | null>;
+  
+  // Loan operations
+  createLoan(loanData: InsertLoan): Promise<Loan>;
+  createLoanWithInstallments(params: {
+    loanData: InsertLoan;
+    principalUsdc: number;
+    aprNominal: number;
+    tenorMonths: number;
+  }): Promise<{ loan: Loan; installments: Installment[] }>;
+  getLoan(id: number): Promise<Loan | undefined>;
+  getLoansByBorrower(borrowerAddress: string, communityId?: number): Promise<Loan[]>;
+  getLoansByCommunity(communityId: number): Promise<Loan[]>;
+  updateLoanStatus(id: number, status: string): Promise<void>;
+  
+  // Installment operations
+  createInstallment(installmentData: InsertInstallment): Promise<Installment>;
+  createInstallments(installmentsData: InsertInstallment[]): Promise<Installment[]>;
+  getInstallmentsByLoan(loanId: number): Promise<Installment[]>;
+  getInstallment(loanId: number, idx: number): Promise<Installment | undefined>;
+  updateInstallmentPayment(loanId: number, idx: number, principalPaid: number, interestPaid: number): Promise<void>;
+  updateInstallmentStatus(loanId: number, idx: number, status: string): Promise<void>;
+  
+  // Subsidy ledger operations
+  createSubsidyLedger(subsidyData: InsertSubsidyLedger): Promise<SubsidyLedger>;
+  getSubsidyLedger(loanId: number, installmentIdx: number): Promise<SubsidyLedger | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -660,6 +689,222 @@ export class MemStorage implements IStorage {
       .update(auth3009)
       .set({ used: true, txHash })
       .where(eq(auth3009.nonce, nonce));
+  }
+
+  async updateCommunityLendingPolicy(communityId: number, policy: any): Promise<void> {
+    await db
+      .update(communities)
+      .set({ lendingPolicyJson: policy })
+      .where(eq(communities.id, communityId));
+  }
+
+  async getLendingPolicy(communityId: number): Promise<any | null> {
+    const results = await db
+      .select()
+      .from(communities)
+      .where(eq(communities.id, communityId))
+      .limit(1);
+    
+    if (results.length === 0) {
+      return null;
+    }
+    
+    return results[0].lendingPolicyJson;
+  }
+
+  async createLoan(loanData: InsertLoan): Promise<Loan> {
+    const normalized = {
+      ...loanData,
+      borrowerAddress: loanData.borrowerAddress.toLowerCase(),
+    };
+    
+    const [dbLoan] = await db
+      .insert(loan)
+      .values(normalized)
+      .returning();
+    
+    return dbLoan;
+  }
+
+  async createLoanWithInstallments(params: {
+    loanData: InsertLoan;
+    principalUsdc: number;
+    aprNominal: number;
+    tenorMonths: number;
+  }): Promise<{ loan: Loan; installments: Installment[] }> {
+    const { loanData, principalUsdc, aprNominal, tenorMonths } = params;
+    
+    // Import dynamically to avoid circular dependencies
+    const { generateInstallmentSchedule } = await import("./lending/loan");
+    
+    // Execute in transaction to ensure atomicity
+    return await db.transaction(async (tx) => {
+      // 1. Create loan
+      const normalized = {
+        ...loanData,
+        borrowerAddress: loanData.borrowerAddress.toLowerCase(),
+      };
+      
+      const [newLoan] = await tx
+        .insert(loan)
+        .values(normalized)
+        .returning();
+      
+      // 2. Generate installment schedule
+      const schedule = generateInstallmentSchedule(principalUsdc, aprNominal, tenorMonths);
+      
+      // 3. Create installments
+      const installmentsData: InsertInstallment[] = schedule.map((item) => ({
+        loanId: newLoan.id,
+        idx: item.idx,
+        dueDate: item.dueDate,
+        principalDue: item.principalDue,
+        interestDue: item.interestDue,
+        totalDue: item.totalDue,
+        status: 'PENDING',
+      }));
+      
+      const installments = await tx
+        .insert(installment)
+        .values(installmentsData)
+        .returning();
+      
+      return {
+        loan: newLoan,
+        installments,
+      };
+    });
+  }
+
+  async getLoan(id: number): Promise<Loan | undefined> {
+    const results = await db
+      .select()
+      .from(loan)
+      .where(eq(loan.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getLoansByBorrower(borrowerAddress: string, communityId?: number): Promise<Loan[]> {
+    const normalized = borrowerAddress.toLowerCase();
+    const conditions = [eq(loan.borrowerAddress, normalized)];
+    
+    if (communityId !== undefined) {
+      conditions.push(eq(loan.communityId, communityId));
+    }
+    
+    return await db
+      .select()
+      .from(loan)
+      .where(and(...conditions))
+      .orderBy(desc(loan.createdAt));
+  }
+
+  async getLoansByCommunity(communityId: number): Promise<Loan[]> {
+    return await db
+      .select()
+      .from(loan)
+      .where(eq(loan.communityId, communityId))
+      .orderBy(desc(loan.createdAt));
+  }
+
+  async updateLoanStatus(id: number, status: string): Promise<void> {
+    await db
+      .update(loan)
+      .set({ status, closedAt: status !== 'ACTIVE' ? new Date() : null })
+      .where(eq(loan.id, id));
+  }
+
+  async createInstallment(installmentData: InsertInstallment): Promise<Installment> {
+    const [dbInstallment] = await db
+      .insert(installment)
+      .values(installmentData)
+      .returning();
+    
+    return dbInstallment;
+  }
+
+  async createInstallments(installmentsData: InsertInstallment[]): Promise<Installment[]> {
+    if (installmentsData.length === 0) {
+      return [];
+    }
+    
+    return await db
+      .insert(installment)
+      .values(installmentsData)
+      .returning();
+  }
+
+  async getInstallmentsByLoan(loanId: number): Promise<Installment[]> {
+    return await db
+      .select()
+      .from(installment)
+      .where(eq(installment.loanId, loanId))
+      .orderBy(installment.idx);
+  }
+
+  async getInstallment(loanId: number, idx: number): Promise<Installment | undefined> {
+    const results = await db
+      .select()
+      .from(installment)
+      .where(and(eq(installment.loanId, loanId), eq(installment.idx, idx)))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async updateInstallmentPayment(
+    loanId: number,
+    idx: number,
+    principalPaid: number,
+    interestPaid: number
+  ): Promise<void> {
+    const currentInstallment = await this.getInstallment(loanId, idx);
+    
+    if (!currentInstallment) {
+      throw new Error(`Installment ${idx} not found for loan ${loanId}`);
+    }
+    
+    const totalPaid = principalPaid + interestPaid;
+    const isPaid = totalPaid >= currentInstallment.totalDue;
+    
+    await db
+      .update(installment)
+      .set({
+        principalPaid,
+        interestPaid,
+        totalPaid,
+        status: isPaid ? 'PAID' : currentInstallment.status,
+        paidAt: isPaid ? new Date() : currentInstallment.paidAt,
+      })
+      .where(and(eq(installment.loanId, loanId), eq(installment.idx, idx)));
+  }
+
+  async updateInstallmentStatus(loanId: number, idx: number, status: string): Promise<void> {
+    await db
+      .update(installment)
+      .set({ status })
+      .where(and(eq(installment.loanId, loanId), eq(installment.idx, idx)));
+  }
+
+  async createSubsidyLedger(subsidyData: InsertSubsidyLedger): Promise<SubsidyLedger> {
+    const [dbSubsidy] = await db
+      .insert(subsidyLedger)
+      .values(subsidyData)
+      .returning();
+    
+    return dbSubsidy;
+  }
+
+  async getSubsidyLedger(loanId: number, installmentIdx: number): Promise<SubsidyLedger | undefined> {
+    const results = await db
+      .select()
+      .from(subsidyLedger)
+      .where(and(eq(subsidyLedger.loanId, loanId), eq(subsidyLedger.installmentIdx, installmentIdx)))
+      .limit(1);
+    
+    return results[0];
   }
 }
 

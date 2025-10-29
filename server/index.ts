@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMockData } from "./health/mock-data";
 import { initializeCommunityZero } from "./communities/init";
+import { initializeLendingPolicies } from "./lending/init";
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use((req, res, next) => {
 
   await initializeMockData();
   await initializeCommunityZero();
+  await initializeLendingPolicies();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
