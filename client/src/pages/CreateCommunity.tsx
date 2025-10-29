@@ -35,15 +35,16 @@ export default function CreateCommunity() {
 
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; description: string; promptText: string; templateId: string; creator: string }) => {
-      return await apiRequest("POST", "/api/communities", data);
+      const response = await apiRequest("POST", "/api/communities", data);
+      return await response.json();
     },
-    onSuccess: (response: any) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Community created!",
-        description: `${response.community.name} has been created. You're automatically the first seed.`,
+        description: `${data.community.name} has been created. You're automatically the first seed.`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
-      setLocation(`/communities/${response.community.id}`);
+      setLocation(`/communities/${data.community.id}`);
     },
     onError: (error: any) => {
       toast({
