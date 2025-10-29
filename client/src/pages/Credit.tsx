@@ -336,7 +336,7 @@ export default function Credit() {
                     </div>
 
                     <Button
-                      onClick={() => makePaymentMutation.mutate(loanDetails.nextInstallment.id)}
+                      onClick={() => loanDetails.nextInstallment && makePaymentMutation.mutate(loanDetails.nextInstallment.id)}
                       disabled={!paymentAmount || makePaymentMutation.isPending}
                       className="w-full"
                       data-testid="button-make-payment"
