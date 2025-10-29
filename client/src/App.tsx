@@ -24,6 +24,7 @@ import MyWallet from "@/pages/MyWallet";
 import Credit from "@/pages/Credit";
 import Support from "@/pages/Support";
 import LendingDashboard from "@/pages/LendingDashboard";
+import LendingAdmin from "@/pages/LendingAdmin";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/communities/create" component={CreateCommunity} />
       <Route path="/communities/:id" component={CommunityDetail} />
       <Route path="/lending/:communityId" component={LendingDashboard} />
+      <Route path="/admin/lending/:communityId" component={LendingAdmin} />
       <Route component={NotFound} />
     </Switch>
   );

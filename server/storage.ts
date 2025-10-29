@@ -134,6 +134,10 @@ export interface IStorage {
   // Lending Dashboard operations
   getLendingStats(communityId: number): Promise<any>;
   getLendingActivity(communityId: number, limit?: number): Promise<any[]>;
+  
+  // Lending Policy Admin operations
+  getLendingPolicy(communityId: number): Promise<any>;
+  updateLendingPolicy(communityId: number, policy: any): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1322,6 +1326,57 @@ export class MemStorage implements IStorage {
     return activities
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
+  }
+
+  async getLendingPolicy(communityId: number): Promise<any> {
+    const community = await this.getCommunity(communityId);
+    
+    if (!community || !community.lendingPolicyJson) {
+      // Return default policy if none exists
+      return {
+        enabled: false,
+        loanAmounts: {
+          min: 160,
+          max: 800,
+          step: 80,
+        },
+        tenorMonths: {
+          min: 6,
+          max: 12,
+          step: 1,
+        },
+        annualInterestRate: 40.0,
+        subsidies: {
+          ibdEnabled: true,
+          raEnabled: true,
+          vouchersEnabled: false,
+          flgEnabled: false,
+        },
+        trustDeltas: {
+          onTimePayment: 0.02,
+          latePayment: -0.05,
+          defaultEvent: -0.15,
+          repayAssist: 0.03,
+          maxPerEpoch: 0.10,
+        },
+        eligibility: {
+          ghiThreshold: 60,
+          minCutThreshold: 2,
+        },
+      };
+    }
+
+    return community.lendingPolicyJson;
+  }
+
+  async updateLendingPolicy(communityId: number, policy: any): Promise<void> {
+    await db
+      .update(community)
+      .set({
+        lendingPolicyJson: policy,
+        updatedAt: new Date(),
+      })
+      .where(eq(community.id, communityId));
   }
 }
 

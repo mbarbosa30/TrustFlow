@@ -2270,6 +2270,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lending Policy Admin API endpoints
+  // Get lending policy for a community
+  app.get("/api/admin/lending-policy/:communityId", async (req, res) => {
+    try {
+      const communityId = parseInt(req.params.communityId);
+      
+      if (isNaN(communityId)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const policy = await storage.getLendingPolicy(communityId);
+      res.json(policy);
+    } catch (error) {
+      console.error("Error getting lending policy:", error);
+      res.status(500).json({ error: "Failed to get lending policy" });
+    }
+  });
+
+  // Update lending policy for a community
+  app.post("/api/admin/lending-policy/:communityId", async (req, res) => {
+    try {
+      const communityId = parseInt(req.params.communityId);
+      
+      if (isNaN(communityId)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const policy = req.body;
+      
+      // Basic validation
+      if (!policy || typeof policy !== 'object') {
+        return res.status(400).json({ error: "Invalid policy structure" });
+      }
+      
+      // Validate loan amounts
+      if (policy.loanAmounts) {
+        if (policy.loanAmounts.min > policy.loanAmounts.max) {
+          return res.status(400).json({ error: "Loan minimum cannot exceed maximum" });
+        }
+        if (policy.loanAmounts.step <= 0) {
+          return res.status(400).json({ error: "Loan step must be positive" });
+        }
+      }
+      
+      // Validate tenor months
+      if (policy.tenorMonths) {
+        if (policy.tenorMonths.min > policy.tenorMonths.max) {
+          return res.status(400).json({ error: "Tenor minimum cannot exceed maximum" });
+        }
+        if (policy.tenorMonths.step <= 0) {
+          return res.status(400).json({ error: "Tenor step must be positive" });
+        }
+      }
+      
+      // Validate interest rate
+      if (policy.annualInterestRate !== undefined) {
+        if (policy.annualInterestRate < 0 || policy.annualInterestRate > 100) {
+          return res.status(400).json({ error: "Interest rate must be between 0 and 100" });
+        }
+      }
+      
+      // Validate trust deltas
+      if (policy.trustDeltas) {
+        if (policy.trustDeltas.onTimePayment < 0) {
+          return res.status(400).json({ error: "On-time payment delta must be positive" });
+        }
+        if (policy.trustDeltas.latePayment > 0) {
+          return res.status(400).json({ error: "Late payment delta must be negative" });
+        }
+        if (policy.trustDeltas.defaultEvent > 0) {
+          return res.status(400).json({ error: "Default event delta must be negative" });
+        }
+        if (policy.trustDeltas.maxPerEpoch <= 0) {
+          return res.status(400).json({ error: "Max delta per epoch must be positive" });
+        }
+      }
+      
+      // Validate eligibility
+      if (policy.eligibility) {
+        if (policy.eligibility.ghiThreshold < 0 || policy.eligibility.ghiThreshold > 100) {
+          return res.status(400).json({ error: "GHI threshold must be between 0 and 100" });
+        }
+        if (policy.eligibility.minCutThreshold < 1) {
+          return res.status(400).json({ error: "Min-cut threshold must be at least 1" });
+        }
+      }
+
+      await storage.updateLendingPolicy(communityId, policy);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating lending policy:", error);
+      res.status(500).json({ error: "Failed to update lending policy" });
+    }
+  });
+
   // Lending Dashboard API endpoints
   // Get lending statistics for a community
   app.get("/api/lending/stats/:communityId", async (req, res) => {
