@@ -1,0 +1,296 @@
+Perfect—here’s a pragmatic, step-by-step implementation plan that plugs straight into your **current TrustFlow + Self-x402** stack, using **USDC on Celo** with **EIP-3009**.
+
+---
+
+# 0) What you’ll have when done
+
+* **Daily snapshots** (24h, time-boxed) that compute eligibility & per-user **daily allowance**.
+* **User-triggered** money movement:
+
+  * **Claim to self** (Treasury/Donor → User)
+  * **Pay a merchant** (Treasury/Donor → Merchant)
+* **Donor pledges** that fund **just-in-time** with daily/tx caps.
+* **Receipts** (EAS attestations) for every payment.
+* All math and payouts **auditable** (signed manifests, cut-witnesses).
+
+---
+
+# 1) Prereqs & configuration
+
+**Contracts / chains**
+
+* Celo RPC (HTTPS + WebSocket)
+* **USDC on Celo** address (3009-enabled)
+* **EAS** deployment for receipts (or your minimal attestations registry)
+
+**Keys / custody**
+
+* **Community Treasury**: a Safe (multisig) holding USDC
+
+  * Either: a dedicated **3009 signer EOA** (limited to signing)
+  * Or: a Safe module that exposes 3009 signing via a subkey
+* **Donor wallets**: donors sign 3009 auths via x402 when their pledge is used
+
+**ENV (examples)**
+
+```
+CELO_RPC_URL=...
+USDC_ADDRESS=0x...
+SAFE_TREASURY=0x...
+TREASURY_SIGNER_PRIVATE_KEY=...
+EAS_ADDRESS=0x...
+TIMEZONE=America/Argentina/Buenos_Aires
+SNAPSHOT_CRON="0 0 * * *"   # 00:00 local
+```
+
+---
+
+# 2) Minimal data model additions (Postgres)
+
+```sql
+-- donors' JIT funding commitments (pledges)
+CREATE TABLE pledge (
+  id BIGSERIAL PRIMARY KEY,
+  community_id BIGINT NOT NULL,
+  donor_address BYTEA NOT NULL,
+  daily_cap NUMERIC NOT NULL,      -- USDC units
+  per_tx_cap NUMERIC NOT NULL,
+  total_cap NUMERIC,               -- optional
+  allowlist JSONB,                 -- optional: merchants
+  valid_until TIMESTAMPTZ,         -- optional
+  paused BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- daily budget snapshot (derived from treasury balance at finalize)
+CREATE TABLE budget (
+  community_id BIGINT NOT NULL,
+  snapshot_id BIGINT NOT NULL,
+  rho NUMERIC NOT NULL,            -- run-rate
+  treasury_remaining NUMERIC NOT NULL,
+  daily_budget NUMERIC NOT NULL,   -- rho * remaining
+  PRIMARY KEY (community_id, snapshot_id)
+);
+
+-- per-user share for the day (allowance upper bound)
+CREATE TABLE allowance (
+  community_id BIGINT NOT NULL,
+  snapshot_id BIGINT NOT NULL,
+  user BYTEA NOT NULL,
+  share NUMERIC NOT NULL,          -- pre-cap share_i
+  cap NUMERIC NOT NULL,            -- per-user daily cap
+  allowance NUMERIC NOT NULL,      -- min(share, cap)
+  claimed_today NUMERIC NOT NULL DEFAULT 0,
+  PRIMARY KEY (community_id, snapshot_id, user)
+);
+
+-- served EIP-3009 authorizations (to avoid reuse & double-issue)
+CREATE TABLE auth_3009 (
+  id BIGSERIAL PRIMARY KEY,
+  community_id BIGINT NOT NULL,
+  snapshot_id BIGINT NOT NULL,
+  from_address BYTEA NOT NULL,
+  to_address BYTEA NOT NULL,
+  amount NUMERIC NOT NULL,
+  valid_after BIGINT NOT NULL,
+  valid_before BIGINT NOT NULL,
+  nonce BYTEA NOT NULL UNIQUE,
+  used BOOLEAN DEFAULT false,
+  tx_hash BYTEA
+);
+
+-- payments/claims ledger (off-chain)
+CREATE TABLE payment (
+  id BIGSERIAL PRIMARY KEY,
+  community_id BIGINT NOT NULL,
+  snapshot_id BIGINT NOT NULL,
+  user BYTEA NOT NULL,
+  payee BYTEA NOT NULL,            -- user (claim) or merchant (pay)
+  amount NUMERIC NOT NULL,
+  source ENUM('TREASURY','PLEDGE') NOT NULL,
+  pledge_id BIGINT,                -- if source=PLEDGE
+  status ENUM('APPROVED','SENT','CONFIRMED','FAILED') NOT NULL,
+  tx_hash BYTEA,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+---
+
+# 3) Services (3 small processes)
+
+## A) **Snapshot Service** (existing scoring job + tiny extras)
+
+* Runs on **cron (24h)** at 00:00 **America/Argentina/Buenos_Aires**.
+* Steps per community:
+
+  1. Freeze endorsements set (by log index) → build graph
+  2. Compute **max-flow/min-cut**, **≥2 vertex-disjoint**, **per-seed share ≥ 0.30**
+  3. Mark **accepted**; compute **STS** and **Confidence**
+  4. Fetch **treasury_remaining** on Celo (USDC balance)
+  5. Compute **DailyBudget = ρ × remaining**
+  6. Compute **weights** (e.g., linear: (w_i = (STS_i/100)^k), k=1) and derive **share_i**
+  7. Apply **per-user cap** → store **allowance_i**
+  8. Publish bundle: `params.json`, `scores.jsonl`, `shares.jsonl`, `manifest.json`, **cut-witnesses/**
+  9. Insert rows into `budget` and `allowance`
+
+> Your existing bundle stays the source of truth; budget/allowance is derived and signed.
+
+## B) **Payout Service (x402 agent)** — integrates Self-x402
+
+Endpoints (see §4):
+
+* **/budget**, **/allowance**: read-only
+* **/claim**: user → self (returns signed **EIP-3009**)
+* **/pay**: user → merchant (returns signed **EIP-3009**)
+* **/pledges**: create/pause resume donor pledges
+
+**Decision logic** (both claim & pay):
+
+1. Validate **eligibility** from latest finalized snapshot; fetch remaining **allowance**.
+2. **Atomic reserve**: amount ≤ (allowance − claimed_today) **AND** ≤ (community remaining daily budget − sum reserved).
+3. Choose **funding source**:
+
+   * Try **Treasury** (still under **DailyBudget**)
+   * If insufficient → **Pledge** selection (round-robin or pro-rata by dailyCap, respect perTxCap/allowlists)
+4. Build and store **auth_3009** row; sign `transferWithAuthorization`:
+
+   * `from` = Treasury Safe signer **or** Donor wallet
+   * `to` = user (claim) **or** merchant (pay)
+   * `value` = approved amount
+   * `validAfter` = now, `validBefore` = endOfDay+grace (e.g., +24h), `nonce` = keccak(community|snapshot|user|to|amount|rand)
+5. Return the signed auth; update `payment` (status=APPROVED)
+
+A small **relayer** can auto-submit the 3009 auths (optional; user/merchant can submit directly). On receipt of tx confirmation, set `used=true` in `auth_3009`, `status=CONFIRMED` in `payment`, and emit **EAS receipt**.
+
+## C) **Relayer (optional)**
+
+* Watches `payment` with status=APPROVED
+* Submits `transferWithAuthorization` to the USDC contract
+* Updates tx hash & statuses
+
+---
+
+# 4) x402 integration (API contract)
+
+**Auth:** Wallet signature or session tied to the user’s wallet address.
+
+```http
+# Public info
+GET /v1/communities/:cid/budget/today
+→ { snapshotId, rho, treasuryRemaining, dailyBudget, totalEligible, capPerUser }
+
+GET /v1/communities/:cid/allowance/:user
+→ { snapshotId, eligible, allowance, claimedToday, remainingForUser, perTxCap }
+
+# User pulls to self
+POST /v1/communities/:cid/claim
+{ amount, to? }   # default to caller
+→ 200 { eip3009: { from, to, value, validAfter, validBefore, nonce, signature },
+        paymentId, receiptPreview }
+
+# User pays a merchant
+POST /v1/communities/:cid/pay
+{ amount, merchant, memo? }
+→ 200 { eip3009: { from, to: merchant, value, validAfter, validBefore, nonce, signature },
+        paymentId, receiptPreview }
+
+# Donor pledges
+POST   /v1/communities/:cid/pledges
+{ dailyCap, perTxCap, totalCap?, allowlist?, validUntil? }
+→ { pledgeId }
+
+PATCH  /v1/communities/:cid/pledges/:pid { paused: true|false }
+GET    /v1/communities/:cid/pledges      → list
+```
+
+**Error codes** you’ll return:
+
+* 409 CONFLICT — allowance exhausted / day budget exhausted / pledge caps exceeded
+* 403 FORBIDDEN — not eligible / merchant not allow-listed
+* 410 GONE — snapshot rolled over; retry on next snapshot
+
+---
+
+# 5) EIP-3009 signing utility (USDC)
+
+* Implement a small signer that builds EIP-712 for USDC’s `transferWithAuthorization`:
+
+  ```
+  from, to, value, validAfter, validBefore, nonce
+  ```
+* Keep **validity windows short** (24–72h)
+* Unique **nonce**; store in `auth_3009`; mark “used” on confirmation
+* For **Treasury Safe**: either keep a dedicated EOA with USDC balance controlled by Safe, or use a module that authorizes 3009 signing
+
+---
+
+# 6) Donor pledge selector (simple & fair)
+
+* Maintain today’s **remaining dailyCap** per pledge (reset at midnight)
+* On each request, iterate pledges:
+
+  * Skip paused/expired or merchant not in allowlist (if provided)
+  * Use min(amountLeft, perTxCap, remainingDailyCap)
+  * If multiple pledges needed, split across them (round-robin or pro-rata)
+* Record splits in `payment` (pledge_id)
+
+---
+
+# 7) Receipts (EAS or log)
+
+* After tx confirms, post **EAS** attestation:
+
+  ```
+  PaymentReceipt(community_id, user, payee, amount, "USDC.celo",
+                 snapshot_id, tx_hash, memo?)
+  ```
+* Link in UI: “View receipt on EAS”
+* Also store a compact JSON in your transparency log (optional)
+
+---
+
+# 8) Communications (drop-in content)
+
+**For users (in-app copy)**
+
+* Banner: “Today’s community budget: **$X**. Your available share: **$Y**. Claim to your wallet or pay a shop.”
+* Claim tooltip: “Pull your available share. Unused budget stays in the pot.”
+* Pay tooltip: “Scan at checkout; if the pot runs short, donor pledges top it up.”
+* Receipt line: “Paid **$A** to **Merchant** · Receipt ▸”
+
+**For donors (pledge form)**
+
+* Labels: Daily cap, Per-payment cap, (optional) merchant allowlist, end date
+* Helper text: “Your funds move **only** when an eligible member makes a real payment and the pot can’t cover it. You can pause anytime.”
+
+**Transparency page**
+
+* Show yesterday’s: treasuryRemaining, rho, dailyBudget, #accepted, total claimed, pledged coverage.
+* Link to `manifest.json`, `scores.jsonl`, `shares.jsonl`, EAS receipts.
+
+---
+
+# 9) Security & guardrails (do not skip)
+
+* **Eligibility gates** enforced server-side before any signature:
+
+  * min-cut ≥ 2, **vertex-disjoint ≥ 2**, per-seed ≥ 0.30
+* **Lagged distances** for capacities (from previous snapshot)
+* Atomic reserves on claim/pay; idempotent handlers
+* Per-user/day & per-tx caps; per-merchant/day caps (optional)
+* Circuit breaker: pause community payouts; pause a pledge
+* Alerts: abnormal volume, failures, repeated nonce attempts
+
+---
+
+# 10) Rollout checklist (MVP order)
+
+1. Wire **Snapshot Service** to produce `budget` & `allowance` (plus signed bundles).
+2. Implement **/budget**, **/allowance**, **/claim** (Treasury only).
+3. Add **/pay** (Treasury → Merchant).
+4. Add **Pledges** + selector (donor JIT).
+5. Add **EAS receipts** + transparency page.
+6. Optional relayer for 3009 submits.
+
+That’s the full path from “current setup” to **simple daily % budget**, **user-triggered payouts**, and **donor JIT pledges**—all while keeping your trust math, proofs, and UX crystal-clear.

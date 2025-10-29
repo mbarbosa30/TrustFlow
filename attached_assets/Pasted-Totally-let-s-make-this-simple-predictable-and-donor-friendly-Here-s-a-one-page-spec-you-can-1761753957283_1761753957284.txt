@@ -1,0 +1,145 @@
+Totally—let’s make this **simple, predictable, and donor-friendly**.
+
+Here’s a one-page spec you can drop in today.
+
+# 0) Two modes (keep both, same math)
+
+* **Claim** (user pulls to self)
+* **Pay** (user pays a merchant; donors/Treasury fund JIT)
+
+# 1) Daily budget (one knob)
+
+Pick a single knob **ρ** (run-rate). Each day’s total budget comes from what’s left.
+
+[
+\textbf{DailyBudget}*t ;=; \rho \cdot \text{TreasuryRemaining}*{t-1}
+]
+
+* Start with **ρ = 0.5%**.
+* Optional guardrails: floor/ceiling, e.g., ( $50 \le \text{DailyBudget}_t \le $2{,}000 ).
+
+# 2) Who’s eligible (unchanged, still rigorous)
+
+User must be **Accepted** with:
+
+* **min-cut ≥ 2**
+* **≥ 2 vertex-disjoint** seed→user paths
+* **per-seed share ≥ 0.30** (for ≥2 seeds)
+
+# 3) Split the daily budget (one simple formula)
+
+Use a **linear, easy** weight from score. (No softmax, no taper.)
+
+Let ( s_i \in [0,100] ) be the user’s STS (or STS′). Choose a tiny exponent (k) (curvature); **k=1** is linear, **k=1.2** gives a mild boost to higher scores.
+
+[
+w_i ;=; \Big(\frac{s_i}{100}\Big)^k
+\quad\Rightarrow\quad
+\textbf{Share}_i ;=; \frac{w_i}{\sum_j w_j}\cdot \text{DailyBudget}_t
+]
+
+Add **two caps** so it’s intuitive:
+
+* **Per-user daily cap** (C_{\text{user}}) (e.g., **$5/day**)
+* **Per-tx cap** (C_{\text{tx}}) (e.g., **$5**)
+
+Final **Allowance**:
+[
+\textbf{Allowance}_i ;=; \min(\text{Share}*i,; C*{\text{user}})
+]
+
+That’s it. Everyone can compute this on a napkin.
+
+# 4) Donor pledges (JIT, zero friction for donors)
+
+Donors **pledge** with 3 numbers; funds only move **when a user pays**:
+
+```
+pledge {
+  from: donor_wallet,
+  dailyCap: $X/day,
+  perTxCap: $Y,
+  totalCap: $Z   // optional
+  allowlist: [merchant_addrs]? // optional
+  validUntil: date?             // optional
+}
+```
+
+**When a user claims/pays amount A:**
+
+1. Use **Treasury** first (subject to DailyBudget & user Allowance).
+2. If not enough, use **pledges** (round-robin or pro-rata by remaining dailyCap), each up to its **perTxCap** and remaining dailyCap, until the amount is covered.
+
+All rails sign **EIP-3009** (USDC on Celo) so it’s gas-light:
+
+* Claim → `transferWithAuthorization(Treasury/Donor → User)`
+* Pay → `transferWithAuthorization(Treasury/Donor → Merchant)`
+
+# 5) Who triggers payment? The **user**
+
+* **Claim:** User taps **Claim**; server returns a signed 3009 auth; user/relayer submits.
+* **Pay:** In checkout, user scans a QR → server approves and returns 3009 auth **to the merchant**; merchant/relayer submits.
+
+# 6) Receipts (one click, verifiable)
+
+After tx confirms, the server posts an **EAS attestation**:
+
+```
+PaymentReceipt {
+  community_id, user, payee, amount, currency="USDC.celo",
+  snapshot_id, tx_hash, memo?
+}
+```
+
+Link in UI: “View receipt on EAS”.
+
+# 7) Tiny API (enough for MVP)
+
+* **GET** `/budget/today` → `{ dailyBudget, rho }`
+* **GET** `/users/:addr/allowance` → `{ allowance, claimedToday, perTxCap }`
+* **POST** `/claim { amount, to? }` → `{ eip3009Auth, receiptPreview }`
+* **POST** `/pay { amount, merchant, memo? }` → `{ eip3009Auth, receiptPreview }`
+* **POST** `/pledges { dailyCap, perTxCap, totalCap?, allowlist?, validUntil? }`
+
+# 8) Defaults that “just work”
+
+* ρ = **0.5%**
+* (k = 1) (linear)
+* (C_{\text{user}} = $5/day), (C_{\text{tx}} = $5)
+* Round-robin across pledges; Treasury first, pledges second
+* 3009 validity window **24–72h**, unique nonce per auth
+* Publish daily: snapshot manifest + `shares.jsonl` (everyone’s Share_i) + `payouts.jsonl`
+
+# 9) Example (numbers)
+
+* Treasury remaining yesterday: **$10,000** → **DailyBudget = 0.5% = $50**
+* Users: Alice (STS 80), Bob (60), Carol (40), (k=1):
+
+  * Weights: 0.80, 0.60, 0.40 → sum = 1.80
+  * Shares: $22.22, $16.67, $11.11
+  * Cap $5/day → each can claim/pay **up to $5** today
+* Donor pledges:
+
+  * Donor1: dailyCap $30, perTxCap $5
+  * Donor2: dailyCap $20, perTxCap $5
+    If Treasury’s $50 is used up, the next approved payments pull JIT from Donor1→Donor2→Donor1… (each max $5/tx).
+
+# 10) Safety (still simple)
+
+* Eligibility gates (min-cut, vertex-disjoint, per-seed share) enforced before any allowance.
+* **Atomic reserve** on claim/pay to prevent overspend.
+* **Rate-limits:** per-user/day, per-merchant/day, per-pledge/day.
+* **Pause switch** per community and per pledge.
+
+---
+
+## TL;DR
+
+* **DailyBudget = ρ × remaining Treasury**.
+* **Split = linear by score** (with a tiny exponent (k) if you want).
+* **Two caps** (per-user/day & per-tx).
+* **User-triggered** claims/pays.
+* **Donors pledge** caps; money moves **only at payment time** via EIP-3009.
+* **Receipts** = one EAS attestation.
+
+If you want, I can turn this into a tiny policy JSON and the 4 endpoints you need for MVP (`/budget`, `/allowance`, `/claim`, `/pay`) using Self-x402 patterns.

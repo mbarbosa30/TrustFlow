@@ -1,0 +1,127 @@
+Here’s plain-English copy you can drop into your site/app, split for **community members** and **donors**. It avoids math, stays transparent, and shows simple examples.
+
+# For community members (users)
+
+## What is this?
+
+Your community has a shared **USDC wallet** (“the pot”). Each day, a **small fixed %** of whatever is left in the pot becomes available for members to use.
+
+## How do I get a share?
+
+You earn a share by being **trusted** in the community graph:
+
+* people vouched for you,
+* your trust paths are **independent** (not all through one person),
+* your trust comes from **at least two different seeds**.
+
+If you meet those checks, you’re “**Accepted**” for the day.
+
+## How is the daily pot split?
+
+Simple: higher trust → slightly bigger share.
+We convert your trust score into a **weight**, then split the day’s pot across all accepted members by those weights. There’s also a **small daily limit** per person so it stays fair.
+
+## How do I use it?
+
+Two ways:
+
+* **Claim to my wallet:** Tap **Claim** → USDC arrives in your wallet (no complicated steps).
+* **Pay directly:** At a participating shop, scan the QR → we send **USDC straight to the merchant**. (You can still claim to yourself if you prefer.)
+
+## What if the pot is low?
+
+Some donors add **pledges**. That means: when the pot can’t cover a payment, a donor’s wallet **tops up that payment automatically** (up to their daily/tx limits). You don’t need to do anything.
+
+## What about receipts?
+
+Every payment gets a **digital receipt** (public but not personal): amount, who was paid, and a short memo. You’ll see a link right after each claim/payment.
+
+### Quick example
+
+* The pot has **10,000 USDC** left.
+* The community spends **0.5% per day** → today’s budget is **50 USDC**.
+* Ten accepted members share it by trust weight. If your share is **4.80 USDC** and the per-person daily limit is **5 USDC**, you can claim/pay up to **4.80** today.
+
+---
+
+# For donors
+
+## How your support works
+
+You can help in two ways:
+
+1. **Fund the pot** (send USDC to the community treasury).
+2. **Make a pledge** (no upfront transfer): set **daily cap** and **per-transaction cap**. When a member pays and the pot can’t cover it, your wallet **automatically signs** that payment—only then is USDC moved. You always stay in control.
+
+## Why pledges feel great
+
+* **Just-in-time giving:** your funds move only when a real payment happens.
+* **Safety rails:** you choose daily/tx limits, allowed merchants, and an end date.
+* **Transparency:** you see receipts for what your pledge covered.
+
+## What we guarantee before any payout
+
+* The member passed **objective trust checks** (two independent paths, diversity of seeds).
+* The community’s policy and daily budget are **public and signed** (anyone can verify the math).
+* Every payout has a **tamper-proof receipt**.
+
+### Donor pledge example
+
+* You pledge **30 USDC/day** with a **5 USDC per-payment** cap.
+* If the pot is short on a 4.50 USDC grocery payment, your pledge covers it (4.50).
+* If five such payments happen, you’ll hit your **30 USDC/day** and the pledge pauses until tomorrow.
+
+---
+
+# Shared FAQs (short)
+
+**Q: Who decides the daily amount?**
+A: It’s a **fixed % of what’s left** in the pot (e.g., 0.5%/day). That keeps it sustainable.
+
+**Q: Can people game the system by spamming vouches?**
+A: No. Acceptance requires **independent paths** and **diverse seeds**—not just many clicks. We publish proofs so anyone can check.
+
+**Q: What if I don’t use my share today?**
+A: It doesn’t auto-save, but it also doesn’t waste money—the pot simply remains for tomorrow.
+
+**Q: Is my personal data exposed?**
+A: No. Only the **payment receipt** (amount, payee, memo) is public. Your full social graph is **not** revealed.
+
+**Q: I’m a donor—can I stop anytime?**
+A: Yes. You can pause or revoke your pledge instantly. Limits are enforced automatically.
+
+---
+
+# App micro-copy (ready to paste)
+
+**Banner (Members):**
+“Today’s community budget: **$50**. Your available share: **$4.80**. Claim to your wallet or pay a shop.”
+
+**Claim button tooltip:**
+“Pull your available share to your wallet. Unused budget stays in the pot.”
+
+**Pay button tooltip:**
+“Scan at checkout; we’ll send USDC directly to the shop. If the pot runs short, donor pledges top it up.”
+
+**Donor pledge form (labels):**
+
+* Daily maximum you’ll fund (USDC)
+* Maximum per payment (USDC)
+* Allowed merchants (optional)
+* End date (optional)
+  “Your funds move only when a real payment happens. You can pause anytime.”
+
+**Receipt line (after payment):**
+“Paid **$3.20** to **GreenGrocer** · Receipt ▸”
+
+---
+
+# One-paragraph pitch (community)
+
+“Each day, a small % of our shared USDC pot becomes available to members who’ve earned trust through independent, diverse vouches. Your share is simple: higher trust, slightly bigger slice—capped so it’s fair. You can claim to your wallet or pay a shop. If the pot runs low, donor pledges top up real purchases in the moment. Everything is transparent and verifiable.”
+
+# One-paragraph pitch (donors)
+
+“Set a pledge with a daily cap and per-payment cap. Your funds only move when a member makes a real, eligible purchase and the community pot can’t cover it. You stay in control with limits and instant pause, and you get a clear receipt for every payment your pledge supports.”
+
+If you want, I can tailor this copy to your exact UI screens or generate localized versions (PT/ES).
