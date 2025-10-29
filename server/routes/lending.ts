@@ -76,13 +76,11 @@ router.post("/:communityId", async (req, res) => {
 
     // Get lending policy to get APR
     const community = await storage.getCommunity(communityId);
-    const policyJson = community?.lendingPolicyJson as string | null | undefined;
+    const policy = community?.lendingPolicyJson as any;
     
-    if (!policyJson) {
+    if (!policy) {
       return res.status(400).json({ error: "Lending not enabled for this community" });
     }
-
-    const policy = JSON.parse(policyJson);
     
     const result = await createLoan({
       communityId,
