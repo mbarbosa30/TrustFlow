@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
+import { useAccount } from "wagmi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,15 +8,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
-  TrendingUp, Network, Shield, DollarSign, CheckCircle 
+  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart 
 } from "lucide-react";
 
 export default function CommunityDetail() {
   const params = useParams();
   const communityId = Number(params.id) || 0;
+  const { address } = useAccount();
 
   const { data: communityData, isLoading: communityLoading } = useQuery<{ community: any }>({
     queryKey: ["/api/communities", communityId],
+  });
+
+  // Fetch loans for this community
+  const { data: loansData } = useQuery<{ loans: any[] }>({
+    queryKey: ["/api/loans"],
+    enabled: Boolean(address),
   });
 
   const { data: statusData } = useQuery<any>({
@@ -104,6 +112,11 @@ export default function CommunityDetail() {
 
   const healthMetrics = statusData?.communityHealth?.[communityId] || statusData?.health;
   const ghi = healthMetrics?.ghi || 0;
+
+  // Filter loans for this community
+  const communityLoans = loansData?.loans?.filter(
+    (loan: any) => loan.communityId === communityId && loan.status === "ACTIVE"
+  ) || [];
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -204,10 +217,11 @@ export default function CommunityDetail() {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="network">Network</TabsTrigger>
             <TabsTrigger value="policy">Policy</TabsTrigger>
+            <TabsTrigger value="support">Support</TabsTrigger>
             <TabsTrigger value="economy">Economy</TabsTrigger>
           </TabsList>
 
@@ -406,6 +420,108 @@ export default function CommunityDetail() {
                 </ol>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HandHeart className="w-5 h-5" />
+                  Support Borrowers
+                </CardTitle>
+                <CardDescription>
+                  Help community members access affordable credit through USDC assists
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!address ? (
+                  <div className="text-center py-12">
+                    <HandHeart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Please connect your wallet to view and support loans in this community
+                    </p>
+                  </div>
+                ) : communityLoans.length === 0 ? (
+                  <div className="text-center py-12">
+                    <HandHeart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">No Active Loans</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      There are currently no active loans in this community.
+                      Check back later for opportunities to help borrowers.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-muted-foreground">
+                        {communityLoans.length} active {communityLoans.length === 1 ? 'loan' : 'loans'} in this community
+                      </p>
+                      <Link href="/support">
+                        <Button variant="outline" size="sm">
+                          View All Support Options
+                        </Button>
+                      </Link>
+                    </div>
+                    {communityLoans.map((loan: any) => (
+                      <Card key={loan.id} className="hover-elevate">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-sm text-muted-foreground">
+                                  {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
+                                </span>
+                                <Badge variant="secondary">{loan.status}</Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm">
+                                <span className="font-semibold">${(loan.principalUsdc / 1000).toFixed(0)}k ARS</span>
+                                <span className="text-muted-foreground">{loan.tenorMonths} months</span>
+                                <span className="text-muted-foreground">{(loan.aprBps / 100).toFixed(1)}% APR</span>
+                              </div>
+                            </div>
+                            <Link href="/support">
+                              <Button size="sm">
+                                <HandHeart className="h-4 w-4 mr-2" />
+                                Assist
+                              </Button>
+                            </Link>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {address && (
+              <Card className="bg-accent/50">
+                <CardHeader>
+                  <CardTitle className="text-base">How USDC Assists Work</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Send USDC to Aave v3 on Celo to generate yield</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Yield automatically reduces the borrower's interest payments</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Track your assists and their impact in the Support page</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Build trust in the community by helping borrowers succeed</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="economy" className="space-y-6 mt-6">
