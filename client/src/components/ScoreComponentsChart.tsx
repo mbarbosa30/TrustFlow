@@ -7,6 +7,7 @@ interface ScoreComponentsData {
   cut: number;
   stability: number;
   depth: number;
+  pageRank: number;
 }
 
 interface ScoreComponentsChartProps {
@@ -20,7 +21,7 @@ export function ScoreComponentsChart({ data, isLoading = false }: ScoreComponent
       <CardHeader>
         <CardTitle>STS Component Breakdown</CardTitle>
         <CardDescription>
-          Average contribution of each component (Flow 55%, Cut 25%, Stability 10%, Depth 10%)
+          Average contribution of each component (Flow 55%, Cut 25%, Stability 10%, Depth 10%, PageRank 0%)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -90,6 +91,14 @@ export function ScoreComponentsChart({ data, isLoading = false }: ScoreComponent
               stroke="hsl(var(--chart-4))" 
               fill="hsl(var(--chart-4))"
               name="Depth (10%)"
+            />
+            <Area 
+              type="monotone" 
+              dataKey="pageRank" 
+              stackId="1"
+              stroke="hsl(var(--chart-5))" 
+              fill="hsl(var(--chart-5))"
+              name="PageRank (0%)"
             />
           </AreaChart>
         </ResponsiveContainer>
