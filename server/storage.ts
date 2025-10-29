@@ -130,6 +130,10 @@ export interface IStorage {
   getLateInstallments(): Promise<any[]>;
   getPledgesBySupporter(supporterAddress: string): Promise<any[]>;
   getAssistsBySupporter(supporterAddress: string): Promise<any[]>;
+  
+  // Lending Dashboard operations
+  getLendingStats(communityId: number): Promise<any>;
+  getLendingActivity(communityId: number, limit?: number): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -1093,6 +1097,231 @@ export class MemStorage implements IStorage {
       .from(assist)
       .where(eq(assist.supporterAddress, supporterAddress))
       .orderBy(desc(assist.createdAt));
+  }
+
+  async getLendingStats(communityId: number): Promise<any> {
+    // Get community info for GHI threshold and lending status
+    const community = await this.getCommunity(communityId);
+    const lendingPolicy = community?.lendingPolicyJson as any;
+    
+    // Get all loans for this community
+    const allLoans = await db
+      .select()
+      .from(loan)
+      .where(eq(loan.communityId, communityId));
+
+    const totalLoansCount = allLoans.length;
+    const totalDisbursed = allLoans.reduce((sum, l) => sum + l.principalUsdc, 0);
+    
+    const activeLoans = allLoans.filter(l => l.status === "ACTIVE");
+    const activeLoansCount = activeLoans.length;
+    
+    // Calculate accurate outstanding volume for active loans (principal - sum of principalPaid)
+    let activeVolume = 0;
+    for (const activeLoan of activeLoans) {
+      const installments = await db
+        .select({ principalPaid: installment.principalPaid })
+        .from(installment)
+        .where(eq(installment.loanId, activeLoan.id));
+      
+      const totalPrincipalPaid = installments.reduce((sum, i) => sum + i.principalPaid, 0);
+      const remainingPrincipal = activeLoan.principalUsdc - totalPrincipalPaid;
+      activeVolume += remainingPrincipal;
+    }
+    
+    const completedLoansCount = allLoans.filter(l => l.status === "COMPLETED").length;
+    const defaultedLoansCount = allLoans.filter(l => l.status === "DEFAULTED").length;
+    
+    // Calculate repayment rate as: completed / (completed + defaulted)
+    // Only considers resolved loans, not active ones
+    const resolvedLoansCount = completedLoansCount + defaultedLoansCount;
+    const repaymentRate = resolvedLoansCount > 0 
+      ? (completedLoansCount / resolvedLoansCount) * 100 
+      : 0;
+    const defaultRate = resolvedLoansCount > 0 
+      ? (defaultedLoansCount / resolvedLoansCount) * 100 
+      : 0;
+
+    // Get subsidy totals
+    const subsidyLedgers = await db
+      .select()
+      .from(subsidyLedger)
+      .innerJoin(loan, eq(subsidyLedger.loanId, loan.id))
+      .where(eq(loan.communityId, communityId));
+
+    const totalIbdApplied = subsidyLedgers.reduce(
+      (sum, s) => sum + (s.subsidy_ledger.ibdApplied || 0), 
+      0
+    );
+    const totalRaApplied = subsidyLedgers.reduce(
+      (sum, s) => sum + (s.subsidy_ledger.assistCovered || 0), 
+      0
+    );
+    const totalVouchersApplied = subsidyLedgers.reduce(
+      (sum, s) => sum + (s.subsidy_ledger.voucherApplied || 0), 
+      0
+    );
+    const totalSubsidies = totalIbdApplied + totalRaApplied + totalVouchersApplied;
+
+    // Get unique supporters from pledges and assists
+    const pledges = await db
+      .select({ donorAddress: pledge.donorAddress })
+      .from(pledge)
+      .innerJoin(loan, eq(pledge.loanId, loan.id))
+      .where(eq(loan.communityId, communityId));
+    
+    const assists = await db
+      .select({ supporterAddress: assist.supporterAddress })
+      .from(assist)
+      .innerJoin(loan, eq(assist.loanId, loan.id))
+      .where(eq(loan.communityId, communityId));
+
+    const uniqueSupportersSet = new Set([
+      ...pledges.map(p => p.donorAddress),
+      ...assists.map(a => a.supporterAddress)
+    ]);
+    const uniqueSupporters = uniqueSupportersSet.size;
+
+    // Calculate total supporter contributions (IBD + RA)
+    const totalSupporterContributions = totalIbdApplied + totalRaApplied;
+
+    // Mock GHI score for now (would come from actual computation)
+    const ghiScore = 75.0;
+    const ghiThreshold = lendingPolicy?.eligibility?.ghiThreshold || 60;
+    const lendingEnabled = lendingPolicy?.enabled || false;
+
+    return {
+      totalLoansCount,
+      totalDisbursed,
+      activeLoansCount,
+      activeVolume,
+      completedLoansCount,
+      defaultedLoansCount,
+      repaymentRate,
+      defaultRate,
+      totalIbdApplied,
+      totalRaApplied,
+      totalVouchersApplied,
+      totalSubsidies,
+      uniqueSupporters,
+      totalSupporterContributions,
+      ghiScore,
+      ghiThreshold,
+      lendingEnabled,
+    };
+  }
+
+  async getLendingActivity(communityId: number, limit: number = 20): Promise<any[]> {
+    const activities: any[] = [];
+    
+    // Get loan creation events
+    const loans = await db
+      .select()
+      .from(loan)
+      .where(eq(loan.communityId, communityId))
+      .orderBy(desc(loan.createdAt))
+      .limit(limit);
+
+    for (const loanItem of loans) {
+      activities.push({
+        id: `loan-${loanItem.id}`,
+        type: "LOAN_CREATED",
+        timestamp: loanItem.createdAt,
+        description: `Loan #${loanItem.id} created for borrower`,
+        amountUsdc: loanItem.principalUsdc,
+        borrowerAddress: loanItem.borrowerAddress,
+      });
+    }
+
+    // Get payment events from installments that have been paid
+    const paidInstallments = await db
+      .select({
+        id: installment.id,
+        loanId: installment.loanId,
+        totalPaid: installment.totalPaid,
+        paidAt: installment.paidAt,
+        borrowerAddress: loan.borrowerAddress,
+      })
+      .from(installment)
+      .innerJoin(loan, eq(installment.loanId, loan.id))
+      .where(
+        and(
+          eq(loan.communityId, communityId),
+          eq(installment.status, "PAID")
+        )
+      )
+      .orderBy(desc(installment.paidAt))
+      .limit(limit);
+
+    for (const inst of paidInstallments) {
+      if (inst.paidAt) {
+        activities.push({
+          id: `payment-${inst.id}`,
+          type: "PAYMENT_MADE",
+          timestamp: inst.paidAt,
+          description: `Payment made on Loan #${inst.loanId}`,
+          amountUsdc: inst.totalPaid,
+          borrowerAddress: inst.borrowerAddress,
+        });
+      }
+    }
+
+    // Get IBD events (pledge creation)
+    const pledgeItems = await db
+      .select({
+        id: pledge.id,
+        loanId: pledge.loanId,
+        monthlyUsdc: pledge.monthlyUsdc,
+        createdAt: pledge.createdAt,
+        donorAddress: pledge.donorAddress,
+      })
+      .from(pledge)
+      .innerJoin(loan, eq(pledge.loanId, loan.id))
+      .where(eq(loan.communityId, communityId))
+      .orderBy(desc(pledge.createdAt))
+      .limit(limit);
+
+    for (const p of pledgeItems) {
+      activities.push({
+        id: `ibd-${p.id}`,
+        type: "IBD_APPLIED",
+        timestamp: p.createdAt,
+        description: `Interest Buy-Down pledge created for Loan #${p.loanId}`,
+        amountUsdc: p.monthlyUsdc,
+        supporterAddress: p.donorAddress,
+      });
+    }
+
+    // Get RA events (assist creation)
+    const assistItems = await db
+      .select({
+        id: assist.id,
+        loanId: assist.loanId,
+        amountUsdc: assist.amountUsdc,
+        createdAt: assist.createdAt,
+        supporterAddress: assist.supporterAddress,
+      })
+      .from(assist)
+      .innerJoin(loan, eq(assist.loanId, loan.id))
+      .where(eq(loan.communityId, communityId))
+      .orderBy(desc(assist.createdAt))
+      .limit(limit);
+
+    for (const a of assistItems) {
+      activities.push({
+        id: `ra-${a.id}`,
+        type: "RA_COVERED",
+        timestamp: a.createdAt,
+        description: `Repay-Assist covered late installment on Loan #${a.loanId}`,
+        amountUsdc: a.amountUsdc,
+        supporterAddress: a.supporterAddress,
+      });
+    }
+
+    // Sort all activities by timestamp (most recent first) and limit
+    return activities
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, limit);
   }
 }
 

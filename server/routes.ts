@@ -2270,6 +2270,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lending Dashboard API endpoints
+  // Get lending statistics for a community
+  app.get("/api/lending/stats/:communityId", async (req, res) => {
+    try {
+      const communityId = parseInt(req.params.communityId);
+      
+      if (isNaN(communityId)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const stats = await storage.getLendingStats(communityId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting lending stats:", error);
+      res.status(500).json({ error: "Failed to get lending stats" });
+    }
+  });
+
+  // Get recent lending activity for a community
+  app.get("/api/lending/activity/:communityId", async (req, res) => {
+    try {
+      const communityId = parseInt(req.params.communityId);
+      
+      if (isNaN(communityId)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      const activities = await storage.getLendingActivity(communityId);
+      res.json(activities);
+    } catch (error) {
+      console.error("Error getting lending activity:", error);
+      res.status(500).json({ error: "Failed to get lending activity" });
+    }
+  });
+
   // Support API endpoints
   // Get active loans available for Interest Buy-Down support
   app.get("/api/support/available-loans", async (req, res) => {
