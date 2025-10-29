@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Plus, Globe, Lock, LayoutDashboard } from "lucide-react";
 import { useWallet } from "@/hooks/useWallet";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Separator } from "@/components/ui/separator";
 
 export default function Communities() {
   const { address, isConnected } = useWallet();
+  const { t } = useLanguage();
   
   const { data, isLoading } = useQuery<{ communities: any[] }>({
     queryKey: ["/api/communities"],
@@ -26,15 +28,15 @@ export default function Communities() {
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">Communities</h1>
+          <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">{t('communities.title')}</h1>
           <p className="text-muted-foreground">
-            Discover and join trust networks with custom endorsement criteria
+            {t('communities.description')}
           </p>
         </div>
         <Link href="/communities/create">
           <Button data-testid="button-create-community">
             <Plus className="w-4 h-4 mr-2" />
-            Create Community
+            {t('communities.create')}
           </Button>
         </Link>
       </div>
@@ -43,7 +45,7 @@ export default function Communities() {
       {isConnected && userCommunities.length > 0 && (
         <>
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">My Communities</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('communities.myCommunities')}</h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {userCommunities.map((community) => (
                 <Card key={community.id} className="hover-elevate" data-testid={`card-my-community-${community.id}`}>
@@ -62,13 +64,13 @@ export default function Communities() {
                     <div className="flex gap-2">
                       <Link href={`/communities/${community.id}`} className="flex-1">
                         <Button variant="outline" size="sm" className="w-full" data-testid={`button-view-community-${community.id}`}>
-                          View Details
+                          {t('communities.viewDetails')}
                         </Button>
                       </Link>
                       <Link href={`/lending/${community.id}`} className="flex-1">
                         <Button variant="default" size="sm" className="w-full gap-2" data-testid={`button-dashboard-${community.id}`}>
                           <LayoutDashboard className="w-4 h-4" />
-                          Dashboard
+                          {t('communities.dashboard')}
                         </Button>
                       </Link>
                     </div>
@@ -81,7 +83,7 @@ export default function Communities() {
         </>
       )}
 
-      <h2 className="text-2xl font-bold mb-4">All Communities</h2>
+      <h2 className="text-2xl font-bold mb-4">{t('communities.allCommunities')}</h2>
 
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -101,12 +103,12 @@ export default function Communities() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No communities yet</h3>
-            <p className="text-muted-foreground mb-4">Be the first to create a trust network</p>
+            <h3 className="text-lg font-semibold mb-2">{t('communities.noCommunities')}</h3>
+            <p className="text-muted-foreground mb-4">{t('communities.beFirst')}</p>
             <Link href="/communities/create">
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Community
+                {t('communities.create')}
               </Button>
             </Link>
           </CardContent>

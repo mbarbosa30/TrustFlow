@@ -29,11 +29,11 @@ import LendingAdmin from "@/pages/LendingAdmin";
 import { Footer } from "@/components/Footer";
 
 const appNavItems = [
-  { path: "/overview", label: "Overview" },
-  { path: "/wallet", label: "My Wallet" },
-  { path: "/credit", label: "Credit" },
-  { path: "/support", label: "Support" },
-  { path: "/communities", label: "Communities" },
+  { path: "/overview", label: "nav.overview" },
+  { path: "/wallet", label: "nav.wallet" },
+  { path: "/credit", label: "nav.credit" },
+  { path: "/support", label: "nav.support" },
+  { path: "/communities", label: "nav.communities" },
 ];
 
 function Router() {
@@ -65,9 +65,9 @@ function Router() {
 }
 
 const landingNavItems = [
-  { path: "/how-it-works", label: "How It Works" },
-  { path: "/use-cases", label: "Use Cases" },
-  { path: "/faqs", label: "FAQs" },
+  { path: "/how-it-works", label: "nav.howItWorks" },
+  { path: "/use-cases", label: "nav.useCases" },
+  { path: "/faqs", label: "nav.faqs" },
 ];
 
 function App() {

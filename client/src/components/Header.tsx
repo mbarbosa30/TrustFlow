@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { WalletConnect } from "@/components/WalletConnect";
 import { useWallet } from "@/hooks/useWallet";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface NavItem {
   path: string;
@@ -20,6 +21,7 @@ interface HeaderProps {
 export function Header({ navItems, authenticatedNavItems, variant = "app" }: HeaderProps) {
   const [location] = useLocation();
   const { isConnected } = useWallet();
+  const { t } = useLanguage();
   
   // Use authenticated nav items when wallet is connected, otherwise use default nav items
   const displayNavItems = isConnected && authenticatedNavItems ? authenticatedNavItems : navItems;
@@ -50,7 +52,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
                         size="sm" 
                         data-testid={`button-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
                       >
-                        {item.label}
+                        {t(item.label)}
                       </Button>
                     </Link>
                   );
@@ -67,7 +69,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
                     }`}
                     data-testid={`link-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
                   >
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 );
               })}
@@ -94,7 +96,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
                     size="sm"
                     className="whitespace-nowrap"
                   >
-                    {item.label}
+                    {t(item.label)}
                   </Button>
                 </Link>
               );
@@ -110,7 +112,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
                     : "text-muted-foreground"
                 }`}
               >
-                {item.label}
+                {t(item.label)}
               </Link>
             );
           })}
