@@ -1807,7 +1807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's communities (ones they're scored in)
+  // Get user's communities (ones they're scored in, seeded in, or created)
   app.get("/api/communities/user/:address", async (req, res) => {
     try {
       const userAddress = req.params.address.toLowerCase();
@@ -1815,12 +1815,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all scores for this user across all communities
       const scores = await storage.getAllScoresForUser(userAddress);
       
-      if (scores.length === 0) {
+      // Get all seeds for this user (communities they're a seed member of)
+      const seeds = await storage.getSeedsByAddress(userAddress);
+      
+      // Get communities created by this user
+      const createdCommunities = await storage.getCommunitiesByCreator(userAddress);
+      
+      // Combine all community IDs
+      const scoreCommunityIds = scores.map(s => s.communityId);
+      const seedCommunityIds = seeds.map(s => s.communityId);
+      const createdCommunityIds = createdCommunities.map(c => c.id);
+      
+      const communityIds = Array.from(new Set([
+        ...scoreCommunityIds,
+        ...seedCommunityIds,
+        ...createdCommunityIds
+      ]));
+      
+      if (communityIds.length === 0) {
         return res.json({ communities: [] });
       }
-      
-      // Get unique community IDs
-      const communityIds = Array.from(new Set(scores.map(s => s.communityId)));
       
       // Fetch community details
       const communities = await Promise.all(

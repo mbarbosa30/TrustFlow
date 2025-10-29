@@ -12,6 +12,7 @@ export interface IStorage {
   createCommunity(community: InsertCommunity): Promise<Community>;
   getCommunity(id: number): Promise<Community | undefined>;
   listCommunities(filters?: { visibility?: 'public' | 'invite'; creator?: string }): Promise<Community[]>;
+  getCommunitiesByCreator(creator: string): Promise<Community[]>;
   
   createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement>;
   getEndorsements(filters?: {
@@ -30,6 +31,7 @@ export interface IStorage {
   
   createSeed(seed: InsertSeed): Promise<Seed>;
   getSeeds(communityId?: number): Promise<Seed[]>;
+  getSeedsByAddress(address: string): Promise<Seed[]>;
   deleteSeed(address: string, communityId?: number): Promise<void>;
   isSeed(address: string, communityId?: number): Promise<boolean>;
   
@@ -306,6 +308,14 @@ export class MemStorage implements IStorage {
     return results.length > 0;
   }
 
+  async getSeedsByAddress(address: string): Promise<Seed[]> {
+    const normalizedAddress = address.toLowerCase();
+    return await db
+      .select()
+      .from(seeds)
+      .where(eq(seeds.address, normalizedAddress));
+  }
+
   async createScore(score: InsertScore): Promise<Score> {
     // Normalize address to lowercase for consistent storage
     const normalizedScore = {
@@ -488,6 +498,14 @@ export class MemStorage implements IStorage {
     }
     
     return await query;
+  }
+
+  async getCommunitiesByCreator(creator: string): Promise<Community[]> {
+    const normalizedCreator = creator.toLowerCase();
+    return await db
+      .select()
+      .from(communities)
+      .where(eq(communities.creator, normalizedCreator));
   }
 
   // Economic layer implementations
