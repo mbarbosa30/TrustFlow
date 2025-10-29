@@ -46,6 +46,7 @@ interface BlueskyAnalysisResult {
   advancedAnalysis: {
     bottlenecks: Array<{
       address: string;
+      handle: string | null;
       minCut: number;
       flow: number;
       vulnerabilityScore: number;
@@ -57,6 +58,7 @@ interface BlueskyAnalysisResult {
     };
     influentialNodes: Array<{
       address: string;
+      handle: string | null;
       flow: number;
       depth: number;
       influence: number;
@@ -65,6 +67,7 @@ interface BlueskyAnalysisResult {
   };
   scores: Array<{
     address: string;
+    handle: string | null;
     sts: number;
     tier: string | null;
     flow: number;
@@ -125,9 +128,10 @@ export default function BlueskyExplorer() {
       });
     }
     
-    // Apply search
+    // Apply search (search by handle or address)
     if (searchTerm) {
       filtered = filtered.filter(s => 
+        (s.handle && s.handle.toLowerCase().includes(searchTerm.toLowerCase())) ||
         s.address.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -286,6 +290,93 @@ export default function BlueskyExplorer() {
                 </div>
               </CardContent>
             </Card>
+
+            {result.healthMetrics && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Executive Summary</span>
+                    <Badge 
+                      variant="outline" 
+                      className={
+                        result.healthMetrics.healthScore >= 70 ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                        result.healthMetrics.healthScore >= 40 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                        'bg-red-500/10 text-red-500 border-red-500/20'
+                      }
+                    >
+                      {result.healthMetrics.healthScore >= 70 ? 'HEALTHY' : 
+                       result.healthMetrics.healthScore >= 40 ? 'MODERATE' : 'AT RISK'}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    Overall trust network assessment for @{result.identifier}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold">Network Size</div>
+                      <div className="text-2xl font-bold">{result.stats.totalUsers}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% accepted into trust network
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold">Health Score</div>
+                      <div className="text-2xl font-bold">{result.healthMetrics.healthScore}/100</div>
+                      <p className="text-xs text-muted-foreground">
+                        {result.healthMetrics.healthScore >= 70 ? 'Strong, resilient network' :
+                         result.healthMetrics.healthScore >= 40 ? 'Moderate vulnerabilities present' :
+                         'Centralization risks detected'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm font-semibold">Network Reach</div>
+                      <div className="text-2xl font-bold">{result.healthMetrics.networkDiameter} hops</div>
+                      <p className="text-xs text-muted-foreground">
+                        Avg: {result.healthMetrics.avgPathLength.toFixed(1)} hops to reach users
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t">
+                    <div className="font-semibold text-sm">Key Insights</div>
+                    <ul className="space-y-1 text-sm">
+                      {result.healthMetrics.connectivityRate < 0.5 && (
+                        <li className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>Low connectivity: Only {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% of discovered users are trusted</span>
+                        </li>
+                      )}
+                      {result.robustnessMetrics.giniCoefficient > 0.6 && (
+                        <li className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <span>High inequality: Trust flow is concentrated among few users (Gini: {(result.robustnessMetrics.giniCoefficient * 100).toFixed(0)}%)</span>
+                        </li>
+                      )}
+                      {result.robustnessMetrics.redundancyScore < 2 && (
+                        <li className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span>Low redundancy: Average {result.robustnessMetrics.redundancyScore.toFixed(1)} disjoint paths — vulnerable to single points of failure</span>
+                        </li>
+                      )}
+                      {result.advancedAnalysis.centralization.status === 'high' && (
+                        <li className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span>High centralization: Top 10 users control {(result.advancedAnalysis.centralization.top10FlowShare * 100).toFixed(0)}% of network flow</span>
+                        </li>
+                      )}
+                      {result.healthMetrics.healthScore >= 70 && result.healthMetrics.connectivityRate >= 0.5 && result.robustnessMetrics.redundancyScore >= 2 && (
+                        <li className="flex items-start gap-2">
+                          <Award className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span>Strong network: High connectivity ({(result.healthMetrics.connectivityRate * 100).toFixed(0)}%), good redundancy ({result.robustnessMetrics.redundancyScore.toFixed(1)} paths), balanced distribution</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
@@ -547,7 +638,14 @@ export default function BlueskyExplorer() {
                         <div className="space-y-2">
                           {result.advancedAnalysis.bottlenecks.slice(0, 5).map((bottleneck, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm p-2 rounded hover-elevate border">
-                              <div className="flex-1 font-mono text-xs">{bottleneck.address}</div>
+                              <a 
+                                href={`https://bsky.app/profile/${bottleneck.handle || bottleneck.address}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 font-semibold text-primary hover:underline"
+                              >
+                                {bottleneck.handle ? `@${bottleneck.handle}` : bottleneck.address.substring(0, 20) + '...'}
+                              </a>
                               <div className="flex gap-4 items-center">
                                 <span className="text-muted-foreground">Min-Cut: {bottleneck.minCut}</span>
                                 <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
@@ -569,7 +667,14 @@ export default function BlueskyExplorer() {
                         <div className="space-y-2">
                           {result.advancedAnalysis.influentialNodes.slice(0, 5).map((node, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm p-2 rounded hover-elevate border">
-                              <div className="flex-1 font-mono text-xs">{node.address}</div>
+                              <a 
+                                href={`https://bsky.app/profile/${node.handle || node.address}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 font-semibold text-primary hover:underline"
+                              >
+                                {node.handle ? `@${node.handle}` : node.address.substring(0, 20) + '...'}
+                              </a>
                               <div className="flex gap-4 items-center">
                                 <span className="text-muted-foreground">Depth: {node.depth}</span>
                                 <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
@@ -599,7 +704,7 @@ export default function BlueskyExplorer() {
                   <div className="flex gap-2 flex-wrap">
                     <div className="flex-1 min-w-[200px]">
                       <Input
-                        placeholder="Search by DID..."
+                        placeholder="Search by handle..."
                         value={searchTerm}
                         onChange={(e) => {
                           setSearchTerm(e.target.value);
@@ -633,7 +738,7 @@ export default function BlueskyExplorer() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">Rank</th>
-                        <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">DID</th>
+                        <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">Handle</th>
                         <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">STS</th>
                         <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">Tier</th>
                         <th className="text-left py-2 px-2 text-sm font-medium text-muted-foreground">Flow</th>
@@ -647,8 +752,15 @@ export default function BlueskyExplorer() {
                         return (
                           <tr key={score.address} className="border-b hover-elevate" data-testid={`row-score-${idx}`}>
                             <td className="py-2 px-2 text-sm">{globalRank}</td>
-                            <td className="py-2 px-2 text-sm font-mono text-xs">
-                              {score.address.substring(0, 30)}...
+                            <td className="py-2 px-2 text-sm">
+                              <a 
+                                href={`https://bsky.app/profile/${score.handle || score.address}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline font-medium"
+                              >
+                                {score.handle ? `@${score.handle}` : score.address.substring(0, 20) + '...'}
+                              </a>
                             </td>
                             <td className="py-2 px-2 text-sm font-semibold">{score.sts}</td>
                             <td className="py-2 px-2 text-sm">

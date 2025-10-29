@@ -1355,9 +1355,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         minCutDistribution.set(minCut, (minCutDistribution.get(minCut) || 0) + 1);
       }
 
+      // Resolve DIDs to handles for all users in the network
+      const allDids = Array.from(results.scores.keys());
+      const handleMap = new Map<string, string>();
+      
+      // Batch resolve DIDs to handles (getProfiles supports up to 25 actors at once)
+      const batchSize = 25;
+      for (let i = 0; i < allDids.length; i += batchSize) {
+        const batch = allDids.slice(i, i + batchSize);
+        try {
+          const profiles = await agent.getProfiles({ actors: batch });
+          for (const profile of profiles.data.profiles) {
+            handleMap.set(profile.did.toLowerCase(), profile.handle);
+          }
+          // Small delay to avoid rate limiting
+          if (i + batchSize < allDids.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (error) {
+          console.error(`Failed to resolve batch ${i}-${i + batchSize}:`, error);
+          // Continue with other batches even if one fails
+        }
+      }
+
       // Return ALL scores, not just top 50
       const allScores = Array.from(results.scores.entries()).map(([address, score]) => ({
         address,
+        handle: handleMap.get(address.toLowerCase()) || null,
         sts: Math.round(score.sts * 10) / 10,
         tier: score.tier,
         flow: Math.round(score.components.flow * 100) / 100,
@@ -1399,7 +1423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         advancedAnalysis: {
           bottlenecks: bottlenecks.map(b => ({
-            address: b.address.substring(0, 30) + '...',
+            address: b.address,
+            handle: handleMap.get(b.address.toLowerCase()) || null,
             minCut: b.minCut,
             flow: Math.round(b.flow * 100) / 100,
             vulnerabilityScore: Math.round(b.vulnerabilityScore * 100) / 100,
@@ -1410,7 +1435,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: top10FlowShare > 0.7 ? 'high' : top10FlowShare > 0.5 ? 'moderate' : 'low',
           },
           influentialNodes: influentialNodes.map(n => ({
-            address: n.address.substring(0, 30) + '...',
+            address: n.address,
+            handle: handleMap.get(n.address.toLowerCase()) || null,
             flow: Math.round(n.flow * 100) / 100,
             depth: n.depth,
             influence: Math.round(n.influence * 100) / 100,
