@@ -11,6 +11,7 @@ import { sql } from "drizzle-orm";
 import { verifyMessage } from "viem";
 import type { Address, Hex } from "viem";
 import { epochComputation } from "./algorithm/compute";
+import lendingRouter from "./routes/lending";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
@@ -2268,6 +2269,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to update pledge" });
     }
   });
+
+  // Lending routes
+  app.use("/api/loans", lendingRouter);
 
   const httpServer = createServer(app);
 

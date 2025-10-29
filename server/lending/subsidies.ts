@@ -89,7 +89,8 @@ export async function createRepayAssist(
 ): Promise<number> {
   const { installmentId, supporterAddress, amountUsdc, premiumRate } = intervention;
 
-  const installment = await storage.getInstallment(installmentId);
+  const installment = await storage.getInstallmentById(installmentId);
+  
   if (!installment) {
     throw new Error(`Installment ${installmentId} not found`);
   }
@@ -116,7 +117,7 @@ export async function createRepayAssist(
   const assistId = await storage.createAssist(assistRecord);
 
   // Update subsidy ledger
-  let ledger = await storage.getSubsidyLedgerByInstallment(
+  let ledger = await storage.getSubsidyLedger(
     installment.loanId,
     installment.idx
   );
@@ -220,7 +221,7 @@ export async function calculateEffectiveInterest(
   ibdApplied: number;
   voucherApplied: number;
 }> {
-  const ledger = await storage.getSubsidyLedgerByInstallment(loanId, installmentIdx);
+  const ledger = await storage.getSubsidyLedger(loanId, installmentIdx);
 
   if (!ledger) {
     return {

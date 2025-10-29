@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Budget, type InsertBudget, budget, type Allowance, type InsertAllowance, allowance, type Payment, type InsertPayment, payment, type Pledge, type InsertPledge, pledge, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger } from "@shared/schema";
+import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Budget, type InsertBudget, budget, type Allowance, type InsertAllowance, allowance, type Payment, type InsertPayment, payment, type Pledge, type InsertPledge, pledge, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, assist, guarantee, trustEvent } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -96,6 +96,7 @@ export interface IStorage {
   createInstallments(installmentsData: InsertInstallment[]): Promise<Installment[]>;
   getInstallmentsByLoan(loanId: number): Promise<Installment[]>;
   getInstallment(loanId: number, idx: number): Promise<Installment | undefined>;
+  getInstallmentById(id: number): Promise<Installment | undefined>;
   updateInstallmentPayment(loanId: number, idx: number, principalPaid: number, interestPaid: number): Promise<void>;
   updateInstallmentStatus(loanId: number, idx: number, status: string): Promise<void>;
   
@@ -117,6 +118,12 @@ export interface IStorage {
   
   // General installment update
   updateInstallment(id: number, updates: Partial<InsertInstallment>): Promise<void>;
+  
+  // Trust event operations
+  createTrustEvent(eventData: any): Promise<void>;
+  getPendingTrustEvents(communityId: number): Promise<any[]>;
+  markTrustEventApplied(eventId: number, epochId: number): Promise<void>;
+  getTrustEventsByUser(communityId: number, userAddress: string): Promise<any[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -869,6 +876,16 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
+  async getInstallmentById(id: number): Promise<Installment | undefined> {
+    const results = await db
+      .select()
+      .from(installment)
+      .where(eq(installment.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
   async updateInstallmentPayment(
     loanId: number,
     idx: number,
@@ -985,6 +1002,42 @@ export class MemStorage implements IStorage {
       .update(guarantee)
       .set(updates)
       .where(eq(guarantee.communityId, communityId));
+  }
+
+  async createTrustEvent(eventData: any): Promise<void> {
+    await db.insert(trustEvent).values(eventData);
+  }
+
+  async getPendingTrustEvents(communityId: number): Promise<any[]> {
+    return db
+      .select()
+      .from(trustEvent)
+      .where(
+        and(
+          eq(trustEvent.communityId, communityId),
+          eq(trustEvent.appliedInEpoch, null)
+        )
+      );
+  }
+
+  async markTrustEventApplied(eventId: number, epochId: number): Promise<void> {
+    await db
+      .update(trustEvent)
+      .set({ appliedInEpoch: epochId })
+      .where(eq(trustEvent.id, eventId));
+  }
+
+  async getTrustEventsByUser(communityId: number, userAddress: string): Promise<any[]> {
+    return db
+      .select()
+      .from(trustEvent)
+      .where(
+        and(
+          eq(trustEvent.communityId, communityId),
+          eq(trustEvent.userAddress, userAddress)
+        )
+      )
+      .orderBy(desc(trustEvent.createdAt));
   }
 }
 
