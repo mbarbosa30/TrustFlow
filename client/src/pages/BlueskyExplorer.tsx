@@ -107,9 +107,9 @@ export default function BlueskyExplorer() {
 
   const getTierColor = (tier: string | null) => {
     switch (tier) {
-      case "Master": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-      case "Journeyer": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
-      case "Apprentice": return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "Trusted": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+      case "Verified": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "Connected": return "bg-green-500/10 text-green-500 border-green-500/20";
       default: return "bg-muted/10 text-muted-foreground border-border";
     }
   };
@@ -161,9 +161,9 @@ export default function BlueskyExplorer() {
   })) : [];
 
   const TIER_COLORS = {
-    "Master": "#f59e0b",
-    "Journeyer": "#3b82f6",
-    "Apprentice": "#10b981",
+    "Trusted": "#f59e0b",
+    "Verified": "#3b82f6",
+    "Connected": "#10b981",
     "Not Accepted": "#6b7280"
   };
 
@@ -467,7 +467,7 @@ export default function BlueskyExplorer() {
                 <CardContent className="space-y-2">
                   {tierData
                     .sort((a, b) => {
-                      const order = ["Master", "Journeyer", "Apprentice", "Not Accepted"];
+                      const order = ["Trusted", "Verified", "Connected", "Not Accepted"];
                       return order.indexOf(a.name) - order.indexOf(b.name);
                     })
                     .map((tier) => (
@@ -726,9 +726,9 @@ export default function BlueskyExplorer() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Tiers</SelectItem>
-                        <SelectItem value="Master">Master</SelectItem>
-                        <SelectItem value="Journeyer">Journeyer</SelectItem>
-                        <SelectItem value="Apprentice">Apprentice</SelectItem>
+                        <SelectItem value="Trusted">Trusted</SelectItem>
+                        <SelectItem value="Verified">Verified</SelectItem>
+                        <SelectItem value="Connected">Connected</SelectItem>
                         <SelectItem value="not-accepted">Not Accepted</SelectItem>
                       </SelectContent>
                     </Select>

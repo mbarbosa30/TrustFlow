@@ -2,7 +2,7 @@
 
 ## Overview
 
-TrustFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. The core concept involves users vouching for others via a binary endorsement system, with all vouches publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy (min-cut), and stability metrics, assigning tier badges (Apprentice, Journeyer, Master) and allowing users to export signed attestations.
+TrustFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. The core concept involves users vouching for others via a binary endorsement system, with all vouches publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy (min-cut), and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
 
 ## User Preferences
 

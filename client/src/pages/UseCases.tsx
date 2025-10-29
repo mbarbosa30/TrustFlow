@@ -5,11 +5,11 @@ const useCases = [
   {
     icon: Shield,
     title: "Sybil-Resistant Access",
-    description: "Gate community actions (posting, proposals, grants) by tier (e.g., Journeyer+). Prevent spam and bot manipulation while allowing genuine humans to participate.",
+    description: "Gate community actions (posting, proposals, grants) by tier (e.g., Verified+). Prevent spam and bot manipulation while allowing genuine humans to participate.",
     examples: [
-      "Forum posting requires Apprentice level",
-      "DAO governance requires Journeyer level",
-      "Grant proposals require Master level"
+      "Forum posting requires Connected level",
+      "DAO governance requires Verified level",
+      "Grant proposals require Trusted level"
     ]
   },
   {
@@ -37,9 +37,9 @@ const useCases = [
     title: "Collusion-Resistant Moderation",
     description: "Use min-cut + stability to prioritize reports and throttle brigading. Trust scores help surface legitimate concerns.",
     examples: [
-      "Reports from Master users are prioritized",
+      "Reports from Trusted users are prioritized",
       "Bulk reports from low-diversity clusters are flagged",
-      "Appeal processes require Journeyer+ status"
+      "Appeal processes require Verified+ status"
     ]
   },
   {
@@ -48,7 +48,7 @@ const useCases = [
     description: "Use STS as a soft reputation input for limits, escrow release, or fee discounts in peer-to-peer marketplaces.",
     examples: [
       "Transaction limits scale with STS",
-      "Faster escrow release for Master users",
+      "Faster escrow release for Trusted users",
       "Fee discounts for high-stability users"
     ]
   },
@@ -57,9 +57,9 @@ const useCases = [
     title: "Community Gating",
     description: "Create private communities or channels that require specific trust levels, ensuring quality members without KYC.",
     examples: [
-      "Premium channels for Journeyer+ users",
+      "Premium channels for Verified+ users",
       "Beta access for high-STS early adopters",
-      "Expert forums gated by Master + specific skills"
+      "Expert forums gated by Trusted + specific skills"
     ]
   }
 ];

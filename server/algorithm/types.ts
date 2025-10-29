@@ -31,7 +31,7 @@ export interface UserScore {
   address: Address;
   sts: number;
   components: TrustScoreComponents;
-  tier: "Apprentice" | "Journeyer" | "Master" | null;
+  tier: "Connected" | "Verified" | "Trusted" | null;
   percentile: number;
   isAccepted: boolean;
 }

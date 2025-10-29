@@ -122,15 +122,15 @@ export default function HowItWorks() {
                 <div className="font-semibold mb-3">Trust Tiers:</div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <span className="font-medium">Apprentice</span>
+                    <span className="font-medium">Connected</span>
                     <span className="text-sm text-muted-foreground">STS ≥ 40</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <span className="font-medium">Journeyer</span>
+                    <span className="font-medium">Verified</span>
                     <span className="text-sm text-muted-foreground">STS ≥ 60 and min-cut ≥ 2</span>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <span className="font-medium">Master</span>
+                    <span className="font-medium">Trusted</span>
                     <span className="text-sm text-muted-foreground">STS ≥ 80 and min-cut ≥ 3 and Stability ≥ 0.8</span>
                   </div>
                 </div>

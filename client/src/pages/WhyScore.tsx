@@ -49,7 +49,7 @@ export default function WhyScore() {
                   <li>Always between 0 and 100</li>
                   <li>Relative to other users in the current epoch</li>
                   <li>Easier for humans to interpret</li>
-                  <li>Aligned with tier badges (Apprentice, Journeyer, Master)</li>
+                  <li>Aligned with tier badges (Connected, Verified, Trusted)</li>
                 </ul>
               </div>
 

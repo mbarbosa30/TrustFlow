@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Shield, Award, Crown } from "lucide-react";
 
-export type Tier = "Apprentice" | "Journeyer" | "Master";
+export type Tier = "Connected" | "Verified" | "Trusted";
 
 interface TierBadgeProps {
   tier: Tier;
@@ -9,17 +9,17 @@ interface TierBadgeProps {
 }
 
 const tierConfig = {
-  Apprentice: {
+  Connected: {
     icon: Shield,
     variant: "secondary" as const,
     description: "STS ≥ 40",
   },
-  Journeyer: {
+  Verified: {
     icon: Award,
     variant: "default" as const,
     description: "STS ≥ 60, min-cut ≥ 2",
   },
-  Master: {
+  Trusted: {
     icon: Crown,
     variant: "default" as const,
     description: "STS ≥ 80, min-cut ≥ 3, stability ≥ 0.8",
@@ -51,10 +51,10 @@ export function TierBadge({ tier, size = "md" }: TierBadgeProps) {
 
 export function getTierFromSTS(sts: number, minCut: number, stability: number): Tier {
   if (sts >= 80 && minCut >= 3 && stability >= 0.8) {
-    return "Master";
+    return "Trusted";
   } else if (sts >= 60 && minCut >= 2) {
-    return "Journeyer";
+    return "Verified";
   } else {
-    return "Apprentice";
+    return "Connected";
   }
 }

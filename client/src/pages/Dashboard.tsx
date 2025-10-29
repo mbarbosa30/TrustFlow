@@ -67,7 +67,7 @@ export default function Dashboard() {
   });
 
   const { data: tierDistData, isLoading: isLoadingTierDist } = useQuery<{
-    distribution: Array<{ level: 'Apprentice' | 'Journeyer' | 'Master'; count: number; percentage: number }>;
+    distribution: Array<{ level: 'Connected' | 'Verified' | 'Trusted'; count: number; percentage: number }>;
   }>({
     queryKey: ['/api/analytics/tier-distribution'],
   });

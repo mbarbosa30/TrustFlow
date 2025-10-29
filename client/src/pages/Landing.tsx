@@ -202,7 +202,7 @@ export default function Landing() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold mb-2">Receive Your Standardized Trust Score</h3>
                 <p className="text-muted-foreground">
-                  Get an STS (0-100) and tier badge (Apprentice, Journeyer, Master). 
+                  Get an STS (0-100) and tier badge (Connected, Verified, Trusted). 
                   See detailed breakdowns, trust paths, and stability metrics.
                 </p>
               </div>

@@ -109,8 +109,8 @@ export default function Overview() {
           ) : scoreData ? (
             <ScoreCard
               tier={
-                scoreData.trust.sts >= 75 ? "Master" :
-                scoreData.trust.sts >= 50 ? "Journeyer" : "Apprentice"
+                scoreData.trust.sts >= 75 ? "Trusted" :
+                scoreData.trust.sts >= 50 ? "Verified" : "Connected"
               }
               sts={scoreData.trust.sts}
               flow={scoreData.trust.flow}
