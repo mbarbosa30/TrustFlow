@@ -10,6 +10,7 @@ interface Endorsement {
   endorsee: string;
   date: string;
   commitment: string;
+  note?: string;
 }
 
 interface EndorsementsListProps {
@@ -67,6 +68,11 @@ export function EndorsementsList({
                     {new Date(endorsement.date).toLocaleDateString()}
                   </span>
                 </div>
+                {endorsement.note && (
+                  <div className="text-sm text-foreground mt-2 p-2 rounded bg-muted/50" data-testid={`text-note-${endorsement.id}`}>
+                    {endorsement.note}
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground mt-1 font-mono truncate">
                   {endorsement.commitment.substring(0, 20)}...
                 </div>

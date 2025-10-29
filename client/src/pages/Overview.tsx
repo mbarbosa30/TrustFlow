@@ -45,6 +45,7 @@ export default function Overview() {
     endorsee: e.endorsee,
     date: typeof e.createdAt === 'string' ? e.createdAt : new Date(e.createdAt).toISOString(),
     commitment: e.leafHash,
+    note: e.note || undefined,
   })) || [];
 
   const receivedEndorsements = receivedEndorsementsData?.endorsements.map(e => ({

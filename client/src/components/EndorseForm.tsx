@@ -137,6 +137,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         timestamp: timestamp.toString(),
         sig: signature,
         chainId: chainId, // Include chainId so backend can verify with correct domain
+        note: note || undefined,
       });
 
       if (onEndorse) {
@@ -206,7 +207,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
             data-testid="input-note"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Stored locally, never sent to server
+            Private and only visible to you. Can be used for future trust strength assessment.
           </p>
         </div>
 

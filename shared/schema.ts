@@ -25,6 +25,7 @@ export const publicEndorsements = pgTable("public_endorsements", {
   nonce: bigint("nonce", { mode: "number" }).notNull(),
   sig: text("sig").notNull(),
   leafHash: text("leaf_hash").notNull(),
+  note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

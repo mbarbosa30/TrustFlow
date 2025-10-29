@@ -83,6 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nonce: Number(endorsement.nonce),
         sig: endorsement.sig,
         leafHash,
+        note: body.note || null,
       });
 
       const created = await storage.createEndorsement(insertData);
