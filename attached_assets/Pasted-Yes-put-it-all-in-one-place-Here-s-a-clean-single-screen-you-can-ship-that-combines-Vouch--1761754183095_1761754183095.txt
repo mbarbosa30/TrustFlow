@@ -1,0 +1,120 @@
+Yes—put it all in one place. Here’s a **clean, single-screen** you can ship that combines **Vouch + Score + USDC Send/Receive** without confusing people.
+
+# Page layout (one screen)
+
+* **Header**: Community name · prompt snippet (“I would hire this person for 1–3h task”) · your tier badge
+
+* **Trust card (left/first)**
+
+  * **Your Trust**: STS (0–100), min-cut, seed diversity pills
+  * **Why accepted**: “2 vertex-disjoint paths via A & D; seeds S1,S3 ≥0.30 each”
+  * **Vouch** button (opens modal with prompt text)
+
+* **Wallet card (right/second)**
+
+  * **USDC Balance** (read from wallet)
+  * **Today’s Share**: “Available: $Y of $X pool” + **Claim** button (EIP-3009)
+  * **Send** + **Receive** tabs
+
+* **Activity card (full width under)**
+
+  * Last 10 receipts (amount, to/from, memo, link to verifiable receipt)
+  * Filter: Claims | Payments | Vouches
+
+---
+
+## Wallet card: interactions
+
+### 1) Claim (user pulls)
+
+* Button: **Claim $Y now**
+* On click → server returns **EIP-3009** signed auth (Treasury/pledge → user).
+* Submit (or relayer auto-submits).
+* Toast: “Claimed $Y · View receipt”.
+
+### 2) Send (user → address or merchant)
+
+Fields:
+
+* **To**: address / ENS / “Scan QR”
+* **Amount (USDC)**: with **Per-tx cap** hint (e.g., “max $5”)
+* **Memo (optional)**
+  CTA: **Send**
+  Flow: server checks allowance → returns **EIP-3009** (Treasury/pledge → *recipient*) → submit → receipt.
+
+### 3) Receive
+
+* Show **QR** of user address and copy button.
+* Tiny tip: “Friends can send you USDC; this doesn’t affect your daily share.”
+
+---
+
+## Vouch modal (unchanged, but clearer)
+
+* Show the **community prompt** at the top.
+* “Your vouch is public & permanent” note.
+* **Sign** (EIP-712).
+* Success toast with link “See how this helps their acceptance”.
+
+---
+
+## Empty & edge states
+
+* **Not accepted yet**: greyed Claim/Send with explainer: “Get 2 independent paths from different seeds to unlock daily share.”
+* **Pool exhausted**: Claim disabled, “Community budget reached today—try again tomorrow.”
+* **Hit cap**: “You’ve used your $5 daily limit.”
+* **Pledge fallback**: small banner “Covered by donor pledges today. Thank you, donors!”
+
+---
+
+## Minimal API you already have (from prior plan)
+
+* `GET /budget/today` → show $X pool
+* `GET /allowance/:user` → show $Y available + caps
+* `POST /claim { amount, to? }` → returns EIP-3009 auth
+* `POST /pay { amount, recipient, memo? }` → returns EIP-3009 auth
+* `GET /receipts?user=` → list recent
+* `POST /endorse` → vouch (EIP-712)
+
+---
+
+## Visual cues (copy you can paste)
+
+* Claim hint: “Unused budget stays in the pot—nothing is wasted.”
+* Send hint: “We’ll cover up to your daily allowance; if the pot is short, donor pledges top up automatically.”
+* Trust tip: “Diversify paths: get a vouch from someone in a different seed region.”
+
+---
+
+## Safety & UX details
+
+* **One-tap retry** if a 3009 auth expires.
+* Show **per-tx cap** inline on Amount.
+* **Confirm screen** shows: payer, payee, source (Treasury / Donor pledge), amount, memo, expiry time of auth.
+* **Receipts** link to EAS/IPFS; never reveal private graph edges—only payment facts.
+
+---
+
+## Implementation checklist
+
+* Add a **`/me` aggregator** endpoint that returns: `{ score, tier, minCut, seeds, allowanceToday, claimedToday, perTxCap, receipts[] }` to render the page in one request.
+* Reuse your existing **Self-x402** agent for `/claim` and `/pay` (EIP-3009 signing).
+* Add a tiny **QR** component (Receive tab) and **scanner** for To field (Send tab).
+* Gate **Send/Claim** visibility with `eligible=true` from `/allowance`.
+
+---
+
+## Mobile first layout
+
+* Stack: Trust → Wallet → Activity (accordions).
+* Keep **Claim** sticky at bottom when available.
+
+---
+
+## Analytics (3 events)
+
+* `claim_success { amount, source }`
+* `pay_success { amount, source, merchant?:addr }`
+* `vouch_success { endorsee }`
+
+This keeps everything **simple, legible, and self-serve**: people see *why* they’re trusted, can **vouch**, and can **claim/send USDC** from the same page—while donors automatically backstop payments behind the scenes.
