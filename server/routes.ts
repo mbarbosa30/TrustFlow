@@ -1179,22 +1179,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return results;
       }
 
-      // Fetch ALL follows and followers using pagination (1st hop from seed)
-      const [follows, followers] = await Promise.all([
-        fetchAllPages<{ did: string }>(cursor => 
-          agent.getFollows({ actor: did, limit: 100, cursor })
-        ),
-        fetchAllPages<{ did: string }>(cursor => 
-          agent.getFollowers({ actor: did, limit: 100, cursor })
-        )
-      ]);
+      // Fetch ALL followers using pagination (1st hop from seed)
+      // Focus on followers only = who trusts you (more meaningful for trust measurement)
+      const followers = await fetchAllPages<{ did: string }>(cursor => 
+        agent.getFollowers({ actor: did, limit: 100, cursor })
+      );
 
-      const followDids = follows.map(f => f.did);
       const followerDids = followers.map(f => f.did);
       
-      // Combine all 1st-hop peers (people the seed follows or who follow the seed)
-      const firstHopPeers = new Set([...followDids, ...followerDids]);
-      console.log(`Found ${firstHopPeers.size} 1st-hop peers for ${did}`);
+      // Use only followers as 1st-hop peers (trust inbound, not outbound)
+      const firstHopPeers = new Set(followerDids);
+      console.log(`Found ${firstHopPeers.size} 1st-hop followers for ${did}`);
 
       // Fetch 2nd hop: get followers for each 1st-hop peer
       // This builds the complete network graph
@@ -1227,16 +1222,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const peerDidLower = peerDid.toLowerCase();
           
-          // Fetch first 10 followers per peer for 2-hop network
-          // Keeps the network small enough to score quickly
+          // Fetch up to 30 followers per peer
           const peerFollowersResponse = await agent.getFollowers({ 
             actor: peerDid, 
-            limit: 10 
+            limit: 30 
           });
           const peerFollowers = peerFollowersResponse.data.followers;
           
-          // Add BIDIRECTIONAL edges for followers (faster - only followers, not follows)
-          for (const follower of peerFollowers) {
+          // Fetch full profiles in batch to get follower counts
+          let sortedFollowers = peerFollowers;
+          if (peerFollowers.length > 0) {
+            try {
+              const followerDids = peerFollowers.map(f => f.did);
+              const profilesResponse = await agent.getProfiles({ actors: followerDids });
+              
+              // Create map of DID -> followersCount
+              const followerCounts = new Map<string, number>();
+              for (const profile of profilesResponse.data.profiles) {
+                // ProfileViewDetailed includes followersCount
+                const followersCount = (profile as any).followersCount || 0;
+                followerCounts.set(profile.did, followersCount);
+              }
+              
+              // Sort by follower count (most influential first) and take top 10
+              sortedFollowers = peerFollowers
+                .sort((a, b) => {
+                  const countA = followerCounts.get(a.did) || 0;
+                  const countB = followerCounts.get(b.did) || 0;
+                  return countB - countA;
+                })
+                .slice(0, 10);
+            } catch (error) {
+              console.warn(`Failed to fetch profiles for ${peerDid} followers, using first 10`);
+              sortedFollowers = peerFollowers.slice(0, 10);
+            }
+          }
+          
+          // Add BIDIRECTIONAL edges for top influential followers
+          for (const follower of sortedFollowers) {
             const followerDid = follower.did.toLowerCase();
             allDiscoveredUsers.add(followerDid);
             
@@ -1455,7 +1478,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         identifier,
         did,
         stats: {
-          follows: followDids.length,
           followers: followerDids.length,
           totalUsers,
           acceptedUsers,
