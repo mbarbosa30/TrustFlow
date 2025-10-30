@@ -23,7 +23,6 @@ import CreateCommunity from "@/pages/CreateCommunity";
 import CommunityDetail from "@/pages/CommunityDetail";
 import MyWallet from "@/pages/MyWallet";
 import Credit from "@/pages/Credit";
-import Support from "@/pages/Support";
 import LendingDashboard from "@/pages/LendingDashboard";
 import LendingAdmin from "@/pages/LendingAdmin";
 import { Footer } from "@/components/Footer";
@@ -32,7 +31,6 @@ const appNavItems = [
   { path: "/overview", label: "nav.overview" },
   { path: "/wallet", label: "nav.wallet" },
   { path: "/credit", label: "nav.credit" },
-  { path: "/support", label: "nav.support" },
   { path: "/communities", label: "nav.communities" },
 ];
 
@@ -44,7 +42,6 @@ function Router() {
       <Route path="/overview" component={Overview} />
       <Route path="/wallet" component={MyWallet} />
       <Route path="/credit" component={Credit} />
-      <Route path="/support" component={Support} />
       <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
