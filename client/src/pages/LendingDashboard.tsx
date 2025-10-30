@@ -62,7 +62,7 @@ export default function LendingDashboard() {
 
   if (statsLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <p className="text-muted-foreground">Loading lending dashboard...</p>
       </div>
     );
@@ -70,7 +70,7 @@ export default function LendingDashboard() {
 
   if (!stats) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>Lending Dashboard</CardTitle>
