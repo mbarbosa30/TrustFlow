@@ -17,11 +17,13 @@ class RateLimiter {
 
   private cleanup() {
     const now = Date.now();
-    for (const [key, entry] of this.store.entries()) {
+    const keysToDelete: string[] = [];
+    this.store.forEach((entry, key) => {
       if (entry.resetAt < now) {
-        this.store.delete(key);
+        keysToDelete.push(key);
       }
-    }
+    });
+    keysToDelete.forEach(key => this.store.delete(key));
   }
 
   check(key: string, limit: number, windowMs: number): { allowed: boolean; remaining: number; resetAt: number } {

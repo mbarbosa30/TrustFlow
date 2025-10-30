@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
-  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock
+  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock, Copy, Check, Key
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -501,6 +501,56 @@ export default function CommunityDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {address && community.creatorAddress?.toLowerCase() === address.toLowerCase() && community.apiKey && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    {t('communityDetail.apiIntegration')}
+                  </CardTitle>
+                  <CardDescription>{t('communityDetail.apiIntegrationDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('communityDetail.apiKey')}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-3 py-2 bg-accent/50 rounded text-sm font-mono break-all">
+                        {community.apiKey}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(community.apiKey);
+                          toast({
+                            title: t('communityDetail.apiKeyCopied'),
+                            description: t('communityDetail.apiKeyCopiedDesc'),
+                          });
+                        }}
+                        data-testid="button-copy-api-key"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('communityDetail.apiKeyWarning')}</p>
+                    <p>
+                      <span className="font-medium">{t('communityDetail.endpoints')}:</span>
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">POST /api/v1/communities/{community.id}/vouch.min</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/scores.min/:address</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/eligibility.min/:address</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/metrics.min</code></li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="credit" className="space-y-6 mt-6">
