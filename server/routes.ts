@@ -259,6 +259,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { endorser, epoch } = req.params;
       const maxNonce = await storage.getMaxNonce(endorser.toLowerCase(), parseInt(epoch));
       
+      // CRITICAL: Prevent browser caching of nonces - they must always be fresh
+      // Cached nonces cause "Invalid nonce" errors when endorsements are created
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       return res.status(200).json({ 
         maxNonce,
         nextNonce: maxNonce + 1 
