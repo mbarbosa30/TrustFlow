@@ -445,7 +445,6 @@ export default function Seeds() {
                   <SelectValue placeholder="Select a community" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Global Network (Community 0)</SelectItem>
                   {communitiesData?.communities?.map((community) => (
                     <SelectItem key={community.id} value={community.id.toString()}>
                       {community.name} (Community {community.id})

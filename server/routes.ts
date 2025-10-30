@@ -2024,8 +2024,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const communitiesWithMetrics = await Promise.all(
         communities.map(async (community) => {
           try {
-            // Get scores for member count
-            const scores = await storage.getScoresForCommunity(community.id);
+            // Get latest epoch health for this specific community
+            const latestHealth = await storage.getLatestEpochHealth(community.id);
+            
+            if (!latestHealth) {
+              return {
+                ...community,
+                metrics: { members: 0, avgScore: 0, activeLoans: 0 }
+              };
+            }
+            
+            // Get scores for this community in the latest epoch
+            const scores = await storage.getScoresByEpoch(latestHealth.epochId, community.id);
             const acceptedScores = scores.filter(s => s.tier !== 'Outlier');
             const acceptedMembers = acceptedScores.length;
             
