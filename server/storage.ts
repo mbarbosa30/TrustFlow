@@ -477,10 +477,14 @@ export class MemStorage implements IStorage {
 
   // Community operations
   async createCommunity(community: InsertCommunity): Promise<Community> {
+    const { generateApiKey } = await import('./utils/apikey');
+    
     // Normalize creator address to lowercase for consistent storage
+    // Auto-generate API key for external integrations
     const normalizedCommunity = {
       ...community,
       creator: community.creator.toLowerCase(),
+      apiKey: generateApiKey(),
     };
     
     const [dbCommunity] = await db
