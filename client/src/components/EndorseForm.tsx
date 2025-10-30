@@ -35,8 +35,6 @@ const ENDORSEMENT_TYPES = {
 
 export function EndorseForm({ onEndorse }: EndorseFormProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [note, setNote] = useState("");
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("0");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -50,6 +48,22 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
     queryKey: ['/api/communities/user', address],
     enabled: !!address,
   });
+
+  // Filter out null communities and determine community selection logic
+  const validCommunities = userCommunities?.communities?.filter((c: any) => c !== null) || [];
+  
+  // Auto-select community based on user's communities:
+  // - 0 communities → default to "0" (general)
+  // - 1 community → auto-select that community
+  // - 2+ communities → show selector, default to "0"
+  const defaultCommunityId = validCommunities.length === 1 
+    ? validCommunities[0].id.toString() 
+    : "0";
+  
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>(defaultCommunityId);
+  
+  // Show selector only when user has 2+ communities
+  const showCommunitySelector = validCommunities.length >= 2;
   
   // ENS resolution uses Ethereum mainnet (standard practice)
   const publicClient = createPublicClient({
@@ -156,11 +170,10 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         chainId: chainId, // Include chainId so backend can verify with correct domain
         communityId: parseInt(selectedCommunityId, 10),
         promptHash,
-        note: note || undefined,
       });
 
       if (onEndorse) {
-        onEndorse(searchQuery, note || undefined);
+        onEndorse(searchQuery);
       }
       
       toast({
@@ -169,7 +182,6 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       });
       
       setSearchQuery("");
-      setNote("");
     } catch (error: any) {
       toast({
         title: "Failed to Create Endorsement",
@@ -187,29 +199,31 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         <CardTitle className="text-lg font-semibold">Vouch for Someone in the Network</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="community-select">Community</Label>
-          <Select 
-            value={selectedCommunityId} 
-            onValueChange={setSelectedCommunityId}
-            disabled={isLoadingCommunities}
-          >
-            <SelectTrigger className="mt-2" data-testid="select-community">
-              <SelectValue placeholder="Select community" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Global Network</SelectItem>
-              {userCommunities?.communities?.filter((c: any) => c !== null).map((community: any) => (
-                <SelectItem key={community.id} value={community.id.toString()}>
-                  {community.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground mt-2">
-            Choose which community this vouch is for
-          </p>
-        </div>
+        {showCommunitySelector && (
+          <div>
+            <Label htmlFor="community-select">Community</Label>
+            <Select 
+              value={selectedCommunityId} 
+              onValueChange={setSelectedCommunityId}
+              disabled={isLoadingCommunities}
+            >
+              <SelectTrigger className="mt-2" data-testid="select-community">
+                <SelectValue placeholder="Select community" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Global Network</SelectItem>
+                {validCommunities.map((community: any) => (
+                  <SelectItem key={community.id} value={community.id.toString()}>
+                    {community.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-2">
+              Choose which community this vouch is for
+            </p>
+          </div>
+        )}
 
         <div>
           <Label htmlFor="search-address">Wallet Address or ENS</Label>
@@ -236,22 +250,6 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
               <QrCode className="w-5 h-5" />
             </Button>
           </div>
-        </div>
-
-        <div>
-          <Label htmlFor="note">Private Note (Optional)</Label>
-          <Textarea
-            id="note"
-            placeholder="Why you vouch for this person..."
-            className="mt-2 resize-none"
-            rows={3}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            data-testid="input-note"
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Private and only visible to you.
-          </p>
         </div>
 
         <Button
