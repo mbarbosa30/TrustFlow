@@ -199,7 +199,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="0">Global Network</SelectItem>
-              {userCommunities?.communities?.map((community: any) => (
+              {userCommunities?.communities?.filter((c: any) => c !== null).map((community: any) => (
                 <SelectItem key={community.id} value={community.id.toString()}>
                   {community.name}
                 </SelectItem>
