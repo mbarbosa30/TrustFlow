@@ -20,13 +20,18 @@ export type User = typeof users.$inferSelect;
 // Communities table - each community is an isolated trust graph
 export const communities = pgTable("communities", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
+  slug: text("slug").unique(), // URL-friendly identifier (e.g., "mujeres2000")
   name: text("name").notNull(),
   description: text("description"),
+  location: text("location"), // e.g., "Tigre & Zona Norte, AR"
+  logoUrl: text("logo_url"), // Community logo
+  coverUrl: text("cover_url"), // Hero/cover image
   promptText: text("prompt_text").notNull(),
   promptHash: text("prompt_hash").notNull(),
   policyId: text("policy_id").notNull(),
   policyJson: jsonb("policy_json").notNull(), // JSONB for proper policy storage
   lendingPolicyJson: jsonb("lending_policy_json"), // Opt-in microcredit configuration
+  themeJson: jsonb("theme_json"), // Custom colors: { primary, accent }
   visibility: text("visibility").notNull().default("public"), // 'public' | 'invite'
   creator: text("creator").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -39,6 +44,93 @@ export const insertCommunitySchema = createInsertSchema(communities).omit({
 
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type Community = typeof communities.$inferSelect;
+
+// Community roles table - defines who has what role in each community
+export const communityRoles = pgTable("community_roles", {
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  address: text("address").notNull(),
+  role: text("role").notNull(), // 'owner' | 'admin' | 'seed' | 'mentor' | 'sponsor'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: { primaryKey: [table.communityId, table.address, table.role] },
+}));
+
+export const insertCommunityRoleSchema = createInsertSchema(communityRoles).omit({
+  createdAt: true,
+});
+
+export type InsertCommunityRole = z.infer<typeof insertCommunityRoleSchema>;
+export type CommunityRole = typeof communityRoles.$inferSelect;
+
+// Posts table - updates and announcements for communities
+export const posts = pgTable("posts", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  authorAddress: text("author_address").notNull(),
+  title: text("title").notNull(),
+  bodyMarkdown: text("body_markdown").notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPostSchema = createInsertSchema(posts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPost = z.infer<typeof insertPostSchema>;
+export type Post = typeof posts.$inferSelect;
+
+// Comments table - threaded discussions on posts
+export const comments = pgTable("comments", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  postId: bigint("post_id", { mode: "number" }).notNull(),
+  authorAddress: text("author_address").notNull(),
+  bodyMarkdown: text("body_markdown").notNull(),
+  parentId: bigint("parent_id", { mode: "number" }), // For threaded replies
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
+
+// Community metrics snapshots - track KPIs over time
+export const communityMetrics = pgTable("community_metrics", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  snapshotDate: timestamp("snapshot_date").defaultNow().notNull(),
+  // Trust metrics
+  acceptedUsers: integer("accepted_users"),
+  trustHealthIndex: doublePrecision("trust_health_index"),
+  avgMinCut: doublePrecision("avg_min_cut"),
+  // Credit metrics  
+  activeLoans: integer("active_loans"),
+  onTimeRate90d: doublePrecision("on_time_rate_90d"),
+  par30: doublePrecision("par30"), // Portfolio at Risk 30 days
+  avgTicket: doublePrecision("avg_ticket"),
+  // Support metrics
+  sponsorsActive: integer("sponsors_active"),
+  interestSubsidized30d: doublePrecision("interest_subsidized_30d"),
+  firstLossCapRemaining: doublePrecision("first_loss_cap_remaining"),
+  // Activity metrics
+  vouches7d: integer("vouches_7d"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCommunityMetricSchema = createInsertSchema(communityMetrics).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCommunityMetric = z.infer<typeof insertCommunityMetricSchema>;
+export type CommunityMetric = typeof communityMetrics.$inferSelect;
 
 export const publicEndorsements = pgTable("public_endorsements", {
   id: bigserial("id", { mode: "number" }).primaryKey(),

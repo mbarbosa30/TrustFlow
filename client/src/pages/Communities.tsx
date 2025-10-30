@@ -21,8 +21,8 @@ export default function Communities() {
     enabled: !!address && isConnected,
   });
 
-  const communities = data?.communities || [];
-  const userCommunities = userCommunitiesData?.communities || [];
+  const communities = (data?.communities || []).filter(c => c && c.id);
+  const userCommunities = (userCommunitiesData?.communities || []).filter(c => c && c.id);
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">

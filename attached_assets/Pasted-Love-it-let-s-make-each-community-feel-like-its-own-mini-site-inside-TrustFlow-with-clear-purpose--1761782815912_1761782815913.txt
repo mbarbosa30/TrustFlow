@@ -1,0 +1,170 @@
+Love it—let’s make each community feel like its own mini-site inside TrustFlow, with clear purpose, live metrics, and safe conversations.
+
+Community Page: What it includes
+
+Header (hero)
+	•	Logo + name + location
+	•	One-line mission
+	•	CTAs: Apply for Credit · Vouch · Support (or Sponsor)
+	•	Optional cover image and custom theme colors
+
+Key stats (top row, auto-refresh per epoch/day)
+	•	Trust: Accepted users · Trust health index (min-cut & diversity)
+	•	Credit: Active loans · On-time rate (90d) · PAR30 · Avg ticket
+	•	Support: Sponsors active · Interest subsidized (last 30d) · First-loss cap remaining
+	•	Activity: Vouches (7d) · Workshops/Events upcoming
+
+Tabs
+	1.	Overview – mission, who they serve, programs, quick KPIs, latest update
+	2.	Credit – borrower view (eligibility, offers, active loan progress, repay, receipts)
+	3.	Trust – how to vouch (prompt), your score, “why accepted”, tips to improve
+	4.	Impact – charts (repayment funnel, subsidy impact, cohort performance), stories
+	5.	Updates – posts + comments (announcements, workshop notes, Q&A)
+	6.	People – seeds, mentors, operators (roles & public bios)
+	7.	Transparency – signed parameters, hashes, receipts feed, policy history
+
+⸻
+
+Comments/Updates (safe & useful)
+	•	Posts: admins/seeds share updates (workshops, fairs, calls for action)
+	•	Comments: threaded, emoji reactions, file/image attach
+	•	Badges on commenters: Borrower · Mentor · Seed · Sponsor (read-only labels)
+	•	Safety: rate limits, first-comment hold, report/flag, spam filters; option “comments from accepted users only”
+	•	Privacy: never expose private graph edges; posts are public by default
+
+⸻
+
+Admin Console (per community)
+	•	Branding: logo, colors, cover, custom slug/domain
+	•	Mission & copy: Markdown editor for Overview; bilingual fields if needed
+	•	Trust policy: prompt text, gates (min-cut, vertex-disjoint, seed coverage), seed list
+	•	Credit presets: ARS amounts (160k–800k), tenors (6/9/12m), APR (40%), late/default rules
+	•	Support rails: toggle Interest Buy-Down, Repay-Assist, First-Loss, voucher programs
+	•	Events: workshops/ferias calendar
+	•	Moderation: approve/feature posts, manage comments, block users
+	•	Transparency: publish epoch bundles, receipts, policy changes (with timelock)
+
+⸻
+
+Data model (minimal & clean)
+
+community(id, slug, name, mission, location, cover_url, logo_url,
+          prompt_text, policy_jsonb, theme_jsonb, visibility, created_at)
+
+community_metric_snapshot(community_id, snapshot_id, kpis_jsonb, created_at)
+
+post(id, community_id, author_addr, title, body_md, pinned, created_at)
+comment(id, post_id, author_addr, body_md, created_at, parent_id)
+
+role(community_id, addr, role)  -- owner | admin | seed | mentor | sponsor
+
+# credit & trust tables you already planned plug right in
+loan(...), installment(...), receipt(...)
+
+
+⸻
+
+APIs (MVP)
+
+Public
+	•	GET /communities/:slug → branding + overview copy + CTAs
+	•	GET /communities/:slug/metrics → top-row KPIs + sparkline data
+	•	GET /communities/:slug/updates / GET /posts/:id
+	•	GET /communities/:slug/transparency?since=...
+
+Authed (wallet)
+	•	GET /communities/:slug/me → { eligible, score, minCut, trust tips }
+	•	GET /communities/:slug/credit/overview → borrower panel
+	•	POST /communities/:slug/vouch → EIP-712 vouch
+	•	POST /communities/:slug/posts / POST /comments (role-gated)
+
+Admin
+	•	PUT /communities/:slug/settings (branding, mission, theme)
+	•	PUT /communities/:slug/policy (trust & credit presets)
+	•	POST /communities/:slug/announce (creates pinned update)
+
+⸻
+
+Engagement patterns that work
+	•	Progress bars: “On-time streak 3/3” for borrowers; “Subsidy this month: ARS 1.2M” for sponsors
+	•	Milestones: “100 accepted members”, “Default rate under 2% for 90 days”
+	•	Events widget: next 3 workshops/ferias with quick apply
+	•	Nudges: “Add a mentor note” (mentors), “Invite a sponsor” (seeds), “Diversify your vouches” (borrowers)
+	•	Shareables: OpenGraph cards for posts/impact highlights
+
+⸻
+
+Example: Mujeres 2000 page (copy you can reuse)
+
+Hero tagline:
+“Formación, mentorías y microcréditos en ARS para emprendedoras.”
+
+Overview bullets:
+	•	Acompañamos a mujeres emprendedoras con talleres, mentorías y créditos productivos.
+	•	Montos desde ARS 160.000 hasta ARS 800.000 · 6–12 meses · cuotas fijas.
+	•	Parte del costo puede ser subvencionado por sponsors cuando haya fondos disponibles.
+
+CTAs: Solicitar crédito · Dar un vouch responsable · Apoyar con interés o cobertura de cuotas
+
+Impact chips (live):
+On-time 90d · PAR30 · ARS de interés subsidiado (30d) · Cuotas cubiertas · Historias
+
+⸻
+
+Layout quick-win (Next.js/React)
+	•	Route: /c/[slug]
+	•	Components: <CommunityHero/> <KpiRow/> <TabBar/> <Overview/> <Credit/> <Trust/> <Impact/> <Updates/> <People/> <Transparency/>
+	•	One “hydrate” call: GET /communities/:slug/aggregate returns branding, KPIs, active tab stubs for fast paint
+
+⸻
+
+Governance & transparency hooks
+	•	Policy ID visible with a “What changed?” drawer
+	•	Seeds list (public keys, join date), seed health (coverage share)
+	•	Receipts feed (loan disbursements/repayments, subsidies/assists) with verifiable links
+	•	External recompute badge (epochs reproduced %)
+
+⸻
+
+Security & privacy defaults
+	•	Endorsements remain private by default; only proof objects and metrics shown
+	•	Comments require accepted status or moderator approval
+	•	Anti-abuse: rate limits, cooldowns, shadow-ban for spam
+
+⸻
+
+One-file config to spin up a community fast
+
+{
+  "slug": "mujeres2000",
+  "branding": {
+    "name": "Mujeres 2000",
+    "location": "Tigre & Zona Norte, AR",
+    "logoUrl": "...",
+    "coverUrl": "...",
+    "theme": { "primary": "#1f7a8c", "accent": "#f4a261" }
+  },
+  "mission": "Formación, mentorías y microcréditos productivos en ARS para emprendedoras.",
+  "trust": {
+    "prompt": "Recomiendo a esta persona como emprendedora real de la red.",
+    "gates": { "minCut": 2, "vertexDisjoint": 2, "minSeedCount": 2, "perSeedMinShare": 0.30 },
+    "seeds": ["0xSeedA", "0xSeedB", "0xSeedC"]
+  },
+  "credit": {
+    "amountsARS": [160000, 240000, 400000, 600000, 800000],
+    "tenorsMonths": [6, 9, 12],
+    "aprNominal": 0.40,
+    "late": { "graceDays": 5, "defaultAfterDaysLate": 60, "lateFeeMonthly": 0.01 }
+  },
+  "support": {
+    "interestBuydown": true,
+    "repayAssist": true,
+    "firstLossCapARS": 2000000
+  },
+  "visibility": "public"
+}
+
+
+⸻
+
+If you want, I can turn this into actual React components and the minimal endpoints so a new community (like Mujeres 2000) can be created by dropping in a config, uploading logo/cover, and filling the mission + seed list.
