@@ -362,6 +362,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/epoch/:id/pagerank-metrics", async (req, res) => {
+    try {
+      const epochId = parseInt(req.params.id);
+
+      if (isNaN(epochId)) {
+        return res.status(400).json({ error: "Invalid epoch ID" });
+      }
+
+      return res.status(200).json(null);
+    } catch (error) {
+      console.error("Error fetching PageRank metrics:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/score/:did", async (req, res) => {
     try {
       const did = req.params.did.toLowerCase();
@@ -773,16 +788,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stsValues = acceptedScores.map(s => s.sts).sort((a, b) => a - b);
       
       const bins = [
-        { bin: "0-10", count: stsValues.filter(s => s >= 0 && s < 10).length },
-        { bin: "10-20", count: stsValues.filter(s => s >= 10 && s < 20).length },
-        { bin: "20-30", count: stsValues.filter(s => s >= 20 && s < 30).length },
-        { bin: "30-40", count: stsValues.filter(s => s >= 30 && s < 40).length },
-        { bin: "40-50", count: stsValues.filter(s => s >= 40 && s < 50).length },
-        { bin: "50-60", count: stsValues.filter(s => s >= 50 && s < 60).length },
-        { bin: "60-70", count: stsValues.filter(s => s >= 60 && s < 70).length },
-        { bin: "70-80", count: stsValues.filter(s => s >= 70 && s < 80).length },
-        { bin: "80-90", count: stsValues.filter(s => s >= 80 && s < 90).length },
-        { bin: "90-100", count: stsValues.filter(s => s >= 90 && s <= 100).length },
+        { bin: "0-20", count: stsValues.filter(s => s >= 0 && s < 20).length },
+        { bin: "20-40", count: stsValues.filter(s => s >= 20 && s < 40).length },
+        { bin: "40-60", count: stsValues.filter(s => s >= 40 && s < 60).length },
+        { bin: "60-80", count: stsValues.filter(s => s >= 60 && s < 80).length },
+        { bin: "80-100", count: stsValues.filter(s => s >= 80 && s <= 100).length },
       ];
 
       const percentiles = {
@@ -811,28 +821,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const acceptedScores = scores.filter(s => s.isAccepted);
       
       const tierCounts = {
-        apprentice: acceptedScores.filter(s => s.tier === 'apprentice').length,
-        journeyer: acceptedScores.filter(s => s.tier === 'journeyer').length,
-        master: acceptedScores.filter(s => s.tier === 'master').length,
+        connected: acceptedScores.filter(s => {
+          const tier = s.tier?.toLowerCase();
+          return tier === 'connected' || tier === 'apprentice';
+        }).length,
+        verified: acceptedScores.filter(s => {
+          const tier = s.tier?.toLowerCase();
+          return tier === 'verified' || tier === 'journeyer';
+        }).length,
+        trusted: acceptedScores.filter(s => {
+          const tier = s.tier?.toLowerCase();
+          return tier === 'trusted' || tier === 'master';
+        }).length,
       };
 
       const total = acceptedScores.length || 1;
 
       const distribution = [
         {
-          level: 'Apprentice' as const,
-          count: tierCounts.apprentice,
-          percentage: Math.round((tierCounts.apprentice / total) * 100),
+          level: 'Connected' as const,
+          count: tierCounts.connected,
+          percentage: Math.round((tierCounts.connected / total) * 100),
         },
         {
-          level: 'Journeyer' as const,
-          count: tierCounts.journeyer,
-          percentage: Math.round((tierCounts.journeyer / total) * 100),
+          level: 'Verified' as const,
+          count: tierCounts.verified,
+          percentage: Math.round((tierCounts.verified / total) * 100),
         },
         {
-          level: 'Master' as const,
-          count: tierCounts.master,
-          percentage: Math.round((tierCounts.master / total) * 100),
+          level: 'Trusted' as const,
+          count: tierCounts.trusted,
+          percentage: Math.round((tierCounts.trusted / total) * 100),
         },
       ];
 
