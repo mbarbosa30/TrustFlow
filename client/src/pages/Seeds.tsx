@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Shield, Zap, ArrowRight, Calendar, Database, Users, AlertTriangle } from "lucide-react";
+import { Trash2, Plus, Shield, Zap, ArrowRight, Calendar, Database, Users, AlertTriangle, Globe } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 
 interface Seed {
@@ -38,13 +39,23 @@ interface ComputationSummary {
 export default function Seeds() {
   const [newAddress, setNewAddress] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [selectedCommunityId, setSelectedCommunityId] = useState<number>(0);
   const [computationResult, setComputationResult] = useState<ComputationSummary | null>(null);
   const { toast } = useToast();
   const { address: userAddress, isConnected } = useWallet();
   const { signMessageAsync } = useSignMessage();
 
+  const { data: communitiesData } = useQuery<{ communities: { id: number; name: string; slug: string }[] }>({
+    queryKey: ['/api/communities'],
+  });
+
   const { data: seedsData, isLoading } = useQuery<{ seeds: Seed[] }>({
-    queryKey: ['/api/seeds'],
+    queryKey: ['/api/seeds', { communityId: selectedCommunityId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/seeds?communityId=${selectedCommunityId}`);
+      if (!response.ok) throw new Error('Failed to fetch seeds');
+      return response.json();
+    },
   });
 
   const { data: epochData, isLoading: isEpochLoading } = useQuery<{ 
@@ -58,11 +69,11 @@ export default function Seeds() {
   });
 
   const addSeedMutation = useMutation({
-    mutationFn: async (data: { address: string; walletSignature: any; note?: string }) => {
+    mutationFn: async (data: { address: string; walletSignature: any; note?: string; communityId: number }) => {
       return await apiRequest('POST', '/api/seeds', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/seeds'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seeds', { communityId: selectedCommunityId }] });
       setNewAddress("");
       setNewNote("");
       toast({
@@ -80,13 +91,16 @@ export default function Seeds() {
   });
 
   const deleteSeedMutation = useMutation({
-    mutationFn: async (data: { address: string; walletSignature: any }) => {
+    mutationFn: async (data: { address: string; walletSignature: any; communityId: number }) => {
       const response = await fetch(`/api/seeds/${data.address}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ walletSignature: data.walletSignature }),
+        body: JSON.stringify({ 
+          walletSignature: data.walletSignature,
+          communityId: data.communityId
+        }),
       });
 
       if (!response.ok) {
@@ -97,7 +111,7 @@ export default function Seeds() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/seeds'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/seeds', { communityId: selectedCommunityId }] });
       toast({
         title: "Seed Removed",
         description: "Seed address has been removed from the network",
@@ -351,7 +365,7 @@ export default function Seeds() {
     if (!newAddress || !userAddress || !isConnected) return;
     
     try {
-      const message = `Add seed: ${newAddress.toLowerCase()}\nTimestamp: ${Date.now()}`;
+      const message = `Add seed: ${newAddress.toLowerCase()}\nCommunity: ${selectedCommunityId}\nTimestamp: ${Date.now()}`;
       const signature = await signMessageAsync({ message });
       
       addSeedMutation.mutate({
@@ -362,6 +376,7 @@ export default function Seeds() {
           signature,
         },
         note: newNote || undefined,
+        communityId: selectedCommunityId,
       });
     } catch (error: any) {
       toast({
@@ -377,7 +392,7 @@ export default function Seeds() {
     
     if (confirm(`Are you sure you want to remove ${address} as a seed?`)) {
       try {
-        const message = `Remove seed: ${address}\nTimestamp: ${Date.now()}`;
+        const message = `Remove seed: ${address}\nCommunity: ${selectedCommunityId}\nTimestamp: ${Date.now()}`;
         const signature = await signMessageAsync({ message });
         
         deleteSeedMutation.mutate({
@@ -387,6 +402,7 @@ export default function Seeds() {
             message,
             signature,
           },
+          communityId: selectedCommunityId,
         });
       } catch (error: any) {
         toast({
@@ -408,6 +424,42 @@ export default function Seeds() {
       </div>
 
       <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="w-5 h-5 text-primary" />
+              Select Community
+            </CardTitle>
+            <CardDescription>
+              Choose which community's seeds to manage
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="community-select">Community</Label>
+              <Select
+                value={selectedCommunityId.toString()}
+                onValueChange={(value) => setSelectedCommunityId(parseInt(value, 10))}
+              >
+                <SelectTrigger id="community-select" data-testid="select-community">
+                  <SelectValue placeholder="Select a community" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Global Network (Community 0)</SelectItem>
+                  {communitiesData?.communities?.map((community) => (
+                    <SelectItem key={community.id} value={community.id.toString()}>
+                      {community.name} (Community {community.id})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Seeds are specific to each community. Global seeds (Community 0) are shared across the platform.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
