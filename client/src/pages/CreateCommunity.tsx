@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Briefcase, Coins, ShoppingBag, Settings, Check, ChevronDown } from "lucide-react";
 import type { CommunityTemplate } from "@shared/community-types";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const templateIcons = {
   Briefcase,
@@ -25,6 +26,7 @@ export default function CreateCommunity() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { address } = useAccount();
+  const { t } = useLanguage();
   const [selectedTemplate, setSelectedTemplate] = useState<string>("hiring-v1");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -56,16 +58,16 @@ export default function CreateCommunity() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Community created!",
-        description: `${data.community.name} has been created. You're automatically the first seed.`,
+        title: t('createCommunity.communityCreated'),
+        description: `${data.community.name} ${t('createCommunity.creatorFirstSeed')}`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/communities"] });
       setLocation(`/communities/${data.community.id}`);
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating community",
-        description: error.message || "Failed to create community",
+        title: t('createCommunity.errorCreating'),
+        description: error.message || t('createCommunity.errorCreatingDesc'),
         variant: "destructive",
       });
     },
@@ -77,8 +79,8 @@ export default function CreateCommunity() {
   const handleSubmit = () => {
     if (!address) {
       toast({
-        title: "Wallet not connected",
-        description: "Please connect your wallet to create a community",
+        title: t('createCommunity.walletRequired'),
+        description: t('createCommunity.walletRequiredDesc'),
         variant: "destructive",
       });
       return;
@@ -86,8 +88,8 @@ export default function CreateCommunity() {
 
     if (!name.trim()) {
       toast({
-        title: "Name required",
-        description: "Please enter a community name",
+        title: t('createCommunity.nameRequired'),
+        description: t('createCommunity.nameRequiredDesc'),
         variant: "destructive",
       });
       return;
@@ -113,16 +115,16 @@ export default function CreateCommunity() {
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">Create a Community</h1>
-        <p className="text-muted-foreground">Build a trust network with custom endorsement criteria</p>
+        <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">{t('createCommunity.title')}</h1>
+        <p className="text-muted-foreground">{t('createCommunity.description')}</p>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-6">
           <Card data-testid="card-template-selector">
             <CardHeader>
-              <CardTitle>1. Choose a Template</CardTitle>
-              <CardDescription>Select a pre-configured policy or start from scratch</CardDescription>
+              <CardTitle>{t('createCommunity.step1')}</CardTitle>
+              <CardDescription>{t('createCommunity.templateDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {templates.map((tmpl: CommunityTemplate) => {
@@ -157,14 +159,14 @@ export default function CreateCommunity() {
 
           <Card data-testid="card-community-details">
             <CardHeader>
-              <CardTitle>2. Community Details</CardTitle>
+              <CardTitle>{t('createCommunity.step2')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Community Name *</Label>
+                <Label htmlFor="name">{t('createCommunity.communityName')} *</Label>
                 <Input
                   id="name"
-                  placeholder="e.g., SF Freelancers Network"
+                  placeholder={t('createCommunity.communityNamePlaceholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   data-testid="input-community-name"
@@ -172,10 +174,10 @@ export default function CreateCommunity() {
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('createCommunity.descriptionLabel')}</Label>
                 <Textarea
                   id="description"
-                  placeholder="What is this community about?"
+                  placeholder={t('createCommunity.descriptionPlaceholder')}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
@@ -184,7 +186,7 @@ export default function CreateCommunity() {
               </div>
 
               <div>
-                <Label htmlFor="prompt">Endorsement Prompt</Label>
+                <Label htmlFor="prompt">{t('createCommunity.endorsementPrompt')}</Label>
                 <Input
                   id="prompt"
                   placeholder={template?.defaultPrompt}
@@ -385,7 +387,7 @@ export default function CreateCommunity() {
                   className="w-full"
                   data-testid="button-create-community"
                 >
-                  {createMutation.isPending ? "Creating..." : !address ? "Connect Wallet" : "Create Community"}
+                  {createMutation.isPending ? "Creating..." : !address ? "Connect Wallet" : t('createCommunity.createButton')}
                 </Button>
               )}
             </CardContent>

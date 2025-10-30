@@ -16,6 +16,7 @@ import {
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
   TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock
 } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Loan {
   id: number;
@@ -69,6 +70,7 @@ export default function CommunityDetail() {
   const communityId = Number(params.id) || 0;
   const { address } = useAccount();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   // Support tab state
   const [supportTab, setSupportTab] = useState("loans");
@@ -132,8 +134,8 @@ export default function CommunityDetail() {
     },
     onSuccess: () => {
       toast({
-        title: "Interest Buy-Down Created",
-        description: "Your monthly commitment has been activated to reduce the borrower's interest rate.",
+        title: t('communityDetail.ibdCreated'),
+        description: t('communityDetail.ibdCreatedDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
       queryClient.invalidateQueries({ queryKey: ["/api/support/available-loans"] });
@@ -142,7 +144,7 @@ export default function CommunityDetail() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error Creating Commitment",
+        title: t('communityDetail.errorCreatingCommitment'),
         description: error.message,
         variant: "destructive",
       });
@@ -160,15 +162,15 @@ export default function CommunityDetail() {
     },
     onSuccess: () => {
       toast({
-        title: "Repay-Assist Activated",
-        description: "You covered the late installment. The borrower will repay you with a 6% premium.",
+        title: t('communityDetail.raActivated'),
+        description: t('communityDetail.raActivatedDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/support/portfolio", address] });
       queryClient.invalidateQueries({ queryKey: ["/api/support/late-installments"] });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error Covering Installment",
+        title: t('communityDetail.errorCoveringInstallment'),
         description: error.message,
         variant: "destructive",
       });
@@ -214,11 +216,11 @@ export default function CommunityDetail() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Community not found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('communities.notFound')}</h3>
             <Link href="/communities">
               <Button variant="outline">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Communities
+                {t('common.back')} to {t('communities.title')}
               </Button>
             </Link>
           </CardContent>
@@ -349,7 +351,7 @@ export default function CommunityDetail() {
                   <Link href={`/credit/${communityId}`}>
                     <Button size="lg" data-testid="button-apply-credit">
                       <DollarSign className="w-4 h-4 mr-2" />
-                      Apply for Credit
+                      {t('communityDetail.applyForCredit')}
                     </Button>
                   </Link>
                   <Link href={`/vouch?community=${communityId}`}>
@@ -382,18 +384,18 @@ export default function CommunityDetail() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <Card data-testid="card-stat-members">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Accepted</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.accepted')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{networkSize}</div>
-              <p className="text-xs text-muted-foreground mt-1">Members</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common.members')}</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-health">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Health</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.health')}</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -404,78 +406,78 @@ export default function CommunityDetail() {
 
           <Card data-testid="card-stat-avgcut">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Min-Cut</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.minCut')}</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{avgMinCut.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Avg Resistance</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('communityDetail.avgResistance')}</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-loans">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Loans</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.activeLoans')}</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeLoans}</div>
-              <p className="text-xs text-muted-foreground mt-1">Current</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common.current')}</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-ontime">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">On-Time</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.onTime')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{onTimeRate.toFixed(0)}%</div>
-              <p className="text-xs text-muted-foreground mt-1">90d Rate</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('communityDetail.rate90d')}</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-endorsements">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Vouches</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.vouches')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalEndorsements}</div>
-              <p className="text-xs text-muted-foreground mt-1">Total</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common.total')}</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-sponsors">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sponsors</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('communityDetail.sponsors')}</CardTitle>
               <HandHeart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{sponsorsActive}</div>
-              <p className="text-xs text-muted-foreground mt-1">Active</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('common.active')}</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-            <TabsTrigger value="credit" data-testid="tab-credit">Credit</TabsTrigger>
-            <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
-            <TabsTrigger value="trust" data-testid="tab-trust">Trust</TabsTrigger>
-            <TabsTrigger value="impact" data-testid="tab-impact">Impact</TabsTrigger>
-            <TabsTrigger value="updates" data-testid="tab-updates">Updates</TabsTrigger>
-            <TabsTrigger value="people" data-testid="tab-people">People</TabsTrigger>
-            <TabsTrigger value="transparency" data-testid="tab-transparency">Transparency</TabsTrigger>
+            <TabsTrigger value="overview" data-testid="tab-overview">{t('communityDetail.tabOverview')}</TabsTrigger>
+            <TabsTrigger value="credit" data-testid="tab-credit">{t('communityDetail.tabCredit')}</TabsTrigger>
+            <TabsTrigger value="support" data-testid="tab-support">{t('communityDetail.tabSupport')}</TabsTrigger>
+            <TabsTrigger value="trust" data-testid="tab-trust">{t('communityDetail.tabTrust')}</TabsTrigger>
+            <TabsTrigger value="impact" data-testid="tab-impact">{t('communityDetail.tabImpact')}</TabsTrigger>
+            <TabsTrigger value="updates" data-testid="tab-updates">{t('communityDetail.tabUpdates')}</TabsTrigger>
+            <TabsTrigger value="people" data-testid="tab-people">{t('communityDetail.tabPeople')}</TabsTrigger>
+            <TabsTrigger value="transparency" data-testid="tab-transparency">{t('communityDetail.tabTransparency')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Trust Distribution</CardTitle>
-                  <CardDescription>Members by trust tier</CardDescription>
+                  <CardTitle>{t('communityDetail.trustDistribution')}</CardTitle>
+                  <CardDescription>{t('communityDetail.trustDistributionDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {policy.tiers.map((tier: string, idx: number) => {
@@ -485,7 +487,7 @@ export default function CommunityDetail() {
                       <div key={idx}>
                         <div className="flex items-center justify-between mb-2">
                           <Badge variant="secondary">{tier}</Badge>
-                          <span className="text-sm font-medium">{count} members</span>
+                          <span className="text-sm font-medium">{count} {t('common.members')}</span>
                         </div>
                         <Progress value={percentage} className="h-2" />
                       </div>
@@ -496,24 +498,24 @@ export default function CommunityDetail() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Network Metrics</CardTitle>
-                  <CardDescription>Latest computation statistics</CardDescription>
+                  <CardTitle>{t('communityDetail.networkMetrics')}</CardTitle>
+                  <CardDescription>{t('communityDetail.networkMetricsDesc')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Average Flow</span>
+                    <span className="text-sm text-muted-foreground">{t('communityDetail.avgFlow')}</span>
                     <span className="text-lg font-semibold">{avgFlow.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Average Min-Cut</span>
+                    <span className="text-sm text-muted-foreground">{t('communityDetail.avgMinCut')}</span>
                     <span className="text-lg font-semibold">{avgMinCut.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Active Participants</span>
+                    <span className="text-sm text-muted-foreground">{t('communityDetail.activeParticipants')}</span>
                     <span className="text-lg font-semibold">{uniqueMembers.size}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Graph Health</span>
+                    <span className="text-sm text-muted-foreground">{t('communityDetail.graphHealth')}</span>
                     <span className="text-lg font-semibold">{ghi}</span>
                   </div>
                 </CardContent>
@@ -522,17 +524,17 @@ export default function CommunityDetail() {
 
             <Card>
               <CardHeader>
-                <CardTitle>About This Community</CardTitle>
+                <CardTitle>{t('communityDetail.aboutCommunity')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <p className="leading-relaxed">{community.description}</p>
                 <div className="pt-3 border-t space-y-2">
-                  <h4 className="font-semibold">Endorsement Criteria</h4>
+                  <h4 className="font-semibold">{t('communityDetail.endorsementCriteria')}</h4>
                   <p className="text-muted-foreground">
-                    Members endorse each other by affirming: <span className="font-medium">"{community.promptText}"</span>
+                    {t('communityDetail.memberEndorse')} <span className="font-medium">"{community.promptText}"</span>
                   </p>
                   <p className="text-muted-foreground">
-                    All endorsements are cryptographically verified against the prompt hash to ensure consistency.
+                    {t('communityDetail.cryptoVerified')}
                   </p>
                 </div>
               </CardContent>
@@ -545,9 +547,9 @@ export default function CommunityDetail() {
                 <CardContent className="py-12">
                   <div className="text-center">
                     <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t('communityDetail.connectForCredit')}</h3>
                     <p className="text-muted-foreground max-w-md mx-auto mb-4">
-                      Connect your wallet to check your credit eligibility and view loan offers
+                      {t('communityDetail.connectForCreditDesc')}
                     </p>
                   </div>
                 </CardContent>
@@ -558,37 +560,37 @@ export default function CommunityDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <DollarSign className="w-5 h-5" />
-                      Credit Access
+                      {t('communityDetail.creditAccess')}
                     </CardTitle>
-                    <CardDescription>Apply for microloans or manage your active credit</CardDescription>
+                    <CardDescription>{t('communityDetail.creditAccessDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 rounded-lg bg-accent/50">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold">Your Eligibility Status</h4>
+                        <h4 className="font-semibold">{t('communityDetail.eligibilityStatus')}</h4>
                         {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase()) ? (
-                          <Badge className="bg-green-500">Eligible</Badge>
+                          <Badge className="bg-green-500">{t('communityDetail.eligible')}</Badge>
                         ) : (
-                          <Badge variant="outline">Not Yet Eligible</Badge>
+                          <Badge variant="outline">{t('communityDetail.notEligible')}</Badge>
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">
                         {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase())
-                          ? "You meet the trust requirements and can apply for credit in this community."
-                          : "Build trust by getting endorsements from community members to unlock credit access."}
+                          ? t('communityDetail.eligibleDesc')
+                          : t('communityDetail.notEligibleDesc')}
                       </p>
                       <div className="flex gap-3">
                         <Link href={`/credit/${communityId}`} className="flex-1">
                           <Button className="w-full" data-testid="button-apply-credit-tab">
                             <DollarSign className="w-4 h-4 mr-2" />
                             {availableLoans?.some(l => l.borrowerAddress.toLowerCase() === address.toLowerCase())
-                              ? "View My Loan"
-                              : "Apply for Credit"}
+                              ? t('communityDetail.viewMyLoan')
+                              : t('communityDetail.applyForCredit')}
                           </Button>
                         </Link>
                         <Link href={`/lending-dashboard/${communityId}`}>
                           <Button variant="outline">
-                            View Offers
+                            {t('communityDetail.viewOffers')}
                           </Button>
                         </Link>
                       </div>
@@ -597,30 +599,30 @@ export default function CommunityDetail() {
                     {(availableLoans?.filter(l => l.borrowerAddress.toLowerCase() === address.toLowerCase()).length ?? 0) > 0 && (
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-lg">Your Active Loans</CardTitle>
+                          <CardTitle className="text-lg">{t('communityDetail.yourActiveLoans')}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           {availableLoans?.filter(l => l.borrowerAddress.toLowerCase() === address.toLowerCase()).map((loan) => (
                             <div key={loan.id} className="p-4 rounded-lg border">
                               <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm text-muted-foreground">Loan #{loan.id}</span>
+                                <span className="text-sm text-muted-foreground">{t('communityDetail.loanNumber')}{loan.id}</span>
                                 <Badge>{loan.status}</Badge>
                               </div>
                               <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
-                                  <p className="text-muted-foreground">Principal</p>
+                                  <p className="text-muted-foreground">{t('communityDetail.principal')}</p>
                                   <p className="font-semibold">${(loan.principalUsdc / 1000).toFixed(0)}k ARS</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">Term</p>
-                                  <p className="font-semibold">{loan.tenorMonths} months</p>
+                                  <p className="text-muted-foreground">{t('communityDetail.term')}</p>
+                                  <p className="font-semibold">{loan.tenorMonths} {t('common.months')}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">APR</p>
+                                  <p className="text-muted-foreground">{t('communityDetail.apr')}</p>
                                   <p className="font-semibold">{(loan.aprBps / 100).toFixed(1)}%</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">Next Due</p>
+                                  <p className="text-muted-foreground">{t('communityDetail.nextDue')}</p>
                                   <p className="font-semibold">{loan.nextDueDate || "N/A"}</p>
                                 </div>
                               </div>
@@ -919,16 +921,16 @@ export default function CommunityDetail() {
 
             <Card className="bg-primary/5 border-primary/20">
               <CardHeader>
-                <CardTitle className="text-base">How to Join This Community</CardTitle>
+                <CardTitle className="text-base">{t('communityDetail.howToJoin')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p className="font-medium">To earn trust in {community.name}:</p>
+                <p className="font-medium">{t('communityDetail.toEarnTrust')} {community.name}:</p>
                 <ol className="list-decimal list-inside space-y-1.5 ml-2">
-                  <li>Get endorsed by existing trusted members who can affirm: "{community.promptText}"</li>
-                  <li>Build redundant paths through the network (min-cut ≥{policy.acceptance.minCut})</li>
-                  <li>Ensure you have vertex-disjoint connections (≥{policy.acceptance.vertexDisjoint} independent paths)</li>
-                  <li>Maintain quality connections to at least {policy.acceptance.seedCoverage.minSeeds} seed members</li>
-                  <li>Each seed must provide ≥{(policy.acceptance.seedCoverage.minPerSeedShare * 100).toFixed(0)}% of your flow</li>
+                  <li>{t('communityDetail.step1')} "{community.promptText}"</li>
+                  <li>{t('communityDetail.step2')} {policy.acceptance.minCut})</li>
+                  <li>{t('communityDetail.step3')} {policy.acceptance.vertexDisjoint} {t('communityDetail.step3cont')}</li>
+                  <li>{t('communityDetail.step4')} {policy.acceptance.seedCoverage.minSeeds} {t('communityDetail.step4cont')}</li>
+                  <li>{t('communityDetail.step5')} {(policy.acceptance.seedCoverage.minPerSeedShare * 100).toFixed(0)}% {t('communityDetail.step5cont')}</li>
                 </ol>
               </CardContent>
             </Card>
@@ -940,9 +942,9 @@ export default function CommunityDetail() {
                 <CardContent className="py-12">
                   <div className="text-center">
                     <HandHeart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t('communityDetail.connectForCredit')}</h3>
                     <p className="text-muted-foreground max-w-md mx-auto">
-                      Please connect your wallet to view and support loans in this community
+                      {t('communityDetail.connectForSupport')}
                     </p>
                   </div>
                 </CardContent>
@@ -952,31 +954,31 @@ export default function CommunityDetail() {
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="loans" data-testid="tab-interest-buydown">
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    Interest Buy-Down
+                    {t('communityDetail.interestBuydown')}
                   </TabsTrigger>
                   <TabsTrigger value="late" data-testid="tab-repay-assist">
                     <HandHeart className="h-4 w-4 mr-2" />
-                    Repay-Assist
+                    {t('communityDetail.repayAssist')}
                   </TabsTrigger>
                   <TabsTrigger value="portfolio" data-testid="tab-portfolio">
                     <Wallet className="h-4 w-4 mr-2" />
-                    My Portfolio
+                    {t('communityDetail.myPortfolio')}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="loans" className="space-y-4 mt-4">
                   <Card data-testid="card-ibd-info">
                     <CardHeader>
-                      <CardTitle>Interest Buy-Down</CardTitle>
+                      <CardTitle>{t('communityDetail.interestBuydown')}</CardTitle>
                       <CardDescription>
-                        Commit monthly USDC to reduce the borrower's interest rate
+                        {t('communityDetail.ibdDesc')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {loansLoading ? (
-                        <p className="text-muted-foreground">Loading loans...</p>
+                        <p className="text-muted-foreground">{t('common.loading')}</p>
                       ) : !availableLoans || availableLoans.length === 0 ? (
-                        <p className="text-muted-foreground">No active loans available for Interest Buy-Down in this community.</p>
+                        <p className="text-muted-foreground">{t('communityDetail.noLoansIBD')}</p>
                       ) : (
                         <div className="space-y-4">
                           <div className="grid gap-3">
@@ -1012,15 +1014,15 @@ export default function CommunityDetail() {
                           {selectedLoan && (
                             <Card data-testid="card-ibd-pledge">
                               <CardHeader>
-                                <CardTitle className="text-lg">Set Monthly Commitment</CardTitle>
+                                <CardTitle className="text-lg">{t('communityDetail.setMonthlyCommitment')}</CardTitle>
                                 <CardDescription>
-                                  Choose how much to contribute each month to reduce the borrower's interest rate
+                                  {t('communityDetail.monthlyCommitmentDesc')}
                                 </CardDescription>
                               </CardHeader>
                               <CardContent className="space-y-4">
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium">Monthly Amount</label>
+                                    <label className="text-sm font-medium">{t('communityDetail.monthlyAmount')}</label>
                                     <span className="text-lg font-semibold">${ibdAmount[0] * 10}k ARS</span>
                                   </div>
                                   <Slider
@@ -1032,7 +1034,7 @@ export default function CommunityDetail() {
                                     data-testid="slider-ibd-amount"
                                   />
                                   <p className="text-xs text-muted-foreground">
-                                    Commit between $100k - $2M ARS per month
+                                    {t('communityDetail.commitRange')}
                                   </p>
                                 </div>
 
@@ -1047,7 +1049,7 @@ export default function CommunityDetail() {
                                   className="w-full"
                                   data-testid="button-create-pledge"
                                 >
-                                  {pledgeMutation.isPending ? "Creating..." : "Activate Monthly Commitment"}
+                                  {pledgeMutation.isPending ? t('communityDetail.creating') : t('communityDetail.activateCommitment')}
                                 </Button>
                               </CardContent>
                             </Card>

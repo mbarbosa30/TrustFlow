@@ -13,10 +13,12 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { WalletProfile } from "@shared/schema";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Credit() {
   const { address } = useAccount();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [selectedAmount, setSelectedAmount] = useState<number>(160000); // Default 160k ARS
   const [selectedTenor, setSelectedTenor] = useState<number>(6);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
@@ -89,7 +91,7 @@ export default function Credit() {
   const createLoanMutation = useMutation({
     mutationFn: async () => {
       if (!borrowerName.trim()) {
-        throw new Error("Por favor ingresá tu nombre completo");
+        throw new Error(t('credit.errorNameRequired'));
       }
       
       const response = await fetch(`/api/loans/${communityId}`, {
@@ -110,13 +112,13 @@ export default function Credit() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Préstamo creado exitosamente", description: "Tu préstamo ha sido desembolsado" });
+      toast({ title: t('credit.loanCreatedSuccess'), description: t('credit.loanDisbursed') });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/borrower/${communityId}/${address}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/eligibility/${communityId}/${address}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/user/${address}`] });
     },
     onError: (error: any) => {
-      toast({ title: "Error al crear el préstamo", description: error.message, variant: "destructive" });
+      toast({ title: t('credit.errorCreatingLoan'), description: error.message, variant: "destructive" });
     },
   });
 
@@ -139,13 +141,13 @@ export default function Credit() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "Pago exitoso", description: "Tu pago ha sido procesado" });
+      toast({ title: t('credit.paymentSuccess'), description: t('credit.paymentProcessed') });
       setPaymentAmount("");
       queryClient.invalidateQueries({ queryKey: [`/api/loans/${activeLoan?.id}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/borrower/${communityId}/${address}`] });
     },
     onError: (error: any) => {
-      toast({ title: "Error en el pago", description: error.message, variant: "destructive" });
+      toast({ title: t('credit.errorPayment'), description: error.message, variant: "destructive" });
     },
   });
 
@@ -154,8 +156,8 @@ export default function Credit() {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-[400px]" data-testid="card-connect-wallet">
           <CardHeader>
-            <CardTitle>Conectar Billetera</CardTitle>
-            <CardDescription>Por favor conectá tu billetera para acceder al crédito</CardDescription>
+            <CardTitle>{t('credit.connectWallet')}</CardTitle>
+            <CardDescription>{t('credit.connectWalletDesc')}</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -167,7 +169,7 @@ export default function Credit() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Clock className="h-12 w-12 animate-spin mx-auto mb-4" />
-          <p>Cargando información de crédito...</p>
+          <p>{t('credit.loadingInfo')}</p>
         </div>
       </div>
     );
@@ -177,23 +179,23 @@ export default function Credit() {
     <div className="container mx-auto py-8 space-y-6" data-testid="page-credit">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Crédito</h1>
-          <p className="text-muted-foreground">Accedé a microcréditos según tu puntaje de confianza</p>
+          <h1 className="text-3xl font-bold">{t('credit.title')}</h1>
+          <p className="text-muted-foreground">{t('credit.description')}</p>
         </div>
       </div>
 
       <Tabs defaultValue={activeLoan ? "active" : "apply"}>
         <TabsList data-testid="tabs-credit">
           <TabsTrigger value="apply" data-testid="tab-apply">
-            Solicitar Préstamo
+            {t('credit.tabApply')}
           </TabsTrigger>
           {activeLoan && (
             <TabsTrigger value="active" data-testid="tab-active-loan">
-              Préstamo Activo
+              {t('credit.tabActive')}
             </TabsTrigger>
           )}
           <TabsTrigger value="history" data-testid="tab-history">
-            Historial
+            {t('credit.tabHistory')}
           </TabsTrigger>
         </TabsList>
 
@@ -201,15 +203,15 @@ export default function Credit() {
           {/* Trust Profile Card (Advisory Only) */}
           <Card data-testid="card-trust-profile">
             <CardHeader>
-              <CardTitle>Perfil de Confianza</CardTitle>
-              <CardDescription>Tus métricas de confianza (solo informativas)</CardDescription>
+              <CardTitle>{t('credit.trustProfile')}</CardTitle>
+              <CardDescription>{t('credit.trustProfileDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {eligibility?.trustMetrics ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Resistencia Sybil</p>
+                      <p className="text-sm text-muted-foreground">{t('credit.sybilResistance')}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" data-testid="badge-mincut">
                           Min-Cut: {eligibility.trustMetrics.minCut || 0}
@@ -217,7 +219,7 @@ export default function Credit() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Índice de Salud</p>
+                      <p className="text-sm text-muted-foreground">{t('credit.healthIndex')}</p>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" data-testid="badge-ghi">
                           GHI: {eligibility.trustMetrics.ghi || 0}
@@ -228,18 +230,18 @@ export default function Credit() {
                   {eligibility.trustMetrics.isAccepted && (
                     <div className="flex items-center gap-2 text-sm">
                       <TrendingUp className="h-4 w-4 text-green-600" />
-                      <span className="text-muted-foreground">Miembro avalado de la red de confianza</span>
+                      <span className="text-muted-foreground">{t('credit.endorsedMember')}</span>
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground italic">
-                    Estas métricas son solo informativas. Todos los miembros pueden solicitar préstamos durante la fase piloto.
+                    {t('credit.metricsAdvisory')}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">No hay métricas de confianza disponibles aún</p>
+                  <p className="text-sm text-muted-foreground">{t('credit.noMetrics')}</p>
                   <p className="text-xs text-muted-foreground italic">
-                    Aún podés solicitar préstamos durante la fase piloto. Conseguí avales de miembros confiables para construir tu perfil.
+                    {t('credit.noMetricsInfo')}
                   </p>
                 </div>
               )}
@@ -250,15 +252,15 @@ export default function Credit() {
           {!activeLoan && (
             <Card data-testid="card-loan-application">
               <CardHeader>
-                <CardTitle>Solicitar Préstamo</CardTitle>
-                <CardDescription>Seleccioná el monto y período de pago</CardDescription>
+                <CardTitle>{t('credit.applyLoan')}</CardTitle>
+                <CardDescription>{t('credit.applyLoanDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="borrower-name">Nombre Completo</Label>
+                  <Label htmlFor="borrower-name">{t('credit.fullName')}</Label>
                   <Input
                     id="borrower-name"
-                    placeholder="Ej: María González"
+                    placeholder={t('credit.fullNamePlaceholder')}
                     value={borrowerName}
                     onChange={(e) => setBorrowerName(e.target.value)}
                     data-testid="input-borrower-name"
@@ -266,7 +268,7 @@ export default function Credit() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Monto del Préstamo (ARS)</Label>
+                  <Label htmlFor="amount">{t('credit.loanAmount')}</Label>
                   <Select
                     value={selectedAmount.toString()}
                     onValueChange={(v) => setSelectedAmount(parseInt(v))}
@@ -285,15 +287,15 @@ export default function Credit() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tenor">Período de Pago</Label>
+                  <Label htmlFor="tenor">{t('credit.paymentTerm')}</Label>
                   <Select value={selectedTenor.toString()} onValueChange={(v) => setSelectedTenor(parseInt(v))}>
                     <SelectTrigger id="tenor" data-testid="select-tenor">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="6">6 meses</SelectItem>
-                      <SelectItem value="9">9 meses</SelectItem>
-                      <SelectItem value="12">12 meses</SelectItem>
+                      <SelectItem value="6">6 {t('common.months')}</SelectItem>
+                      <SelectItem value="9">9 {t('common.months')}</SelectItem>
+                      <SelectItem value="12">12 {t('common.months')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -305,7 +307,7 @@ export default function Credit() {
                     className="w-full"
                     data-testid="button-apply-loan"
                   >
-                    {createLoanMutation.isPending ? "Procesando..." : "Solicitar Préstamo"}
+                    {createLoanMutation.isPending ? t('common.processing') : t('credit.applyLoanButton')}
                   </Button>
                 </div>
               </CardContent>
@@ -319,15 +321,15 @@ export default function Credit() {
               {/* Loan Overview */}
               <Card data-testid="card-loan-overview">
                 <CardHeader>
-                  <CardTitle>Préstamo Activo</CardTitle>
+                  <CardTitle>{t('credit.activeLoan')}</CardTitle>
                   <CardDescription>
-                    ${(loanDetails.loan.principalUsdc / 1000).toFixed(0)}k ARS • {loanDetails.loan.tenorMonths} meses •{" "}
+                    ${(loanDetails.loan.principalUsdc / 1000).toFixed(0)}k ARS • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
                     {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Progreso de Pago</span>
+                    <span className="text-sm text-muted-foreground">{t('credit.paymentProgress')}</span>
                     <span className="text-sm font-medium">
                       ${(loanDetails.totalPaid / 1000).toFixed(1)}k / ${(loanDetails.totalDue / 1000).toFixed(1)}k ARS
                     </span>
@@ -338,9 +340,9 @@ export default function Credit() {
                     <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
                       <DollarSign className="h-5 w-5" />
                       <div>
-                        <p className="font-medium">Próximo Pago</p>
+                        <p className="font-medium">{t('credit.nextPayment')}</p>
                         <p className="text-sm text-muted-foreground">
-                          ${(loanDetails.nextInstallment.totalDue / 1000).toFixed(1)}k ARS vence el{" "}
+                          ${(loanDetails.nextInstallment.totalDue / 1000).toFixed(1)}k ARS {t('credit.dueOn')}{" "}
                           {new Date(loanDetails.nextInstallment.dueDate).toLocaleDateString('es-AR')}
                         </p>
                       </div>
@@ -353,12 +355,12 @@ export default function Credit() {
               {loanDetails.nextInstallment && (
                 <Card data-testid="card-make-payment">
                   <CardHeader>
-                    <CardTitle>Realizar Pago</CardTitle>
-                    <CardDescription>Pagá tu próxima cuota</CardDescription>
+                    <CardTitle>{t('credit.makePayment')}</CardTitle>
+                    <CardDescription>{t('credit.makePaymentDesc')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="payment">Monto del Pago (ARS)</Label>
+                      <Label htmlFor="payment">{t('credit.paymentAmountARS')}</Label>
                       <Input
                         id="payment"
                         type="number"
@@ -375,7 +377,7 @@ export default function Credit() {
                       className="w-full"
                       data-testid="button-make-payment"
                     >
-                      {makePaymentMutation.isPending ? "Procesando..." : "Realizar Pago"}
+                      {makePaymentMutation.isPending ? t('common.processing') : t('credit.makePaymentButton')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -387,12 +389,12 @@ export default function Credit() {
         <TabsContent value="history">
           <Card data-testid="card-loan-history">
             <CardHeader>
-              <CardTitle>Historial de Préstamos</CardTitle>
-              <CardDescription>Tus préstamos pasados y actuales</CardDescription>
+              <CardTitle>{t('credit.loanHistory')}</CardTitle>
+              <CardDescription>{t('credit.loanHistoryDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {loans.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">Aún no tenés préstamos</p>
+                <p className="text-center text-muted-foreground py-8">{t('credit.noLoans')}</p>
               ) : (
                 <div className="space-y-4">
                   {loans.map((loan: any) => (
@@ -404,11 +406,11 @@ export default function Credit() {
                       <div>
                         <p className="font-medium">${(loan.principalUsdc / 1000).toFixed(0)}k {loan.currency || 'ARS'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {loan.tenorMonths} meses • {(loan.aprNominal * 100).toFixed(0)}% TNA
+                          {loan.tenorMonths} {t('common.months')} • {(loan.aprNominal * 100).toFixed(0)}% TNA
                         </p>
                       </div>
                       <Badge variant={loan.status === "PAID" ? "default" : loan.status === "ACTIVE" ? "secondary" : "destructive"}>
-                        {loan.status === "PAID" ? "PAGADO" : loan.status === "ACTIVE" ? "ACTIVO" : "IMPAGO"}
+                        {loan.status === "PAID" ? t('credit.statusPaid') : loan.status === "ACTIVE" ? t('credit.statusActive') : t('credit.statusDefault')}
                       </Badge>
                     </div>
                   ))}
