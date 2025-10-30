@@ -111,11 +111,7 @@ export default function LendingAdmin() {
   // Save lending policy mutation
   const savePolicyMutation = useMutation({
     mutationFn: async (updatedPolicy: LendingPolicy) => {
-      return apiRequest(`/api/admin/lending-policy/${communityId}`, {
-        method: "POST",
-        body: JSON.stringify(updatedPolicy),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", `/api/admin/lending-policy/${communityId}`, updatedPolicy);
     },
     onSuccess: () => {
       setIsDirty(false); // Clear dirty flag on successful save
