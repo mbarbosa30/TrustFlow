@@ -26,10 +26,10 @@ export default function Communities() {
   const userCommunities = (userCommunitiesData?.communities || []).filter(c => c && c.id);
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-4xl font-bold mb-2" data-testid="text-page-title">{t('communities.title')}</h1>
+          <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">{t('communities.title')}</h1>
           <p className="text-muted-foreground">
             {t('communities.description')}
           </p>

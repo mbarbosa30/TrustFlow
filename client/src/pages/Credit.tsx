@@ -176,8 +176,8 @@ export default function Credit() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6" data-testid="page-credit">
-      <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto px-4 py-8" data-testid="page-credit">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold">{t('credit.title')}</h1>
           <p className="text-muted-foreground">{t('credit.description')}</p>

@@ -326,11 +326,11 @@ export default function CommunityDetail() {
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-4xl font-bold">{community.name}</h1>
+                      <h1 className="text-2xl sm:text-3xl font-bold">{community.name}</h1>
                       {community.visibility === "public" ? (
-                        <Globe className="w-6 h-6 text-muted-foreground" />
+                        <Globe className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground flex-shrink-0" />
                       ) : (
-                        <Lock className="w-6 h-6 text-muted-foreground" />
+                        <Lock className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground flex-shrink-0" />
                       )}
                     </div>
                     {community.location && (
@@ -461,16 +461,18 @@ export default function CommunityDetail() {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="overview" data-testid="tab-overview">{t('communityDetail.tabOverview')}</TabsTrigger>
-            <TabsTrigger value="credit" data-testid="tab-credit">{t('communityDetail.tabCredit')}</TabsTrigger>
-            <TabsTrigger value="support" data-testid="tab-support">{t('communityDetail.tabSupport')}</TabsTrigger>
-            <TabsTrigger value="trust" data-testid="tab-trust">{t('communityDetail.tabTrust')}</TabsTrigger>
-            <TabsTrigger value="impact" data-testid="tab-impact">{t('communityDetail.tabImpact')}</TabsTrigger>
-            <TabsTrigger value="updates" data-testid="tab-updates">{t('communityDetail.tabUpdates')}</TabsTrigger>
-            <TabsTrigger value="people" data-testid="tab-people">{t('communityDetail.tabPeople')}</TabsTrigger>
-            <TabsTrigger value="transparency" data-testid="tab-transparency">{t('communityDetail.tabTransparency')}</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-8">
+              <TabsTrigger value="overview" data-testid="tab-overview" className="whitespace-nowrap">{t('communityDetail.tabOverview')}</TabsTrigger>
+              <TabsTrigger value="credit" data-testid="tab-credit" className="whitespace-nowrap">{t('communityDetail.tabCredit')}</TabsTrigger>
+              <TabsTrigger value="support" data-testid="tab-support" className="whitespace-nowrap">{t('communityDetail.tabSupport')}</TabsTrigger>
+              <TabsTrigger value="trust" data-testid="tab-trust" className="whitespace-nowrap">{t('communityDetail.tabTrust')}</TabsTrigger>
+              <TabsTrigger value="impact" data-testid="tab-impact" className="whitespace-nowrap">{t('communityDetail.tabImpact')}</TabsTrigger>
+              <TabsTrigger value="updates" data-testid="tab-updates" className="whitespace-nowrap">{t('communityDetail.tabUpdates')}</TabsTrigger>
+              <TabsTrigger value="people" data-testid="tab-people" className="whitespace-nowrap">{t('communityDetail.tabPeople')}</TabsTrigger>
+              <TabsTrigger value="transparency" data-testid="tab-transparency" className="whitespace-nowrap">{t('communityDetail.tabTransparency')}</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
             <div className="grid gap-6 md:grid-cols-2">
