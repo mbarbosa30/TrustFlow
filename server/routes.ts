@@ -2389,6 +2389,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lending routes
   app.use("/api/loans", lendingRouter);
 
+  // Minimal API routes (v1) for external integrations
+  const { registerMinimalApiRoutes } = await import("./routes/minimalApi");
+  registerMinimalApiRoutes(app);
+
   const httpServer = createServer(app);
 
   return httpServer;
