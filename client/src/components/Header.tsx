@@ -82,29 +82,6 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
             <ThemeToggle />
           </div>
         </div>
-        
-        {/* Mobile navigation - hidden on landing page since footer has these links */}
-        {variant !== "landing" && (
-          <nav className="md:hidden pb-3 flex gap-2 overflow-x-auto">
-            {displayNavItems.map((item) => {
-              const isActive = location === item.path;
-              
-              return (
-                <Link 
-                  key={item.path} 
-                  href={item.path}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg whitespace-nowrap transition-colors hover-elevate ${
-                    isActive
-                      ? "text-foreground bg-muted"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {t(item.label)}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
       </div>
     </header>
   );
