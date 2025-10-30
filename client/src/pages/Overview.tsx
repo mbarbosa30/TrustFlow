@@ -1,5 +1,4 @@
 import { ScoreCard } from "@/components/ScoreCard";
-import { ComponentsBreakdown } from "@/components/ComponentsBreakdown";
 import { EndorseForm } from "@/components/EndorseForm";
 import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -115,30 +114,24 @@ export default function Overview() {
               </CardHeader>
             </Card>
           ) : scoreData ? (
-            <>
-              <ScoreCard
-                tier={
-                  scoreData.trust.sts >= 75 ? "Trusted" :
-                  scoreData.trust.sts >= 50 ? "Verified" : "Connected"
-                }
-                sts={scoreData.trust.sts}
-                flow={scoreData.trust.flow}
-                percentile={Math.round(scoreData.percentile)}
-                minCutSize={scoreData.trust.mincut}
-                epochTimestamp={new Date().toISOString()}
-                walletAddress={address || undefined}
-                onExportAttestation={handleExport}
-                confidence={{
-                  percent: scoreData.confidence.percent,
-                  ghi: scoreData.confidence.global.GHI,
-                  localMincutN: scoreData.confidence.local.mincutN,
-                }}
-              />
-              <ComponentsBreakdown 
-                components={scoreData.components}
-                isLoading={false}
-              />
-            </>
+            <ScoreCard
+              tier={
+                scoreData.trust.sts >= 75 ? "Trusted" :
+                scoreData.trust.sts >= 50 ? "Verified" : "Connected"
+              }
+              sts={scoreData.trust.sts}
+              flow={scoreData.trust.flow}
+              percentile={Math.round(scoreData.percentile)}
+              minCutSize={scoreData.trust.mincut}
+              epochTimestamp={new Date().toISOString()}
+              walletAddress={address || undefined}
+              onExportAttestation={handleExport}
+              confidence={{
+                percent: scoreData.confidence.percent,
+                ghi: scoreData.confidence.global.GHI,
+                localMincutN: scoreData.confidence.local.mincutN,
+              }}
+            />
           ) : (
             <Card>
               <CardHeader>
