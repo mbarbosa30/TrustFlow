@@ -25,6 +25,7 @@ import Credit from "@/pages/Credit";
 import LendingDashboard from "@/pages/LendingDashboard";
 import LendingAdmin from "@/pages/LendingAdmin";
 import { Footer } from "@/components/Footer";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const appNavItems = [
   { path: "/overview", label: "nav.overview" },
@@ -78,10 +79,11 @@ function App() {
               authenticatedNavItems={appNavItems}
               variant={isLandingPage ? "landing" : "app"} 
             />
-            <main className="flex-1">
+            <main className="flex-1 pb-16 md:pb-0">
               <Router />
             </main>
             <Footer />
+            {!isLandingPage && <MobileBottomNav />}
           </div>
           <Toaster />
         </TooltipProvider>
