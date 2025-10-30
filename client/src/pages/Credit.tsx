@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { WalletProfile } from "@shared/schema";
 
 export default function Credit() {
   const { address } = useAccount();
@@ -19,8 +21,39 @@ export default function Credit() {
   const [selectedAmount, setSelectedAmount] = useState<number>(160000); // Default 160k ARS
   const [selectedTenor, setSelectedTenor] = useState<number>(6);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [userName, setUserName] = useState("");
 
   const communityId = 0; // Global community
+
+  // Get wallet profile
+  const { data: walletProfile, isLoading: loadingProfile } = useQuery<WalletProfile>({
+    queryKey: [`/api/user/${address}`],
+    enabled: !!address,
+    retry: false,
+  });
+
+  // Show name dialog if profile doesn't exist or name is missing
+  useEffect(() => {
+    if (address && !loadingProfile && (!walletProfile || !walletProfile.name)) {
+      setShowNameDialog(true);
+    }
+  }, [address, walletProfile, loadingProfile]);
+
+  // Update wallet profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (name: string) => {
+      return apiRequest(`/api/user/${address}`, "PATCH", { name });
+    },
+    onSuccess: () => {
+      toast({ title: "Perfil actualizado", description: "Tu nombre ha sido guardado" });
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${address}`] });
+      setShowNameDialog(false);
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
 
   // Check loan eligibility
   const { data: eligibility, isLoading: loadingEligibility } = useQuery<{
@@ -385,6 +418,54 @@ export default function Credit() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Name Collection Dialog */}
+      <Dialog 
+        open={showNameDialog} 
+        onOpenChange={(open) => {
+          if (!open && (!walletProfile?.name || !userName.trim())) {
+            return;
+          }
+          setShowNameDialog(open);
+        }}
+      >
+        <DialogContent 
+          data-testid="dialog-name-required"
+          onInteractOutside={(e) => {
+            if (!walletProfile?.name || !userName.trim()) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Completar Perfil</DialogTitle>
+            <DialogDescription>
+              Para solicitar un préstamo, necesitamos tu nombre completo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nombre Completo</Label>
+              <Input
+                id="name"
+                placeholder="Ej: María González"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                data-testid="input-name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => userName.trim() && updateProfileMutation.mutate(userName.trim())}
+              disabled={!userName.trim() || updateProfileMutation.isPending}
+              data-testid="button-save-name"
+            >
+              {updateProfileMutation.isPending ? "Guardando..." : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
