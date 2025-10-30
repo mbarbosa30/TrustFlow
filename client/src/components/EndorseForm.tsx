@@ -147,7 +147,7 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
       // The chainId is used for signature security, not network enforcement
       const signature = await signTypedDataAsync({
         domain: {
-          name: "TrustFlow",
+          name: "MaxFlow",
           version: "1",
           chainId: chainId,
         },
