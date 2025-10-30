@@ -1940,6 +1940,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get a specific community
+  app.get("/api/communities/:id/metrics", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      // Get all loans and assists for this community
+      const communityLoans = await storage.getLoansByCommunity(id);
+      const communityAssists = await storage.getAssistsByCommunity(id);
+      
+      // Count unique sponsors from assists
+      const uniqueSponsors = new Set(
+        communityAssists.map(a => a.supporterAddress.toLowerCase())
+      );
+      
+      return res.json({
+        sponsorsActive: uniqueSponsors.size,
+        totalLoans: communityLoans.length,
+        activeLoans: communityLoans.filter(l => l.status === "ACTIVE").length,
+      });
+    } catch (error: any) {
+      console.error("Error fetching community metrics:", error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/communities/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

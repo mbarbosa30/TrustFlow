@@ -79,17 +79,24 @@ export default function CommunityDetail() {
     queryKey: ["/api/communities", communityId],
   });
 
-  // Fetch loans for this community
+  // Fetch community metrics (sponsors, loans)
+  const { data: communityMetrics } = useQuery<{
+    sponsorsActive: number;
+    totalLoans: number;
+    activeLoans: number;
+  }>({
+    queryKey: ["/api/communities", communityId, "metrics"],
+  });
+
+  // Fetch loans for this community (enabled always for metrics display)
   const { data: availableLoans, isLoading: loansLoading } = useQuery<Loan[]>({
     queryKey: ["/api/support/available-loans"],
-    enabled: !!address,
     select: (data) => data.filter((loan: Loan) => loan.communityId === communityId),
   });
 
-  // Fetch late installments for this community
+  // Fetch late installments for this community (community-wide, not wallet-gated)
   const { data: allLateInstallments, isLoading: installmentsLoading } = useQuery<LateInstallment[]>({
     queryKey: ["/api/support/late-installments"],
-    enabled: !!address,
   });
 
   const lateInstallments = allLateInstallments?.filter(
@@ -255,6 +262,23 @@ export default function CommunityDetail() {
   const healthMetrics = statusData?.communityHealth?.[communityId] || statusData?.health;
   const ghi = healthMetrics?.ghi || 0;
 
+  // Lending metrics - community-wide calculations
+  const activeLoans = communityMetrics?.activeLoans || 0;
+  
+  // On-Time Rate 90d: Calculate percentage of active loans that are not late
+  // Deduplicate by loanId to count each late loan once, regardless of how many late installments it has
+  const communityLateInstallments = allLateInstallments?.filter(
+    inst => availableLoans?.some(loan => loan.id === inst.loanId)
+  ) || [];
+  const uniqueLateLoanIds = new Set(communityLateInstallments.map(inst => inst.loanId));
+  const lateLoansCount = uniqueLateLoanIds.size;
+  const onTimeRate = activeLoans > 0
+    ? Math.max(0, ((activeLoans - lateLoansCount) / activeLoans * 100))
+    : 100;
+
+  // Sponsors Active: From backend community metrics
+  const sponsorsActive = communityMetrics?.sponsorsActive || 0;
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6">
@@ -351,76 +375,98 @@ export default function CommunityDetail() {
                 </div>
               </div>
             </div>
-
-            {/* Endorsement Prompt */}
-            <div className="mt-8 p-6 rounded-lg bg-background/80 backdrop-blur-sm border border-primary/20">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-2">Endorsement Prompt</h3>
-              <p className="text-xl font-medium">"{community.promptText}"</p>
-            </div>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-4">
+        {/* KPI Metrics Dashboard */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <Card data-testid="card-stat-members">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Network Size</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Accepted</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{networkSize}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Accepted members
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stat-endorsements">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Endorsements</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{totalEndorsements}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total vouches
-              </p>
+              <div className="text-2xl font-bold">{networkSize}</div>
+              <p className="text-xs text-muted-foreground mt-1">Members</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-health">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Health Score</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Health</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{ghi}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Graph Health Index
-              </p>
+              <div className="text-2xl font-bold">{ghi}</div>
+              <p className="text-xs text-muted-foreground mt-1">GHI Score</p>
             </CardContent>
           </Card>
 
           <Card data-testid="card-stat-avgcut">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Min-Cut</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Min-Cut</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{avgMinCut.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Sybil resistance
-              </p>
+              <div className="text-2xl font-bold">{avgMinCut.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Avg Resistance</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-loans">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Loans</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeLoans}</div>
+              <p className="text-xs text-muted-foreground mt-1">Current</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-ontime">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">On-Time</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{onTimeRate.toFixed(0)}%</div>
+              <p className="text-xs text-muted-foreground mt-1">90d Rate</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-endorsements">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vouches</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalEndorsements}</div>
+              <p className="text-xs text-muted-foreground mt-1">Total</p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="card-stat-sponsors">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Sponsors</CardTitle>
+              <HandHeart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sponsorsActive}</div>
+              <p className="text-xs text-muted-foreground mt-1">Active</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="network">Network</TabsTrigger>
-            <TabsTrigger value="policy">Policy</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-            <TabsTrigger value="economy">Economy</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="credit" data-testid="tab-credit">Credit</TabsTrigger>
+            <TabsTrigger value="trust" data-testid="tab-trust">Trust</TabsTrigger>
+            <TabsTrigger value="impact" data-testid="tab-impact">Impact</TabsTrigger>
+            <TabsTrigger value="updates" data-testid="tab-updates">Updates</TabsTrigger>
+            <TabsTrigger value="people" data-testid="tab-people">People</TabsTrigger>
+            <TabsTrigger value="transparency" data-testid="tab-transparency">Transparency</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6 mt-6">
@@ -486,6 +532,273 @@ export default function CommunityDetail() {
                   </p>
                   <p className="text-muted-foreground">
                     All endorsements are cryptographically verified against the prompt hash to ensure consistency.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="credit" className="space-y-6 mt-6">
+            {!address ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center">
+                    <DollarSign className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Connect Your Wallet</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-4">
+                      Connect your wallet to check your credit eligibility and view loan offers
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5" />
+                      Credit Access
+                    </CardTitle>
+                    <CardDescription>Apply for microloans or manage your active credit</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 rounded-lg bg-accent/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold">Your Eligibility Status</h4>
+                        {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase()) ? (
+                          <Badge className="bg-green-500">Eligible</Badge>
+                        ) : (
+                          <Badge variant="outline">Not Yet Eligible</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase())
+                          ? "You meet the trust requirements and can apply for credit in this community."
+                          : "Build trust by getting endorsements from community members to unlock credit access."}
+                      </p>
+                      <div className="flex gap-3">
+                        <Link href={`/credit/${communityId}`} className="flex-1">
+                          <Button className="w-full" data-testid="button-apply-credit-tab">
+                            <DollarSign className="w-4 h-4 mr-2" />
+                            {availableLoans?.some(l => l.borrowerAddress.toLowerCase() === address.toLowerCase())
+                              ? "View My Loan"
+                              : "Apply for Credit"}
+                          </Button>
+                        </Link>
+                        <Link href={`/lending-dashboard/${communityId}`}>
+                          <Button variant="outline">
+                            View Offers
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+
+                    {(availableLoans?.filter(l => l.borrowerAddress.toLowerCase() === address.toLowerCase()).length ?? 0) > 0 && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">Your Active Loans</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {availableLoans?.filter(l => l.borrowerAddress.toLowerCase() === address.toLowerCase()).map((loan) => (
+                            <div key={loan.id} className="p-4 rounded-lg border">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm text-muted-foreground">Loan #{loan.id}</span>
+                                <Badge>{loan.status}</Badge>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">Principal</p>
+                                  <p className="font-semibold">${(loan.principalUsdc / 1000).toFixed(0)}k ARS</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Term</p>
+                                  <p className="font-semibold">{loan.tenorMonths} months</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">APR</p>
+                                  <p className="font-semibold">{(loan.aprBps / 100).toFixed(1)}%</p>
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Next Due</p>
+                                  <p className="font-semibold">{loan.nextDueDate || "N/A"}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="trust" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Endorsement Criteria
+                </CardTitle>
+                <CardDescription>How members vouch for each other in this community</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-6 rounded-lg bg-primary/5 border border-primary/20">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">Endorsement Prompt</h3>
+                  <p className="text-xl font-medium">"{community.promptText}"</p>
+                  <p className="text-sm text-muted-foreground mt-3">
+                    All endorsements are cryptographically verified against this prompt to ensure consistency.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-accent">
+                    <div className="text-xs text-muted-foreground mb-1">Min Cut</div>
+                    <div className="text-2xl font-semibold">{policy.acceptance.minCut}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Required paths</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent">
+                    <div className="text-xs text-muted-foreground mb-1">Vertex Disjoint</div>
+                    <div className="text-2xl font-semibold">{policy.acceptance.vertexDisjoint}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Independent paths</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent">
+                    <div className="text-xs text-muted-foreground mb-1">Min Seeds</div>
+                    <div className="text-2xl font-semibold">{policy.acceptance.seedCoverage.minSeeds}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Seed connections</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-accent">
+                    <div className="text-xs text-muted-foreground mb-1">Seed Quality</div>
+                    <div className="text-2xl font-semibold">
+                      {(policy.acceptance.seedCoverage.minSeedScore * 100).toFixed(0)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Min score</p>
+                  </div>
+                </div>
+
+                {address && (
+                  <Card className="bg-accent/50">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Your Trust Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase()) ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <span className="font-semibold">You are accepted in this community</span>
+                          </div>
+                          {communityScores.filter((s: any) => s.address.toLowerCase() === address.toLowerCase()).map((score: any) => (
+                            <div key={score.id} className="grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Trust Score</p>
+                                <p className="font-semibold">{score.sts?.toFixed(2) || "N/A"}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Min-Cut</p>
+                                <p className="font-semibold">{score.minCut?.toFixed(2) || "N/A"}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-sm text-muted-foreground">
+                            You need endorsements from community members to build trust and gain acceptance.
+                          </p>
+                          <Link href={`/vouch?community=${communityId}`}>
+                            <Button variant="outline" className="w-full">
+                              Learn How to Get Endorsed
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="impact" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Community Impact
+                </CardTitle>
+                <CardDescription>Lending performance and member success stories</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Impact Dashboard Coming Soon</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Track repayment rates, subsidy impact, cohort performance, and success stories
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="updates" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Community Updates
+                </CardTitle>
+                <CardDescription>Announcements, workshops, and discussions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Updates Feed Coming Soon</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Community announcements, workshop notes, and threaded discussions with role badges
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="people" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Community Members
+                </CardTitle>
+                <CardDescription>Seeds, mentors, sponsors, and operators</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Member Directory Coming Soon</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    View seeds, mentors, sponsors with their roles and public profiles
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="transparency" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5" />
+                  Transparency & Receipts
+                </CardTitle>
+                <CardDescription>Policy history, epoch data, and verifiable receipts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Transparency Dashboard Coming Soon</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Policy changes, receipts feed, epoch data with verifiable hashes
                   </p>
                 </div>
               </CardContent>
