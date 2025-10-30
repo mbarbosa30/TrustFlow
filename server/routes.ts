@@ -414,6 +414,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wallet profile endpoints
+  app.get("/api/user/:address", async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      const profile = await storage.getWalletProfile(address);
+      
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      return res.status(200).json(profile);
+    } catch (error) {
+      console.error("Error fetching wallet profile:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.patch("/api/user/:address", async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      const { name } = req.body;
+
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ error: "Name is required" });
+      }
+
+      // Check if profile exists, create if not
+      let profile = await storage.getWalletProfile(address);
+      
+      if (!profile) {
+        profile = await storage.createWalletProfile({ address, name });
+      } else {
+        profile = await storage.updateWalletProfile(address, { name });
+      }
+
+      return res.status(200).json(profile);
+    } catch (error) {
+      console.error("Error updating wallet profile:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/stats", async (req, res) => {
     try {
       const totalEndorsements = await db

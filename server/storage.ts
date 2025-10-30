@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent } from "@shared/schema";
+import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc } from "drizzle-orm";
@@ -7,6 +7,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Wallet profile operations
+  getWalletProfile(address: string): Promise<WalletProfile | undefined>;
+  createWalletProfile(profile: InsertWalletProfile): Promise<WalletProfile>;
+  updateWalletProfile(address: string, updates: UpdateWalletProfile): Promise<WalletProfile>;
   
   // Community operations
   createCommunity(community: InsertCommunity): Promise<Community>;
@@ -146,6 +151,38 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+
+  async getWalletProfile(address: string): Promise<WalletProfile | undefined> {
+    const normalizedAddress = address.toLowerCase();
+    const [profile] = await db
+      .select()
+      .from(walletProfiles)
+      .where(eq(walletProfiles.address, normalizedAddress))
+      .limit(1);
+    return profile;
+  }
+
+  async createWalletProfile(profile: InsertWalletProfile): Promise<WalletProfile> {
+    const normalizedProfile = {
+      ...profile,
+      address: profile.address.toLowerCase(),
+    };
+    const [created] = await db
+      .insert(walletProfiles)
+      .values(normalizedProfile)
+      .returning();
+    return created;
+  }
+
+  async updateWalletProfile(address: string, updates: UpdateWalletProfile): Promise<WalletProfile> {
+    const normalizedAddress = address.toLowerCase();
+    const [updated] = await db
+      .update(walletProfiles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(walletProfiles.address, normalizedAddress))
+      .returning();
+    return updated;
   }
 
   async createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement> {

@@ -17,6 +17,27 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Wallet profiles - store names for wallet addresses
+export const walletProfiles = pgTable("wallet_profiles", {
+  address: text("address").primaryKey(), // Ethereum address (normalized to lowercase)
+  name: text("name"), // User's display name
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertWalletProfileSchema = createInsertSchema(walletProfiles).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateWalletProfileSchema = createInsertSchema(walletProfiles).pick({
+  name: true,
+});
+
+export type InsertWalletProfile = z.infer<typeof insertWalletProfileSchema>;
+export type UpdateWalletProfile = z.infer<typeof updateWalletProfileSchema>;
+export type WalletProfile = typeof walletProfiles.$inferSelect;
+
 // Communities table - each community is an isolated trust graph
 export const communities = pgTable("communities", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
