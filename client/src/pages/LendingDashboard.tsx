@@ -310,15 +310,16 @@ export default function LendingDashboard() {
           ) : !activities || activities.length === 0 ? (
             <p className="text-muted-foreground">No recent lending activity</p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Time</TableHead>
-                </TableRow>
-              </TableHeader>
+            <div className="overflow-x-auto -mx-6 px-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Type</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="whitespace-nowrap">Amount</TableHead>
+                    <TableHead className="whitespace-nowrap">Time</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {activities.slice(0, 10).map((activity) => (
                   <TableRow key={activity.id} data-testid={`row-activity-${activity.id}`}>
@@ -345,6 +346,7 @@ export default function LendingDashboard() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
