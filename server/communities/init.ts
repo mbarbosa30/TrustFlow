@@ -3,6 +3,7 @@ import { communities } from '../../shared/schema';
 import { GLOBAL_POLICY } from '../../shared/community-types';
 import { eq, sql } from 'drizzle-orm';
 import { createPromptHash } from '../crypto/keccak';
+import { generateApiKey } from '../utils/apikey';
 
 // Initialize Community 0 (Global) for backward compatibility
 export async function initializeCommunityZero() {
@@ -20,6 +21,7 @@ export async function initializeCommunityZero() {
     
     const promptText = "I trust this person";
     const promptHash = createPromptHash(promptText);
+    const apiKey = generateApiKey();
     
     const globalPolicy = {
       ...GLOBAL_POLICY,
@@ -28,7 +30,7 @@ export async function initializeCommunityZero() {
     
     // Insert with explicit ID = 0 - use JSONB for policy
     await db.execute(sql`
-      INSERT INTO communities (id, name, description, prompt_text, prompt_hash, policy_id, policy_json, visibility, creator, created_at)
+      INSERT INTO communities (id, name, description, prompt_text, prompt_hash, policy_id, policy_json, visibility, creator, api_key, created_at)
       VALUES (
         0,
         'Global MaxFlow',
@@ -39,6 +41,7 @@ export async function initializeCommunityZero() {
         ${globalPolicy}::jsonb,
         'public',
         '0x0000000000000000000000000000000000000000',
+        ${apiKey},
         NOW()
       )
       ON CONFLICT (id) DO NOTHING
