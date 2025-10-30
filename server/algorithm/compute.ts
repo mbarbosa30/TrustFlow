@@ -133,7 +133,8 @@ export class EpochComputation {
     console.log(`Network health: GHI=${ghi}, Size=${totalAccepted}, AvgMinCut=${avgMinCut.toFixed(2)}`);
 
     // Economic Layer: Compute budget and allowances for accepted users
-    await this.computeEconomicBudget(epochId, communityId, scoreInserts);
+    // NOTE: Economic layer disabled - budget/allowance tables removed in favor of Assist/lending system
+    // await this.computeEconomicBudget(epochId, communityId, scoreInserts);
   }
 
   /**
