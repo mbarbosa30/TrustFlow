@@ -1877,7 +1877,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const communities = await storage.listCommunities(filters);
 
-      res.json({ communities });
+      // Enhance each community with basic metrics
+      const communitiesWithMetrics = await Promise.all(
+        communities.map(async (community) => {
+          try {
+            // Get scores for member count
+            const scores = await storage.getScoresForCommunity(community.id);
+            const acceptedScores = scores.filter(s => s.tier !== 'Outlier');
+            const acceptedMembers = acceptedScores.length;
+            
+            // Calculate average STS (only for accepted members, excluding Outliers)
+            const avgScore = acceptedMembers > 0
+              ? acceptedScores.reduce((sum, s) => sum + (s.sts || 0), 0) / acceptedMembers
+              : 0;
+            
+            // Get loan count
+            const loans = await storage.getLoansByCommunity(community.id);
+            const activeLoans = loans.filter(l => l.status === "ACTIVE").length;
+            
+            return {
+              ...community,
+              metrics: {
+                members: acceptedMembers,
+                avgScore: Number(avgScore.toFixed(2)),
+                activeLoans,
+              }
+            };
+          } catch (error) {
+            console.error(`Error fetching metrics for community ${community.id}:`, error);
+            return {
+              ...community,
+              metrics: { members: 0, avgScore: 0, activeLoans: 0 }
+            };
+          }
+        })
+      );
+
+      res.json({ communities: communitiesWithMetrics });
     } catch (error) {
       console.error("Error listing communities:", error);
       res.status(500).json({ error: "Failed to list communities" });
