@@ -267,37 +267,98 @@ export default function CommunityDetail() {
       </div>
 
       <div className="space-y-6">
-        <Card data-testid="card-community-header">
-          <CardHeader>
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <CardTitle className="text-4xl">{community.name}</CardTitle>
-                  {community.visibility === "public" ? (
-                    <Globe className="w-6 h-6 text-muted-foreground" />
-                  ) : (
-                    <Lock className="w-6 h-6 text-muted-foreground" />
-                  )}
-                </div>
-                <CardDescription className="text-lg mt-2">{community.description}</CardDescription>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-lg" data-testid="card-community-header">
+          {/* Cover Image Background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 dark:from-primary/10 dark:to-accent/10" />
+          {community.coverUrl && (
+            <img 
+              src={community.coverUrl} 
+              alt={`${community.name} cover`}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
+            />
+          )}
+          
+          {/* Hero Content */}
+          <div className="relative px-8 py-12">
+            <div className="flex flex-col md:flex-row gap-6 items-start">
+              {/* Logo */}
+              <div className="flex-shrink-0">
+                {community.logoUrl ? (
+                  <div className="w-24 h-24 rounded-lg overflow-hidden bg-background border-2 border-primary/20 shadow-lg">
+                    <img src={community.logoUrl} alt={`${community.name} logo`} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-lg">
+                    <Users className="w-12 h-12 text-primary" />
+                  </div>
+                )}
               </div>
-              <div className="text-right">
-                <Badge variant="secondary" className="text-sm mb-2">
-                  Community {community.id}
-                </Badge>
-                <div className="text-sm text-muted-foreground">
-                  {community.policyId}
+
+              {/* Community Info */}
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <h1 className="text-4xl font-bold">{community.name}</h1>
+                      {community.visibility === "public" ? (
+                        <Globe className="w-6 h-6 text-muted-foreground" />
+                      ) : (
+                        <Lock className="w-6 h-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    {community.location && (
+                      <Badge variant="outline" className="mb-2">
+                        <Globe className="w-3 h-3 mr-1" />
+                        {community.location}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                
+                <p className="text-lg text-muted-foreground mb-6 max-w-3xl">
+                  {community.description}
+                </p>
+
+                {/* CTAs */}
+                <div className="flex flex-wrap gap-3">
+                  <Link href={`/credit/${communityId}`}>
+                    <Button size="lg" data-testid="button-apply-credit">
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      Apply for Credit
+                    </Button>
+                  </Link>
+                  <Link href={`/vouch?community=${communityId}`}>
+                    <Button variant="outline" size="lg" data-testid="button-vouch">
+                      <HandHeart className="w-4 h-4 mr-2" />
+                      Vouch for Member
+                    </Button>
+                  </Link>
+                  {address && (
+                    <Button 
+                      variant="outline" 
+                      size="lg"
+                      onClick={() => {
+                        const supportTabLink = document.querySelector('[data-testid="tab-support"]') as HTMLElement;
+                        supportTabLink?.click();
+                      }}
+                      data-testid="button-support"
+                    >
+                      <HandHeart className="w-4 h-4 mr-2" />
+                      Support Borrowers
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 rounded-lg bg-accent/50">
+
+            {/* Endorsement Prompt */}
+            <div className="mt-8 p-6 rounded-lg bg-background/80 backdrop-blur-sm border border-primary/20">
               <h3 className="text-sm font-semibold text-muted-foreground mb-2">Endorsement Prompt</h3>
               <p className="text-xl font-medium">"{community.promptText}"</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-4">
           <Card data-testid="card-stat-members">
