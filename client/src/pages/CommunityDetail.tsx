@@ -360,20 +360,6 @@ export default function CommunityDetail() {
                       Vouch for Member
                     </Button>
                   </Link>
-                  {address && (
-                    <Button 
-                      variant="outline" 
-                      size="lg"
-                      onClick={() => {
-                        const supportTabLink = document.querySelector('[data-testid="tab-support"]') as HTMLElement;
-                        supportTabLink?.click();
-                      }}
-                      data-testid="button-support"
-                    >
-                      <HandHeart className="w-4 h-4 mr-2" />
-                      Support Borrowers
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
@@ -381,7 +367,7 @@ export default function CommunityDetail() {
         </div>
 
         {/* KPI Metrics Dashboard */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Card data-testid="card-stat-members">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('communityDetail.accepted')}</CardTitle>
@@ -393,17 +379,6 @@ export default function CommunityDetail() {
             </CardContent>
           </Card>
 
-          <Card data-testid="card-stat-health">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('communityDetail.health')}</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{ghi}</div>
-              <p className="text-xs text-muted-foreground mt-1">GHI Score</p>
-            </CardContent>
-          </Card>
-
           <Card data-testid="card-stat-avgcut">
             <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('communityDetail.minCut')}</CardTitle>
@@ -412,28 +387,6 @@ export default function CommunityDetail() {
             <CardContent>
               <div className="text-2xl font-bold">{avgMinCut.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground mt-1">{t('communityDetail.avgResistance')}</p>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stat-loans">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('communityDetail.activeLoans')}</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeLoans}</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('common.current')}</p>
-            </CardContent>
-          </Card>
-
-          <Card data-testid="card-stat-ontime">
-            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('communityDetail.onTime')}</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{onTimeRate.toFixed(0)}%</div>
-              <p className="text-xs text-muted-foreground mt-1">{t('communityDetail.rate90d')}</p>
             </CardContent>
           </Card>
 
@@ -458,23 +411,30 @@ export default function CommunityDetail() {
               <p className="text-xs text-muted-foreground mt-1">{t('common.active')}</p>
             </CardContent>
           </Card>
+
+          <Card data-testid="card-stat-health">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{t('communityDetail.health')}</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{ghi}</div>
+              <p className="text-xs text-muted-foreground mt-1">GHI Score</p>
+            </CardContent>
+          </Card>
         </div>
 
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="about" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-8">
-              <TabsTrigger value="overview" data-testid="tab-overview" className="whitespace-nowrap">{t('communityDetail.tabOverview')}</TabsTrigger>
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4">
+              <TabsTrigger value="about" data-testid="tab-about" className="whitespace-nowrap">About</TabsTrigger>
               <TabsTrigger value="credit" data-testid="tab-credit" className="whitespace-nowrap">{t('communityDetail.tabCredit')}</TabsTrigger>
               <TabsTrigger value="support" data-testid="tab-support" className="whitespace-nowrap">{t('communityDetail.tabSupport')}</TabsTrigger>
-              <TabsTrigger value="trust" data-testid="tab-trust" className="whitespace-nowrap">{t('communityDetail.tabTrust')}</TabsTrigger>
-              <TabsTrigger value="impact" data-testid="tab-impact" className="whitespace-nowrap">{t('communityDetail.tabImpact')}</TabsTrigger>
               <TabsTrigger value="updates" data-testid="tab-updates" className="whitespace-nowrap">{t('communityDetail.tabUpdates')}</TabsTrigger>
-              <TabsTrigger value="people" data-testid="tab-people" className="whitespace-nowrap">{t('communityDetail.tabPeople')}</TabsTrigger>
-              <TabsTrigger value="transparency" data-testid="tab-transparency" className="whitespace-nowrap">{t('communityDetail.tabTransparency')}</TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="overview" className="space-y-6 mt-6">
+          <TabsContent value="about" className="space-y-6 mt-6">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -639,114 +599,6 @@ export default function CommunityDetail() {
             )}
           </TabsContent>
 
-          <TabsContent value="trust" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Endorsement Criteria
-                </CardTitle>
-                <CardDescription>How members vouch for each other in this community</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-6 rounded-lg bg-primary/5 border border-primary/20">
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-2">Endorsement Prompt</h3>
-                  <p className="text-xl font-medium">"{community.promptText}"</p>
-                  <p className="text-sm text-muted-foreground mt-3">
-                    All endorsements are cryptographically verified against this prompt to ensure consistency.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-lg bg-accent">
-                    <div className="text-xs text-muted-foreground mb-1">Min Cut</div>
-                    <div className="text-2xl font-semibold">{policy.acceptance.minCut}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Required paths</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-accent">
-                    <div className="text-xs text-muted-foreground mb-1">Vertex Disjoint</div>
-                    <div className="text-2xl font-semibold">{policy.acceptance.vertexDisjoint}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Independent paths</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-accent">
-                    <div className="text-xs text-muted-foreground mb-1">Min Seeds</div>
-                    <div className="text-2xl font-semibold">{policy.acceptance.seedCoverage.minSeeds}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Seed connections</p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-accent">
-                    <div className="text-xs text-muted-foreground mb-1">Seed Quality</div>
-                    <div className="text-2xl font-semibold">
-                      {(policy.acceptance.seedCoverage.minSeedScore * 100).toFixed(0)}%
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">Min score</p>
-                  </div>
-                </div>
-
-                {address && (
-                  <Card className="bg-accent/50">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Your Trust Status</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase()) ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                            <span className="font-semibold">You are accepted in this community</span>
-                          </div>
-                          {communityScores.filter((s: any) => s.address.toLowerCase() === address.toLowerCase()).map((score: any) => (
-                            <div key={score.id} className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Trust Score</p>
-                                <p className="font-semibold">{score.sts?.toFixed(2) || "N/A"}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Min-Cut</p>
-                                <p className="font-semibold">{score.minCut?.toFixed(2) || "N/A"}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            You need endorsements from community members to build trust and gain acceptance.
-                          </p>
-                          <Link href={`/vouch?community=${communityId}`}>
-                            <Button variant="outline" className="w-full">
-                              Learn How to Get Endorsed
-                            </Button>
-                          </Link>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="impact" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Community Impact
-                </CardTitle>
-                <CardDescription>Lending performance and member success stories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Impact Dashboard Coming Soon</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Track repayment rates, subsidy impact, cohort performance, and success stories
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="updates" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
@@ -764,176 +616,6 @@ export default function CommunityDetail() {
                     Community announcements, workshop notes, and threaded discussions with role badges
                   </p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="people" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Community Members
-                </CardTitle>
-                <CardDescription>Seeds, mentors, sponsors, and operators</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Member Directory Coming Soon</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    View seeds, mentors, sponsors with their roles and public profiles
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="transparency" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5" />
-                  Transparency & Receipts
-                </CardTitle>
-                <CardDescription>Policy history, epoch data, and verifiable receipts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Transparency Dashboard Coming Soon</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Policy changes, receipts feed, epoch data with verifiable hashes
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="network" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Network className="w-5 h-5" />
-                  Network Activity
-                </CardTitle>
-                <CardDescription>Recent endorsements and member activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {communityEndorsements.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No endorsements yet. Be the first to vouch for someone!
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {communityEndorsements.slice(0, 10).map((endorsement: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Users className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium font-mono">
-                              {endorsement.endorser.slice(0, 6)}...{endorsement.endorser.slice(-4)}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              endorsed {endorsement.endorsee.slice(0, 6)}...{endorsement.endorsee.slice(-4)}
-                            </div>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="text-xs">
-                          Epoch {endorsement.epoch}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="policy" className="space-y-6 mt-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    Acceptance Criteria
-                  </CardTitle>
-                  <CardDescription>Sybil-resistance requirements</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-accent">
-                      <div className="text-xs text-muted-foreground mb-1">Min Cut</div>
-                      <div className="text-2xl font-semibold">{policy.acceptance.minCut}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-accent">
-                      <div className="text-xs text-muted-foreground mb-1">Vertex Disjoint</div>
-                      <div className="text-2xl font-semibold">{policy.acceptance.vertexDisjoint}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-accent">
-                      <div className="text-xs text-muted-foreground mb-1">Min Seeds</div>
-                      <div className="text-2xl font-semibold">{policy.acceptance.seedCoverage.minSeeds}</div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-accent">
-                      <div className="text-xs text-muted-foreground mb-1">Seed Quality</div>
-                      <div className="text-2xl font-semibold">
-                        {(policy.acceptance.seedCoverage.minSeedScore * 100).toFixed(0)}%
-                      </div>
-                    </div>
-                    <div className="p-3 rounded-lg bg-accent col-span-2">
-                      <div className="text-xs text-muted-foreground mb-1">Per-Seed Share</div>
-                      <div className="text-2xl font-semibold">
-                        ≥{(policy.acceptance.seedCoverage.minPerSeedShare * 100).toFixed(0)}%
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Trust Tiers & Capacity</CardTitle>
-                  <CardDescription>Badge levels and flow limits</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {policy.tiers.map((tier: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-sm">
-                        {tier}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  <div className="pt-3 border-t">
-                    <h4 className="text-sm font-semibold mb-3">Capacity by Distance</h4>
-                    <div className="flex gap-2">
-                      {policy.nodeCap.distance.map((cap: number, idx: number) => (
-                        <div key={idx} className="flex-1 p-2 rounded-lg bg-accent text-center">
-                          <div className="text-xs text-muted-foreground">d={idx}</div>
-                          <div className="text-lg font-semibold">{cap}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card className="bg-primary/5 border-primary/20">
-              <CardHeader>
-                <CardTitle className="text-base">{t('communityDetail.howToJoin')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="font-medium">{t('communityDetail.toEarnTrust')} {community.name}:</p>
-                <ol className="list-decimal list-inside space-y-1.5 ml-2">
-                  <li>{t('communityDetail.step1')} "{community.promptText}"</li>
-                  <li>{t('communityDetail.step2')} {policy.acceptance.minCut})</li>
-                  <li>{t('communityDetail.step3')} {policy.acceptance.vertexDisjoint} {t('communityDetail.step3cont')}</li>
-                  <li>{t('communityDetail.step4')} {policy.acceptance.seedCoverage.minSeeds} {t('communityDetail.step4cont')}</li>
-                  <li>{t('communityDetail.step5')} {(policy.acceptance.seedCoverage.minPerSeedShare * 100).toFixed(0)}% {t('communityDetail.step5cont')}</li>
-                </ol>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1228,53 +910,6 @@ export default function CommunityDetail() {
                 </TabsContent>
               </Tabs>
             )}
-          </TabsContent>
-
-          <TabsContent value="economy" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
-                  Economic Development
-                </CardTitle>
-                <CardDescription>Transaction data and financial activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <TrendingUp className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Economic metrics including transaction volumes, USDC transfers, and weighted PageRank based on financial activity will be available in Phase 2.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-accent/50">
-              <CardHeader>
-                <CardTitle className="text-base">Planned Features</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>Transaction-weighted PageRank for economic influence scoring</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>USDC transfer volume tracking and analysis</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>EigenTrust algorithm for reputation-based ranking</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary mt-0.5">•</span>
-                    <span>Community economic health metrics and trends</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
