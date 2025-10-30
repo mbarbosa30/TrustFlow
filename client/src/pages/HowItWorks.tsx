@@ -153,6 +153,7 @@ export default function HowItWorks() {
                 <li>c<sub>i</sub> = min-cut for i</li>
                 <li>d<sub>i</sub> = hop distance from seeds</li>
                 <li>Δ<sub>i</sub> = worst relative drop removing most-influential edge</li>
+                <li>pr<sub>i</sub> = seed-personalized PageRank score</li>
               </ul>
             </div>
 
@@ -168,14 +169,15 @@ export default function HowItWorks() {
               <div>C<sub>i</sub> = min(1, c<sub>i</sub> / max(3, max(C<sub>95</sub>, C̃<sub>95</sub>)))</div>
               <div>D<sub>i</sub> = e<sup>−λd<sub>i</sub></sup> (λ ≈ 0.35)</div>
               <div>S<sub>i</sub> = 1 − min(1, Δ<sub>i</sub>)</div>
+              <div>PR<sub>i</sub> = log(1 + pr<sub>i</sub>) / log(1 + max_pr) (log-normalized)</div>
             </div>
 
             <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
               <p className="text-center text-lg font-bold font-mono mb-2">
-                STS<sub>i</sub> = 100 × (0.55F<sub>i</sub> + 0.25C<sub>i</sub> + 0.10S<sub>i</sub> + 0.10D<sub>i</sub>)
+                STS<sub>i</sub> = 100 × (0.55F<sub>i</sub> + 0.25C<sub>i</sub> + 0.05S<sub>i</sub> + 0.10D<sub>i</sub> + 0.05PR<sub>i</sub>)
               </p>
               <p className="text-center text-sm text-muted-foreground">
-                Flow (55%) + Cut (25%) + Stability (10%) + Depth (10%)
+                Flow (55%) + Cut (25%) + Stability (5%) + Depth (10%) + PageRank (5%)
               </p>
             </div>
 

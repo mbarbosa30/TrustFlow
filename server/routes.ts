@@ -6,7 +6,7 @@ import { db } from "./db";
 import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndorsement } from "./crypto/eip712";
 import { validateNonce } from "./crypto/nonce";
 import { computeLeafHash } from "./crypto/merkle";
-import { insertPublicEndorsementSchema, publicEndorsements, scores } from "@shared/schema";
+import { insertPublicEndorsementSchema, publicEndorsements, scores, type Community, type PublicEndorsement, type Score } from "@shared/schema";
 import { computeUserConfidence } from "./health/ghi";
 import { sql } from "drizzle-orm";
 import { verifyMessage } from "viem";
@@ -458,6 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/stats", async (req, res) => {
     try {
+      // Platform-wide aggregates
       const totalEndorsements = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(publicEndorsements);
@@ -470,14 +471,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({ count: sql<number>`count(distinct endorsee)::int` })
         .from(publicEndorsements);
 
-      const allParticipants = new Set<string>();
-      const endorsements = await storage.getEndorsements({ limit: 10000 });
-      endorsements.forEach(e => {
-        allParticipants.add(e.endorser);
-        allParticipants.add(e.endorsee);
-      });
+      // Count unique participants across all communities using SQL (no limit)
+      const allParticipantsResult = await db
+        .select({ address: sql<string>`endorser` })
+        .from(publicEndorsements)
+        .union(
+          db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)
+        );
+      const allParticipants = new Set(allParticipantsResult.map(r => r.address.toLowerCase()));
 
-      // Calculate trusted users and average STS using LATEST epoch score per user
+      // Get all communities (no "active" status flag exists - we count all)
+      const allCommunities = await storage.listCommunities();
+
+      // Calculate platform-wide trusted users using LATEST epoch score per user (across all communities)
       const allScoresResult = await db
         .select()
         .from(scores);
@@ -492,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Count unique trusted users (those with isAccepted in their latest epoch)
+      // Count unique trusted users (those with isAccepted in their latest epoch, any community)
       const latestScores = Array.from(latestScoresByUser.values());
       const trustedUsers = latestScores.filter(s => s.isAccepted).length;
       
@@ -504,7 +510,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avgScore = totalSts / acceptedLatestScores.length;
       }
 
+      // Per-community breakdown
+      const communityStats = await Promise.all(
+        allCommunities.map(async (community: Community) => {
+          // Use SQL count queries instead of fetching all endorsements to avoid data truncation
+          const endorsementCount = await db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(publicEndorsements)
+            .where(sql`community_id = ${community.id}`);
+          
+          // Count unique participants using UNION to avoid double-counting
+          const participantsResult = await db
+            .select({ address: sql<string>`endorser` })
+            .from(publicEndorsements)
+            .where(sql`community_id = ${community.id}`)
+            .union(
+              db.select({ address: sql<string>`endorsee` })
+                .from(publicEndorsements)
+                .where(sql`community_id = ${community.id}`)
+            );
+          const uniqueParticipantsCount = new Set(participantsResult.map(r => r.address.toLowerCase())).size;
+
+          // Get latest epoch for this community
+          const currentEpoch = await storage.getCurrentEpoch(community.id);
+          let communityTrusted = 0;
+          let communityAvgSTS = 0;
+          let communityGHI = 0;
+
+          if (currentEpoch) {
+            const communityScores = await storage.getScoresByEpoch(currentEpoch.id, community.id);
+            const accepted = communityScores.filter((s: Score) => s.isAccepted);
+            communityTrusted = accepted.length;
+            
+            if (accepted.length > 0) {
+              const totalSts = accepted.reduce((sum: number, s: Score) => sum + s.sts, 0);
+              communityAvgSTS = totalSts / accepted.length;
+            }
+
+            // Get health metrics
+            const health = await storage.getEpochHealth(currentEpoch.id, community.id);
+            if (health) {
+              communityGHI = health.ghi;
+            }
+          }
+
+          return {
+            id: community.id,
+            name: community.name,
+            totalUsers: uniqueParticipantsCount,
+            endorsements: endorsementCount[0]?.count || 0,
+            acceptedUsers: communityTrusted,
+            avgSTS: Math.round(communityAvgSTS * 100) / 100,
+            ghi: Math.round(communityGHI * 100) / 100,
+          };
+        })
+      );
+
       return res.status(200).json({
+        // Platform-wide aggregates
         totalUsers: allParticipants.size,
         totalEndorsements: totalEndorsements[0]?.count || 0,
         totalEndorsers: uniqueEndorsers[0]?.count || 0,
@@ -512,6 +575,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         trustedUsers,
         avgScore: Math.round(avgScore * 100) / 100,
         avgSTS: Math.round(avgScore * 100) / 100,
+        totalCommunities: allCommunities.length,
+        // Per-community breakdown
+        communities: communityStats,
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
