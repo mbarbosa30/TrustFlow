@@ -1796,7 +1796,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new community
   app.post("/api/communities", async (req, res) => {
     try {
-      const { name, description, promptText, templateId, visibility, creator } = req.body;
+      const { name, description, promptText, templateId, visibility, creator, location, logoUrl, coverUrl, themeJson } = req.body;
 
       if (!name || !promptText || !creator) {
         return res.status(400).json({ error: "name, promptText, and creator are required" });
@@ -1828,14 +1828,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visibility: visibility || "public",
       };
 
+      // Create slug from name (lowercase, replace spaces with hyphens)
+      const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
       // Create community (policyJson will be stored as JSONB)
       const community = await storage.createCommunity({
+        slug,
         name,
         description: description || null,
+        location: location || null,
+        logoUrl: logoUrl || null,
+        coverUrl: coverUrl || null,
         promptText,
         promptHash,
         policyId: policy.policyId,
         policyJson: policyWithHash as any, // Will be stored as JSONB
+        themeJson: themeJson || null,
         visibility: visibility || "public",
         creator: creator.toLowerCase(),
       });

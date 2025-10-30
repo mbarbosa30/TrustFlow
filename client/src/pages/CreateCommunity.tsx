@@ -29,6 +29,10 @@ export default function CreateCommunity() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [promptText, setPromptText] = useState("");
+  const [locationText, setLocationText] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [primaryColor, setPrimaryColor] = useState("#3b82f6");
   const [policyPreviewOpen, setPolicyPreviewOpen] = useState(false);
 
   const { data: templatesData } = useQuery<{ templates: CommunityTemplate[] }>({
@@ -36,7 +40,17 @@ export default function CreateCommunity() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string; promptText: string; templateId: string; creator: string }) => {
+    mutationFn: async (data: { 
+      name: string; 
+      description: string; 
+      promptText: string; 
+      templateId: string; 
+      creator: string;
+      location?: string;
+      logoUrl?: string;
+      coverUrl?: string;
+      themeJson?: any;
+    }) => {
       const response = await apiRequest("POST", "/api/communities", data);
       return await response.json();
     },
@@ -89,6 +103,10 @@ export default function CreateCommunity() {
       promptText: promptText || template?.defaultPrompt || "",
       templateId: selectedTemplate,
       creator: address,
+      location: locationText.trim() || undefined,
+      logoUrl: logoUrl.trim() || undefined,
+      coverUrl: coverUrl.trim() || undefined,
+      themeJson: primaryColor !== "#3b82f6" ? { primaryColor } : undefined,
     });
   };
 
@@ -180,16 +198,128 @@ export default function CreateCommunity() {
               </div>
             </CardContent>
           </Card>
+
+          <Card data-testid="card-branding">
+            <CardHeader>
+              <CardTitle>3. Branding (Optional)</CardTitle>
+              <CardDescription>Customize your community's visual identity</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  placeholder="e.g., San Francisco, CA"
+                  value={locationText}
+                  onChange={(e) => setLocationText(e.target.value)}
+                  data-testid="input-community-location"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="logoUrl">Logo URL</Label>
+                <Input
+                  id="logoUrl"
+                  placeholder="https://example.com/logo.png"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  data-testid="input-community-logo"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="coverUrl">Cover Image URL</Label>
+                <Input
+                  id="coverUrl"
+                  placeholder="https://example.com/cover.jpg"
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  data-testid="input-community-cover"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="primaryColor">Primary Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="primaryColor"
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="w-20 h-10 p-1 cursor-pointer"
+                    data-testid="input-community-color"
+                  />
+                  <Input
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    placeholder="#3b82f6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">
+          {/* Preview Card with Live Branding */}
+          <Card className="overflow-hidden" data-testid="card-preview">
+            <CardHeader className="pb-3">
+              <CardTitle>Preview</CardTitle>
+              <CardDescription>How your community will look</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Card className="overflow-hidden m-4 border-2">
+                {/* Cover Preview */}
+                <div 
+                  className="relative h-32 bg-gradient-to-br from-primary/20 to-primary/5"
+                  style={{
+                    backgroundImage: coverUrl 
+                      ? `linear-gradient(to bottom, ${primaryColor}15, ${primaryColor}30), url(${coverUrl})`
+                      : undefined,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+                  
+                  {/* Logo Preview */}
+                  <div className="absolute bottom-0 left-4 transform translate-y-1/2">
+                    <div 
+                      className="h-16 w-16 rounded-full border-4 border-background flex items-center justify-center text-xl font-bold"
+                      style={{ 
+                        backgroundColor: logoUrl ? 'transparent' : `${primaryColor}20`,
+                        color: primaryColor,
+                        backgroundImage: logoUrl ? `url(${logoUrl})` : undefined,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center'
+                      }}
+                    >
+                      {!logoUrl && (name || "CO").substring(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-10 pb-3 px-4">
+                  <h3 className="text-lg font-bold">{name || "Community Name"}</h3>
+                  {locationText && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                      <span>📍</span> {locationText}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground mt-2">{description || "Community description will appear here"}</p>
+                </div>
+              </Card>
+            </CardContent>
+          </Card>
+
           <Card data-testid="card-policy-preview">
             <Collapsible open={policyPreviewOpen} onOpenChange={setPolicyPreviewOpen}>
               <CardHeader>
                 <CollapsibleTrigger className="flex w-full items-center justify-between text-left hover-elevate p-2 -m-2 rounded" data-testid="button-toggle-policy-preview">
                   <div>
-                    <CardTitle>Policy Preview</CardTitle>
-                    <CardDescription>Sybil-resistance configuration</CardDescription>
+                    <CardTitle>Policy Configuration</CardTitle>
+                    <CardDescription>Sybil-resistance parameters</CardDescription>
                   </div>
                   <ChevronDown className={`h-5 w-5 transition-transform ${policyPreviewOpen ? 'rotate-180' : ''}`} />
                 </CollapsibleTrigger>
