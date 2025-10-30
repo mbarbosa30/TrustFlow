@@ -23,7 +23,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
             <Network className="w-3 h-3 mr-1" />
-            Graph-Based Trust Network
+            Graph-Based Trust Networks
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
