@@ -11,7 +11,6 @@ interface LanguageContextType {
 const translations: Record<Language, Record<string, string>> = {
   en: {
     'nav.overview': 'Overview',
-    'nav.wallet': 'My Wallet',
     'nav.credit': 'Credit',
     'nav.communities': 'Communities',
     'nav.howItWorks': 'How It Works',
@@ -52,7 +51,6 @@ const translations: Record<Language, Record<string, string>> = {
   },
   es: {
     'nav.overview': 'Resumen',
-    'nav.wallet': 'Mi Billetera',
     'nav.credit': 'Crédito',
     'nav.communities': 'Comunidades',
     'nav.howItWorks': 'Cómo Funciona',
