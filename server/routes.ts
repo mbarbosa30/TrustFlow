@@ -593,7 +593,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/seeds", async (req, res) => {
     try {
-      const seeds = await storage.getSeeds();
+      const communityId = req.query.communityId ? parseInt(req.query.communityId as string, 10) : 0;
+      const seeds = await storage.getSeeds(communityId);
       return res.status(200).json({ seeds });
     } catch (error) {
       console.error("Error fetching seeds:", error);
@@ -603,7 +604,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/seeds", async (req, res) => {
     try {
-      const { address, walletSignature, note } = req.body;
+      const { address, walletSignature, note, communityId } = req.body;
 
       if (!address) {
         return res.status(400).json({ error: "Address is required" });
@@ -626,7 +627,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const seed = await storage.createSeed({ 
         address: address.toLowerCase(), 
         addedBy: walletSignature.address.toLowerCase(),
-        note 
+        note,
+        communityId: communityId !== undefined ? communityId : 0
       });
       
       return res.status(201).json({ seed });
@@ -639,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/seeds/:address", async (req, res) => {
     try {
       const address = req.params.address.toLowerCase();
-      const { walletSignature } = req.body;
+      const { walletSignature, communityId } = req.body;
 
       if (!walletSignature || !walletSignature.address || !walletSignature.message || !walletSignature.signature) {
         return res.status(401).json({ error: "Wallet signature required for authentication" });
@@ -655,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid wallet signature" });
       }
 
-      await storage.deleteSeed(address);
+      await storage.deleteSeed(address, communityId !== undefined ? communityId : 0);
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error("Error deleting seed:", error);
