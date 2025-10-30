@@ -55,11 +55,13 @@ export const communities = pgTable("communities", {
   themeJson: jsonb("theme_json"), // Custom colors: { primary, accent }
   visibility: text("visibility").notNull().default("public"), // 'public' | 'invite'
   creator: text("creator").notNull(),
+  apiKey: text("api_key").notNull(), // API key for external integrations (e.g., "mxf_live_xxx")
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertCommunitySchema = createInsertSchema(communities).omit({
   id: true,
+  apiKey: true,
   createdAt: true,
 });
 

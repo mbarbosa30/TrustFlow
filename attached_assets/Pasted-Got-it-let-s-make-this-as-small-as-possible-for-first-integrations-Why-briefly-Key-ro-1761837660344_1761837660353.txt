@@ -1,0 +1,156 @@
+Got it—let’s make this **as small as possible** for first integrations.
+
+# Why (briefly)
+
+* **Key rotation?** Only if a key leaks. For a quick pilot you can **skip rotation** and just re-create the community if needed. (Rotation is a nice-to-have, not required.)
+* **Transparent vs private vouches?** Pick **one**. For early tests, **transparent** is simplest (fewer moving parts, easier debugging). Private commitments are great later, but add hashing/reveal flows.
+
+---
+
+# Ultra-minimal API (pilot)
+
+**Base**
+
+```
+Base URL: https://api.trustflow.xyz/v1
+Auth:     X-Community-Key: <key>   // single key per community
+```
+
+## 1) Create community (one time, returns the key)
+
+```http
+POST /communities.min
+Body: {
+  "name": "Mujeres 2000",
+  "slug": "mujeres2000",
+  "seeds": ["0xSeedA", "0xSeedB"],
+  "prompt": "Recomiendo a esta persona como emprendedora real de la red."
+}
+→ 201 {
+  "community_id": "cm_123",
+  "api_key": "tfk_live_xxx"
+}
+```
+
+> If you don’t want an endpoint here, you can also **hardcode** the community in config and manually set the key.
+
+## 2) Submit vouch (transparent, EIP-712 signed)
+
+```http
+POST /communities/{id}/vouch.min
+Headers: X-Community-Key: tfk_live_xxx
+Body: {
+  "endorser": "0xEndorser",
+  "endorsee": "0xEndorsee",
+  "sig": "0xSignature",   // EIP-712 over {endorser, endorsee, communityId, ts}
+  "ts": 1730246400        // unix seconds
+}
+→ 202 { "ok": true }
+```
+
+**Typed data to sign (client):**
+
+```
+domain: { name:"TrustFlow", version:"1" }
+types:
+  Vouch([{ endorser:address, endorsee:address, communityId:bytes32, ts:uint64 }])
+message:
+  { endorser, endorsee, communityId: keccak256("cm_123"), ts }
+```
+
+## 3) Get score (single wallet)
+
+```http
+GET /communities/{id}/scores.min/0xUser
+Headers: X-Community-Key: tfk_live_xxx
+→ 200 {
+  "accepted": true,
+  "score": 72.8,                // 0–100 (simple standardized score)
+  "min_cut": 2,
+  "vertex_disjoint": 2,
+  "seed_coverage_ok": true,     // at least 2 seeds ≥ 0.30 each
+  "why": "2 rutas independientes; 2 semillas ≥0.30",
+  "updated_at": "2025-10-30T12:00:00-03:00"
+}
+```
+
+## 4) Eligibility only (super lightweight)
+
+```http
+GET /communities/{id}/eligibility.min/0xUser
+Headers: X-Community-Key: tfk_live_xxx
+→ 200 { "accepted": true }
+```
+
+## 5) Tiny public metrics (for the page header)
+
+```http
+GET /communities/{id}/metrics.min
+→ 200 {
+  "accepted_users": 412,
+  "min_cut_ge2_share": 0.79,
+  "disjoint_ge2_share": 0.81,
+  "seeds": [
+    { "addr":"0xSeedA", "coverage":0.41 },
+    { "addr":"0xSeedB", "coverage":0.39 }
+  ]
+}
+```
+
+---
+
+## Errors (one shape)
+
+```json
+{ "error": "BAD_SIGNATURE" | "RATE_LIMITED" | "NOT_FOUND" | "FORBIDDEN" }
+```
+
+## Rate limits (gentle)
+
+* `POST /vouch.min`: **1/min** per endorser (prevents spam)
+* `GET /scores.min/*`: **60/min** per community key
+
+---
+
+## What this **doesn’t** include (by design)
+
+* No key rotation endpoint (you can add later).
+* No private/commitment vouch mode.
+* No epoch manifests or recompute bundles.
+* No paging, no filters—just the basics.
+
+---
+
+## Curl examples
+
+**Vouch**
+
+```bash
+curl -X POST https://api.trustflow.xyz/v1/communities/cm_123/vouch.min \
+  -H "X-Community-Key: tfk_live_xxx" -H "Content-Type: application/json" \
+  -d '{"endorser":"0xA1...","endorsee":"0xB2...","sig":"0x...","ts":1730246400}'
+```
+
+**Score**
+
+```bash
+curl -H "X-Community-Key: tfk_live_xxx" \
+  https://api.trustflow.xyz/v1/communities/cm_123/scores.min/0xB2...
+```
+
+---
+
+## If you really want it even simpler
+
+Skip EIP-712 for vouch during a hacky pilot:
+
+```
+POST /vouch.min
+{ "endorser":"0x...", "endorsee":"0x..." }
+```
+
+…but I strongly suggest keeping the signature (still very simple) so you don’t have to re-plumb later.
+
+---
+
+This gives you exactly three things to integrate today: **create**, **vouch**, **score/eligibility**—nothing else. You can bolt on microcredit and community pages later without changing these endpoints.
