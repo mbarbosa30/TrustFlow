@@ -31,6 +31,16 @@ export function registerMinimalApiRoutes(app: Express) {
     async (req, res) => {
       try {
         const communityId = parseInt(req.params.id);
+        
+        // Verify community ID matches the API key's community
+        const authenticatedCommunity = (req as any).community;
+        if (authenticatedCommunity.id !== communityId) {
+          return res.status(403).json({ 
+            error: "FORBIDDEN",
+            message: "API key does not have access to this community" 
+          });
+        }
+        
         const { endorser, endorsee, sig, ts, chainId } = req.body;
         
         if (!endorser || !endorsee || !sig || !ts) {
@@ -138,6 +148,16 @@ export function registerMinimalApiRoutes(app: Express) {
     async (req, res) => {
       try {
         const communityId = parseInt(req.params.id);
+        
+        // Verify community ID matches the API key's community
+        const authenticatedCommunity = (req as any).community;
+        if (authenticatedCommunity.id !== communityId) {
+          return res.status(403).json({ 
+            error: "FORBIDDEN",
+            message: "API key does not have access to this community" 
+          });
+        }
+        
         const address = req.params.address.toLowerCase();
         
         // Get latest score for this user in this community
@@ -198,6 +218,16 @@ export function registerMinimalApiRoutes(app: Express) {
     async (req, res) => {
       try {
         const communityId = parseInt(req.params.id);
+        
+        // Verify community ID matches the API key's community
+        const authenticatedCommunity = (req as any).community;
+        if (authenticatedCommunity.id !== communityId) {
+          return res.status(403).json({ 
+            error: "FORBIDDEN",
+            message: "API key does not have access to this community" 
+          });
+        }
+        
         const address = req.params.address.toLowerCase();
         
         const allScores = await storage.getAllScoresForUser(address);
@@ -222,6 +252,15 @@ export function registerMinimalApiRoutes(app: Express) {
     async (req, res) => {
       try {
         const communityId = parseInt(req.params.id);
+        
+        // Verify community ID matches the API key's community
+        const authenticatedCommunity = (req as any).community;
+        if (authenticatedCommunity.id !== communityId) {
+          return res.status(403).json({ 
+            error: "FORBIDDEN",
+            message: "API key does not have access to this community" 
+          });
+        }
         
         // Get all scores for this community
         const scores = await storage.getAllScores(communityId);
