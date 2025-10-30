@@ -459,9 +459,10 @@ export default function CommunityDetail() {
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="credit" data-testid="tab-credit">Credit</TabsTrigger>
+            <TabsTrigger value="support" data-testid="tab-support">Support</TabsTrigger>
             <TabsTrigger value="trust" data-testid="tab-trust">Trust</TabsTrigger>
             <TabsTrigger value="impact" data-testid="tab-impact">Impact</TabsTrigger>
             <TabsTrigger value="updates" data-testid="tab-updates">Updates</TabsTrigger>

@@ -63,15 +63,27 @@ router.get("/community/:communityId", async (req, res) => {
 /**
  * Create a new loan
  * POST /api/loans/:communityId
- * Body: { userAddress, amountUsdc, tenorMonths, currency? }
+ * Body: { userAddress, borrowerName, amountUsdc, tenorMonths, currency? }
  */
 router.post("/:communityId", async (req, res) => {
   try {
     const communityId = parseInt(req.params.communityId);
-    const { userAddress, amountUsdc, tenorMonths, currency } = req.body;
+    const { userAddress, borrowerName, amountUsdc, tenorMonths, currency } = req.body;
 
     if (!userAddress || !amountUsdc || !tenorMonths) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    if (!borrowerName || !borrowerName.trim()) {
+      return res.status(400).json({ error: "Borrower name is required" });
+    }
+
+    // Save borrower name to wallet profile (create or update)
+    const existingProfile = await storage.getWalletProfile(userAddress);
+    if (existingProfile) {
+      await storage.updateWalletProfile(userAddress, { name: borrowerName.trim() });
+    } else {
+      await storage.createWalletProfile({ address: userAddress, name: borrowerName.trim() });
     }
 
     // Get lending policy to get APR

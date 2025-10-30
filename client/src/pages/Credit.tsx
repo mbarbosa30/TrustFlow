@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
@@ -21,39 +20,23 @@ export default function Credit() {
   const [selectedAmount, setSelectedAmount] = useState<number>(160000); // Default 160k ARS
   const [selectedTenor, setSelectedTenor] = useState<number>(6);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
-  const [showNameDialog, setShowNameDialog] = useState(false);
-  const [userName, setUserName] = useState("");
+  const [borrowerName, setBorrowerName] = useState("");
 
   const communityId = 0; // Global community
 
   // Get wallet profile
-  const { data: walletProfile, isLoading: loadingProfile } = useQuery<WalletProfile>({
+  const { data: walletProfile } = useQuery<WalletProfile>({
     queryKey: [`/api/user/${address}`],
     enabled: !!address,
     retry: false,
   });
 
-  // Show name dialog if profile doesn't exist or name is missing
+  // Pre-fill name from wallet profile
   useEffect(() => {
-    if (address && !loadingProfile && (!walletProfile || !walletProfile.name)) {
-      setShowNameDialog(true);
+    if (walletProfile?.name && !borrowerName) {
+      setBorrowerName(walletProfile.name);
     }
-  }, [address, walletProfile, loadingProfile]);
-
-  // Update wallet profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: async (name: string) => {
-      return apiRequest(`/api/user/${address}`, "PATCH", { name });
-    },
-    onSuccess: () => {
-      toast({ title: "Perfil actualizado", description: "Tu nombre ha sido guardado" });
-      queryClient.invalidateQueries({ queryKey: [`/api/user/${address}`] });
-      setShowNameDialog(false);
-    },
-    onError: (error: any) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
+  }, [walletProfile, borrowerName]);
 
   // Check loan eligibility
   const { data: eligibility, isLoading: loadingEligibility } = useQuery<{
@@ -105,11 +88,16 @@ export default function Credit() {
   // Create loan mutation
   const createLoanMutation = useMutation({
     mutationFn: async () => {
+      if (!borrowerName.trim()) {
+        throw new Error("Por favor ingresá tu nombre completo");
+      }
+      
       const response = await fetch(`/api/loans/${communityId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userAddress: address,
+          borrowerName: borrowerName.trim(),
           amountUsdc: selectedAmount,
           tenorMonths: selectedTenor,
           currency: 'ARS', // Default to ARS for Argentine market
@@ -125,6 +113,7 @@ export default function Credit() {
       toast({ title: "Préstamo creado exitosamente", description: "Tu préstamo ha sido desembolsado" });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/borrower/${communityId}/${address}`] });
       queryClient.invalidateQueries({ queryKey: [`/api/loans/eligibility/${communityId}/${address}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/user/${address}`] });
     },
     onError: (error: any) => {
       toast({ title: "Error al crear el préstamo", description: error.message, variant: "destructive" });
@@ -266,6 +255,17 @@ export default function Credit() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="borrower-name">Nombre Completo</Label>
+                  <Input
+                    id="borrower-name"
+                    placeholder="Ej: María González"
+                    value={borrowerName}
+                    onChange={(e) => setBorrowerName(e.target.value)}
+                    data-testid="input-borrower-name"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="amount">Monto del Préstamo (ARS)</Label>
                   <Select
                     value={selectedAmount.toString()}
@@ -301,7 +301,7 @@ export default function Credit() {
                 <div className="pt-4">
                   <Button
                     onClick={() => createLoanMutation.mutate()}
-                    disabled={createLoanMutation.isPending}
+                    disabled={createLoanMutation.isPending || !borrowerName.trim()}
                     className="w-full"
                     data-testid="button-apply-loan"
                   >
@@ -418,54 +418,6 @@ export default function Credit() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      {/* Name Collection Dialog */}
-      <Dialog 
-        open={showNameDialog} 
-        onOpenChange={(open) => {
-          if (!open && (!walletProfile?.name || !userName.trim())) {
-            return;
-          }
-          setShowNameDialog(open);
-        }}
-      >
-        <DialogContent 
-          data-testid="dialog-name-required"
-          onInteractOutside={(e) => {
-            if (!walletProfile?.name || !userName.trim()) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Completar Perfil</DialogTitle>
-            <DialogDescription>
-              Para solicitar un préstamo, necesitamos tu nombre completo.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nombre Completo</Label>
-              <Input
-                id="name"
-                placeholder="Ej: María González"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                data-testid="input-name"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              onClick={() => userName.trim() && updateProfileMutation.mutate(userName.trim())}
-              disabled={!userName.trim() || updateProfileMutation.isPending}
-              data-testid="button-save-name"
-            >
-              {updateProfileMutation.isPending ? "Guardando..." : "Guardar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
