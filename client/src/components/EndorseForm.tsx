@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Loader2, QrCode } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount, useSignTypedData, useChainId } from 'wagmi';
 import { apiRequest } from "@/lib/queryClient";
@@ -52,15 +52,19 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
   // Filter out null communities and determine community selection logic
   const validCommunities = userCommunities?.communities?.filter((c: any) => c !== null) || [];
   
-  // Auto-select community based on user's communities:
-  // - 0 communities → default to "0" (general)
-  // - 1 community → auto-select that community
-  // - 2+ communities → show selector, default to "0"
-  const defaultCommunityId = validCommunities.length === 1 
-    ? validCommunities[0].id.toString() 
-    : "0";
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string>("0");
   
-  const [selectedCommunityId, setSelectedCommunityId] = useState<string>(defaultCommunityId);
+  // Update selectedCommunityId when validCommunities changes
+  useEffect(() => {
+    if (validCommunities.length === 1) {
+      // Auto-select the only community
+      setSelectedCommunityId(validCommunities[0].id.toString());
+    } else if (validCommunities.length === 0) {
+      // Default to global network
+      setSelectedCommunityId("0");
+    }
+    // For 2+ communities, keep current selection (user can change via selector)
+  }, [validCommunities.length, validCommunities[0]?.id]);
   
   // Show selector only when user has 2+ communities
   const showCommunitySelector = validCommunities.length >= 2;

@@ -223,7 +223,6 @@ export function ScoreCard({
         <div className="flex flex-wrap gap-2">
           {walletAddress && (
             <Button
-              variant="outline"
               size="sm"
               className="gap-2 flex-1"
               onClick={() => setShowQRCode(true)}
@@ -244,15 +243,6 @@ export function ScoreCard({
               Why?
             </Button>
           </Link>
-          <Button
-            size="sm"
-            className="gap-2 flex-1"
-            onClick={handleExport}
-            data-testid="button-export-attestation"
-          >
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
         </div>
       </CardContent>
 
