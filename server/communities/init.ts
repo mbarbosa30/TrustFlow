@@ -31,7 +31,7 @@ export async function initializeCommunityZero() {
       INSERT INTO communities (id, name, description, prompt_text, prompt_hash, policy_id, policy_json, visibility, creator, created_at)
       VALUES (
         0,
-        'Global TrustFlow',
+        'Global MaxFlow',
         'The original global trust network',
         ${promptText},
         ${promptHash},

@@ -12,7 +12,7 @@ export const ENDORSEMENT_TYPES = {
 
 // Domain is constructed dynamically with chainId to support multi-chain signatures
 export const DOMAIN_BASE = {
-  name: "TrustFlow",
+  name: "MaxFlow",
   version: "1",
 } as const;
 
@@ -116,7 +116,7 @@ export function validateEndorsementFields(endorsement: {
   
   // Check for unreasonably large timestamps (prevent DoS via Number overflow)
   const MAX_REASONABLE_TIMESTAMP = BigInt(Date.now()) + BigInt(365 * 24 * 60 * 60 * 1000); // 1 year in future
-  const MIN_REASONABLE_TIMESTAMP = BigInt(1609459200000); // Jan 1, 2021 (before TrustFlow existed)
+  const MIN_REASONABLE_TIMESTAMP = BigInt(1609459200000); // Jan 1, 2021 (before MaxFlow existed)
   
   if (clientTime > MAX_REASONABLE_TIMESTAMP || clientTime < MIN_REASONABLE_TIMESTAMP) {
     return { 

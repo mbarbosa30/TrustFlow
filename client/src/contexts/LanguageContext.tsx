@@ -36,7 +36,7 @@ const translations: Record<Language, Record<string, string>> = {
     'common.total': 'Total',
     'common.active': 'Active',
     'common.current': 'Current',
-    'landing.title': 'TrustFlow',
+    'landing.title': 'MaxFlow',
     'landing.subtitle': 'Sybil-Resistant Trust Network',
     'communities.title': 'Communities',
     'communities.description': 'Discover and join trust networks with custom endorsement criteria',

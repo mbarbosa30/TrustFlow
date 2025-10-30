@@ -1,10 +1,10 @@
-# TrustFlow - Public Verifiable Trust Network
+# MaxFlow - Public Verifiable Trust Network
 
 ## Overview
 
-TrustFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. The core concept involves users vouching for others via a binary endorsement system, with all vouches publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy (min-cut), and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
+MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. The core concept involves users vouching for others via a binary endorsement system, with all vouches publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy (min-cut), and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
 
-**TrustFlow Communities (Phase 1 - In Development)**: Multi-tenant trust graphs where each community defines custom vouch prompts, policies, and seed sets while maintaining core Sybil-resistance guarantees (min-cut ≥2, vertex-disjoint paths ≥2, per-seed share ≥0.30). Communities are isolated by default with separate scoring computations. Global graph treated as "Community 0" for backward compatibility.
+**MaxFlow Communities (Phase 1 - In Development)**: Multi-tenant trust graphs where each community defines custom vouch prompts, policies, and seed sets while maintaining core Sybil-resistance guarantees (min-cut ≥2, vertex-disjoint paths ≥2, per-seed share ≥0.30). Communities are isolated by default with separate scoring computations. Global graph treated as "Community 0" for backward compatibility.
 
 ## User Preferences
 

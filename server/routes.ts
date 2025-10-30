@@ -1589,7 +1589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the seed as the seed for scoring
       const seeds = [did.toLowerCase()];
 
-      // Run TrustFlow scoring algorithm in-memory
+      // Run MaxFlow scoring algorithm in-memory
       const { TrustScorer } = await import('./algorithm/scoring');
       const scorer = new TrustScorer();
       const results = scorer.computeScores(

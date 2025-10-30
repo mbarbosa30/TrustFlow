@@ -11,9 +11,9 @@ if (!projectId) {
 
 // Define metadata
 const metadata = {
-  name: 'TrustFlow',
+  name: 'MaxFlow',
   description: 'Sybil-resistant trust scoring system',
-  url: typeof window !== 'undefined' ? window.location.origin : 'https://trustflow.app',
+  url: typeof window !== 'undefined' ? window.location.origin : 'https://maxflow.app',
   icons: [typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '']
 }
 
