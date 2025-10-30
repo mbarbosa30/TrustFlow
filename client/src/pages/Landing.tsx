@@ -80,7 +80,7 @@ export default function Landing() {
               Why Max-Flow/Min-Cut?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Traditional reputation systems count votes. TrustFlow uses network flow algorithms 
+              Traditional reputation systems count votes. MaxFlow uses network flow algorithms 
               from a curated seed set—making Sybil attacks exponentially harder.
             </p>
           </div>

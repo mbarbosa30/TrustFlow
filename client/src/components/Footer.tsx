@@ -9,7 +9,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 font-bold text-lg mb-3">
               <Network className="w-5 h-5 text-primary" />
-              <span>TrustFlow</span>
+              <span>MaxFlow</span>
             </div>
             <p className="text-sm text-muted-foreground">
               Transparent trust network using max-flow scoring to issue verifiable attestations.
@@ -63,7 +63,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <a 
-                  href="https://github.com/mbarbosa30/TrustFlow" 
+                  href="https://github.com/mbarbosa30/MaxFlow" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground transition-colors"
@@ -88,7 +88,7 @@ export function Footer() {
 
         <div className="pt-8 border-t">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong>Disclaimer:</strong> TrustFlow issues portable, verifiable trust attestations computed from a curated seed set using max-flow/min-cut algorithms. All vouches are publicly visible on-chain in the Merkle transparency log. Scores update by epoch. Do not rely on TrustFlow for high-stakes decisions without additional verification.
+            <strong>Disclaimer:</strong> MaxFlow issues portable, verifiable trust attestations computed from a curated seed set using max-flow/min-cut algorithms. All vouches are publicly visible on-chain in the Merkle transparency log. Scores update by epoch. Do not rely on MaxFlow for high-stakes decisions without additional verification.
           </p>
         </div>
       </div>

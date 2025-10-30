@@ -9,19 +9,19 @@ export default function TermsPrivacy() {
           
           <p className="text-sm text-muted-foreground mb-6">
             <strong>Effective date:</strong> October 28, 2025<br />
-            <strong>Entity:</strong> TrustFlow ("TrustFlow," "we," "us")
+            <strong>Entity:</strong> MaxFlow ("MaxFlow," "we," "us")
           </p>
 
           <h3 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h3>
           <p className="mb-6">
-            By accessing TrustFlow's website, API, or smart-contract interfaces (collectively, the "Service"), you agree to these Terms and our Privacy Policy. If you do not agree, do not use the Service.
+            By accessing MaxFlow's website, API, or smart-contract interfaces (collectively, the "Service"), you agree to these Terms and our Privacy Policy. If you do not agree, do not use the Service.
           </p>
 
-          <h3 className="text-xl font-semibold mb-3">2. What TrustFlow Is (and Isn't)</h3>
+          <h3 className="text-xl font-semibold mb-3">2. What MaxFlow Is (and Isn't)</h3>
           <p className="mb-6">
-            TrustFlow publishes <strong>world-verifiable endorsements</strong> ("VOUCH" statements) and computes <strong>Sybil-resistant trust metrics</strong> via a max-flow/min-cut algorithm. We publish per-epoch manifests so anyone can recompute results.
+            MaxFlow publishes <strong>world-verifiable endorsements</strong> ("VOUCH" statements) and computes <strong>Sybil-resistant trust metrics</strong> via a max-flow/min-cut algorithm. We publish per-epoch manifests so anyone can recompute results.
             <br /><br />
-            <strong>TrustFlow is not</strong> a bank, broker, insurer, credit bureau, rating agency, or fiduciary; outputs are <strong>probabilistic signals</strong>, not advice or guarantees.
+            <strong>MaxFlow is not</strong> a bank, broker, insurer, credit bureau, rating agency, or fiduciary; outputs are <strong>probabilistic signals</strong>, not advice or guarantees.
           </p>
 
           <h3 className="text-xl font-semibold mb-3">3. Eligibility; Accounts</h3>
@@ -39,7 +39,7 @@ export default function TermsPrivacy() {
           <ul className="list-disc pl-6 mb-6 space-y-2">
             <li>The Service may output per-epoch <strong>scores</strong> (e.g., STS 0–100), acceptance flags, and attestations (JWT/VC or EAS).</li>
             <li>Scores may change between epochs. Parameters (policy id, capacities) may change after a public timelock.</li>
-            <li><strong>You and relying parties</strong> bear responsibility for how outputs are used; do not use TrustFlow alone for <strong>high-stakes decisions</strong> (employment, housing, medical, safety-critical systems, or legal determinations).</li>
+            <li><strong>You and relying parties</strong> bear responsibility for how outputs are used; do not use MaxFlow alone for <strong>high-stakes decisions</strong> (employment, housing, medical, safety-critical systems, or legal determinations).</li>
           </ul>
 
           <h3 className="text-xl font-semibold mb-3">6. Acceptable Use</h3>
@@ -86,7 +86,7 @@ export default function TermsPrivacy() {
 
           <h3 className="text-xl font-semibold mb-3">13. Indemnification</h3>
           <p className="mb-6">
-            You agree to indemnify and hold TrustFlow and its contributors harmless from any claims or liabilities arising from your use of the Service, your endorsements, or your violation of these Terms.
+            You agree to indemnify and hold MaxFlow and its contributors harmless from any claims or liabilities arising from your use of the Service, your endorsements, or your violation of these Terms.
           </p>
 
           <h3 className="text-xl font-semibold mb-3">14. Changes; Termination</h3>
@@ -113,12 +113,12 @@ export default function TermsPrivacy() {
           </p>
 
           <p className="mb-6">
-            This Privacy Policy explains how TrustFlow processes information in connection with our <strong>public endorsement</strong> system and trust metrics.
+            This Privacy Policy explains how MaxFlow processes information in connection with our <strong>public endorsement</strong> system and trust metrics.
           </p>
 
           <h3 className="text-xl font-semibold mb-3">1. Overview: Privacy in a Transparency System</h3>
           <p className="mb-6">
-            TrustFlow aims for <strong>verifiable integrity</strong> with <strong>minimal personal data</strong>. Because endorsements are world-verifiable, certain data is intentionally public and <strong>not erasable</strong> (see §5). We separate <strong>public artifacts</strong> from <strong>optional profile data</strong> and logs.
+            MaxFlow aims for <strong>verifiable integrity</strong> with <strong>minimal personal data</strong>. Because endorsements are world-verifiable, certain data is intentionally public and <strong>not erasable</strong> (see §5). We separate <strong>public artifacts</strong> from <strong>optional profile data</strong> and logs.
           </p>
 
           <h3 className="text-xl font-semibold mb-3">2. What We Collect</h3>

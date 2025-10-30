@@ -70,7 +70,7 @@ export default function UseCases() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Use Cases</h1>
         <p className="text-muted-foreground">
-          Real-world applications of TrustFlow's Sybil-resistant trust network
+          Real-world applications of MaxFlow's Sybil-resistant trust network
         </p>
       </div>
 
@@ -112,9 +112,9 @@ export default function UseCases() {
       </div>
 
       <div className="mt-12 p-6 rounded-lg border bg-muted/30">
-        <h2 className="text-lg font-semibold mb-2">Building with TrustFlow?</h2>
+        <h2 className="text-lg font-semibold mb-2">Building with MaxFlow?</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          TrustFlow attestations are portable and verifiable. Export your users' trust scores and integrate them into any application. All computations are transparent and reproducible from the public Merkle transparency log.
+          MaxFlow attestations are portable and verifiable. Export your users' trust scores and integrate them into any application. All computations are transparent and reproducible from the public Merkle transparency log.
         </p>
         <div className="flex items-center gap-4 text-sm">
           <a href="/verify" className="text-primary hover:underline">

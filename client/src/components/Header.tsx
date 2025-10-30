@@ -37,7 +37,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
               data-testid="link-home"
             >
               <Network className="w-6 h-6 text-primary" />
-              <span>TrustFlow</span>
+              <span>MaxFlow</span>
             </Link>
             
             <nav className="hidden md:flex items-center gap-2">

@@ -11,17 +11,17 @@ export default function FAQs() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Frequently Asked Questions</h1>
         <p className="text-muted-foreground">
-          Everything you need to know about TrustFlow
+          Everything you need to know about MaxFlow
         </p>
       </div>
 
       <Accordion type="single" collapsible className="space-y-4">
         <AccordionItem value="what-is" data-testid="faq-what-is">
           <AccordionTrigger className="text-left">
-            What is TrustFlow?
+            What is MaxFlow?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            TrustFlow turns public vouches into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your trustworthiness based on network structure.
+            MaxFlow turns public vouches into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your trustworthiness based on network structure.
           </AccordionContent>
         </AccordionItem>
 
@@ -31,7 +31,7 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              TrustFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
+              MaxFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
             </p>
             <p className="mb-2">
               <strong>Why no levels?</strong> The max-flow/min-cut algorithm determines trust scores based on network topology (path redundancy, distance from seeds, node capacity budgets) rather than explicit edge weights. This keeps it simple and avoids social friction from visible trust rankings.

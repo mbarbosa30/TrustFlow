@@ -111,7 +111,7 @@ export default function Status() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">System Status</h1>
         <p className="text-muted-foreground">
-          Real-time health metrics for the TrustFlow network
+          Real-time health metrics for the MaxFlow network
         </p>
       </div>
 
