@@ -8,11 +8,12 @@ export function MobileBottomNav() {
   const [location] = useLocation();
   const { address } = useAccount();
 
-  const { data: communities = [] } = useQuery<Community[]>({
+  const { data: communitiesResponse } = useQuery<{ communities: Community[] }>({
     queryKey: ['/api/communities'],
     enabled: !!address,
   });
 
+  const communities = communitiesResponse?.communities || [];
   const userCommunities = communities.filter(c => 
     c.creator.toLowerCase() === address?.toLowerCase()
   );
