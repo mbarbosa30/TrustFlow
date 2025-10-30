@@ -1,5 +1,6 @@
 import type { Express } from 'express';
 import { validateCommunityApiKey } from '../middleware/apiKeyAuth';
+import { rateLimit } from '../middleware/rateLimit';
 import { storage } from '../storage';
 import { verifyEndorsementSignature, validateEndorsementFields } from '../crypto/eip712';
 import { validateNonce } from '../crypto/nonce';
@@ -11,11 +12,21 @@ import type { Address } from 'viem';
  * Authenticated via X-Community-Key header
  */
 export function registerMinimalApiRoutes(app: Express) {
+  // Rate limiting for API endpoints
+  const apiRateLimit = rateLimit({
+    windowMs: 60000,
+    max: 100,
+    keyGenerator: (req) => {
+      const apiKey = req.headers['x-community-key'] as string;
+      return `api:${apiKey}`;
+    }
+  });
   
   // POST /api/v1/communities/:id/vouch.min
   // Submit a vouch with EIP-712 signature
   app.post(
     "/api/v1/communities/:id/vouch.min",
+    apiRateLimit,
     validateCommunityApiKey,
     async (req, res) => {
       try {
@@ -122,6 +133,7 @@ export function registerMinimalApiRoutes(app: Express) {
   // Get detailed score for a single user
   app.get(
     "/api/v1/communities/:id/scores.min/:address",
+    apiRateLimit,
     validateCommunityApiKey,
     async (req, res) => {
       try {
@@ -181,6 +193,7 @@ export function registerMinimalApiRoutes(app: Express) {
   // Simple accepted/rejected check
   app.get(
     "/api/v1/communities/:id/eligibility.min/:address",
+    apiRateLimit,
     validateCommunityApiKey,
     async (req, res) => {
       try {
@@ -204,6 +217,7 @@ export function registerMinimalApiRoutes(app: Express) {
   // Public community metrics
   app.get(
     "/api/v1/communities/:id/metrics.min",
+    apiRateLimit,
     validateCommunityApiKey,
     async (req, res) => {
       try {
