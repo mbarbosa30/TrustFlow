@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
-  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock, Copy, Check, Key
+  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock, Copy, Check, Key, BookOpen
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -548,6 +548,12 @@ export default function CommunityDetail() {
                       <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/metrics.min</code></li>
                     </ul>
                   </div>
+                  <Link href="/api-docs">
+                    <Button variant="default" className="w-full" data-testid="button-view-api-docs">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      View Full API Documentation
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             )}
