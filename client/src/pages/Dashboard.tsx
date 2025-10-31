@@ -116,7 +116,12 @@ export default function Dashboard() {
   });
 
   const { data: pathDiversityData, isLoading: isLoadingPathDiversity } = useQuery<{
-    data: Array<{ epoch: string; min: number; p25: number; median: number; p75: number; max: number }>;
+    min: number;
+    p25: number;
+    median: number;
+    p75: number;
+    max: number;
+    count: number;
   }>({
     queryKey: ['/api/analytics/path-diversity'],
   });
@@ -303,7 +308,7 @@ export default function Dashboard() {
             isLoading={isLoadingNetworkDensity}
           />
           <PathDiversityChart 
-            data={pathDiversityData?.data || []} 
+            data={pathDiversityData} 
             isLoading={isLoadingPathDiversity}
           />
         </div>

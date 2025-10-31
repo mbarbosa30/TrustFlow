@@ -1178,17 +1178,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/path-diversity", async (req, res) => {
     try {
+      // Get all scores across all epochs
       const allScores = await storage.getAllScores();
       
-      // Group scores by epoch
-      const scoresByEpoch = allScores.reduce((acc, score) => {
-        const epochId = Number(score.epochId);
-        if (!acc[epochId]) {
-          acc[epochId] = [];
+      if (allScores.length === 0) {
+        return res.status(200).json({
+          min: 0,
+          p25: 0,
+          median: 0,
+          p75: 0,
+          max: 0,
+          count: 0
+        });
+      }
+
+      // Group by user address and take latest epoch score for each user
+      const latestScoresByUser = allScores.reduce((acc, score) => {
+        const userAddress = score.address?.toLowerCase();
+        if (!userAddress) return acc;
+        if (!acc[userAddress] || Number(score.epochId) > Number(acc[userAddress].epochId)) {
+          acc[userAddress] = score;
         }
-        acc[epochId].push(score);
         return acc;
-      }, {} as Record<number, typeof allScores>);
+      }, {} as Record<string, typeof allScores[0]>);
+
+      // Get accepted scores from all users' latest scores
+      const acceptedScores = Object.values(latestScoresByUser).filter(s => s.isAccepted);
+
+      if (acceptedScores.length === 0) {
+        return res.status(200).json({
+          min: 0,
+          p25: 0,
+          median: 0,
+          p75: 0,
+          max: 0,
+          count: 0
+        });
+      }
+
+      // Calculate path diversity index for each user: minCut / max(flow, 1)
+      // This represents the fraction of flow that is redundant/diverse
+      const diversityValues = acceptedScores
+        .map(s => {
+          const flow = s.flow || 1;
+          const minCut = s.minCut || 0;
+          // Cap at 1.0 since diversity can't exceed 100%
+          return Math.min(minCut / Math.max(flow, 1), 1.0);
+        })
+        .sort((a, b) => a - b);
 
       // Calculate percentiles helper
       const calculatePercentile = (values: number[], percentile: number): number => {
@@ -1196,39 +1233,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return values[Math.max(0, index)] || 0;
       };
 
-      const data = Object.keys(scoresByEpoch)
-        .sort((a, b) => Number(a) - Number(b))
-        .map(epochId => {
-          const epochScores = scoresByEpoch[Number(epochId)];
-          const accepted = epochScores.filter(s => s.isAccepted);
-          
-          if (accepted.length === 0) {
-            return null;
-          }
-
-          // Calculate path diversity index for each user: minCut / max(flow, 1)
-          // This represents the fraction of flow that is redundant/diverse
-          const diversityValues = accepted
-            .map(s => {
-              const flow = s.flow || 1;
-              const minCut = s.minCut || 0;
-              // Cap at 1.0 since diversity can't exceed 100%
-              return Math.min(minCut / Math.max(flow, 1), 1.0);
-            })
-            .sort((a, b) => a - b);
-
-          return {
-            epoch: `Epoch ${epochId}`,
-            min: diversityValues[0] || 0,
-            p25: calculatePercentile(diversityValues, 0.25),
-            median: calculatePercentile(diversityValues, 0.50),
-            p75: calculatePercentile(diversityValues, 0.75),
-            max: diversityValues[diversityValues.length - 1] || 0,
-          };
-        })
-        .filter(d => d !== null);
-
-      return res.status(200).json({ data });
+      return res.status(200).json({
+        min: diversityValues[0] || 0,
+        p25: calculatePercentile(diversityValues, 0.25),
+        median: calculatePercentile(diversityValues, 0.50),
+        p75: calculatePercentile(diversityValues, 0.75),
+        max: diversityValues[diversityValues.length - 1] || 0,
+        count: acceptedScores.length
+      });
     } catch (error) {
       console.error("Error fetching path diversity:", error);
       return res.status(500).json({ error: "Internal server error" });
