@@ -766,17 +766,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/sts-distribution", async (req, res) => {
     try {
-      const latestHealth = await storage.getLatestEpochHealth();
+      // Get all scores across all epochs
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth) {
+      if (allScores.length === 0) {
         return res.status(200).json({
           distribution: [],
           percentiles: { p25: 0, p50: 0, p75: 0, p95: 0 }
         });
       }
 
-      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.isAccepted);
+      // Group by user address and take latest epoch score for each user
+      const latestScoresByUser = allScores.reduce((acc, score) => {
+        const userAddress = score.address?.toLowerCase();
+        if (!userAddress) return acc;
+        if (!acc[userAddress] || Number(score.epochId) > Number(acc[userAddress].epochId)) {
+          acc[userAddress] = score;
+        }
+        return acc;
+      }, {} as Record<string, typeof allScores[0]>);
+
+      // Get accepted scores from all users' latest scores
+      const acceptedScores = Object.values(latestScoresByUser).filter(s => s.isAccepted);
       
       if (acceptedScores.length === 0) {
         return res.status(200).json({
@@ -811,14 +822,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/tier-distribution", async (req, res) => {
     try {
-      const latestHealth = await storage.getLatestEpochHealth();
+      // Get all scores across all epochs
+      const allScores = await storage.getAllScores();
       
-      if (!latestHealth) {
+      if (allScores.length === 0) {
         return res.status(200).json({ distribution: [] });
       }
 
-      const scores = await storage.getScoresByEpoch(latestHealth.epochId);
-      const acceptedScores = scores.filter(s => s.isAccepted);
+      // Group by user address and take latest epoch score for each user
+      const latestScoresByUser = allScores.reduce((acc, score) => {
+        const userAddress = score.address?.toLowerCase();
+        if (!userAddress) return acc;
+        if (!acc[userAddress] || Number(score.epochId) > Number(acc[userAddress].epochId)) {
+          acc[userAddress] = score;
+        }
+        return acc;
+      }, {} as Record<string, typeof allScores[0]>);
+
+      // Get accepted scores from all users' latest scores
+      const acceptedScores = Object.values(latestScoresByUser).filter(s => s.isAccepted);
       
       const tierCounts = {
         connected: acceptedScores.filter(s => {
@@ -1080,21 +1102,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/analytics/security-health", async (req, res) => {
     try {
-      const currentEpoch = await storage.getCurrentEpoch();
-      if (!currentEpoch) {
+      // Get all scores across all epochs
+      const allScores = await storage.getAllScores();
+      
+      if (allScores.length === 0) {
         return res.status(200).json({
           seedSaturation: null,
           pathDiversity: null,
           avgMinCut: null,
+          acceptedUsers: 0,
+          epochId: 0,
         });
       }
 
-      const [healthData, scores] = await Promise.all([
-        storage.getEpochHealth(currentEpoch.id),
-        storage.getScoresByEpoch(currentEpoch.id),
-      ]);
+      // Group by user address and take latest epoch score for each user
+      const latestScoresByUser = allScores.reduce((acc, score) => {
+        const userAddress = score.address?.toLowerCase();
+        if (!userAddress) return acc;
+        if (!acc[userAddress] || Number(score.epochId) > Number(acc[userAddress].epochId)) {
+          acc[userAddress] = score;
+        }
+        return acc;
+      }, {} as Record<string, typeof allScores[0]>);
 
-      const acceptedScores = scores.filter(s => s.isAccepted);
+      // Get accepted scores from all users' latest scores
+      const acceptedScores = Object.values(latestScoresByUser).filter(s => s.isAccepted);
+
+      // Get latest epoch health data for seed saturation
+      const latestHealth = await storage.getLatestEpochHealth();
+      const latestEpochId = latestHealth?.epochId || 0;
 
       // Calculate path diversity (minCut / flow ratio)
       const diversityValues = acceptedScores
@@ -1116,11 +1152,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : 0;
 
       return res.status(200).json({
-        seedSaturation: healthData?.maxSeedShare 
+        seedSaturation: latestHealth?.maxSeedShare 
           ? {
-              maxShare: Math.round((healthData.maxSeedShare || 0) * 100),
-              maxSeedAddress: healthData.maxSeedAddress,
-              status: (healthData.maxSeedShare || 0) > 0.5 ? 'warning' : (healthData.maxSeedShare || 0) > 0.4 ? 'caution' : 'healthy'
+              maxShare: Math.round((latestHealth.maxSeedShare || 0) * 100),
+              maxSeedAddress: latestHealth.maxSeedAddress,
+              status: (latestHealth.maxSeedShare || 0) > 0.5 ? 'warning' : (latestHealth.maxSeedShare || 0) > 0.4 ? 'caution' : 'healthy'
             }
           : null,
         pathDiversity: {
@@ -1132,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: avgMinCut >= 3 ? 'strong' : avgMinCut >= 2 ? 'adequate' : 'weak'
         },
         acceptedUsers: acceptedScores.length,
-        epochId: currentEpoch.id,
+        epochId: latestEpochId,
       });
     } catch (error) {
       console.error("Error fetching security health:", error);
