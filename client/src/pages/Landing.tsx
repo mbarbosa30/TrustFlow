@@ -267,9 +267,9 @@ export default function Landing() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold mb-2">Vouch for People You Trust</h3>
                 <p className="text-muted-foreground">
-                  Simple binary vouches—you either vouch for someone or you don't. 
-                  All vouches are public and permanently recorded on-chain in the Merkle transparency log 
-                  for complete auditability.
+                  Create global vouches for your personal network or community-specific vouches for lending, 
+                  hiring, or governance. All vouches are public and permanently recorded on-chain in the 
+                  Merkle transparency log for complete auditability.
                 </p>
               </div>
             </div>
