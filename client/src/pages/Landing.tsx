@@ -32,8 +32,8 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Build your own personal trust network or participate in community reputation systems. 
-            All powered by max-flow/min-cut algorithms with complete transparency.
+            Convert peer vouching into verifiable trust scoring through flow computation. 
+            Personal networks and community reputation—both powered by graph algorithms with complete transparency.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
