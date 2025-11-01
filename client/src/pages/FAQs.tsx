@@ -157,10 +157,10 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              Co-seeds are trusted accounts you add to strengthen your personal network. You're automatically a seed for your own network, but adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths.
+              A "seed" is a starting point for trust computation. You're automatically a seed for your own network. "Co-seeds" are trusted accounts you add to strengthen your personal network—think of them as "trust anchors" who help validate others.
             </p>
             <p>
-              Think of co-seeds as "trust anchors"—people you deeply trust who help validate others in your network. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Local Health score. You can manage co-seeds on your My Network page.
+              Adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Local Health score (0-100). You can manage co-seeds on your My Network page.
             </p>
           </AccordionContent>
         </AccordionItem>

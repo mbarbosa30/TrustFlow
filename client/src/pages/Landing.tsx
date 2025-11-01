@@ -178,9 +178,9 @@ export default function Landing() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  Run your own seeded trust network. Choose up to 3 trusted co-seeds and build 
-                  your personal graph through global vouches. Your Local Health score (0-100) 
-                  measures the quality of your curated network.
+                  Run your own seeded trust network. You're automatically a "seed" (starting point for trust computation). 
+                  Add up to 3 trusted "co-seeds" (trusted people who help anchor your network) and build your personal 
+                  graph through global vouches. Your Local Health score (0-100) measures the quality of your curated network.
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-start gap-2">
