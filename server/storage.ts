@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -1077,13 +1077,14 @@ export class MemStorage implements IStorage {
       });
     }
 
-    // Get payment events from installments that have been paid
+    // Get payment events from installments with any payment (including partial)
     const paidInstallments = await db
       .select({
         id: installment.id,
         loanId: installment.loanId,
         totalPaid: installment.totalPaid,
         paidAt: installment.paidAt,
+        createdAt: installment.createdAt,
         borrowerAddress: loan.borrowerAddress,
       })
       .from(installment)
@@ -1091,23 +1092,22 @@ export class MemStorage implements IStorage {
       .where(
         and(
           eq(loan.communityId, communityId),
-          eq(installment.status, "PAID")
+          sql`${installment.totalPaid} > 0`
         )
       )
-      .orderBy(desc(installment.paidAt))
+      .orderBy(desc(installment.createdAt))
       .limit(limit);
 
     for (const inst of paidInstallments) {
-      if (inst.paidAt) {
-        activities.push({
-          id: `payment-${inst.id}`,
-          type: "PAYMENT_MADE",
-          timestamp: inst.paidAt,
-          description: `Payment made on Loan #${inst.loanId}`,
-          amountUsdc: inst.totalPaid,
-          borrowerAddress: inst.borrowerAddress,
-        });
-      }
+      const paymentTimestamp = inst.paidAt || inst.createdAt;
+      activities.push({
+        id: `payment-${inst.id}`,
+        type: "PAYMENT_MADE",
+        timestamp: paymentTimestamp,
+        description: `Payment made on Loan #${inst.loanId}`,
+        amountUsdc: inst.totalPaid,
+        borrowerAddress: inst.borrowerAddress,
+      });
     }
 
     // Pledge table removed - skip IBD events

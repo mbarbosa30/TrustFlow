@@ -15,6 +15,7 @@ import {
   Shield
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 interface LendingStats {
   totalLoansCount: number;
@@ -49,6 +50,13 @@ interface LendingActivity {
 export default function LendingDashboard() {
   const params = useParams();
   const communityId = parseInt(params.communityId || "0");
+
+  // Fetch community data to get currency
+  const { data: communityData } = useQuery<{ community: any }>({
+    queryKey: ["/api/communities", communityId],
+  });
+
+  const currency = communityData?.community?.currency || "USD";
 
   // Fetch lending statistics
   const { data: stats, isLoading: statsLoading } = useQuery<LendingStats>({
@@ -170,7 +178,7 @@ export default function LendingDashboard() {
               {stats.totalLoansCount}
             </div>
             <p className="text-xs text-muted-foreground">
-              ${stats.totalDisbursed.toFixed(2)} disbursed
+              {formatCurrency(stats.totalDisbursed, currency)} disbursed
             </p>
           </CardContent>
         </Card>
@@ -185,7 +193,7 @@ export default function LendingDashboard() {
               {stats.activeLoansCount}
             </div>
             <p className="text-xs text-muted-foreground">
-              ${stats.activeVolume.toFixed(2)} outstanding
+              {formatCurrency(stats.activeVolume, currency)} outstanding
             </p>
           </CardContent>
         </Card>
@@ -240,25 +248,25 @@ export default function LendingDashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Interest Buy-Down</span>
                   <span className="font-semibold" data-testid="text-ibd-applied">
-                    ${stats.totalIbdApplied.toFixed(2)}
+                    {formatCurrency(stats.totalIbdApplied, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Repay-Assist</span>
                   <span className="font-semibold" data-testid="text-ra-applied">
-                    ${stats.totalRaApplied.toFixed(2)}
+                    {formatCurrency(stats.totalRaApplied, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Interest Vouchers</span>
                   <span className="font-semibold" data-testid="text-vouchers-applied">
-                    ${stats.totalVouchersApplied.toFixed(2)}
+                    {formatCurrency(stats.totalVouchersApplied, currency)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t">
                   <span className="text-sm font-medium">Total Subsidies</span>
                   <span className="text-lg font-bold text-green-600" data-testid="text-total-subsidies">
-                    ${stats.totalSubsidies.toFixed(2)}
+                    {formatCurrency(stats.totalSubsidies, currency)}
                   </span>
                 </div>
               </div>
@@ -276,14 +284,14 @@ export default function LendingDashboard() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total Contributions</span>
                   <span className="font-semibold" data-testid="text-total-contributions">
-                    ${stats.totalSupporterContributions.toFixed(2)}
+                    {formatCurrency(stats.totalSupporterContributions, currency)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
                     {stats.uniqueSupporters > 0 
-                      ? `$${(stats.totalSupporterContributions / stats.uniqueSupporters).toFixed(2)} avg per supporter`
+                      ? `${formatCurrency(stats.totalSupporterContributions / stats.uniqueSupporters, currency)} avg per supporter`
                       : "No supporters yet"}
                   </span>
                 </div>
@@ -335,7 +343,7 @@ export default function LendingDashboard() {
                     <TableCell>
                       {activity.amountUsdc && (
                         <span className="font-semibold">
-                          ${activity.amountUsdc.toFixed(2)}
+                          {formatCurrency(activity.amountUsdc, currency)}
                         </span>
                       )}
                     </TableCell>
