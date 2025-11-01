@@ -121,6 +121,10 @@ export default function Credit() {
   useEffect(() => {
     // Generate amounts from policy only (ignore eligibility to avoid stale cache)
     const getPolicyAmounts = () => {
+      // Handle both array format (loanButtonsUsdc) and object format (loanAmounts)
+      if (lendingPolicy?.loanButtonsUsdc && Array.isArray(lendingPolicy.loanButtonsUsdc)) {
+        return lendingPolicy.loanButtonsUsdc;
+      }
       if (lendingPolicy?.loanAmounts) {
         const { min, max, step } = lendingPolicy.loanAmounts;
         const amounts = [];
@@ -133,6 +137,10 @@ export default function Credit() {
     };
 
     const getPolicyTenors = () => {
+      // Handle both array format (tenorsMonths) and object format (tenorMonths)
+      if (lendingPolicy?.tenorsMonths && Array.isArray(lendingPolicy.tenorsMonths)) {
+        return lendingPolicy.tenorsMonths;
+      }
       if (lendingPolicy?.tenorMonths) {
         const { min, max, step } = lendingPolicy.tenorMonths;
         const tenors = [];
