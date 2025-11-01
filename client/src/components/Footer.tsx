@@ -73,6 +73,11 @@ export function Footer() {
                 </a>
               </li>
               <li>
+                <Link href="/api-docs" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-api-docs">
+                  API Documentation
+                </Link>
+              </li>
+              <li>
                 <Link href="/bluesky" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-bluesky">
                   Bluesky Explorer
                 </Link>
