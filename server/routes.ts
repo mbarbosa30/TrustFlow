@@ -2375,9 +2375,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate fields
-      const fieldsValid = validateEndorsementFields(endorsement);
-      if (!fieldsValid) {
-        return res.status(400).json({ error: "Invalid endorsement fields" });
+      const fieldsValidation = validateEndorsementFields(endorsement);
+      if (!fieldsValidation.valid) {
+        return res.status(400).json({ error: fieldsValidation.error || "Invalid endorsement fields" });
       }
       
       // Validate nonce

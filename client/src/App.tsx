@@ -26,11 +26,13 @@ import CreditRouter from "@/pages/CreditRouter";
 import LendingDashboard from "@/pages/LendingDashboard";
 import LendingAdmin from "@/pages/LendingAdmin";
 import ApiDocs from "@/pages/ApiDocs";
+import MyNetwork from "@/pages/MyNetwork";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const appNavItems = [
   { path: "/overview", label: "nav.overview" },
+  { path: "/network", label: "My Network" },
   { path: "/credit", label: "nav.credit" },
   { path: "/communities", label: "nav.communities" },
 ];
@@ -41,6 +43,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
+      <Route path="/network" component={MyNetwork} />
       <Route path="/credit/:id" component={Credit} />
       <Route path="/credit" component={CreditRouter} />
       <Route path="/bluesky" component={BlueskyExplorer} />

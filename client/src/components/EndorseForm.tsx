@@ -135,14 +135,6 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
         timestamp,
       };
 
-      // Fetch community to get its prompt hash
-      const communityResponse = await fetch(`/api/communities/${selectedCommunityId}`);
-      if (!communityResponse.ok) {
-        throw new Error("Failed to fetch community details");
-      }
-      const communityData = await communityResponse.json();
-      const promptHash = communityData.community.promptHash;
-
       // Sign with wagmi using user's current chain
       // The chainId is used for signature security, not network enforcement
       const signature = await signTypedDataAsync({
@@ -164,17 +156,42 @@ export function EndorseForm({ onEndorse }: EndorseFormProps) {
 
       console.log("Signature created:", signature);
 
-      await apiRequest('POST', '/api/endorse', {
-        endorser: address,
-        endorsee: endorseeAddress,
-        epoch: epoch.toString(),
-        nonce: nonce.toString(),
-        timestamp: timestamp.toString(),
-        sig: signature,
-        chainId: chainId, // Include chainId so backend can verify with correct domain
-        communityId: parseInt(selectedCommunityId, 10),
-        promptHash,
-      });
+      // Global vouches (communityId=0) use POST /api/vouch with no promptHash
+      // Community vouches use POST /api/endorse with promptHash
+      if (selectedCommunityId === "0") {
+        // Global vouch - no promptHash required, but needs chainId for signature verification
+        await apiRequest('POST', '/api/vouch', {
+          endorsement: {
+            endorser: address,
+            endorsee: endorseeAddress,
+            epoch: epoch.toString(),
+            nonce: nonce.toString(),
+            timestamp: timestamp.toString(),
+            sig: signature,
+            chainId: chainId, // Include chainId for EIP-712 signature verification
+          }
+        });
+      } else {
+        // Community vouch - fetch promptHash
+        const communityResponse = await fetch(`/api/communities/${selectedCommunityId}`);
+        if (!communityResponse.ok) {
+          throw new Error("Failed to fetch community details");
+        }
+        const communityData = await communityResponse.json();
+        const promptHash = communityData.community.promptHash;
+
+        await apiRequest('POST', '/api/endorse', {
+          endorser: address,
+          endorsee: endorseeAddress,
+          epoch: epoch.toString(),
+          nonce: nonce.toString(),
+          timestamp: timestamp.toString(),
+          sig: signature,
+          chainId: chainId,
+          communityId: parseInt(selectedCommunityId, 10),
+          promptHash,
+        });
+      }
 
       if (onEndorse) {
         onEndorse(searchQuery);
