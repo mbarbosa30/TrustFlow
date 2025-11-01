@@ -482,3 +482,29 @@ export const insertTrustEventSchema = createInsertSchema(trustEvent).omit({
 
 export type InsertTrustEvent = z.infer<typeof insertTrustEventSchema>;
 export type TrustEvent = typeof trustEvent.$inferSelect;
+
+// Pending Payment - Payment submissions awaiting management approval
+export const pendingPayment = pgTable("pending_payment", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
+  installmentId: bigint("installment_id", { mode: "number" }).notNull().references(() => installment.id),
+  payerAddress: text("payer_address").notNull(), // Borrower making the payment
+  amount: doublePrecision("amount").notNull(), // Amount in loan currency
+  currency: text("currency").notNull(), // Currency of payment
+  proofUrl: text("proof_url"), // Optional: URL to payment proof (receipt, screenshot, etc)
+  notes: text("notes"), // Optional: Borrower notes
+  status: text("status").notNull().default("PENDING"), // 'PENDING' | 'APPROVED' | 'REJECTED'
+  reviewedBy: text("reviewed_by"), // Manager address who approved/rejected
+  reviewNotes: text("review_notes"), // Manager notes on approval/rejection
+  reviewedAt: timestamp("reviewed_at"),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+});
+
+export const insertPendingPaymentSchema = createInsertSchema(pendingPayment).omit({
+  id: true,
+  submittedAt: true,
+});
+
+export type InsertPendingPayment = z.infer<typeof insertPendingPaymentSchema>;
+export type PendingPayment = typeof pendingPayment.$inferSelect;
