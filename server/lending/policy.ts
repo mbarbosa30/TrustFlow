@@ -51,7 +51,7 @@ export interface LendingPolicy {
 }
 
 export const DEFAULT_LENDING_POLICY: LendingPolicy = {
-  enabled: false, // Disabled by default until community admin enables
+  enabled: true, // Enabled by default for pilot mode
   currency: "ARS", // Default to ARS for Argentina microcredit
   eligibility: {
     // IMPORTANT: These thresholds MUST match the community's scoring policy thresholds
