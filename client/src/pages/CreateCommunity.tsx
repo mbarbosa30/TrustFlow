@@ -111,7 +111,7 @@ export default function CreateCommunity() {
       logoUrl: logoUrl.trim() || undefined,
       coverUrl: coverUrl.trim() || undefined,
       themeJson: primaryColor !== "#3b82f6" ? { primaryColor } : undefined,
-      currency: currency !== "USD" ? currency : undefined,
+      currency: currency,
     });
   };
 
