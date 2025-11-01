@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent } from "@shared/schema";
+import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc, sql } from "drizzle-orm";
@@ -123,6 +123,13 @@ export interface IStorage {
   // Lending Dashboard operations
   getLendingStats(communityId: number): Promise<any>;
   getLendingActivity(communityId: number, limit?: number): Promise<any[]>;
+  
+  // Pending Payment operations
+  createPendingPayment(paymentData: InsertPendingPayment): Promise<PendingPayment>;
+  getPendingPayment(id: number): Promise<PendingPayment | undefined>;
+  getPendingPaymentsByLoan(loanId: number): Promise<PendingPayment[]>;
+  getPendingPaymentsByCommunity(communityId: number, status?: string): Promise<PendingPayment[]>;
+  updatePendingPaymentStatus(id: number, status: string, reviewedBy: string, reviewNotes?: string): Promise<void>;
   
   // Lending Policy Admin operations
   getLendingPolicy(communityId: number): Promise<any>;
@@ -1192,6 +1199,60 @@ export class MemStorage implements IStorage {
         lendingPolicyJson: policy,
       })
       .where(eq(communities.id, communityId));
+  }
+
+  async createPendingPayment(paymentData: InsertPendingPayment): Promise<PendingPayment> {
+    const [created] = await db
+      .insert(pendingPayment)
+      .values(paymentData)
+      .returning();
+    return created;
+  }
+
+  async getPendingPayment(id: number): Promise<PendingPayment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(pendingPayment)
+      .where(eq(pendingPayment.id, id))
+      .limit(1);
+    return payment;
+  }
+
+  async getPendingPaymentsByLoan(loanId: number): Promise<PendingPayment[]> {
+    return db
+      .select()
+      .from(pendingPayment)
+      .where(eq(pendingPayment.loanId, loanId))
+      .orderBy(desc(pendingPayment.submittedAt));
+  }
+
+  async getPendingPaymentsByCommunity(communityId: number, status?: string): Promise<PendingPayment[]> {
+    const conditions = [eq(pendingPayment.communityId, communityId)];
+    if (status) {
+      conditions.push(eq(pendingPayment.status, status));
+    }
+    return db
+      .select()
+      .from(pendingPayment)
+      .where(and(...conditions))
+      .orderBy(desc(pendingPayment.submittedAt));
+  }
+
+  async updatePendingPaymentStatus(
+    id: number,
+    status: string,
+    reviewedBy: string,
+    reviewNotes?: string
+  ): Promise<void> {
+    await db
+      .update(pendingPayment)
+      .set({
+        status,
+        reviewedBy,
+        reviewNotes: reviewNotes || null,
+        reviewedAt: new Date(),
+      })
+      .where(eq(pendingPayment.id, id));
   }
 }
 
