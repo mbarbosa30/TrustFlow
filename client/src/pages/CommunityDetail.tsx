@@ -426,11 +426,12 @@ export default function CommunityDetail() {
 
         <Tabs defaultValue="about" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-4">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-5">
               <TabsTrigger value="about" data-testid="tab-about" className="whitespace-nowrap">About</TabsTrigger>
               <TabsTrigger value="credit" data-testid="tab-credit" className="whitespace-nowrap">{t('communityDetail.tabCredit')}</TabsTrigger>
               <TabsTrigger value="support" data-testid="tab-support" className="whitespace-nowrap">{t('communityDetail.tabSupport')}</TabsTrigger>
               <TabsTrigger value="updates" data-testid="tab-updates" className="whitespace-nowrap">{t('communityDetail.tabUpdates')}</TabsTrigger>
+              <TabsTrigger value="api" data-testid="tab-api" className="whitespace-nowrap">API</TabsTrigger>
             </TabsList>
           </div>
 
@@ -501,62 +502,6 @@ export default function CommunityDetail() {
                 </div>
               </CardContent>
             </Card>
-
-            {address && community.creatorAddress?.toLowerCase() === address.toLowerCase() && community.apiKey && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Key className="w-5 h-5" />
-                    {t('communityDetail.apiIntegration')}
-                  </CardTitle>
-                  <CardDescription>{t('communityDetail.apiIntegrationDesc')}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                      {t('communityDetail.apiKey')}
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 px-3 py-2 bg-accent/50 rounded text-sm font-mono break-all">
-                        {community.apiKey}
-                      </code>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          navigator.clipboard.writeText(community.apiKey);
-                          toast({
-                            title: t('communityDetail.apiKeyCopied'),
-                            description: t('communityDetail.apiKeyCopiedDesc'),
-                          });
-                        }}
-                        data-testid="button-copy-api-key"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <p>{t('communityDetail.apiKeyWarning')}</p>
-                    <p>
-                      <span className="font-medium">{t('communityDetail.endpoints')}:</span>
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">POST /api/v1/communities/{community.id}/vouch.min</code></li>
-                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/scores.min/:address</code></li>
-                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/eligibility.min/:address</code></li>
-                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/metrics.min</code></li>
-                    </ul>
-                  </div>
-                  <Link href="/api-docs">
-                    <Button variant="default" className="w-full" data-testid="button-view-api-docs">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      View Full API Documentation
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
 
           <TabsContent value="credit" className="space-y-6 mt-6">
@@ -965,6 +910,111 @@ export default function CommunityDetail() {
                   </div>
                 </TabsContent>
               </Tabs>
+            )}
+          </TabsContent>
+
+          <TabsContent value="api" className="space-y-6 mt-6">
+            {address && community.creatorAddress?.toLowerCase() === address.toLowerCase() && community.apiKey ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    {t('communityDetail.apiIntegration')}
+                  </CardTitle>
+                  <CardDescription>{t('communityDetail.apiIntegrationDesc')}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                      {t('communityDetail.apiKey')}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-3 py-2 bg-accent/50 rounded text-sm font-mono break-all">
+                        {community.apiKey}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          navigator.clipboard.writeText(community.apiKey);
+                          toast({
+                            title: t('communityDetail.apiKeyCopied'),
+                            description: t('communityDetail.apiKeyCopiedDesc'),
+                          });
+                        }}
+                        data-testid="button-copy-api-key"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground space-y-2">
+                    <p>{t('communityDetail.apiKeyWarning')}</p>
+                    <p>
+                      <span className="font-medium">{t('communityDetail.endpoints')}:</span>
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">POST /api/v1/communities/{community.id}/vouch.min</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/scores.min/:address</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/eligibility.min/:address</code></li>
+                      <li><code className="text-xs bg-accent/30 px-1 py-0.5 rounded">GET /api/v1/communities/{community.id}/metrics.min</code></li>
+                    </ul>
+                  </div>
+                  <Link href="/api-docs">
+                    <Button variant="default" className="w-full" data-testid="button-view-api-docs">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      View Full API Documentation
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="w-5 h-5" />
+                    API Integration
+                  </CardTitle>
+                  <CardDescription>Integrate MaxFlow trust scores into your application</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center py-8">
+                    <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Developers Welcome</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                      MaxFlow provides a REST API for integrating trust scores into your applications. 
+                      {address ? " Only the community creator can access the API key." : " Connect your wallet to learn more."}
+                    </p>
+                    <Link href="/api-docs">
+                      <Button variant="default" data-testid="button-view-api-docs-public">
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        View API Documentation
+                      </Button>
+                    </Link>
+                  </div>
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-sm mb-3">Available Endpoints</h4>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <span>Submit vouches with cryptographic signatures</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <span>Retrieve detailed trust metrics and scores</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <span>Check eligibility status for users</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <span>Access community-wide statistics</span>
+                      </li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
