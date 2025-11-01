@@ -27,6 +27,10 @@ interface LoanDetails {
 
 interface LendingPolicy {
   enabled: boolean;
+  // New array format (actual database schema)
+  loanButtonsUsdc?: number[];
+  tenorsMonths?: number[];
+  // Legacy object format (for backward compatibility)
   loanAmounts?: {
     min: number;
     max: number;
@@ -479,7 +483,7 @@ export default function Credit() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableTenors().map((months) => (
+                      {availableTenors().map((months: number) => (
                         <SelectItem key={months} value={months.toString()}>
                           {months} {t('common.months')}
                         </SelectItem>
