@@ -2,7 +2,13 @@
 
 ## Overview
 
-MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. All vouches are publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy, and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
+MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It supports hybrid P2P ego contexts alongside traditional communities, enabling every user to run their own seeded trust network.
+
+The system provides dual-layer scoring:
+- **Personal Networks (Local Health)**: Users run their own seeded trust networks with chosen co-seeds, scored via distance-based max-flow/min-cut
+- **Community Reputation (STS)**: Context-specific trust scores for lending, hiring, or governance with community-managed seeds
+
+All vouches are publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy, and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
 
 MaxFlow also supports multi-tenant trust graphs through "Communities," where each community defines custom vouch prompts, policies, and seed sets while maintaining core Sybil-resistance guarantees. An economic layer provides daily USDC distribution based on STS scores, and a microcredit lending system is implemented with trust-based risk profiling and supporter subsidies.
 
@@ -268,12 +274,19 @@ Mutual vouches (A↔B) receive 0.5x capacity multiplier. Prevents collusion clus
 - Co-seed methods enforce max 3 limit at database level (unique constraint)
 - Address normalization consistent across ego and community contexts
 
-### Current Status: Sprint 1 Complete
+### Current Status: Sprint 1 Complete (November 2024)
 ✅ Database schema (contexts, co_seeds, scope field)
 ✅ API endpoints (GET/POST/DELETE for ego contexts, POST /api/vouch)
 ✅ Storage layer with lazy creation and validation
 ✅ UI integration (My Network page, EndorseForm updates)
-✅ Documentation (replit.md, inline code comments)
+✅ Technical documentation (replit.md, inline code comments)
+✅ **Public documentation modernization (November 2024)**:
+  - Landing page: "Two Types of Trust" section explaining hybrid architecture
+  - FAQs: 4 new questions about ego contexts, co-seeds, vouch types, Local Health
+  - How It Works: Comprehensive "Personal Networks (Ego Contexts)" section with formula and capacity details
+  - Use Cases: 2 new personal network use cases (curation, P2P lending)
+  - All pages updated with clear definitions of technical terms (seed, co-seed, Local Health 0-100 scale)
+  - Consistent terminology across all public pages for non-technical accessibility
 
 ### Next: Sprint 2 (Planned)
 ⏳ Ego scoring engine implementation
