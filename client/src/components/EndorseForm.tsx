@@ -18,6 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
+  initialAddress?: string;
 }
 
 // Domain is created dynamically per signature to match user's current network
@@ -33,8 +34,8 @@ const ENDORSEMENT_TYPES = {
   ],
 } as const;
 
-export function EndorseForm({ onEndorse }: EndorseFormProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
+  const [searchQuery, setSearchQuery] = useState(initialAddress || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const [showScanner, setShowScanner] = useState(false);

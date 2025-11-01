@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TierBadge, type Tier } from "./TierBadge";
-import { Copy, Download, Info, HelpCircle, QrCode } from "lucide-react";
+import { Copy, Download, Info, HelpCircle, QrCode, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
@@ -99,6 +99,18 @@ export function ScoreCard({
     toast({
       title: "Attestation Copied",
       description: "Your trust attestation has been copied to clipboard.",
+    });
+  };
+
+  const handleShareVouchLink = () => {
+    if (!walletAddress) return;
+    
+    const vouchUrl = `${window.location.origin}/overview?vouch=${walletAddress}`;
+    navigator.clipboard.writeText(vouchUrl);
+    
+    toast({
+      title: "Vouch Link Copied",
+      description: "Share this link to make it easy for others to vouch for you!",
     });
   };
 
@@ -222,15 +234,27 @@ export function ScoreCard({
 
         <div className="flex flex-wrap gap-2">
           {walletAddress && (
-            <Button
-              size="sm"
-              className="gap-2 flex-1"
-              onClick={() => setShowQRCode(true)}
-              data-testid="button-show-qr"
-            >
-              <QrCode className="w-4 h-4" />
-              Show QR
-            </Button>
+            <>
+              <Button
+                size="sm"
+                className="gap-2 flex-1"
+                onClick={() => setShowQRCode(true)}
+                data-testid="button-show-qr"
+              >
+                <QrCode className="w-4 h-4" />
+                Show QR
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 flex-1"
+                onClick={handleShareVouchLink}
+                data-testid="button-share-link"
+              >
+                <Share2 className="w-4 h-4" />
+                Share Link
+              </Button>
+            </>
           )}
           <Link href="/why" className="flex-1">
             <Button

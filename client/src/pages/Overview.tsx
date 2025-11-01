@@ -7,13 +7,19 @@ import { Button } from "@/components/ui/button";
 import { QrCode } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QRCodeDialog } from "@/components/QRCodeDialog";
 import type { PublicEndorsement } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function Overview() {
   const { address, isConnected } = useWallet();
   const [showQRCode, setShowQRCode] = useState(false);
+  const [location] = useLocation();
+  const endorseFormRef = useRef<HTMLDivElement>(null);
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const vouchAddress = urlParams.get('vouch');
 
   const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
     did: string;
@@ -89,6 +95,14 @@ export default function Overview() {
     console.log('Revoking endorsement:', id);
   };
 
+  useEffect(() => {
+    if (vouchAddress && endorseFormRef.current) {
+      setTimeout(() => {
+        endorseFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [vouchAddress]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
@@ -159,8 +173,8 @@ export default function Overview() {
           )}
         </div>
 
-        <div>
-          <EndorseForm onEndorse={handleEndorse} />
+        <div ref={endorseFormRef}>
+          <EndorseForm onEndorse={handleEndorse} initialAddress={vouchAddress || undefined} />
         </div>
       </div>
 
