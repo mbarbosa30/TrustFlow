@@ -2,9 +2,9 @@
 
 ## Overview
 
-MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. The core concept involves users vouching for others via a binary endorsement system, with all vouches publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy (min-cut), and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
+MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It computes standardized trust scores (STS) from a curated seed set and issues portable credentials (JWT/VC) for third-party application integration. All vouches are publicly visible and stored on-chain in a Merkle transparency log for auditability. The system periodically calculates trust scores, path redundancy, and stability metrics, assigning tier badges (Connected, Verified, Trusted) and allowing users to export signed attestations.
 
-**MaxFlow Communities (Phase 1 - In Development)**: Multi-tenant trust graphs where each community defines custom vouch prompts, policies, and seed sets while maintaining core Sybil-resistance guarantees (min-cut ≥2, vertex-disjoint paths ≥2, per-seed share ≥0.30). Communities are isolated by default with separate scoring computations. Global graph treated as "Community 0" for backward compatibility.
+MaxFlow also supports multi-tenant trust graphs through "Communities," where each community defines custom vouch prompts, policies, and seed sets while maintaining core Sybil-resistance guarantees. An economic layer provides daily USDC distribution based on STS scores, and a microcredit lending system is implemented with trust-based risk profiling and supporter subsidies.
 
 ## User Preferences
 
@@ -12,81 +12,299 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend
+### UI/UX Decisions
+The frontend uses React with TypeScript (Vite), Shadcn/ui (Radix UI, Tailwind CSS) following Material Design 3 principles. Design tokens include Inter and JetBrains Mono fonts, custom CSS variable themes (light/dark mode), and Tailwind-based spacing. Key pages include Dashboard, Overview, Why Score, Verify, and documentation. Accessibility is prioritized with semantic HTML, ARIA labels, and keyboard navigation.
 
-**Framework**: React with TypeScript (Vite).
-**UI System**: Shadcn/ui (Radix UI, Tailwind CSS) following Material Design 3 principles.
-**State Management**: TanStack Query for server state; React hooks for client state.
-**Routing**: Wouter.
-**Design Tokens**: Inter (UI), JetBrains Mono (technical data), custom CSS variable themes (light/dark mode), Tailwind-based spacing, opacity-based elevation.
-**Key Pages**: Dashboard, Overview (personal score/vouch), Why Score (explainability), Verify (attestation validation), documentation pages.
+### Technical Implementations
+The backend uses Express.js with TypeScript (Node.js) and RESTful APIs. Data is stored in PostgreSQL via Neon serverless with Drizzle ORM. Authentication is handled by Reown AppKit for multi-network support (Ethereum, Celo, Polygon, Arbitrum, Optimism, Base), supporting various login methods and off-chain EIP-712 signatures.
 
-### Backend
+### Feature Specifications
+*   **Monorepo Structure**: `client/`, `server/`, `shared/` for code reuse and shared TypeScript types.
+*   **Privacy by Default**: Aggregated scores and opted-in reveals are public; endorsement graph is opaque.
+*   **Binary Vouch Model**: Simplified endorsement system for transparency.
+*   **Epoch-Based Computation**: Deterministic, versioned scoring with verifiable artifacts.
+*   **Portable Credentials**: Self-contained, signed JSON objects compatible with W3C Verifiable Credentials.
+*   **Seed Quality Scoring**: Seeds are continuously scored to influence their capacity and coverage requirements, preventing compromised seeds from polluting the graph.
+*   **Seed-Personalized PageRank Integration**: Auxiliary scoring signal (5% weight) in STS calculation, complementing max-flow/min-cut.
+*   **Communities Architecture**: Supports isolated scoring per community with custom policies and seed sets. Endorsements include `promptHash` for verification.
+*   **Ego Context Architecture**: Enables users to run their own seeded trust networks with global and community-scoped vouches, and co-seed management.
+*   **Economic Layer**: Daily USDC distribution using Celo native USDC with EIP-3009 gasless transfers, based on STS scores.
+*   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters, installment schedules, and subsidy systems (Interest Buy-Down, Repay-Assist, Interest Vouchers, First-Loss Guarantee). Includes a two-stage payment approval workflow.
+*   **API Integration for External Applications**: Provides a minimal REST API for third-party applications to integrate with MaxFlow, allowing vouch submissions and retrieval of trust scores and eligibility status. Uses community API keys and EIP-712 signatures for authentication.
 
-**Server Framework**: Express.js with TypeScript (Node.js).
-**API Design**: RESTful endpoints under `/api`.
-**Storage Layer**: Configured for PostgreSQL via Neon serverless with Drizzle ORM.
-**Development Server**: Vite middleware mode.
+### System Design Choices
+*   **TypeScript Everywhere**: Enhances code quality and maintainability.
+*   **Component-First UI**: Promotes reusable components.
+*   **Epoch Progression System**: Manages the lifecycle of epochs, ensuring immutability of historical data.
+*   **Address Normalization**: All Ethereum addresses are normalized to lowercase to prevent case-sensitivity issues.
 
-### Data Storage
+## Ego Context Architecture (Sprint 1 Foundation - Nov 2024)
 
-**Schema**: Users (id, pubkey/DID), Edges (endorsement details), Epochs (graph/seed roots, params hash, scores hash), Scores (user_id, epoch_id, tier, STS, flow, min_cut, stability, percentile).
-**Transparency Model**: Public, on-chain Merkle transparency log for vouches.
+### Overview
+MaxFlow now supports hybrid P2P ego contexts alongside traditional communities, enabling every user to run their own seeded trust network. This architectural pivot extends the system from community-only trust graphs to a dual-layer model where users can maintain both personal networks (ego contexts) and participate in community networks (lending, hiring, etc.).
 
-### Authentication and Authorization
+### Vouch Scoping Model
+The system distinguishes two types of vouches to support both personal and community trust graphs:
 
-**Current Implementation**: Reown AppKit for multi-network authentication (Ethereum, Celo, Polygon, Arbitrum, Optimism, Base). Supports email, phone, social logins, and traditional wallet connections. Uses off-chain EIP-712 signatures.
-**Future Enhancements**: DID system, optional Web2 identifier linking, enhanced wallet signature verification.
+1. **Global Vouches** (scope='global'):
+   - Flow across all personal networks
+   - No promptHash required
+   - Stored with communityId=0 for consistency
+   - Created via POST /api/vouch endpoint
+   - Used for general interpersonal trust relationships
 
-### Key Architectural Decisions
+2. **Community Vouches** (scope='community'):
+   - Isolated to specific communities
+   - Include promptHash for verification
+   - Tied to specific lending/hiring criteria
+   - Created via POST /api/endorse endpoint
+   - Used for context-specific trust (loans, jobs, etc.)
 
-**Monorepo Structure**: `client/`, `server/`, `shared/` for code reuse.
-**TypeScript Everywhere**: Shared types via `shared/`.
-**Component-First UI**: Reusable components.
-**Privacy by Default**: Aggregated scores and opted-in reveals are public; endorsement graph is opaque.
-**Binary Vouch Model**: Simplified from a three-level system to a binary endorsement for transparency and alignment with max-flow/min-cut.
-**Epoch-Based Computation**: Deterministic, versioned scoring with verifiable artifacts.
-**Portable Credentials**: Self-contained, signed JSON objects compatible with W3C Verifiable Credentials.
-**Mock Data Strategy**: Components use mock data with TODOs for backend integration.
-**Theme System**: CSS variable-based, localStorage persistent.
-**Accessibility**: Semantic HTML, ARIA labels, keyboard navigation.
-**Multi-Network Support**: Flexible authentication via Reown AppKit, no forced network switching.
-**Epoch Progression System**: Proper lifecycle management for epochs (`getCurrentEpoch()`, `createEpoch()`, `closeEpoch()`, `advanceEpoch()`), ensuring immutability of historical data.
-**Address Normalization**: All Ethereum addresses are normalized to lowercase throughout the system to prevent case-sensitivity issues in scoring and user identification.
-**Seed Quality Scoring**: Seeds are continuously scored (0-1) on four metrics: predictive validity (35%), downstream quality (30%), diversity lift (20%), and centralization penalty (15%). Seed scores affect their SOURCE→seed capacity (0.7x-1.3x multiplier) and whether they count toward the "≥2 seeds" coverage requirement (threshold: 0.6). This creates a feedback loop where quality seeds strengthen the network while weak seeds self-throttle, preventing compromised seeds from polluting the graph—especially critical for vulnerable communities facing high collusion risk.
-**Bluesky Explorer Demo**: Read-only Bluesky network analysis using AT Protocol API. Fetches seed user's followers (1st hop), then for each peer fetches top 10 most influential followers by follower count (2nd hop), then for top 25 influential depth-2 users fetches their top 5 followers (selective 3rd hop). Creates bidirectional edges throughout. Network size kept under ~800 users for fast Dinic's max-flow scoring. Seed excluded from all results. Analysis shows "network around" the seed with influence-weighted selection at each depth.
-**Seed-Personalized PageRank Integration**: Auxiliary scoring signal (5% weight) computed via power iteration with damping factor 0.85, teleport vector weighted to seeds, and log-normalization. **Active in production** with 5% weight in STS calculation (Flow 55%, Cut 25%, Stability 5%, Depth 10%, PageRank 5%). Includes PR skew, seed concentration, and convergence metrics. Phase 2 expansion planned for transaction-weighted PageRank using USDC transfers and EigenTrust algorithm. Max-flow/min-cut remains primary acceptance gate; PageRank is for quality ranking within accepted users. Database schema extended with normalized component columns for accurate UI display of percentage-based metrics.
-**Communities Architecture (Phase 1 COMPLETE)**: Database schema extended with `community_id` FK on endorsements, epochs, scores, and seeds tables. Composite primary keys enable isolated scoring per community. Policy stored as JSONB with templates (Hiring, Lending, Marketplace). Endorsements include `promptHash` for verification. Community creator automatically becomes first seed. Phase 1 backend complete: keccak256 prompt hashing (viem), Community 0 initialized with hash `0xc734fc067acf567598769f685d1b552755c1ba0102fe5709244cf374a0ad45de`, community-scoped storage interface (backward compatible with communityId=0 default), API routes operational (POST/GET /communities with proper JSONB deserialization). **Community Creation Enhancements (Nov 2024)**: Currency field added to creation API, lending_policy_json automatically initialized with DEFAULT_LENDING_POLICY + community currency (enabled: true for pilot mode), archive/unarchive visibility option added ('public' | 'invite' | 'archived') with PATCH /api/communities/:id/visibility endpoint. New communities now fully functional for microcredit end-to-end without manual database setup. Architect-reviewed and ready for frontend integration. Phase 2 planned: seed governance + creator authentication. Phase 3 planned: capped bridges to global rollup.
-**Economic Layer (COMPLETE)**: Daily USDC distribution system using Celo native USDC (0xcebA9300f2b948710d2653dD7B07f33A8B32118C) with EIP-3009 gasless transfers. Database schema extended with 5 tables (budget, allowance, payment, pledge, auth_3009). Economic computation runs automatically after trust scoring: daily budget = ρ% (default 0.5%) of treasury, linear distribution by STS scores, caps: $5/user/day, $5/tx. Security hardening complete: deterministic nonces prevent replay attacks, server-side deduplication via `storage.getAuth3009()`, unique constraint on `auth_3009.nonce` prevents race conditions. Unified MyWallet dashboard (/wallet) combines Trust Card + Wallet Card + Activity Feed. API endpoints: GET /budget/today, GET /allowance/:user, POST /claim, POST /pay. Treasury integration currently mocked ($10K balance) - ready for real Celo contract integration. Architect-reviewed and security-approved.
-**Microcredit Lending System (MVP COMPLETE - PILOT MODE)**: Community-opt-in USDC microlending with trust-based risk profiling and supporter subsidy systems. **PILOT CONFIGURATION**: Trust scores are **ADVISORY ONLY** - all users can apply for loans regardless of min-cut, GHI, or acceptance status. The eligibility endpoint (`checkLoanEligibility`) returns trust metrics for informational display but always returns `eligible: true` (unless lending is completely disabled). This enables maximum experimentation flexibility while surfacing trust data as risk indicators in the UI. **Core Infrastructure (All 16 Tasks COMPLETE)**: Database schema extended with 7 tables (loan, installment, subsidy_ledger, assist, guarantee, trust_event, pending_payment). Lending policy system with configurable parameters (loan amounts: $160-$800 USDC, tenors: 6-12 months, 40% APR). Installment schedule generator uses standard amortization formula with month-end date normalization. Transaction-safe loan creation via `db.transaction()`. **Subsidy Systems**: Interest Buy-Down (IBD), Repay-Assist (RA) with 6% premium repayment waterfall, Interest Vouchers, and First-Loss Guarantee (FLG). **Payment Processing**: Two-stage payment approval workflow: (1) Borrowers submit payments via POST /api/loans/:loanId/pay which creates pending_payment record with status='PENDING'; (2) Community managers approve/reject via POST /api/lending/pending-payments/:id/approve|reject endpoints. Only approved payments are processed and applied to installments. Installment payments with grace period (5 days), late marking (>7 days), default trigger (>60 days), FLG waterfall execution. Lending activity feed properly sorted by payment date (paidAt) instead of installment creation date. **Trust Integration**: Conservative delta recording (+0.02 on-time, -0.05 late, -0.15 default, ±0.03 assist) with epoch-level caps (±0.10 per user per epoch) prevents gaming. **Exchange Rate Service**: Mock ARS/USD conversion ready for real-time API integration. **UIs Complete**: Borrower Credit UI (/credit), Community-Integrated Support (via CommunityDetail tabs), Community Lending Dashboard (/lending-dashboard/:communityId with Pending Payment Approvals section showing approve/reject actions with confirmation dialogs), Lending Policy Admin UI (/admin/lending/:communityId with dirty state guard). **Community-Centric Approach**: Support functionality integrated into community detail pages; supporters engage within specific communities via Credit tab showing available loans and assist opportunities. **Security Status**: Payer authentication requires EIP-712 signature verification for production (documented). Admin endpoints intentionally unauthenticated for pilot flexibility. **Future Production Mode**: To enable hard eligibility gates, update `checkLoanEligibility()` to enforce thresholds and return `eligible: false` for users not meeting criteria.
+### Database Schema Changes
+
+#### Contexts Table
+New table supporting both ego and community trust contexts:
+```typescript
+contexts {
+  id: serial (primary key)
+  contextType: enum('ego', 'community')
+  ownerAddress: varchar(42) (indexed, lowercase normalized)
+  communityId: integer | null (foreign key to communities)
+  policyJson: jsonb (scoring parameters, capacity rules)
+  createdAt: timestamp
+}
+```
+
+#### Co-Seeds Table
+Manages trusted co-seeds for ego contexts (max 3 per context):
+```typescript
+coSeeds {
+  id: serial (primary key)
+  contextId: integer (foreign key to contexts)
+  address: varchar(42) (lowercase normalized)
+  addedAt: timestamp
+  UNIQUE(contextId, address) // Composite unique constraint
+}
+```
+
+#### PublicEndorsements Extension
+Extended with scope field to differentiate vouch types:
+```typescript
+publicEndorsements {
+  ...existing fields...
+  scope: enum('global', 'community') DEFAULT 'community'
+  // promptHash nullable for global vouches
+}
+```
+
+### API Endpoints
+
+#### GET /api/ego/:address/context
+Lazy-creates ego context if missing, returns context with co-seeds.
+
+**Request**: `GET /api/ego/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb/context`
+
+**Response**:
+```json
+{
+  "context": {
+    "id": 123,
+    "contextType": "ego",
+    "ownerAddress": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
+    "communityId": null,
+    "policyJson": { /* default ego policy */ },
+    "createdAt": "2024-11-01T12:00:00Z"
+  },
+  "coSeeds": [
+    {
+      "id": 456,
+      "contextId": 123,
+      "address": "0x1234567890123456789012345678901234567890",
+      "addedAt": "2024-11-01T13:00:00Z"
+    }
+  ],
+  "seedAddresses": [
+    "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
+    "0x1234567890123456789012345678901234567890"
+  ]
+}
+```
+
+**Side Effects**: Auto-creates ego context with default policy if none exists.
+
+#### POST /api/ego/:address/co-seeds
+Adds co-seed to ego context (enforces max 3 limit).
+
+**Request**: `POST /api/ego/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb/co-seeds`
+```json
+{
+  "coSeedAddress": "0x1234567890123456789012345678901234567890"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "coSeed": {
+    "id": 456,
+    "contextId": 123,
+    "address": "0x1234567890123456789012345678901234567890",
+    "addedAt": "2024-11-01T13:00:00Z"
+  }
+}
+```
+
+**Validation**: Returns 400 if max 3 co-seeds limit exceeded.
+
+#### DELETE /api/ego/:address/co-seeds/:coSeedAddress
+Removes co-seed from ego context.
+
+**Request**: `DELETE /api/ego/0x742d35Cc.../co-seeds/0x1234567...`
+
+**Response**: `{ "success": true }`
+
+#### POST /api/vouch
+Creates global vouch (no promptHash, no community restriction).
+
+**Request**: `POST /api/vouch`
+```json
+{
+  "endorsement": {
+    "endorser": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    "endorsee": "0x1234567890123456789012345678901234567890",
+    "epoch": "1",
+    "nonce": "0",
+    "timestamp": "1730469600000",
+    "sig": "0xabc...",
+    "chainId": 42161 // Required for signature verification
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "endorsement": { /* created endorsement with scope='global' */ },
+  "message": "Global vouch created successfully"
+}
+```
+
+**Validation**: EIP-712 signature verification with chainId, nonce validation, field validation (returns detailed error object).
+
+### UI Integration
+
+#### My Network Page (/network)
+User-facing interface for managing personal trust network:
+- **Personal Health Card**: Displays Local Health score (placeholder until scoring engine built), accepted users count, avg flow, median min-cut metrics
+- **Co-Seeds Management**: Shadcn Form with zod validation (Ethereum address regex: `^0x[a-fA-F0-9]{40}$`), add/remove up to 3 co-seeds, visual co-seed count (X/3)
+- **Educational Section**: "How It Works" explanations for ego-centric trust, global vouches, local health scoring, distance-based capacity
+- **Testing Coverage**: Comprehensive data-testid attributes on all interactive elements (buttons, inputs) and informational text (labels, descriptions, messages)
+
+#### EndorseForm Component Updates
+Handles both global and community vouches:
+- Conditional logic based on selectedCommunityId:
+  - If communityId=0: POST /api/vouch (global vouch, no promptHash)
+  - If communityId>0: POST /api/endorse (community vouch, with promptHash)
+- Includes chainId in all signature payloads for EIP-712 verification
+- Maintains existing community selector for multi-community users
+- "Global Network" option available in community dropdown
+
+### Planned: Dual Scoring Model
+
+#### Local Health (0-100)
+Ego network quality score computed using max-flow/min-cut on ego subgraph:
+
+**Formula**: `LocalHealth = 50 * (avgResidualFlow / maxPossibleFlow) + 50 * (medianMinCut / seedCount)`
+
+**Node Capacities** (distance-based decay from seed set):
+- Distance 0 (self): 1.0
+- Distance 1 (direct vouches): 0.5
+- Distance 2+: 0.25
+- Formula: `capacity = 1.0 / (2^distance)`
+
+**Computation**:
+1. Build ego subgraph: nodes within distance ≤ K from seed set
+2. Run max-flow from SOURCE to each non-seed node
+3. Calculate residual flow (max flow / capacity)
+4. Compute min-cut for accepted users
+5. Aggregate: avg residual flow + median min-cut
+
+#### Global Trust (Pending)
+Cross-network reputation score (not yet implemented):
+
+**Formula**: `GlobalTrust = 0.6 * LocalHealth + 0.4 * IncomingFlow`
+
+**IncomingFlow**: Weighted sum of vouches from other ego networks, normalized by their Local Health scores.
+
+### Planned: Anti-Gaming Rules
+
+#### Per-Epoch Vouch Cap
+Limit: 5 global vouches per user per epoch. Prevents vouch flooding attacks.
+
+#### Warm-Up Period
+New ego contexts start with 50% capacity for first epoch. Prevents instant Sybil attacks via fresh context creation.
+
+#### Reciprocality Brake
+Mutual vouches (A↔B) receive 0.5x capacity multiplier. Prevents collusion clusters from gaming the system.
+
+### Backward Compatibility
+
+#### Data Migration
+- Existing community vouches automatically default to scope='community'
+- No manual migration required for existing endorsements
+- Global vouches use communityId=0 for storage consistency with Community 0 architecture
+
+#### API Compatibility
+- POST /api/endorse continues to work for community vouches unchanged
+- POST /api/vouch introduced as new endpoint for global vouches
+- Both endpoints share signature verification logic (verifyEndorsementSignature)
+- chainId field optional for backward compatibility (defaults to 1 if missing)
+
+#### Storage Layer
+- All storage methods accept communityId parameter (defaults to 0)
+- getOrCreateEgoContext() auto-creates context on first access
+- Co-seed methods enforce max 3 limit at database level (unique constraint)
+- Address normalization consistent across ego and community contexts
+
+### Current Status: Sprint 1 Complete
+✅ Database schema (contexts, co_seeds, scope field)
+✅ API endpoints (GET/POST/DELETE for ego contexts, POST /api/vouch)
+✅ Storage layer with lazy creation and validation
+✅ UI integration (My Network page, EndorseForm updates)
+✅ Documentation (replit.md, inline code comments)
+
+### Next: Sprint 2 (Planned)
+⏳ Ego scoring engine implementation
+⏳ Anti-gaming rules enforcement
+⏳ Score explanations ("why" strings)
+⏳ Dual Trust Profile UI
+⏳ Context health endpoints
 
 ## External Dependencies
 
 ### Frontend Libraries
-
-*   **Radix UI**: Headless component primitives.
-*   **Tailwind CSS**: Styling framework.
-*   **TanStack Query**: Async state management.
-*   **Wouter**: Client-side routing.
-*   **Lucide React**: Icon library.
-*   **date-fns**: Date manipulation.
-*   **Wagmi v2**: React hooks for Ethereum with viem.
-*   **@reown/appkit**: Multi-network wallet connection and authentication SDK.
+*   Radix UI
+*   Tailwind CSS
+*   TanStack Query
+*   Wouter
+*   Lucide React
+*   date-fns
+*   Wagmi v2
+*   @reown/appkit
 
 ### Backend Libraries
-
-*   **Express**: HTTP server framework.
-*   **Drizzle ORM**: TypeScript-first ORM for PostgreSQL.
-*   **@neondatabase/serverless**: Serverless Postgres driver.
-*   **ws**: WebSocket library (for Neon connection).
-*   **Zod**: Schema validation.
+*   Express
+*   Drizzle ORM
+*   @neondatabase/serverless
+*   ws
+*   Zod
 
 ### Development Tools
-
-*   **Vite**: Build tool and dev server.
-*   **TypeScript**: Type safety.
-*   **ESBuild**: Production server bundling.
+*   Vite
+*   TypeScript
+*   ESBuild
 
 ### Typography Fonts
-
-*   **Google Fonts**: Inter, JetBrains Mono.**API Integration for External Applications (MVP COMPLETE)**: Minimal REST API enables third-party applications to integrate with MaxFlow trust networks. **Authentication Model**: Two-layer security: (1) Community API keys (format: `mxf_live_*`) authenticate application access via `X-Community-Key` header; (2) EIP-712 signatures verify user identity for vouch submissions. **Endpoints**: Four minimal endpoints under `/api/v1/communities/:id/`: `POST vouch.min` (submit endorsed vouches with cryptographic signatures), `GET scores.min/:address` (detailed trust metrics including STS, min-cut, vertex-disjoint paths, acceptance status), `GET eligibility.min/:address` (simple accepted/rejected check), `GET metrics.min` (community-wide statistics: accepted users, min-cut distribution, seed coverage). **Security**: Community-scoped access enforced (API key must match community ID in path), in-memory rate limiting (100 req/min per key with `X-RateLimit-*` headers), cross-community isolation verified. **API Key Management**: Auto-generated on community creation, stored retrievable (not hashed) for developer usability, displayed in Community Detail About tab (creator-only access with copy-to-clipboard functionality), bilingual UI (EN/ES). **Integration Architecture**: Both web UI and API write to same database enabling hybrid patterns (e.g., vouch via API + view in web UI). **Future Enhancements**: Distributed rate limiter for horizontal scaling, automated integration tests, comprehensive API documentation for integrators.
+*   Google Fonts (Inter, JetBrains Mono)
