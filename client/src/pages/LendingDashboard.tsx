@@ -1,9 +1,21 @@
 import { useParams } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -16,6 +28,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAccount } from "wagmi";
 
 interface LendingStats {
   totalLoansCount: number;
@@ -50,6 +65,15 @@ interface LendingActivity {
 export default function LendingDashboard() {
   const params = useParams();
   const communityId = parseInt(params.communityId || "0");
+  const { address } = useAccount();
+  const { toast } = useToast();
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: "approve" | "reject" | null;
+    paymentId: number | null;
+    amount: number | null;
+    currency: string | null;
+  }>({ open: false, action: null, paymentId: null, amount: null, currency: null });
 
   // Fetch community data to get currency
   const { data: communityData } = useQuery<{ community: any }>({
@@ -74,6 +98,93 @@ export default function LendingDashboard() {
   });
 
   const pendingPayments = pendingPaymentsData?.payments || [];
+
+  // Approve payment mutation
+  const approveMutation = useMutation({
+    mutationFn: async (paymentId: number) => {
+      return apiRequest(`/api/lending/pending-payments/${paymentId}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewerAddress: address,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/activity", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/stats", communityId] });
+      toast({
+        title: "Payment Approved",
+        description: "The payment has been processed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve payment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reject payment mutation
+  const rejectMutation = useMutation({
+    mutationFn: async (paymentId: number) => {
+      return apiRequest(`/api/lending/pending-payments/${paymentId}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reviewerAddress: address,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
+      toast({
+        title: "Payment Rejected",
+        description: "The payment has been rejected.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject payment",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = (payment: any) => {
+    setConfirmDialog({
+      open: true,
+      action: "approve",
+      paymentId: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+    });
+  };
+
+  const handleReject = (payment: any) => {
+    setConfirmDialog({
+      open: true,
+      action: "reject",
+      paymentId: payment.id,
+      amount: payment.amount,
+      currency: payment.currency,
+    });
+  };
+
+  const confirmAction = () => {
+    if (confirmDialog.paymentId && confirmDialog.action) {
+      if (confirmDialog.action === "approve") {
+        approveMutation.mutate(confirmDialog.paymentId);
+      } else {
+        rejectMutation.mutate(confirmDialog.paymentId);
+      }
+    }
+    setConfirmDialog({ open: false, action: null, paymentId: null, amount: null, currency: null });
+  };
 
   if (statsLoading) {
     return (
@@ -359,18 +470,26 @@ export default function LendingDashboard() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 data-testid={`button-approve-${payment.id}`}
-                                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                                className="text-green-600 hover:text-green-700"
+                                onClick={() => handleApprove(payment)}
+                                disabled={approveMutation.isPending || rejectMutation.isPending}
                               >
                                 Approve
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
                                 data-testid={`button-reject-${payment.id}`}
-                                className="text-sm text-red-600 hover:text-red-700 font-medium"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => handleReject(payment)}
+                                disabled={approveMutation.isPending || rejectMutation.isPending}
                               >
                                 Reject
-                              </button>
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -441,6 +560,41 @@ export default function LendingDashboard() {
         </CardContent>
       </Card>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, action: null, paymentId: null, amount: null, currency: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmDialog.action === "approve" ? "Approve Payment" : "Reject Payment"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.action === "approve" ? (
+                <>
+                  Are you sure you want to approve this payment of{" "}
+                  <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                  This will process the payment and apply it to the loan.
+                </>
+              ) : (
+                <>
+                  Are you sure you want to reject this payment of{" "}
+                  <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                  The borrower will need to resubmit.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAction}
+              className={confirmDialog.action === "reject" ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {confirmDialog.action === "approve" ? "Approve" : "Reject"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
