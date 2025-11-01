@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Network, Shield, GitBranch, CheckCircle2, TrendingUp, Users, ArrowRight } from "lucide-react";
+import { Network, Shield, GitBranch, CheckCircle2, TrendingUp, Users, ArrowRight, UserCircle, Building2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Landing() {
@@ -32,8 +32,8 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert public peer vouching into verifiable trust scores through network flow computation. 
-            Not simple vote counting—real graph algorithms with complete transparency.
+            Build your own personal trust network or participate in community reputation systems. 
+            All powered by max-flow/min-cut algorithms with complete transparency.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -157,6 +157,98 @@ export default function Landing() {
       </section>
 
       <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-trust-types-heading">
+              Two Types of Trust
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              MaxFlow supports both personal networks and community reputation—giving you control 
+              over your own trust graph while participating in shared communities.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card data-testid="card-personal-network">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <UserCircle className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>Personal Network (Local Health)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Run your own seeded trust network. Choose up to 3 trusted co-seeds and build 
+                  your personal graph through global vouches. Your Local Health score (0-100) 
+                  measures the quality of your curated network.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">You control your own seeds</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Global vouches flow across all networks</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Distance-based capacity decay</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Link href="/network">
+                    <Button variant="outline" size="sm" className="w-full" data-testid="button-my-network">
+                      Manage My Network
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-community-reputation">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <Building2 className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>Community Reputation (STS)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  Participate in context-specific communities for lending, hiring, or governance. 
+                  Each community has its own seeds and criteria. Your STS (Standardized Trust Score) 
+                  is computed per community.
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Community-managed seeds</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Context-specific vouches (with prompts)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Isolated scoring per community</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Link href="/communities">
+                    <Button variant="outline" size="sm" className="w-full" data-testid="button-browse-communities">
+                      Browse Communities
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3" data-testid="text-how-heading">
