@@ -68,6 +68,13 @@ export default function LendingDashboard() {
     queryKey: ["/api/lending/activity", communityId],
   });
 
+  // Fetch pending payments
+  const { data: pendingPaymentsData, isLoading: pendingPaymentsLoading } = useQuery<{ payments: any[] }>({
+    queryKey: ["/api/lending/pending-payments", communityId],
+  });
+
+  const pendingPayments = pendingPaymentsData?.payments || [];
+
   if (statsLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -300,6 +307,81 @@ export default function LendingDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pending Payment Approvals */}
+      {pendingPayments.filter((p: any) => p.status === 'PENDING').length > 0 && (
+        <Card data-testid="card-pending-payments">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Pending Payment Approvals
+              <Badge variant="secondary" data-testid="badge-pending-count">
+                {pendingPayments.filter((p: any) => p.status === 'PENDING').length}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Borrower payments awaiting management approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pendingPaymentsLoading ? (
+              <p className="text-muted-foreground">Loading pending payments...</p>
+            ) : (
+              <div className="overflow-x-auto -mx-6 px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Borrower</TableHead>
+                      <TableHead className="whitespace-nowrap">Amount</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="whitespace-nowrap">Submitted</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingPayments
+                      .filter((p: any) => p.status === 'PENDING')
+                      .map((payment: any) => (
+                        <TableRow key={payment.id} data-testid={`row-pending-${payment.id}`}>
+                          <TableCell className="font-mono text-sm">
+                            {payment.payerAddress.slice(0, 6)}...{payment.payerAddress.slice(-4)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-semibold">
+                              {formatCurrency(payment.amount, payment.currency)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                            {payment.notes || "—"}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                            {format(new Date(payment.submittedAt), "MMM d, h:mm a")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                data-testid={`button-approve-${payment.id}`}
+                                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                data-testid={`button-reject-${payment.id}`}
+                                className="text-sm text-red-600 hover:text-red-700 font-medium"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Activity Feed */}
       <Card data-testid="card-activity-feed">
