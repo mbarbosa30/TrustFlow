@@ -79,3 +79,26 @@ export interface EpochComputationResult {
   seedQuality?: Map<Address, SeedQualityMetrics>;
   pageRankMetrics?: PageRankMetrics;
 }
+
+export interface EgoNodeMetrics {
+  address: Address;
+  distance: number;
+  capacity: number;
+  flow: number;
+  residualFlow: number;
+  minCut: number;
+}
+
+export interface EgoScoreResult {
+  ownerAddress: Address;
+  localHealth: number;
+  seedAddresses: Address[];
+  metrics: {
+    totalNodes: number;
+    acceptedUsers: number;
+    avgResidualFlow: number;
+    medianMinCut: number;
+    maxPossibleFlow: number;
+  };
+  nodeDetails: EgoNodeMetrics[];
+}

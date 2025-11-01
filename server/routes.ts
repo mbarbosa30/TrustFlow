@@ -2386,6 +2386,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get Local Health score for ego context
+  app.get("/api/ego/:address/score", async (req, res) => {
+    try {
+      const ownerAddress = req.params.address.toLowerCase();
+      
+      const egoContext = await storage.getOrCreateEgoContext(ownerAddress);
+      const coSeeds = await storage.getCoSeeds(egoContext.id);
+      
+      const seedAddresses = [
+        ownerAddress,
+        ...coSeeds.map(cs => cs.address.toLowerCase())
+      ];
+      
+      const globalEndorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 100000
+      });
+      
+      const formattedVouches = globalEndorsements.map(e => ({
+        endorser: e.endorser.toLowerCase() as `0x${string}`,
+        endorsee: e.endorsee.toLowerCase() as `0x${string}`,
+      }));
+      
+      const { EgoScorer } = await import("./algorithm/egoScoring");
+      const scorer = new EgoScorer();
+      
+      const result = scorer.computeLocalHealth(
+        ownerAddress as `0x${string}`,
+        seedAddresses as `0x${string}`[],
+        formattedVouches
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error computing ego score:", error);
+      res.status(500).json({ error: "Failed to compute ego score" });
+    }
+  });
+
   // Create global vouch (no community, no promptHash)
   app.post("/api/vouch", async (req, res) => {
     try {

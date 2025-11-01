@@ -38,6 +38,27 @@ interface EgoContextResponse {
   seedAddresses: string[];
 }
 
+interface EgoScoreResponse {
+  ownerAddress: string;
+  localHealth: number;
+  seedAddresses: string[];
+  metrics: {
+    totalNodes: number;
+    acceptedUsers: number;
+    avgResidualFlow: number;
+    medianMinCut: number;
+    maxPossibleFlow: number;
+  };
+  nodeDetails: Array<{
+    address: string;
+    distance: number;
+    capacity: number;
+    flow: number;
+    residualFlow: number;
+    minCut: number;
+  }>;
+}
+
 // Zod schema for co-seed address validation
 const coSeedSchema = z.object({
   address: z.string()
@@ -66,6 +87,13 @@ export default function MyNetwork() {
     enabled: !!address,
   });
 
+  // Fetch ego score
+  const { data: scoreData, isLoading: isLoadingScore } = useQuery<EgoScoreResponse>({
+    queryKey: ['/api/ego', address?.toLowerCase(), 'score'],
+    enabled: !!address,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
   // Add co-seed mutation
   const addCoSeedMutation = useMutation({
     mutationFn: async (coSeedAddress: string) => {
@@ -73,6 +101,7 @@ export default function MyNetwork() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'context'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'score'] });
       toast({
         title: "Co-seed added",
         description: "Your trusted co-seed has been added successfully.",
@@ -95,6 +124,7 @@ export default function MyNetwork() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'context'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'score'] });
       toast({
         title: "Co-seed removed",
         description: "Co-seed has been removed from your network.",
@@ -172,19 +202,29 @@ export default function MyNetwork() {
         <CardContent>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-5xl font-bold mb-2" data-testid="text-health-score">
-                —
-              </div>
+              {isLoadingScore ? (
+                <Skeleton className="h-16 w-24 mb-2" />
+              ) : (
+                <div className="text-5xl font-bold mb-2" data-testid="text-health-score">
+                  {scoreData?.localHealth !== undefined ? scoreData.localHealth.toFixed(1) : '—'}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground" data-testid="text-health-score-label">
-                Health Score (0-100)
+                Local Health (0-100)
               </p>
             </div>
             <div className="text-right">
-              <Badge variant="secondary" className="mb-2" data-testid="badge-status">
-                Building Network
+              <Badge 
+                variant={scoreData && scoreData.localHealth > 50 ? "default" : "secondary"} 
+                className="mb-2" 
+                data-testid="badge-status"
+              >
+                {scoreData && scoreData.localHealth > 0 ? "Active" : "Building Network"}
               </Badge>
               <p className="text-sm text-muted-foreground" data-testid="text-status-message">
-                Add co-seeds to strengthen your network
+                {scoreData && scoreData.metrics.totalNodes > 0 
+                  ? `${scoreData.metrics.totalNodes} nodes in network` 
+                  : "Add co-seeds to strengthen your network"}
               </p>
             </div>
           </div>
@@ -193,25 +233,49 @@ export default function MyNetwork() {
           
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-semibold" data-testid="text-accepted-users">0</div>
+              {isLoadingScore ? (
+                <Skeleton className="h-8 w-12 mx-auto" />
+              ) : (
+                <div className="text-2xl font-semibold" data-testid="text-accepted-users">
+                  {scoreData?.metrics.acceptedUsers ?? 0}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground" data-testid="text-label-accepted">Accepted Users</p>
             </div>
             <div>
-              <div className="text-2xl font-semibold" data-testid="text-avg-flow">—</div>
-              <p className="text-xs text-muted-foreground" data-testid="text-label-avg-flow">Avg Flow</p>
+              {isLoadingScore ? (
+                <Skeleton className="h-8 w-16 mx-auto" />
+              ) : (
+                <div className="text-2xl font-semibold" data-testid="text-avg-flow">
+                  {scoreData?.metrics.avgResidualFlow !== undefined 
+                    ? scoreData.metrics.avgResidualFlow.toFixed(3) 
+                    : '—'}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground" data-testid="text-label-avg-flow">Avg Residual Flow</p>
             </div>
             <div>
-              <div className="text-2xl font-semibold" data-testid="text-median-cut">—</div>
+              {isLoadingScore ? (
+                <Skeleton className="h-8 w-12 mx-auto" />
+              ) : (
+                <div className="text-2xl font-semibold" data-testid="text-median-cut">
+                  {scoreData?.metrics.medianMinCut !== undefined 
+                    ? scoreData.metrics.medianMinCut.toFixed(2) 
+                    : '—'}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground" data-testid="text-label-median-cut">Median Min-Cut</p>
             </div>
           </div>
 
-          <Alert className="mt-6" data-testid="alert-scoring-info">
-            <Info className="h-4 w-4" />
-            <AlertDescription data-testid="text-scoring-info-message">
-              Scoring engine coming soon. Your network will be evaluated using max-flow/min-cut algorithms.
-            </AlertDescription>
-          </Alert>
+          {scoreData && scoreData.metrics.totalNodes === 0 && (
+            <Alert className="mt-6" data-testid="alert-scoring-info">
+              <Info className="h-4 w-4" />
+              <AlertDescription data-testid="text-scoring-info-message">
+                Your network is empty. Start by vouching for others using global vouches, or add co-seeds to seed your network.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
