@@ -136,6 +136,68 @@ export default function FAQs() {
             You can unlink wallets and delete your optional profile. However, vouches are public and recorded on-chain in the transparency log, so they remain visible for network integrity and reproducibility. Historical epochs stay intact to maintain verifiability.
           </AccordionContent>
         </AccordionItem>
+
+        <AccordionItem value="personal-network" data-testid="faq-personal-network">
+          <AccordionTrigger className="text-left">
+            What's the difference between my personal network and community trust?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              <strong>Personal Network (Local Health):</strong> You run your own seeded trust network by selecting up to 3 co-seeds. Global vouches flow across all personal networks. Your Local Health score (0-100) measures the quality of your curated network using distance-based capacity decay.
+            </p>
+            <p>
+              <strong>Community Reputation (STS):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="co-seeds" data-testid="faq-co-seeds">
+          <AccordionTrigger className="text-left">
+            What are co-seeds and why do I need them?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              Co-seeds are trusted accounts you add to strengthen your personal network. You're automatically a seed for your own network, but adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths.
+            </p>
+            <p>
+              Think of co-seeds as "trust anchors"—people you deeply trust who help validate others in your network. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Local Health score. You can manage co-seeds on your My Network page.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="vouch-types" data-testid="faq-vouch-types">
+          <AccordionTrigger className="text-left">
+            What's the difference between a global vouch and a community vouch?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              <strong>Global Vouches:</strong> Flow across all personal networks (ego contexts). No specific prompt or community required. Used for general interpersonal trust. Created from user profiles or the My Network page.
+            </p>
+            <p>
+              <strong>Community Vouches:</strong> Isolated to specific communities with context-specific prompts (e.g., "Would you trust this person to repay a $500 loan?"). Include a promptHash for verification. Only affect STS within that community.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="local-health" data-testid="faq-local-health">
+          <AccordionTrigger className="text-left">
+            How is Local Health (personal network score) calculated?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              Local Health (0-100) measures the quality of your ego network using max-flow/min-cut on your personal subgraph:
+            </p>
+            <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
+              LocalHealth = 50 × (avgResidualFlow / maxPossibleFlow) + 50 × (medianMinCut / seedCount)
+            </div>
+            <p className="text-sm mb-2">
+              <strong>Distance-Based Capacity:</strong> Node capacity decays with distance from your seed set (you + co-seeds). Distance 0 = 1.0, Distance 1 = 0.5, Distance 2+ = 0.25. This prevents spam endorsements from diluting your network.
+            </p>
+            <p className="text-sm">
+              <strong>Note:</strong> The Local Health scoring engine is planned for Sprint 2. Currently displays placeholder values.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
       </Accordion>
 
       <div className="mt-12 p-6 rounded-lg border bg-muted/30">
