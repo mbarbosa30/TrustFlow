@@ -57,17 +57,11 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
   
   const [selectedCommunityId, setSelectedCommunityId] = useState<string>("0");
   
-  // Update selectedCommunityId when validCommunities changes
+  // Always reset to Global Network when wallet address or community list changes
+  // This prevents stale state when switching wallets or when community data changes
   useEffect(() => {
-    if (validCommunities.length === 1) {
-      // Auto-select the only community
-      setSelectedCommunityId(validCommunities[0].id.toString());
-    } else if (validCommunities.length === 0) {
-      // Default to global network
-      setSelectedCommunityId("0");
-    }
-    // For 2+ communities, keep current selection (user can change via selector)
-  }, [validCommunities.length, validCommunities[0]?.id]);
+    setSelectedCommunityId("0");
+  }, [address, validCommunities.map(c => c?.id).join(',')]);
   
   // Auto-submit after wallet connection if user clicked while disconnected
   useEffect(() => {
@@ -77,8 +71,8 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, pendingSubmit, searchQuery, address]);
   
-  // Show selector only when user has 2+ communities
-  const showCommunitySelector = validCommunities.length >= 2;
+  // Show selector when user has 1+ communities (so they can choose between community and Global Network)
+  const showCommunitySelector = validCommunities.length >= 1;
   
   // ENS resolution uses Ethereum mainnet (standard practice)
   const publicClient = createPublicClient({
