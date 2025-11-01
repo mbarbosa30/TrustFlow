@@ -15,6 +15,7 @@ import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import { QRScanner } from "./QRScanner";
 import { useQuery } from "@tanstack/react-query";
+import { appKit } from "@/lib/reown.config";
 
 interface EndorseFormProps {
   onEndorse?: (endorsee: string, note?: string) => void;
@@ -39,6 +40,7 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResolvingENS, setIsResolvingENS] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
   const { toast } = useToast();
   const { address, isConnected } = useAccount();
   const { signTypedDataAsync } = useSignTypedData();
@@ -66,6 +68,14 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
     }
     // For 2+ communities, keep current selection (user can change via selector)
   }, [validCommunities.length, validCommunities[0]?.id]);
+  
+  // Auto-submit after wallet connection if user clicked while disconnected
+  useEffect(() => {
+    if (isConnected && pendingSubmit && searchQuery && address) {
+      handleSubmit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, pendingSubmit, searchQuery, address]);
   
   // Show selector only when user has 2+ communities
   const showCommunitySelector = validCommunities.length >= 2;
@@ -103,8 +113,19 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
   };
 
   const handleSubmit = async () => {
-    if (!searchQuery || !address || !isConnected) return;
+    if (!isConnected) {
+      // Only set pendingSubmit if user has already entered an address
+      // This prevents auto-submit when user fills address after connecting
+      if (searchQuery) {
+        setPendingSubmit(true);
+      }
+      appKit.open();
+      return;
+    }
     
+    if (!searchQuery || !address) return;
+    
+    setPendingSubmit(false);
     setIsSubmitting(true);
     
     try {
@@ -276,7 +297,7 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
 
         <Button
           className="w-full h-12"
-          disabled={!searchQuery || !isConnected || isSubmitting || isResolvingENS}
+          disabled={isSubmitting || isResolvingENS || (isConnected && !searchQuery)}
           onClick={handleSubmit}
           data-testid="button-submit-endorsement"
         >
