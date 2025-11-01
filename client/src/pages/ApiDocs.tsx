@@ -43,6 +43,10 @@ export default function ApiDocs() {
   };
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  
+  // Use example values if no community is selected
+  const exampleCommunityId = community?.id || 1;
+  const exampleApiKey = community?.apiKey || 'mxf_live_xxxxxxxxxxxxxxxxxxxxxxxx';
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -55,114 +59,124 @@ export default function ApiDocs() {
         </p>
       </div>
 
-      {!address ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Please connect your wallet to view API documentation for your communities</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : ownedCommunities.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center text-muted-foreground">
-              <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>You don't own any communities yet</p>
-              <p className="text-sm mt-2">Create a community to get API access</p>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {ownedCommunities.length > 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Select Community</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {ownedCommunities.map(c => (
-                    <Button
-                      key={c.id}
-                      variant={community?.id === c.id ? "default" : "outline"}
-                      onClick={() => setSelectedCommunity(c.id)}
-                      data-testid={`button-select-community-${c.id}`}
-                    >
-                      {c.name}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {community && (
-            <>
-              <Card data-testid="card-api-key">
+      <div className="space-y-6">
+        {address && ownedCommunities.length > 0 && (
+          <>
+            {ownedCommunities.length > 1 && (
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Key className="w-5 h-5" />
-                    API Key
-                  </CardTitle>
-                  <CardDescription>
-                    Use this key to authenticate API requests for {community.name}
-                  </CardDescription>
+                  <CardTitle className="text-lg">Select Community</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 px-4 py-3 bg-accent/50 rounded-lg text-sm font-mono break-all" data-testid="text-api-key">
-                        {community.apiKey}
-                      </code>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {ownedCommunities.map(c => (
                       <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => copyToClipboard(community.apiKey, "API key")}
-                        data-testid="button-copy-api-key"
+                        key={c.id}
+                        variant={community?.id === c.id ? "default" : "outline"}
+                        onClick={() => setSelectedCommunity(c.id)}
+                        data-testid={`button-select-community-${c.id}`}
                       >
-                        <Copy className="w-4 h-4" />
+                        {c.name}
                       </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
-                    <div className="text-sm">
-                      <p className="font-medium text-destructive">Keep your API key secure</p>
-                      <p className="text-muted-foreground mt-1">
-                        Never commit keys to version control or expose them in client-side code. 
-                        Use environment variables and keep keys server-side only.
-                      </p>
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
+            )}
 
-              <Card data-testid="card-quick-start">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Code className="w-5 h-5" />
-                    Quick Start
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Base URL</h3>
-                    <code className="block px-4 py-2 bg-accent/50 rounded text-sm font-mono">
-                      {baseUrl}/api/v1
+            <Card data-testid="card-api-key">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="w-5 h-5" />
+                  Your API Key
+                </CardTitle>
+                <CardDescription>
+                  Use this key to authenticate API requests for {community!.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 px-4 py-3 bg-accent/50 rounded-lg text-sm font-mono break-all" data-testid="text-api-key">
+                      {community!.apiKey}
                     </code>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyToClipboard(community!.apiKey, "API key")}
+                      data-testid="button-copy-api-key"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Authentication</h3>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Include your API key in the <code className="px-1 py-0.5 bg-accent/50 rounded">X-Community-Key</code> header:
+                </div>
+                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-destructive">Keep your API key secure</p>
+                    <p className="text-muted-foreground mt-1">
+                      Never commit keys to version control or expose them in client-side code. 
+                      Use environment variables and keep keys server-side only.
                     </p>
-                    <pre className="px-4 py-3 bg-accent/50 rounded text-sm font-mono overflow-x-auto">
-{`curl -H "X-Community-Key: ${community.apiKey}" \\
-  ${baseUrl}/api/v1/communities/${community.id}/metrics.min`}
-                    </pre>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {!address && (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center">
+                <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <h3 className="font-semibold mb-2">Get Your API Key</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                  Create a community to receive an API key for integration. Connect your wallet to get started.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {address && ownedCommunities.length === 0 && (
+          <Card>
+            <CardContent className="py-8">
+              <div className="text-center">
+                <Key className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <h3 className="font-semibold mb-2">Create a Community</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                  API keys are provided to community creators. Create your first community to get started with the API.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Card data-testid="card-quick-start">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Code className="w-5 h-5" />
+              Quick Start
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">Base URL</h3>
+              <code className="block px-4 py-2 bg-accent/50 rounded text-sm font-mono">
+                {baseUrl}/api/v1
+              </code>
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Authentication</h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Include your API key in the <code className="px-1 py-0.5 bg-accent/50 rounded">X-Community-Key</code> header:
+              </p>
+              <pre className="px-4 py-3 bg-accent/50 rounded text-sm font-mono overflow-x-auto">
+{`curl -H "X-Community-Key: ${exampleApiKey}" \\
+  ${baseUrl}/api/v1/communities/${exampleCommunityId}/metrics.min`}
+              </pre>
+            </div>
                   <div>
                     <h3 className="font-semibold mb-2">Rate Limits</h3>
                     <p className="text-sm text-muted-foreground">
@@ -212,17 +226,17 @@ export default function ApiDocs() {
                           </TabsList>
                           <TabsContent value="curl">
                             <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`curl -H "X-Community-Key: ${community.apiKey}" \\
-  ${baseUrl}/api/v1/communities/${community.id}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb`}
+{`curl -H "X-Community-Key: ${exampleApiKey}" \\
+  ${baseUrl}/api/v1/communities/${exampleCommunityId}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb`}
                             </pre>
                           </TabsContent>
                           <TabsContent value="js">
                             <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
 {`const response = await fetch(
-  '${baseUrl}/api/v1/communities/${community.id}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  '${baseUrl}/api/v1/communities/${exampleCommunityId}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
   {
     headers: {
-      'X-Community-Key': '${community.apiKey}'
+      'X-Community-Key': '${exampleApiKey}'
     }
   }
 );
@@ -235,8 +249,8 @@ console.log(data.accepted); // true or false`}
 {`import requests
 
 response = requests.get(
-    '${baseUrl}/api/v1/communities/${community.id}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-    headers={'X-Community-Key': '${community.apiKey}'}
+    '${baseUrl}/api/v1/communities/${exampleCommunityId}/eligibility.min/0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+    headers={'X-Community-Key': '${exampleApiKey}'}
 )
 data = response.json()
 print(data['accepted'])  # True or False`}
@@ -439,10 +453,7 @@ const signature = await signTypedData({
                   </div>
                 </CardContent>
               </Card>
-            </>
-          )}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
