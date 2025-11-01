@@ -40,6 +40,7 @@ function Router() {
       <Route path="/" component={Landing} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
+      <Route path="/credit/:id" component={Credit} />
       <Route path="/credit" component={Credit} />
       <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
