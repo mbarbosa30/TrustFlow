@@ -141,10 +141,12 @@ router.get("/:loanId", async (req, res) => {
 });
 
 /**
- * Make a payment on an installment
+ * Submit a payment for approval
  * POST /api/loans/:loanId/pay
- * Body: { installmentId, amount, payerAddress }
+ * Body: { installmentId, amount, payerAddress, proofUrl?, notes? }
  * Amount is in the loan's currency (determined by community)
+ * 
+ * Creates a pending payment record that requires management approval before application to loan
  * 
  * SECURITY WARNING: payerAddress is currently UNAUTHENTICATED - client can claim any address
  * 
@@ -153,14 +155,11 @@ router.get("/:loanId", async (req, res) => {
  * 1. Verify EIP-712 signature from payerAddress proving control of private key
  * 2. Or use session middleware that validates authenticated wallet matches payerAddress
  * 3. Current implementation trusts client-provided address - vulnerable to spoofing
- * 
- * Temporary mitigation: Only the borrower or supporters with active assists can make payments
- * But an attacker can still masquerade as these authorized users
  */
 router.post("/:loanId/pay", async (req, res) => {
   try {
     const loanId = parseInt(req.params.loanId);
-    const { installmentId, amount, amountUsdc, payerAddress } = req.body;
+    const { installmentId, amount, amountUsdc, payerAddress, proofUrl, notes } = req.body;
 
     // Support both 'amount' (new) and 'amountUsdc' (legacy) for backwards compatibility
     const paymentAmount = amount || amountUsdc;
@@ -203,9 +202,24 @@ router.post("/:loanId/pay", async (req, res) => {
       }
     }
 
-    const result = await processInstallmentPayment(installmentId, paymentAmount);
+    // Create pending payment record
+    const pendingPayment = await storage.createPendingPayment({
+      communityId: loan.communityId,
+      loanId: loan.id,
+      installmentId: installment.id,
+      payerAddress: normalizedPayer,
+      amount: paymentAmount,
+      currency: loan.currency,
+      proofUrl: proofUrl || null,
+      notes: notes || null,
+      status: "PENDING",
+    });
 
-    res.json(result);
+    res.json({
+      success: true,
+      pendingPayment,
+      message: "Payment submitted successfully. Awaiting management approval."
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -376,6 +390,124 @@ router.post("/check-late/:communityId", async (req, res) => {
     const results = await checkLateInstallments(communityId);
 
     res.json({ results });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ===== PENDING PAYMENT APPROVAL ENDPOINTS =====
+
+/**
+ * Get pending payments for a community
+ * GET /api/lending/pending-payments/:communityId?status=PENDING
+ */
+router.get("/pending-payments/:communityId", async (req, res) => {
+  try {
+    const communityId = parseInt(req.params.communityId);
+    const status = req.query.status as string | undefined;
+
+    const payments = await storage.getPendingPaymentsByCommunity(communityId, status);
+
+    res.json({ payments });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Approve a pending payment
+ * POST /api/lending/pending-payments/:id/approve
+ * Body: { reviewerAddress, reviewNotes? }
+ * 
+ * SECURITY WARNING: reviewerAddress is currently UNAUTHENTICATED
+ * TODO: Add authentication to verify reviewer is community manager
+ */
+router.post("/pending-payments/:id/approve", async (req, res) => {
+  try {
+    const paymentId = parseInt(req.params.id);
+    const { reviewerAddress, reviewNotes } = req.body;
+
+    if (!reviewerAddress) {
+      return res.status(400).json({ error: "reviewerAddress is required" });
+    }
+
+    // Get pending payment
+    const pendingPayment = await storage.getPendingPayment(paymentId);
+    if (!pendingPayment) {
+      return res.status(404).json({ error: "Pending payment not found" });
+    }
+
+    if (pendingPayment.status !== "PENDING") {
+      return res.status(400).json({ error: "Payment has already been reviewed" });
+    }
+
+    // TODO: Verify reviewerAddress is community manager/admin
+
+    // Update pending payment status
+    await storage.updatePendingPaymentStatus(
+      paymentId,
+      "APPROVED",
+      reviewerAddress.toLowerCase(),
+      reviewNotes
+    );
+
+    // Process the actual payment
+    const result = await processInstallmentPayment(
+      pendingPayment.installmentId,
+      pendingPayment.amount
+    );
+
+    res.json({
+      success: true,
+      message: "Payment approved and processed",
+      result
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Reject a pending payment
+ * POST /api/lending/pending-payments/:id/reject
+ * Body: { reviewerAddress, reviewNotes? }
+ * 
+ * SECURITY WARNING: reviewerAddress is currently UNAUTHENTICATED
+ * TODO: Add authentication to verify reviewer is community manager
+ */
+router.post("/pending-payments/:id/reject", async (req, res) => {
+  try {
+    const paymentId = parseInt(req.params.id);
+    const { reviewerAddress, reviewNotes } = req.body;
+
+    if (!reviewerAddress) {
+      return res.status(400).json({ error: "reviewerAddress is required" });
+    }
+
+    // Get pending payment
+    const pendingPayment = await storage.getPendingPayment(paymentId);
+    if (!pendingPayment) {
+      return res.status(404).json({ error: "Pending payment not found" });
+    }
+
+    if (pendingPayment.status !== "PENDING") {
+      return res.status(400).json({ error: "Payment has already been reviewed" });
+    }
+
+    // TODO: Verify reviewerAddress is community manager/admin
+
+    // Update pending payment status
+    await storage.updatePendingPaymentStatus(
+      paymentId,
+      "REJECTED",
+      reviewerAddress.toLowerCase(),
+      reviewNotes
+    );
+
+    res.json({
+      success: true,
+      message: "Payment rejected"
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
