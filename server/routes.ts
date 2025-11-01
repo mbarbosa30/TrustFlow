@@ -1452,6 +1452,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/test-data/nuclear", async (req, res) => {
+    try {
+      // Delete in correct order to respect foreign key constraints
+      await db.execute(sql`DELETE FROM assists`);
+      await db.execute(sql`DELETE FROM loan_installments`);
+      await db.execute(sql`DELETE FROM loans`);
+      await db.execute(sql`DELETE FROM scores`);
+      await db.execute(sql`DELETE FROM epoch_health`);
+      await db.execute(sql`DELETE FROM public_endorsements`);
+      await db.execute(sql`DELETE FROM epochs`);
+      await db.execute(sql`DELETE FROM co_seeds`);
+      await db.execute(sql`DELETE FROM contexts`);
+      await db.execute(sql`DELETE FROM seeds`);
+      await db.execute(sql`DELETE FROM community_roles`);
+      await db.execute(sql`DELETE FROM communities WHERE id > 0`);
+      await db.execute(sql`DELETE FROM wallet_profiles`);
+      
+      return res.status(200).json({ 
+        success: true,
+        message: "Nuclear reset complete - all data cleared (Community 0 preserved)" 
+      });
+    } catch (error) {
+      console.error("Error performing nuclear reset:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.post("/api/bluesky/analyze", async (req, res) => {
     try {
       const { identifier } = req.body;

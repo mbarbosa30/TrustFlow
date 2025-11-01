@@ -361,6 +361,39 @@ export default function Seeds() {
     },
   });
 
+  const nuclearResetMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/test-data/nuclear', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to perform nuclear reset');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate EVERYTHING
+      queryClient.clear();
+      toast({
+        title: "Nuclear Reset Complete",
+        description: "All data cleared - fresh start (Community 0 preserved)",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Perform Nuclear Reset",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleAddSeed = async () => {
     if (!newAddress || !userAddress || !isConnected) return;
     
@@ -838,6 +871,73 @@ export default function Seeds() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <Database className="w-5 h-5" />
+              Nuclear Reset
+            </CardTitle>
+            <CardDescription>
+              Complete database wipe - removes all data including communities, seeds, endorsements, scores, and epochs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="p-4 bg-destructive/10 border border-destructive rounded-md space-y-2">
+                <p className="text-sm font-semibold text-destructive">⚠️ Danger Zone</p>
+                <p className="text-sm text-muted-foreground">
+                  This will delete EVERYTHING from the database including:
+                </p>
+                <ul className="text-sm text-muted-foreground list-disc list-inside ml-2 space-y-1">
+                  <li>All communities (except Community 0)</li>
+                  <li>All seeds and co-seeds</li>
+                  <li>All endorsements and vouches</li>
+                  <li>All scores and epochs</li>
+                  <li>All loans and assists</li>
+                  <li>All wallet profiles</li>
+                </ul>
+                <p className="text-sm font-semibold text-destructive mt-2">
+                  This gives you a completely clean start for testing. Only Community 0 will remain.
+                </p>
+              </div>
+
+              <Button
+                onClick={() => {
+                  const confirmation = confirm(
+                    "⚠️ NUCLEAR RESET ⚠️\n\n" +
+                    "This will DELETE EVERYTHING from the database:\n" +
+                    "- All communities (except Community 0)\n" +
+                    "- All seeds and co-seeds\n" +
+                    "- All endorsements\n" +
+                    "- All scores and epochs\n" +
+                    "- All loans and wallet profiles\n\n" +
+                    "This action CANNOT be undone!\n\n" +
+                    "Are you absolutely sure?"
+                  );
+                  
+                  if (confirmation) {
+                    const doubleConfirm = confirm(
+                      "Last chance!\n\nType-to-confirm would go here, but for now:\n\n" +
+                      "Click OK to PERMANENTLY DELETE ALL DATA"
+                    );
+                    
+                    if (doubleConfirm) {
+                      nuclearResetMutation.mutate();
+                    }
+                  }
+                }}
+                disabled={nuclearResetMutation.isPending}
+                variant="destructive"
+                className="w-full"
+                data-testid="button-nuclear-reset"
+              >
+                <Database className="w-4 h-4 mr-2" />
+                {nuclearResetMutation.isPending ? "Resetting..." : "Nuclear Reset - Delete Everything"}
+              </Button>
             </div>
           </CardContent>
         </Card>
