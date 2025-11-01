@@ -280,6 +280,99 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Personal Networks (Ego Contexts)</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              MaxFlow supports <strong>personal trust networks</strong> alongside traditional community-based scoring. Every user can run their own seeded trust network, choosing co-seeds and building a network through global vouches.
+            </p>
+
+            <div className="mt-4">
+              <h4 className="font-semibold text-base mb-2">Hybrid Architecture</h4>
+              <ul className="space-y-2">
+                <li>
+                  <strong>Personal Networks:</strong> You're automatically a seed for your own network. Add up to 3 trusted co-seeds to strengthen Sybil resistance. Global vouches (no community restriction) flow across all personal networks.
+                </li>
+                <li>
+                  <strong>Community Networks:</strong> Participate in lending, hiring, or governance communities with community-managed seeds and context-specific vouches (with prompts).
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <h4 className="font-semibold text-base mb-3">Local Health Score (0-100)</h4>
+              <p className="text-sm mb-3">
+                Your personal network quality is measured by <strong>Local Health</strong>, computed using max-flow/min-cut on your ego subgraph (nodes within distance K from your seed set).
+              </p>
+              
+              <div className="my-3 p-3 rounded-lg bg-muted/30 font-mono text-sm">
+                LocalHealth = 50 × (avgResidualFlow / maxPossibleFlow) + 50 × (medianMinCut / seedCount)
+              </div>
+
+              <div className="text-sm space-y-2">
+                <div>
+                  <strong>Components:</strong>
+                  <ul className="list-disc list-inside mt-1 space-y-1 ml-2">
+                    <li><strong>Avg Residual Flow:</strong> How efficiently you use your network's capacity (max flow / capacity)</li>
+                    <li><strong>Median Min-Cut:</strong> Redundancy of trust paths to accepted users in your network</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="font-semibold text-base mb-2">Distance-Based Node Capacity</h4>
+              <p className="mb-2">
+                Node capacities decay with distance from your seed set (you + co-seeds), preventing spam endorsements from diluting your network:
+              </p>
+              <ul className="font-mono text-xs space-y-1 ml-4">
+                <li>Distance 0 (self + co-seeds): capacity = 1.0</li>
+                <li>Distance 1 (direct vouches): capacity = 0.5</li>
+                <li>Distance 2+: capacity = 0.25</li>
+                <li>Formula: capacity = 1.0 / (2<sup>distance</sup>)</li>
+              </ul>
+            </div>
+
+            <div className="mt-4">
+              <h4 className="font-semibold text-base mb-2">Computation Steps</h4>
+              <ol className="list-decimal list-inside space-y-1.5 text-sm">
+                <li>Build ego subgraph: all nodes within distance ≤ K from your seed set</li>
+                <li>Assign distance-based capacities to each node</li>
+                <li>Run max-flow from SOURCE to each non-seed node</li>
+                <li>Calculate residual flow (max flow / node capacity) for each user</li>
+                <li>Compute min-cut for accepted users (those with flow ≥ threshold)</li>
+                <li>Aggregate: avg residual flow (50%) + median min-cut (50%)</li>
+              </ol>
+            </div>
+
+            <div className="mt-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <h4 className="font-semibold text-sm mb-2 text-amber-600 dark:text-amber-400">
+                🚧 Sprint 2: Planned Features
+              </h4>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <div>
+                  <strong className="text-foreground">Ego Scoring Engine:</strong> Full implementation of Local Health calculation with distance-based capacities and min-cut computation.
+                </div>
+                <div>
+                  <strong className="text-foreground">Anti-Gaming Rules:</strong> Per-epoch vouch cap (5), warm-up period (50% capacity first epoch), reciprocality brake (mutual vouches = 0.5x capacity).
+                </div>
+                <div>
+                  <strong className="text-foreground">Global Trust Score:</strong> Cross-network reputation combining Local Health (60%) + IncomingFlow from other ego networks (40%).
+                </div>
+                <div>
+                  <strong className="text-foreground">Score Explanations:</strong> "Why" strings showing min-cut, seed paths, and acceptance reasoning.
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 text-sm text-muted-foreground">
+              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to manage your co-seeds and see placeholder Local Health metrics.
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Security Model & Attack Resistance</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
