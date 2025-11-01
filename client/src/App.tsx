@@ -22,6 +22,7 @@ import Communities from "@/pages/Communities";
 import CreateCommunity from "@/pages/CreateCommunity";
 import CommunityDetail from "@/pages/CommunityDetail";
 import Credit from "@/pages/Credit";
+import CreditRouter from "@/pages/CreditRouter";
 import LendingDashboard from "@/pages/LendingDashboard";
 import LendingAdmin from "@/pages/LendingAdmin";
 import ApiDocs from "@/pages/ApiDocs";
@@ -41,7 +42,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
       <Route path="/credit/:id" component={Credit} />
-      <Route path="/credit" component={Credit} />
+      <Route path="/credit" component={CreditRouter} />
       <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
