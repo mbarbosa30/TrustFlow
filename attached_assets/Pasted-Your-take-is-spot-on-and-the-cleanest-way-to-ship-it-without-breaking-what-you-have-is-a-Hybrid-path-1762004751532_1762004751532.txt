@@ -1,0 +1,77 @@
+Your take is spot-on—and the cleanest way to ship it without breaking what you have is a Hybrid path: keep community-first as the default, and add ego contexts as an additive layer. Here’s a concrete, minimal-change plan you can implement quickly.
+
+What we’ll add (without breaking communities)
+	1.	Contexts as a first-class concept
+	•	contexts table with id, type ∈ {community, ego}, owner_addr (ego), seed_list (community), policy_json.
+	•	Every wallet automatically has an ego context Ctx(addr) (created lazily on first read).
+	2.	One vouch primitive, two scopes
+	•	Keep your existing community-scoped vouches (they keep their promptHash).
+	•	Add global vouches (prompt-less) used by ego contexts.
+	•	Storage:
+	•	vouch_edges (endorser, endorsee, scope ∈ {global, community}, context_id?, sig, ts, prompt_hash?).
+	3.	Dual outputs per context (size-stable)
+	•	accepted (bool) using max-flow/min-cut.
+	•	score 0–100:
+	•	Ego (Local Health): diversity/resilience of your curated net.
+	•	Community (Reputation): how well independent seeds reach you.
+	•	Keep your current community thresholds: mincut ≥ 2, ≥2 seed regions each ≥ 0.30 share.
+	•	Ego default threshold: mincut ≥ 1. (Configurable.)
+	4.	Small but important anti-gaming guards
+	•	Per-epoch vouch cap per endorser (e.g., 5).
+	•	“Warm-up” for new edges (50% capacity one epoch).
+	•	Reciprocity brake: same-epoch A↔B counts 0.5 for that epoch.
+	•	Community seed balance cap (no seed >45% flow share for acceptance).
+
+Minimal UI changes
+	•	New “My Network” page (ego):
+Health (0–100) • “Why” (min-cut, regions) • add/remove co-seeds (max 3) • list of your recent vouches (undo within 10 min).
+	•	Profile: global Vouch button (creates a global edge by default); in community pages, the Vouch button stays community-scoped.
+	•	Community page: unchanged UX; show a user’s Reputation and acceptance for that community.
+
+Scoring (keep it tiny & explainable)
+	•	Capacities (recommended defaults):
+	•	Node capacity by distance from seed set: c(0)=∞, c(1)=4, c(2)=2, c(≥3)=1.
+	•	Edge capacity = 1 (binary vouch).
+	•	Ego / Local Health (0–100)
+Health = 100 * (0.6 * F + 0.4 * C)
+where F = log(1+avg_flow_to_your_vouchees)/log(1+P95), C = min(1, median_mincut/3).
+	•	Community / Reputation (0–100)
+Rep = 100 * (0.7 * F_you + 0.3 * C_you) with per-context P95 anchors.
+(Exact math can reuse your current STS normalization.)
+
+Tiny API surface (pilot-ready)
+	•	Vouch (global)
+POST /vouch → { endorser, endorsee, sig, ts }  → writes scope=global.
+	•	Vouch (community)
+POST /communities/:cid/vouch → existing behavior (keeps promptHash).
+	•	Scores (context-aware)
+GET /ego/:addr/scores/:target → { accepted, health, why }
+GET /communities/:cid/scores/:addr → { accepted, reputation, mincut, seedCoverage, why }
+	•	Context health (for headers/badges)
+GET /communities/:cid/health and GET /ego/:addr/health
+
+Data migration (safe & simple)
+	•	Add contexts + vouch_edges(scope, context_id?); migrate existing community vouches into scope=community, context_id=<cid>.
+	•	No change to existing loan/credit tables—this layer is orthogonal.
+
+Compute & cadence
+	•	Communities: keep your existing batch recompute per epoch (e.g., daily).
+	•	Ego: on-demand cache with short TTL (e.g., recompute once per hour per ego context) + invalidate on new vouch.
+
+Governance knobs (exposed in policy_json)
+	•	mincut_threshold, distance_capacity_schedule, seed_coverage_rule (communities only), per_epoch_vouch_cap, warmup_epochs, reciprocity_brake.
+
+Rollout in 3 sprints
+
+Sprint 1 (week 1): schema, global vouch API, ego compute (mincut≥1), “My Network” page (read-only scores).
+Sprint 2 (week 2): co-seeds for ego, anti-gaming (caps, warm-up), score tooltips & “why” strings.
+Sprint 3 (week 3): unify profile Vouch button (global by default), community page badge “Also accepted by @ ego”, public health endpoints.
+
+Why Hybrid is the right call now
+	•	Zero breakage: communities continue as the reliable primitive for programs (microcredit etc.).
+	•	Low lift: ego contexts reuse the same flow/min-cut engine and a tiny new table.
+	•	Future-proof: once ego graphs exist, you can later:
+	•	add policies (“accepted if community X or ego of payer”),
+	•	add behavioral layers (EigenTrust on transfers) without touching this base.
+
+If you want, I’ll draft the SQL migration, the three new endpoints, and the “My Network” React card so your team can slot this in immediately.

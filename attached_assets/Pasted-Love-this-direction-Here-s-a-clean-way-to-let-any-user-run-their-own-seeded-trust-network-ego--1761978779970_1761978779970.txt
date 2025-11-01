@@ -1,0 +1,127 @@
+Love this direction. Here’s a clean way to let **any user run their own “seeded” trust network (ego-graphs)** while also supporting **community graphs**—using the *same* primitive: a single-level **vouch**.
+
+# Core idea
+
+* One action: **Vouch(A → B)** (no levels).
+* Many **contexts**: each context has its own **seed set S** and computes trust **from S to everyone** using the same algorithm.
+* Two default context types:
+
+  1. **Ego context (p2p):** every user **U** automatically has a context **Ctx(U)** with seed set **S = {U} ∪ U’s optional “trusted co-seeds”**.
+  2. **Community context:** created by an org; seeds are selected admins/mentors.
+
+Each context yields its own **acceptance bit** and **score** for every address—portable as a signed attestation.
+
+---
+
+# Algorithm (same everywhere, tiny + robust)
+
+* Graph: directed edges for vouches.
+* Build a **flow network** per context:
+
+  * Split each node (x) into (x^- \to x^+) with **node capacity** (c(d)) based on BFS **distance d** from the context’s seed set.
+  * Edge capacity for each vouch is **1** (keep it simple).
+  * Add (x^- \to \text{SINK}) with capacity **1** (first unit indicates acceptance).
+* Compute **max-flow / min-cut** from **SOURCE (seeds)** to all nodes.
+* **Accepted** if flow ≥ 1 **and** (optionally) **min-cut ≥ k** (k=1 for ego, k=2 for communities).
+* **Score (0–100)** per context:
+  ( \text{STS} = 100 \cdot (0.6,F + 0.4,C) ) where
+  (F = \log(1+f_i)/\log(1+F_{95})) (flow), (C = \min(1, \text{mincut}/3)).
+  (This stays stable across sizes and doesn’t expose the graph.)
+
+> Same math for **Ego** and **Community**; only seeds and the cut threshold differ.
+
+---
+
+# “Health” indicators (what makes a seed/network trustworthy)
+
+Published per context:
+
+* **Redundancy:** median min-cut of accepted users.
+* **Diversity:** share with ≥2 **vertex-disjoint** seed→user paths.
+* **Seed balance:** no seed >40% of inbound flow.
+* **Anti-reciprocity:** penalty for rapid A↔B vouch rings.
+  These become a single **Health 0–100** you can show on the context’s page.
+
+---
+
+# UX (one tap)
+
+* Anywhere in the app: **Vouch** button on a profile. That’s it.
+* **My Network (Ego tab):**
+
+  * **Your Health** (0–100), **Accepted by You:** N, **Why** a given person is accepted (“2 independent paths via X & Y”).
+  * **Co-seeds** (optional): add/remove a few people you trust as seed boosters.
+* **Communities tab:** browse/join contexts; see **mission, metrics, posts**, and your **acceptance/score** inside each.
+
+---
+
+# Attestations (portable trust)
+
+Every context can issue **verifiable attestations**:
+
+```
+TrustAttestation {
+  context_id, subject, accepted, score_0_100, mincut, epoch_ts, signature
+}
+```
+
+So a merchant, app, or DM gate can say “Require: accepted by *Mujeres2000* OR accepted by *@marco’s network* with score ≥ 60”.
+
+---
+
+# Abuse resistance (simple rules, no drama)
+
+* **Node capacity schedule** (Advogato-style) limits amplification with distance; recommended: c(0)=∞, c(1)=5, c(2)=3, c(≥3)=1.
+* **Per-seed share cap** in communities (≥2 seeds each ≥0.30 for tiered privileges).
+* **Anti-ring checks** feed the **Health** score (not individual scores), so bad patterns lower a seed/network’s credibility.
+
+---
+
+# How ego + community interact
+
+* **Independent:** Each context computes its own results; no “global merge” needed.
+* **Composable policy:** A relying app can set rules like:
+
+  * “Accepted if **Community A** accepts you **OR** ego-context of the **payer** accepts you.”
+  * “Higher limits if any **two** contexts accept you.”
+* **Bridges (optional later):** a community can whitelist **N** high-health ego seeds to count as additional seeds for that community (soft federation).
+
+---
+
+# API (tiny, same as before—just add `context_id`)
+
+**Auth:** community key for community contexts; user wallet signature for ego contexts.
+
+* **POST `/contexts/:context_id/vouch`** → submit vouch (EIP-712)
+* **GET  `/contexts/:context_id/scores/:addr`** → `{ accepted, score, mincut, why, updated_at }`
+* **GET  `/contexts/:context_id/health`** → `{ health_0_100, metrics... }`
+* **POST `/contexts (ego)`** — implicit: creating an ego context is just first use by a wallet; seeds = {owner}.
+* **POST `/contexts/:context_id/seeds` (ego only)** → add/remove co-seeds (max 3).
+
+> For early pilots you can keep only: **vouch**, **score**, and **health**.
+
+---
+
+# Privacy choices
+
+* Start **transparent** (edges visible to the subject & seed owners) to debug and teach.
+* Add **private-by-default** mode later (store commitments; reveal on mutual consent) without changing the math.
+
+---
+
+# Simple mental model for users
+
+* **Communities**: shared missions (e.g., Mujeres 2000) with stricter redundancy (**min-cut ≥2**).
+* **Personal networks**: your own lens on trust—fast, lightweight, portable.
+* Same vouch, same math, different seeds.
+
+---
+
+# Rollout in 4 steps
+
+1. Ship **Ego contexts** (auto-seeded by the user) + **Vouch** + **Score**.
+2. Add **Community contexts** (page + seeds list) using the same endpoints.
+3. Show **Health** for each context; add **co-seeds** for ego.
+4. Let relying apps set **policies** (e.g., “accepted by X or by me”).
+
+This gives you a unified trust fabric: anyone can build a **p2p seeded** graph instantly, communities can run **institutional** graphs, and every relying app can pick the context(s) it trusts—all powered by one simple vouch and a small, proven flow/min-cut core.
