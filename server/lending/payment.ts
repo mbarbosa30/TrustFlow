@@ -93,12 +93,15 @@ export async function processInstallmentPayment(
   const isPaid = newTotalPaid >= totalDueFromBorrower;
   const newStatus = isPaid ? "PAID" : installment.status;
 
+  // Set paidAt on first payment (partial or full), preserve existing paidAt for subsequent payments
+  const shouldSetPaidAt = !installment.paidAt && (principalPaid > 0 || interestPaid > 0);
+
   await storage.updateInstallment(installmentId, {
     principalPaid: newPrincipalPaid,
     interestPaid: newInterestPaid,
     totalPaid: newTotalPaid,
     status: newStatus,
-    ...(isPaid && { paidAt: new Date() }),
+    ...(shouldSetPaidAt && { paidAt: new Date() }),
   });
 
   return {

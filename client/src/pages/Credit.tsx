@@ -14,6 +14,7 @@ import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle } fro
 import { useState, useEffect } from "react";
 import type { WalletProfile } from "@shared/schema";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatCurrency } from "@/lib/utils";
 
 export default function Credit() {
   const { address } = useAccount();
@@ -25,6 +26,19 @@ export default function Credit() {
   const [borrowerName, setBorrowerName] = useState("");
 
   const communityId = 0; // Global community
+
+  // Get community data for currency info
+  const { data: community } = useQuery<{
+    id: number;
+    name: string;
+    currency: string;
+    lendingPolicyJson: any;
+  }>({
+    queryKey: [`/api/communities/${communityId}`],
+    enabled: true,
+  });
+
+  const currency = community?.currency || 'USD';
 
   // Get wallet profile
   const { data: walletProfile } = useQuery<WalletProfile>({
@@ -100,9 +114,8 @@ export default function Credit() {
         body: JSON.stringify({
           userAddress: address,
           borrowerName: borrowerName.trim(),
-          amountUsdc: selectedAmount,
+          amount: selectedAmount, // Amount in community currency
           tenorMonths: selectedTenor,
-          currency: 'ARS', // Default to ARS for Argentine market
         }),
       });
       if (!response.ok) {
@@ -130,7 +143,7 @@ export default function Credit() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           installmentId,
-          amountUsdc: parseFloat(paymentAmount),
+          amount: parseFloat(paymentAmount), // Amount in loan currency
           payerAddress: address,
         }),
       });
@@ -279,7 +292,7 @@ export default function Credit() {
                     <SelectContent>
                       {[160000, 240000, 400000, 600000, 800000].map((amount: number) => (
                         <SelectItem key={amount} value={amount.toString()}>
-                          ${(amount / 1000).toFixed(0)}k ARS
+                          {formatCurrency(amount, currency)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -323,7 +336,7 @@ export default function Credit() {
                 <CardHeader>
                   <CardTitle>{t('credit.activeLoan')}</CardTitle>
                   <CardDescription>
-                    ${(loanDetails.loan.principalUsdc / 1000).toFixed(0)}k ARS • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
+                    {formatCurrency(loanDetails.loan.principalUsdc, currency)} • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
                     {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
                   </CardDescription>
                 </CardHeader>
@@ -331,7 +344,7 @@ export default function Credit() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">{t('credit.paymentProgress')}</span>
                     <span className="text-sm font-medium">
-                      ${(loanDetails.totalPaid / 1000).toFixed(1)}k / ${(loanDetails.totalDue / 1000).toFixed(1)}k ARS
+                      {formatCurrency(loanDetails.totalPaid, currency)} / {formatCurrency(loanDetails.totalDue, currency)}
                     </span>
                   </div>
                   <Progress value={(loanDetails.totalPaid / loanDetails.totalDue) * 100} />
@@ -342,7 +355,7 @@ export default function Credit() {
                       <div>
                         <p className="font-medium">{t('credit.nextPayment')}</p>
                         <p className="text-sm text-muted-foreground">
-                          ${(loanDetails.nextInstallment.totalDue / 1000).toFixed(1)}k ARS {t('credit.dueOn')}{" "}
+                          {formatCurrency(loanDetails.nextInstallment.totalDue, currency)} {t('credit.dueOn')}{" "}
                           {new Date(loanDetails.nextInstallment.dueDate).toLocaleDateString('es-AR')}
                         </p>
                       </div>
@@ -404,7 +417,7 @@ export default function Credit() {
                       data-testid={`loan-${loan.id}`}
                     >
                       <div>
-                        <p className="font-medium">${(loan.principalUsdc / 1000).toFixed(0)}k {loan.currency || 'ARS'}</p>
+                        <p className="font-medium">{formatCurrency(loan.principalUsdc, loan.currency || currency)}</p>
                         <p className="text-sm text-muted-foreground">
                           {loan.tenorMonths} {t('common.months')} • {(loan.aprNominal * 100).toFixed(0)}% TNA
                         </p>

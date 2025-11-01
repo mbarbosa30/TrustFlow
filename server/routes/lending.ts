@@ -63,14 +63,18 @@ router.get("/community/:communityId", async (req, res) => {
 /**
  * Create a new loan
  * POST /api/loans/:communityId
- * Body: { userAddress, borrowerName, amountUsdc, tenorMonths, currency? }
+ * Body: { userAddress, borrowerName, amount, tenorMonths }
+ * Amount is in the community's currency (automatically determined)
  */
 router.post("/:communityId", async (req, res) => {
   try {
     const communityId = parseInt(req.params.communityId);
-    const { userAddress, borrowerName, amountUsdc, tenorMonths, currency } = req.body;
+    const { userAddress, borrowerName, amount, amountUsdc, tenorMonths } = req.body;
 
-    if (!userAddress || !amountUsdc || !tenorMonths) {
+    // Support both 'amount' (new) and 'amountUsdc' (legacy) for backwards compatibility
+    const loanAmount = amount || amountUsdc;
+
+    if (!userAddress || !loanAmount || !tenorMonths) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -86,21 +90,31 @@ router.post("/:communityId", async (req, res) => {
       await storage.createWalletProfile({ address: userAddress, name: borrowerName.trim() });
     }
 
-    // Get lending policy to get APR
+    // Get community to determine currency and lending policy
     const community = await storage.getCommunity(communityId);
-    const policy = community?.lendingPolicyJson as any;
+    if (!community) {
+      return res.status(404).json({ error: "Community not found" });
+    }
     
-    if (!policy) {
+    const policy = community.lendingPolicyJson as any;
+    
+    if (!policy || !policy.enabled) {
       return res.status(400).json({ error: "Lending not enabled for this community" });
     }
+    
+    // Use community's currency
+    const currency = community.currency || 'USD';
+    
+    // Convert APR from percentage to decimal (40 -> 0.40)
+    const aprNominal = policy.annualInterestRate ? policy.annualInterestRate / 100 : (policy.aprNominal || 0.40);
     
     const result = await createLoan({
       communityId,
       borrowerAddress: userAddress,
-      principalUsdc: amountUsdc,
-      currency: currency || 'ARS', // Default to ARS if not provided
+      principalUsdc: loanAmount, // Note: field name is legacy, stores amount in community currency
+      currency,
       tenorMonths,
-      aprNominal: policy.aprNominal,
+      aprNominal,
     });
 
     res.json(result);
@@ -129,7 +143,8 @@ router.get("/:loanId", async (req, res) => {
 /**
  * Make a payment on an installment
  * POST /api/loans/:loanId/pay
- * Body: { installmentId, amountUsdc, payerAddress }
+ * Body: { installmentId, amount, payerAddress }
+ * Amount is in the loan's currency (determined by community)
  * 
  * SECURITY WARNING: payerAddress is currently UNAUTHENTICATED - client can claim any address
  * 
@@ -145,9 +160,12 @@ router.get("/:loanId", async (req, res) => {
 router.post("/:loanId/pay", async (req, res) => {
   try {
     const loanId = parseInt(req.params.loanId);
-    const { installmentId, amountUsdc, payerAddress } = req.body;
+    const { installmentId, amount, amountUsdc, payerAddress } = req.body;
 
-    if (!installmentId || !amountUsdc || !payerAddress) {
+    // Support both 'amount' (new) and 'amountUsdc' (legacy) for backwards compatibility
+    const paymentAmount = amount || amountUsdc;
+
+    if (!installmentId || !paymentAmount || !payerAddress) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -185,7 +203,7 @@ router.post("/:loanId/pay", async (req, res) => {
       }
     }
 
-    const result = await processInstallmentPayment(installmentId, amountUsdc);
+    const result = await processInstallmentPayment(installmentId, paymentAmount);
 
     res.json(result);
   } catch (error: any) {
