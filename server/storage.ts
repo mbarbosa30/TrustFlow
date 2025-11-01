@@ -1102,7 +1102,7 @@ export class MemStorage implements IStorage {
           sql`${installment.totalPaid} > 0`
         )
       )
-      .orderBy(desc(installment.createdAt))
+      .orderBy(desc(installment.paidAt))
       .limit(limit);
 
     for (const inst of paidInstallments) {

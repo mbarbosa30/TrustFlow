@@ -102,13 +102,11 @@ export default function LendingDashboard() {
   // Approve payment mutation
   const approveMutation = useMutation({
     mutationFn: async (paymentId: number) => {
-      return apiRequest(`/api/lending/pending-payments/${paymentId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reviewerAddress: address,
-        }),
-      });
+      return apiRequest(
+        "POST",
+        `/api/lending/pending-payments/${paymentId}/approve`,
+        { reviewerAddress: address }
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
@@ -131,13 +129,11 @@ export default function LendingDashboard() {
   // Reject payment mutation
   const rejectMutation = useMutation({
     mutationFn: async (paymentId: number) => {
-      return apiRequest(`/api/lending/pending-payments/${paymentId}/reject`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          reviewerAddress: address,
-        }),
-      });
+      return apiRequest(
+        "POST",
+        `/api/lending/pending-payments/${paymentId}/reject`,
+        { reviewerAddress: address }
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
