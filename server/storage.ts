@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment } from "@shared/schema";
+import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment, type Context, type InsertContext, contexts, type CoSeed, type InsertCoSeed, coSeeds } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc, sql, isNull } from "drizzle-orm";
@@ -19,6 +19,19 @@ export interface IStorage {
   listCommunities(filters?: { visibility?: 'public' | 'invite' | 'archived'; creator?: string }): Promise<Community[]>;
   getCommunitiesByCreator(creator: string): Promise<Community[]>;
   updateCommunityVisibility(id: number, visibility: 'public' | 'invite' | 'archived'): Promise<void>;
+  
+  // Context operations (ego and community trust contexts)
+  createContext(context: InsertContext): Promise<Context>;
+  getContext(id: number): Promise<Context | undefined>;
+  getEgoContext(ownerAddress: string): Promise<Context | undefined>;
+  getOrCreateEgoContext(ownerAddress: string): Promise<Context>;
+  updateContext(id: number, updates: Partial<InsertContext>): Promise<void>;
+  
+  // Co-seed operations (additional seeds for ego contexts)
+  addCoSeed(coSeed: InsertCoSeed): Promise<CoSeed>;
+  removeCoSeed(contextId: number, address: string): Promise<void>;
+  getCoSeeds(contextId: number): Promise<CoSeed[]>;
+  getCoSeedCount(contextId: number): Promise<number>;
   
   createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement>;
   getEndorsements(filters?: {
@@ -544,6 +557,125 @@ export class MemStorage implements IStorage {
       .select()
       .from(communities)
       .where(eq(communities.creator, normalizedCreator));
+  }
+
+  async createContext(context: InsertContext): Promise<Context> {
+    const normalized = {
+      ...context,
+      ownerAddress: context.ownerAddress ? context.ownerAddress.toLowerCase() : null,
+    };
+    
+    const [dbContext] = await db
+      .insert(contexts)
+      .values(normalized)
+      .returning();
+    
+    return dbContext;
+  }
+
+  async getContext(id: number): Promise<Context | undefined> {
+    const results = await db
+      .select()
+      .from(contexts)
+      .where(eq(contexts.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getEgoContext(ownerAddress: string): Promise<Context | undefined> {
+    const normalizedAddress = ownerAddress.toLowerCase();
+    const results = await db
+      .select()
+      .from(contexts)
+      .where(
+        and(
+          eq(contexts.type, 'ego'),
+          eq(contexts.ownerAddress, normalizedAddress)
+        )
+      )
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async getOrCreateEgoContext(ownerAddress: string): Promise<Context> {
+    const normalizedAddress = ownerAddress.toLowerCase();
+    
+    // Try to get existing ego context
+    const existing = await this.getEgoContext(normalizedAddress);
+    if (existing) {
+      return existing;
+    }
+    
+    // Create new ego context with default policy
+    const defaultPolicy = {
+      minCutThreshold: 1,
+      distanceCapacitySchedule: {
+        0: Infinity,
+        1: 4,
+        2: 2,
+        3: 1,
+      },
+      perEpochVouchCap: 5,
+      warmupEpochs: 1,
+      reciprocityBrake: true,
+    };
+    
+    return await this.createContext({
+      type: 'ego',
+      ownerAddress: normalizedAddress,
+      policyJson: defaultPolicy as any,
+    });
+  }
+
+  async updateContext(id: number, updates: Partial<InsertContext>): Promise<void> {
+    await db
+      .update(contexts)
+      .set(updates)
+      .where(eq(contexts.id, id));
+  }
+
+  async addCoSeed(coSeed: InsertCoSeed): Promise<CoSeed> {
+    const normalized = {
+      ...coSeed,
+      address: coSeed.address.toLowerCase(),
+    };
+    
+    const [dbCoSeed] = await db
+      .insert(coSeeds)
+      .values(normalized)
+      .returning();
+    
+    return dbCoSeed;
+  }
+
+  async removeCoSeed(contextId: number, address: string): Promise<void> {
+    const normalizedAddress = address.toLowerCase();
+    await db
+      .delete(coSeeds)
+      .where(
+        and(
+          eq(coSeeds.contextId, contextId),
+          eq(coSeeds.address, normalizedAddress)
+        )
+      );
+  }
+
+  async getCoSeeds(contextId: number): Promise<CoSeed[]> {
+    return await db
+      .select()
+      .from(coSeeds)
+      .where(eq(coSeeds.contextId, contextId));
+  }
+
+  async getCoSeedCount(contextId: number): Promise<number> {
+    const results = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(coSeeds)
+      .where(eq(coSeeds.contextId, contextId));
+    
+    return results[0]?.count || 0;
   }
 
   async createAuth3009(authData: InsertAuth3009): Promise<Auth3009> {

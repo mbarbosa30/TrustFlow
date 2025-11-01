@@ -2283,6 +2283,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // EGO CONTEXT ENDPOINTS
+  // Get or create ego context for a wallet address
+  app.get("/api/ego/:address/context", async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      const egoContext = await storage.getOrCreateEgoContext(address);
+      
+      // Get co-seeds for this ego context
+      const coSeeds = await storage.getCoSeeds(egoContext.id);
+      
+      res.json({
+        context: egoContext,
+        coSeeds,
+        seedAddresses: [address, ...coSeeds.map(cs => cs.address)],
+      });
+    } catch (error) {
+      console.error("Error getting ego context:", error);
+      res.status(500).json({ error: "Failed to get ego context" });
+    }
+  });
+
+  // Add co-seed to ego context (max 3)
+  app.post("/api/ego/:address/co-seeds", async (req, res) => {
+    try {
+      const ownerAddress = req.params.address.toLowerCase();
+      const { coSeedAddress } = req.body;
+      
+      if (!coSeedAddress) {
+        return res.status(400).json({ error: "coSeedAddress is required" });
+      }
+      
+      const egoContext = await storage.getEgoContext(ownerAddress);
+      if (!egoContext) {
+        return res.status(404).json({ error: "Ego context not found" });
+      }
+      
+      // Check co-seed limit (max 3)
+      const currentCount = await storage.getCoSeedCount(egoContext.id);
+      if (currentCount >= 3) {
+        return res.status(400).json({ error: "Maximum of 3 co-seeds allowed" });
+      }
+      
+      // Add co-seed
+      const coSeed = await storage.addCoSeed({
+        contextId: egoContext.id,
+        address: coSeedAddress.toLowerCase(),
+      });
+      
+      res.json({ success: true, coSeed });
+    } catch (error) {
+      console.error("Error adding co-seed:", error);
+      res.status(500).json({ error: "Failed to add co-seed" });
+    }
+  });
+
+  // Remove co-seed from ego context
+  app.delete("/api/ego/:address/co-seeds/:coSeedAddress", async (req, res) => {
+    try {
+      const ownerAddress = req.params.address.toLowerCase();
+      const coSeedAddress = req.params.coSeedAddress.toLowerCase();
+      
+      const egoContext = await storage.getEgoContext(ownerAddress);
+      if (!egoContext) {
+        return res.status(404).json({ error: "Ego context not found" });
+      }
+      
+      await storage.removeCoSeed(egoContext.id, coSeedAddress);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing co-seed:", error);
+      res.status(500).json({ error: "Failed to remove co-seed" });
+    }
+  });
+
+  // Create global vouch (no community, no promptHash)
+  app.post("/api/vouch", async (req, res) => {
+    try {
+      const { endorsement } = req.body;
+      
+      if (!endorsement) {
+        return res.status(400).json({ error: "endorsement object required" });
+      }
+      
+      // Validate signature and fields
+      const isValid = await verifyEndorsementSignature(endorsement);
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+      
+      // Validate fields
+      const fieldsValid = validateEndorsementFields(endorsement);
+      if (!fieldsValid) {
+        return res.status(400).json({ error: "Invalid endorsement fields" });
+      }
+      
+      // Validate nonce
+      const maxNonce = await storage.getMaxNonce(
+        endorsement.endorser,
+        endorsement.epoch,
+        0 // Global graph uses communityId=0
+      );
+      
+      const nonceValid = validateNonce(endorsement.nonce, maxNonce);
+      if (!nonceValid) {
+        return res.status(400).json({ 
+          error: "Invalid nonce", 
+          maxNonce, 
+          providedNonce: endorsement.nonce 
+        });
+      }
+      
+      // Compute leaf hash
+      const leafHash = computeLeafHash(endorsement);
+      
+      // Create global vouch (scope='global', no promptHash)
+      const dbEndorsement = await storage.createEndorsement({
+        communityId: 0,
+        scope: 'global', // Mark as global vouch
+        endorser: endorsement.endorser.toLowerCase(),
+        endorsee: endorsement.endorsee.toLowerCase(),
+        epoch: endorsement.epoch,
+        nonce: endorsement.nonce,
+        sig: endorsement.sig,
+        leafHash,
+        promptHash: null, // No prompt for global vouches
+        note: endorsement.note || null,
+      });
+      
+      res.status(201).json({ 
+        success: true, 
+        endorsement: dbEndorsement,
+        message: "Global vouch created successfully"
+      });
+    } catch (error) {
+      console.error("Error creating global vouch:", error);
+      res.status(500).json({ error: "Failed to create global vouch" });
+    }
+  });
+
   // ASSIST SYSTEM ENDPOINTS
   // TODO: Implement assist quote/confirm endpoints
   // - POST /api/assist/quote - Get FX rate and ARS credit amount

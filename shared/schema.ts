@@ -69,6 +69,44 @@ export const insertCommunitySchema = createInsertSchema(communities).omit({
 export type InsertCommunity = z.infer<typeof insertCommunitySchema>;
 export type Community = typeof communities.$inferSelect;
 
+// Contexts table - unified table for ego and community trust contexts
+// Ego contexts: personal trust networks (type='ego', owner=wallet address)
+// Community contexts: institutional trust graphs (type='community', references communities table)
+export const contexts = pgTable("contexts", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  type: text("type").notNull(), // 'ego' | 'community'
+  ownerAddress: text("owner_address"), // For ego contexts (wallet address)
+  communityId: bigint("community_id", { mode: "number" }), // For community contexts (references communities.id)
+  policyJson: jsonb("policy_json"), // Context-specific settings (min_cut_threshold, vouch_caps, etc.)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertContextSchema = createInsertSchema(contexts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertContext = z.infer<typeof insertContextSchema>;
+export type Context = typeof contexts.$inferSelect;
+
+// Co-seeds table - additional seeds for ego contexts (max 3)
+export const coSeeds = pgTable("co_seeds", {
+  contextId: bigint("context_id", { mode: "number" }).notNull(),
+  address: text("address").notNull(),
+  addedAt: timestamp("added_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: { primaryKey: [table.contextId, table.address] },
+}));
+
+export const insertCoSeedSchema = createInsertSchema(coSeeds).omit({
+  addedAt: true,
+});
+
+export type InsertCoSeed = z.infer<typeof insertCoSeedSchema>;
+export type CoSeed = typeof coSeeds.$inferSelect;
+
 // Community roles table - defines who has what role in each community
 export const communityRoles = pgTable("community_roles", {
   communityId: bigint("community_id", { mode: "number" }).notNull(),
@@ -159,13 +197,14 @@ export type CommunityMetric = typeof communityMetrics.$inferSelect;
 export const publicEndorsements = pgTable("public_endorsements", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   communityId: bigint("community_id", { mode: "number" }).notNull().default(0), // 0 = global graph
+  scope: text("scope").notNull().default("community"), // 'global' | 'community'
   endorser: text("endorser").notNull(),
   endorsee: text("endorsee").notNull(),
   epoch: bigint("epoch", { mode: "number" }).notNull(),
   nonce: bigint("nonce", { mode: "number" }).notNull(),
   sig: text("sig").notNull(),
   leafHash: text("leaf_hash").notNull(),
-  promptHash: text("prompt_hash"), // keccak256(prompt_text) for verification
+  promptHash: text("prompt_hash"), // keccak256(prompt_text) for verification (only for community scope)
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
