@@ -1,7 +1,7 @@
 import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { and, eq, desc, sql } from "drizzle-orm";
+import { and, eq, desc, sql, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -898,7 +898,7 @@ export class MemStorage implements IStorage {
       .where(
         and(
           eq(trustEvent.communityId, communityId),
-          eq(trustEvent.appliedInEpoch, null)
+          isNull(trustEvent.appliedInEpoch)
         )
       );
   }
