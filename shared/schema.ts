@@ -53,7 +53,7 @@ export const communities = pgTable("communities", {
   policyJson: jsonb("policy_json").notNull(), // JSONB for proper policy storage
   lendingPolicyJson: jsonb("lending_policy_json"), // Opt-in microcredit configuration
   themeJson: jsonb("theme_json"), // Custom colors: { primary, accent }
-  visibility: text("visibility").notNull().default("public"), // 'public' | 'invite'
+  visibility: text("visibility").notNull().default("public"), // 'public' | 'invite' | 'archived'
   creator: text("creator").notNull(),
   currency: text("currency").notNull().default("USD"), // Primary currency (USD, ARS, MXN, etc.)
   apiKey: text("api_key").notNull(), // API key for external integrations (e.g., "mxf_live_xxx")

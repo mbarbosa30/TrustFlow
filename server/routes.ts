@@ -1979,15 +1979,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new community
   app.post("/api/communities", async (req, res) => {
     try {
-      const { name, description, promptText, templateId, visibility, creator, location, logoUrl, coverUrl, themeJson } = req.body;
+      const { name, description, promptText, templateId, visibility, creator, location, logoUrl, coverUrl, themeJson, currency } = req.body;
 
       if (!name || !promptText || !creator) {
         return res.status(400).json({ error: "name, promptText, and creator are required" });
       }
 
-      // Import templates and crypto
+      // Import templates, crypto, and lending policy
       const { getTemplate, CUSTOM_TEMPLATE } = await import("@shared/community-types");
       const { createPromptHash } = await import("./crypto/keccak");
+      const { DEFAULT_LENDING_POLICY } = await import("./lending/policy");
 
       // Get template policy or use custom
       let policy;
@@ -2014,6 +2015,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create slug from name (lowercase, replace spaces with hyphens)
       const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
+      // Initialize lending policy with community's currency
+      const communityCurrency = currency || "USD";
+      const lendingPolicy = {
+        ...DEFAULT_LENDING_POLICY,
+        enabled: true, // Enable by default for pilot mode
+        currency: communityCurrency,
+      };
+
       // Create community (policyJson will be stored as JSONB)
       const community = await storage.createCommunity({
         slug,
@@ -2026,9 +2035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         promptHash,
         policyId: policy.policyId,
         policyJson: policyWithHash as any, // Will be stored as JSONB
+        lendingPolicyJson: lendingPolicy as any, // Initialize lending policy
         themeJson: themeJson || null,
         visibility: visibility || "public",
         creator: creator.toLowerCase(),
+        currency: communityCurrency,
       });
 
       // Automatically add creator as first seed
