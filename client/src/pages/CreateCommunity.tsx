@@ -35,6 +35,7 @@ export default function CreateCommunity() {
   const [logoUrl, setLogoUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#3b82f6");
+  const [currency, setCurrency] = useState("USD");
   const [policyPreviewOpen, setPolicyPreviewOpen] = useState(false);
 
   const { data: templatesData } = useQuery<{ templates: CommunityTemplate[] }>({
@@ -52,6 +53,7 @@ export default function CreateCommunity() {
       logoUrl?: string;
       coverUrl?: string;
       themeJson?: any;
+      currency?: string;
     }) => {
       const response = await apiRequest("POST", "/api/communities", data);
       return await response.json();
@@ -109,6 +111,7 @@ export default function CreateCommunity() {
       logoUrl: logoUrl.trim() || undefined,
       coverUrl: coverUrl.trim() || undefined,
       themeJson: primaryColor !== "#3b82f6" ? { primaryColor } : undefined,
+      currency: currency !== "USD" ? currency : undefined,
     });
   };
 
@@ -216,6 +219,27 @@ export default function CreateCommunity() {
                   onChange={(e) => setLocationText(e.target.value)}
                   data-testid="input-community-location"
                 />
+              </div>
+
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <select
+                  id="currency"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  data-testid="select-community-currency"
+                >
+                  <option value="USD">USD - US Dollar</option>
+                  <option value="ARS">ARS - Argentine Peso</option>
+                  <option value="MXN">MXN - Mexican Peso</option>
+                  <option value="BRL">BRL - Brazilian Real</option>
+                  <option value="COP">COP - Colombian Peso</option>
+                  <option value="EUR">EUR - Euro</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Used for microcredit lending amounts
+                </p>
               </div>
 
               <div>

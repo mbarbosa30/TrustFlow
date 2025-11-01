@@ -2066,11 +2066,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { visibility, creator } = req.query;
 
       const filters: {
-        visibility?: "public" | "invite";
+        visibility?: "public" | "invite" | "archived";
         creator?: string;
       } = {};
 
-      if (visibility && (visibility === "public" || visibility === "invite")) {
+      if (visibility && (visibility === "public" || visibility === "invite" || visibility === "archived")) {
         filters.visibility = visibility;
       }
       if (creator && typeof creator === "string") {
@@ -2249,6 +2249,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting community:", error);
       res.status(500).json({ error: "Failed to get community" });
+    }
+  });
+
+  // Update community visibility (archive/unarchive)
+  app.patch("/api/communities/:id/visibility", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { visibility } = req.body;
+
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid community ID" });
+      }
+
+      if (!visibility || !["public", "invite", "archived"].includes(visibility)) {
+        return res.status(400).json({ error: "Invalid visibility. Must be 'public', 'invite', or 'archived'" });
+      }
+
+      const community = await storage.getCommunity(id);
+      if (!community) {
+        return res.status(404).json({ error: "Community not found" });
+      }
+
+      await storage.updateCommunityVisibility(id, visibility);
+
+      res.json({ 
+        success: true, 
+        message: `Community visibility updated to ${visibility}` 
+      });
+    } catch (error) {
+      console.error("Error updating community visibility:", error);
+      res.status(500).json({ error: "Failed to update community visibility" });
     }
   });
 

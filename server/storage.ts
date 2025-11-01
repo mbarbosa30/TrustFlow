@@ -16,8 +16,9 @@ export interface IStorage {
   // Community operations
   createCommunity(community: InsertCommunity): Promise<Community>;
   getCommunity(id: number): Promise<Community | undefined>;
-  listCommunities(filters?: { visibility?: 'public' | 'invite'; creator?: string }): Promise<Community[]>;
+  listCommunities(filters?: { visibility?: 'public' | 'invite' | 'archived'; creator?: string }): Promise<Community[]>;
   getCommunitiesByCreator(creator: string): Promise<Community[]>;
+  updateCommunityVisibility(id: number, visibility: 'public' | 'invite' | 'archived'): Promise<void>;
   
   createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement>;
   getEndorsements(filters?: {
@@ -512,7 +513,7 @@ export class MemStorage implements IStorage {
     return results[0];
   }
 
-  async listCommunities(filters?: { visibility?: 'public' | 'invite'; creator?: string }): Promise<Community[]> {
+  async listCommunities(filters?: { visibility?: 'public' | 'invite' | 'archived'; creator?: string }): Promise<Community[]> {
     let query = db.select().from(communities);
     
     const conditions = [];
@@ -528,6 +529,13 @@ export class MemStorage implements IStorage {
     }
     
     return await query;
+  }
+
+  async updateCommunityVisibility(id: number, visibility: 'public' | 'invite' | 'archived'): Promise<void> {
+    await db
+      .update(communities)
+      .set({ visibility })
+      .where(eq(communities.id, id));
   }
 
   async getCommunitiesByCreator(creator: string): Promise<Community[]> {
