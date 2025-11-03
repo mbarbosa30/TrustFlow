@@ -1,4 +1,4 @@
-import { Home, CreditCard, Users } from "lucide-react";
+import { Home, CreditCard, Users, Coins } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Community } from "@shared/schema";
@@ -45,6 +45,17 @@ export function MobileBottomNav({ hasMicrocreditAccess = false }: MobileBottomNa
         >
           <Home className="w-6 h-6" />
           <span className="text-xs mt-1">Home</span>
+        </Link>
+
+        <Link
+          href="/kudos"
+          data-testid="nav-kudos"
+          className={`flex flex-col items-center justify-center flex-1 h-full ${
+            isActive('/kudos') ? 'text-primary' : 'text-muted-foreground'
+          }`}
+        >
+          <Coins className="w-6 h-6" />
+          <span className="text-xs mt-1">KUDOS</span>
         </Link>
 
         {hasMicrocreditAccess && (
