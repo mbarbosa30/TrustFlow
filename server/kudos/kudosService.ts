@@ -305,61 +305,11 @@ export class KudosService {
   }
 
   /**
-   * Check if an address can claim KUDOS
+   * Compute LocalHealth score for an address
+   * Extracted helper for both canClaim and claim
    */
-  async canClaim(address: string): Promise<{
-    canClaim: boolean;
-    reason?: string;
-    nextClaimDate?: Date;
-  }> {
+  private async computeLocalHealth(address: string): Promise<number> {
     const normalized = address.toLowerCase();
-    const balance = await this.getBalance(normalized);
-
-    if (!balance || !balance.lastClaimAt) {
-      return { canClaim: true };
-    }
-
-    const lastClaimDate = new Date(balance.lastClaimAt);
-    const now = new Date();
-    const daysSinceLastClaim =
-      (now.getTime() - lastClaimDate.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (daysSinceLastClaim < CLAIM_COOLDOWN_DAYS) {
-      const nextClaimDate = new Date(lastClaimDate);
-      nextClaimDate.setDate(nextClaimDate.getDate() + CLAIM_COOLDOWN_DAYS);
-      
-      return {
-        canClaim: false,
-        reason: `Must wait ${CLAIM_COOLDOWN_DAYS} days between claims`,
-        nextClaimDate,
-      };
-    }
-
-    return { canClaim: true };
-  }
-
-  /**
-   * Claim KUDOS based on LocalHealth score (computed server-side)
-   * Amount = min(score^2 / 100, availableToday)
-   */
-  async claim(params: {
-    address: string;
-  }): Promise<{
-    success: boolean;
-    claimed?: number;
-    localHealthScore?: number;
-    error?: string;
-  }> {
-    const { address } = params;
-    const normalized = address.toLowerCase();
-
-    // Check cooldown
-    const claimCheck = await this.canClaim(normalized);
-    if (!claimCheck.canClaim) {
-      return { success: false, error: claimCheck.reason };
-    }
-
-    // Compute LocalHealth score server-side
     const { storage } = await import("../storage");
     const { EgoScorer } = await import("../algorithm/egoScoring");
     const { publicEndorsements } = await import("@shared/schema");
@@ -411,7 +361,83 @@ export class KudosService {
         kudosBoosts
       );
 
-      const localHealthScore = result.localHealth;
+      return result.localHealth;
+    } catch (error) {
+      console.error("Error computing LocalHealth:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if an address can claim KUDOS
+   * Now includes claimable amount preview
+   */
+  async canClaim(address: string): Promise<{
+    canClaim: boolean;
+    reason?: string;
+    nextClaimDate?: Date;
+    claimableAmount?: number;
+    localHealthScore?: number;
+  }> {
+    const normalized = address.toLowerCase();
+    const balance = await this.getBalance(normalized);
+
+    // Check cooldown
+    if (balance && balance.lastClaimAt) {
+      const lastClaimDate = new Date(balance.lastClaimAt);
+      const now = new Date();
+      const daysSinceLastClaim =
+        (now.getTime() - lastClaimDate.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysSinceLastClaim < CLAIM_COOLDOWN_DAYS) {
+        const nextClaimDate = new Date(lastClaimDate);
+        nextClaimDate.setDate(nextClaimDate.getDate() + CLAIM_COOLDOWN_DAYS);
+        
+        return {
+          canClaim: false,
+          reason: `Must wait ${CLAIM_COOLDOWN_DAYS} days between claims`,
+          nextClaimDate,
+        };
+      }
+    }
+
+    // Compute LocalHealth score and claimable amount
+    const localHealthScore = await this.computeLocalHealth(normalized);
+    const baseClaimAmount = (localHealthScore * localHealthScore) / 100;
+    const availableToday = await this.getAvailableClaimAmount();
+    const claimableAmount = Math.min(baseClaimAmount, availableToday);
+
+    return { 
+      canClaim: true,
+      claimableAmount,
+      localHealthScore,
+    };
+  }
+
+  /**
+   * Claim KUDOS based on LocalHealth score (computed server-side)
+   * Amount = min(score^2 / 100, availableToday)
+   */
+  async claim(params: {
+    address: string;
+  }): Promise<{
+    success: boolean;
+    claimed?: number;
+    localHealthScore?: number;
+    error?: string;
+  }> {
+    const { address } = params;
+    const normalized = address.toLowerCase();
+
+    // Check cooldown
+    const claimCheck = await this.canClaim(normalized);
+    if (!claimCheck.canClaim) {
+      return { success: false, error: claimCheck.reason };
+    }
+
+    try {
+      // Use the extracted helper method
+      const localHealthScore = await this.computeLocalHealth(normalized);
 
       // Validate score
       if (localHealthScore < 0 || localHealthScore > 100) {
