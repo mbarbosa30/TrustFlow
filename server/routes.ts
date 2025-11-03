@@ -2789,6 +2789,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lending routes
   app.use("/api/loans", lendingRouter);
 
+  // Simulation API - Algorithm comparison framework
+  app.post("/api/simulation/run", async (req, res) => {
+    try {
+      const { TrustMetricSimulator } = await import("./simulation/simulator");
+      const simulator = new TrustMetricSimulator();
+
+      const { config, algorithms } = req.body;
+
+      if (!config || !algorithms || !Array.isArray(algorithms)) {
+        res.status(400).json({ error: "config and algorithms array required" });
+        return;
+      }
+
+      const result = await simulator.run(config, algorithms);
+      res.json(result);
+    } catch (error) {
+      console.error("Simulation error:", error);
+      res.status(500).json({ error: "Simulation failed" });
+    }
+  });
+
+  app.post("/api/simulation/benchmark", async (req, res) => {
+    try {
+      const { TrustMetricSimulator } = await import("./simulation/simulator");
+      const simulator = new TrustMetricSimulator();
+
+      const results = await simulator.benchmark();
+      res.json({ results });
+    } catch (error) {
+      console.error("Benchmark error:", error);
+      res.status(500).json({ error: "Benchmark failed" });
+    }
+  });
+
   // Minimal API routes (v1) for external integrations
   const { registerMinimalApiRoutes } = await import("./routes/minimalApi");
   registerMinimalApiRoutes(app);
