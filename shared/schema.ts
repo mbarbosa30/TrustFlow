@@ -547,3 +547,82 @@ export const insertPendingPaymentSchema = createInsertSchema(pendingPayment).omi
 
 export type InsertPendingPayment = z.infer<typeof insertPendingPaymentSchema>;
 export type PendingPayment = typeof pendingPayment.$inferSelect;
+
+// ===== KUDOS REPUTATION TOKEN SYSTEM =====
+
+// KUDOS Balances - track user KUDOS holdings and claim eligibility
+export const kudosBalances = pgTable("kudos_balances", {
+  address: text("address").primaryKey(),
+  balance: doublePrecision("balance").notNull().default(0),
+  lastClaimAt: timestamp("last_claim_at"),
+  totalClaimed: doublePrecision("total_claimed").notNull().default(0),
+  totalSent: doublePrecision("total_sent").notNull().default(0),
+  totalReceived: doublePrecision("total_received").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertKudosBalanceSchema = createInsertSchema(kudosBalances).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertKudosBalance = z.infer<typeof insertKudosBalanceSchema>;
+export type KudosBalance = typeof kudosBalances.$inferSelect;
+
+// KUDOS Transfers - all transfer history with timestamps for exponential decay
+export const kudosTransfers = pgTable("kudos_transfers", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  fromAddress: text("from_address").notNull(),
+  toAddress: text("to_address").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  feeBurned: doublePrecision("fee_burned").notNull().default(0),
+  feeToPool: doublePrecision("fee_to_pool").notNull().default(0),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertKudosTransferSchema = createInsertSchema(kudosTransfers).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertKudosTransfer = z.infer<typeof insertKudosTransferSchema>;
+export type KudosTransfer = typeof kudosTransfers.$inferSelect;
+
+// KUDOS Claims - claim history for weekly KUDOS minting
+export const kudosClaims = pgTable("kudos_claims", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  address: text("address").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  localHealthScore: doublePrecision("local_health_score").notNull(),
+  claimDate: timestamp("claim_date").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertKudosClaimSchema = createInsertSchema(kudosClaims).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertKudosClaim = z.infer<typeof insertKudosClaimSchema>;
+export type KudosClaim = typeof kudosClaims.$inferSelect;
+
+// KUDOS Daily Stats - track daily minting, burning, and pool amounts
+export const kudosDailyStats = pgTable("kudos_daily_stats", {
+  date: timestamp("date").primaryKey(),
+  totalMinted: doublePrecision("total_minted").notNull().default(0),
+  totalBurned: doublePrecision("total_burned").notNull().default(0),
+  poolAmount: doublePrecision("pool_amount").notNull().default(0),
+  dailyCapUsed: doublePrecision("daily_cap_used").notNull().default(0),
+  uniqueClaimers: integer("unique_claimers").notNull().default(0),
+  transferVolume: doublePrecision("transfer_volume").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertKudosDailyStatsSchema = createInsertSchema(kudosDailyStats).omit({
+  createdAt: true,
+});
+
+export type InsertKudosDailyStats = z.infer<typeof insertKudosDailyStatsSchema>;
+export type KudosDailyStats = typeof kudosDailyStats.$inferSelect;

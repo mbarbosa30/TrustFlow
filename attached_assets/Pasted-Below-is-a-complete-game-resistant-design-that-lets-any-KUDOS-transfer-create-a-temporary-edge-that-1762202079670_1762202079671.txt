@@ -1,0 +1,148 @@
+Below is a complete, game-resistant design that lets any KUDOS transfer create a temporary edge that influences the ego-flow score — even when no social vouch (endorsement) exists yet.
+The key is to make the edge weak, short-lived, and costly so that money can nudge trust but cannot buy it.
+
+1. Core Idea – KUDOS = Provisional Trust
+Transfer
+Effect
+KUDOS A → B
+Creates a temporary edge A → B with low base capacity and fast decay
+Social vouch A → B
+Upgrades the edge to permanent with full base capacity
+Money opens a door. Social commitment keeps it open.
+
+2. Edge Types (Two-Tier System)
+Type
+Created By
+Base Capacity
+Decay Halflife
+Max Boost
+Social Edge
+Vouch
+1.0 / 2^dist
+∞ (permanent)
+2×
+KUDOS Edge
+Transfer
+0.1 / 2^dist
+30 days
+1.5×
+dist = distance from seeds (BFS).
+
+3. Boost Formula (Same for Both Edge Types)
+weight = amount * exp(-(now - ts) / HALFLIFE)
+total_weight = Σ weight on this edge
+boost = min(MAX_BOOST, 1 + total_weight / TARGET)
+cap = BASE_CAP * boost
+Edge Type
+BASE_CAP
+HALFLIFE
+TARGET
+MAX_BOOST
+Social
+1.0 / 2^dist
+∞
+10 000
+2.0
+KUDOS
+0.1 / 2^dist
+30 days
+5 000
+1.5
+
+4. Why This Is Still Ungameable
+Attack
+Why It Fails
+Whale buys 100 edges
+Each KUDOS edge has 0.1× base → 10× less flow than social edges. Min-cut still caps total influence.
+Sybil cluster with KUDOS
+Distance decay + fast 30-day halflife → must keep sending every month. 1 % fee burns capital.
+Wash-trade loops
+Net flow ≈ 0 → no sustained boost. Fees eat 1 % per cycle.
+Fake high-score user
+KUDOS edges need seed proximity to matter. Distant transfers give near-zero flow.
+
+5. Visual Example
+Seed → Alice (dist=1, social vouch) → Bob (dist=2)
+Scenario A – No KUDOS
+	•	Alice → Bob: cap = 1.0 / 4 = 0.25
+	•	Flow to Bob limited.
+Scenario B – 5 000 KUDOS from Alice → Bob
+	•	Temporary KUDOS edge created.
+	•	base = 0.1 / 4 = 0.025
+	•	boost = 1 + 5000/5000 = 2.0 → capped at 1.5
+	•	cap = 0.025 × 1.5 = 0.0375 → 15 % of a social edge
+Scenario C – Bob vouches back
+	•	Edge upgraded to social
+	•	cap = 0.25 × 1.5 = 0.375 → full power
+
+6. Claim-to-Mint (Unchanged)
+function claim() external {
+    require(block.timestamp >= lastClaim[msg.sender] + 7 days);
+    uint256 score = oracle.getLocalHealth(msg.sender);  // includes KUDOS edges
+    uint256 mint = min(score, DAILY_CAP - mintedToday);
+    // mint...
+}
+
+7. 1 % Transfer Fee (Burn + Pool)
+uint256 fee = amount / 100;
+kudos.burn(msg.sender, fee / 2);           // 0.5 %
+kudos.transfer(poolContract, fee / 2);     // 0.5 % → next day cap
+
+8. Full Loop – KUDOS Drives Adoption & Retention
+User Action
+Effect
+Send KUDOS to stranger
+Creates weak, temporary edge → small score bump
+Recipient sees boost
+Encouraged to vouch back → edge becomes permanent
+Higher score
+Claim more KUDOS next week
+More KUDOS
+Send to more people → grow network
+Flywheel: Money → provisional trust → social vouch → real trust → more KUDOS
+
+9. Implementation (Solidity + Off-chain)
+// KudosEdge.sol
+struct Edge {
+    uint8 edgeType;     // 0 = none, 1 = social, 2 = kudos
+    uint256 weightedSum;
+    uint256 lastUpdate;
+}
+
+// On transfer
+function _afterTokenTransfer(address from, address to, uint256 amount) internal {
+    Edge storage e = edges[from][to];
+    uint256 weight = amount * 1e18;  // avoid float
+    e.weightedSum = e.weightedSum * decayFactor + weight;
+    e.lastUpdate = block.timestamp;
+    if (e.edgeType == 0) e.edgeType = 2;  // kudos edge
+}
+Decay precomputed off-chain or via oracle.
+
+10. TL;DR – The Final Answer
+Feature
+Rule
+KUDOS transfer
+Creates temporary edge if none exists
+Base capacity
+0.1× social edge
+Decay
+30-day halflife
+Max boost
+1.5×
+Social vouch
+Upgrades to permanent, full-power edge
+Claim
+mint(score) weekly, 1 000/day cap
+Fee
+1 % → 0.5 % burn, 0.5 % pool
+
+KUDOS now influences scoring — but only as a spark.
+Social trust is the fire.
+
+Ready?
+Say GO and I’ll ship:
+	•	Full Solidity suite (KUDOS + dual-edge + claim)
+	•	Off-chain boost simulator (Python)
+	•	1-year attack simulation (Sybil, whale, wash-trade)
+Your call.

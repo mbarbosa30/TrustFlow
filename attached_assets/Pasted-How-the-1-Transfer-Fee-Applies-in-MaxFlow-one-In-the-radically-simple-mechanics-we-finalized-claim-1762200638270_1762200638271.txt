@@ -1,0 +1,30 @@
+How the 1% Transfer Fee Applies in MaxFlow.one
+In the radically simple mechanics we finalized (claim() → mint(score) with a 1,000 daily cap and 7-day cooldown), the 1% transfer fee remains a key deflationary and recycling tool. It applies to every TRUST transfer (e.g., sending TRUST to boost an endorsement edge or for microcredit repayments), ensuring “skin in the game” while feeding back into the system. Here’s the precise breakdown:
+Fee Structure
+	•	Rate: 1% of the transfer amount.
+	◦	Example: You send 100 TRUST to another user → fee = 1 TRUST.
+	•	Split:
+	◦	0.5% Burned: Permanently removed from circulation (deflationary—reduces total supply over time, countering mint inflation).
+	◦	0.5% to the Claiming Pool: Added to a small “bonus pool” that supplements the daily mint cap (e.g., increases available tokens for claims that day/week).
+	•	When It Applies:
+	◦	On any P2P or contract transfer (e.g., boosting an edge, repaying a microloan).
+	◦	Exemptions: Claims themselves (no fee on minting/claiming—it’s your earned reward).
+	•	On-Chain Execution:
+	◦	During transfer: effective_receive = amount * 0.99.
+	◦	Burn: Send 0.5% to a null address or use a burn function.
+	◦	Pool: Send 0.5% to the claiming contract, which adds it to available_today (from the daily cap mechanic).
+Integration with Claims
+	•	Bonus to Daily Cap: The 0.5% pool contribution directly boosts DAILY_MINT_CAP for that day (or rolls to the next if cap is hit).
+	◦	Example: High transfer volume (e.g., 10,000 TRUST moved network-wide) → 50 TRUST fee to pool → effective daily cap = 1,000 + 50 = 1,050.
+	◦	This makes the system self-sustaining: Active networks (more transfers) unlock slightly more claims, rewarding engagement without uncapped inflation.
+	•	No Impact on Unclaimed: Fees recycle regardless—unminted claims stay unminted, but fees ensure a baseline pool for active users.
+	•	Power Law Synergy: High scorers (who claim more) often transfer more (e.g., for boosts), generating fees that benefit everyone—but squaring ensures they dominate claims anyway.
+Example Scenario
+	•	Day Start: Available = 1,000 (mint cap).
+	•	Transfers: 5,000 TRUST moved → 50 fee (25 burned, 25 to pool) → available now 1,025.
+	•	Claims:
+	◦	Alice (95) claims first → mints 95, available=930.
+	◦	Bob (80) claims → mints 80, available=850.
+	◦	… until cap hits 0.
+	•	Net Effect: Burn reduces supply by 25; pool adds 25 to claims—deflation nets out neutral, but rewards activity.
+This keeps TRUST scarce and valuable for microcredit (e.g., fees fund more collateral availability), while the split ensures long-term sustainability. If volume spikes, consider dynamic splits (e.g., more to burn during booms)—but 50/50 is a solid start. Thoughts on tuning the target cap?
