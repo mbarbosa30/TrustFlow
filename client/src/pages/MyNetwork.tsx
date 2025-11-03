@@ -149,7 +149,7 @@ export default function MyNetwork() {
 
   if (!address) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Alert data-testid="alert-connect-wallet">
           <Info className="h-4 w-4" />
           <AlertDescription data-testid="text-connect-wallet-message">
@@ -162,7 +162,7 @@ export default function MyNetwork() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="space-y-6">
           <Skeleton className="h-12 w-64" />
           <Skeleton className="h-48 w-full" />
@@ -176,14 +176,13 @@ export default function MyNetwork() {
   const maxCoSeeds = 3;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3" data-testid="heading-my-network">
-          <Network className="w-8 h-8" />
+        <h1 className="text-3xl font-bold mb-2" data-testid="heading-my-network">
           My Network
         </h1>
-        <p className="text-muted-foreground text-lg" data-testid="text-page-description">
+        <p className="text-muted-foreground" data-testid="text-page-description">
           Your personal trust network powered by max-flow algorithms
         </p>
       </div>

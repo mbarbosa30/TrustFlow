@@ -26,8 +26,8 @@ export default function Communities() {
   const userCommunities = (userCommunitiesData?.communities || []).filter(c => c && c.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">{t('communities.title')}</h1>
           <p className="text-muted-foreground">
@@ -46,8 +46,8 @@ export default function Communities() {
       {isConnected && userCommunities.length > 0 && (
         <>
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">{t('communities.myCommunities')}</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <h2 className="text-2xl font-bold mb-6">{t('communities.myCommunities')}</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {userCommunities.map((community) => (
                 <Card key={community.id} className="hover-elevate" data-testid={`card-my-community-${community.id}`}>
                   <CardHeader>
@@ -84,7 +84,7 @@ export default function Communities() {
         </>
       )}
 
-      <h2 className="text-2xl font-bold mb-4">{t('communities.allCommunities')}</h2>
+      <h2 className="text-2xl font-bold mb-6">{t('communities.allCommunities')}</h2>
 
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

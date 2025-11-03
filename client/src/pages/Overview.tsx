@@ -104,7 +104,7 @@ export default function Overview() {
   }, [vouchAddress]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Overview</h1>
         <p className="text-muted-foreground">
@@ -112,8 +112,8 @@ export default function Overview() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="space-y-6">
           {isLoadingScore ? (
             <Card>
               <CardContent className="py-12">

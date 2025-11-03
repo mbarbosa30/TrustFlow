@@ -160,7 +160,7 @@ export default function Kudos() {
 
   if (!address) {
     return (
-      <div className="container mx-auto p-6 flex items-center justify-center min-h-[60vh]">
+      <div className="max-w-7xl mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
         <Card className="max-w-md w-full">
           <CardHeader>
             <CardTitle>Connect Wallet</CardTitle>
@@ -174,14 +174,12 @@ export default function Kudos() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">KUDOS Economy</h1>
-          <p className="text-muted-foreground">
-            Off-chain reputation tokens earned through trust
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 py-12 space-y-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">KUDOS Economy</h1>
+        <p className="text-muted-foreground">
+          Off-chain reputation tokens earned through trust
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

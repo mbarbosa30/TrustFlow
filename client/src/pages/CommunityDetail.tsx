@@ -191,7 +191,7 @@ export default function CommunityDetail() {
 
   if (communityLoading) {
     return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card className="animate-pulse">
           <CardHeader>
             <div className="h-8 bg-accent rounded w-1/2 mb-2" />
@@ -212,7 +212,7 @@ export default function CommunityDetail() {
 
   if (!community) {
     return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="w-12 h-12 text-muted-foreground mb-4" />
@@ -282,7 +282,7 @@ export default function CommunityDetail() {
   const sponsorsActive = communityMetrics?.sponsorsActive || 0;
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-6">
         <Link href="/communities">
           <Button variant="ghost" size="sm" data-testid="button-back">

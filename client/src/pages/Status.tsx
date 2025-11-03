@@ -86,7 +86,7 @@ export default function Status() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex items-center justify-center py-12">
           <div className="text-muted-foreground">Loading system status...</div>
         </div>
@@ -96,7 +96,7 @@ export default function Status() {
 
   if (!healthData) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="flex items-center justify-center py-12">
           <div className="text-muted-foreground">No status data available</div>
         </div>
@@ -107,7 +107,7 @@ export default function Status() {
   const status = getHealthStatus(healthData.GHI);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">System Status</h1>
         <p className="text-muted-foreground">

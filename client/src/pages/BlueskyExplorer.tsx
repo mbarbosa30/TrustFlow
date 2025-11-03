@@ -193,16 +193,17 @@ export default function BlueskyExplorer() {
   }, [result]);
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold" data-testid="text-title">
-            Bluesky Trust Explorer
-          </h1>
-          <p className="text-lg text-muted-foreground" data-testid="text-description">
-            Analyze how a user's network connects using TrustFlow's max-flow scoring algorithm
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2" data-testid="text-title">
+          Bluesky Trust Explorer
+        </h1>
+        <p className="text-muted-foreground" data-testid="text-description">
+          Analyze how a user's network connects using TrustFlow's max-flow scoring algorithm
+        </p>
+      </div>
+
+      <div className="space-y-8">
 
         <Card>
           <CardHeader>

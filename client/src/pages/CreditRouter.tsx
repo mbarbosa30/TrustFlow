@@ -47,7 +47,7 @@ export default function CreditRouter() {
 
   if (!address) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function CreditRouter() {
 
   if (isLoading) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -82,7 +82,7 @@ export default function CreditRouter() {
 
   if (lendingCommunities.length === 0) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export default function CreditRouter() {
 
   if (lendingCommunities.length === 1) {
     return (
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-12">
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -122,7 +122,7 @@ export default function CreditRouter() {
   }
 
   return (
-    <div className="container max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

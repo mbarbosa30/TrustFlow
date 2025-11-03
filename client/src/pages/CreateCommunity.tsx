@@ -116,7 +116,7 @@ export default function CreateCommunity() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="text-page-title">{t('createCommunity.title')}</h1>
         <p className="text-muted-foreground">{t('createCommunity.description')}</p>

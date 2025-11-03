@@ -140,19 +140,6 @@ export class EgoScorer {
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
-    // Debug logging for LocalHealth calculation
-    console.log(`[LocalHealth Debug] ${ownerAddress}`);
-    console.log(`  - Ego subgraph nodes: ${egoSubgraph.length}`);
-    console.log(`  - Non-seed nodes analyzed: ${residualFlows.length}`);
-    console.log(`  - Seed count: ${seedAddresses.length}`);
-    console.log(`  - Residual flows:`, residualFlows.slice(0, 10));
-    console.log(`  - Min cuts:`, minCuts.slice(0, 10));
-    console.log(`  - Avg residual flow: ${avgResidualFlow}`);
-    console.log(`  - Median min cut: ${medianMinCut}`);
-    console.log(`  - Flow component (50 * ${avgResidualFlow} / ${maxPossibleFlow}): ${flowComponent}`);
-    console.log(`  - Cut component (50 * min(${medianMinCut} / ${expectedMaxMinCut}, 1)): ${cutComponent}`);
-    console.log(`  - Final LocalHealth: ${localHealth}`);
-
     return {
       ownerAddress,
       localHealth: Math.round(localHealth * 100) / 100,

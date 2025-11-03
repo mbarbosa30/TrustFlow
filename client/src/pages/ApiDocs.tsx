@@ -49,7 +49,7 @@ export default function ApiDocs() {
   const exampleApiKey = community?.apiKey || 'mxf_live_xxxxxxxxxxxxxxxxxxxxxxxx';
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="text-api-docs-title">
           API Documentation

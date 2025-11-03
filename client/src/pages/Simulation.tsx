@@ -183,8 +183,8 @@ export default function Simulation() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl space-y-6">
-      <div>
+    <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="heading-simulation">Algorithm Simulation</h1>
         <p className="text-muted-foreground" data-testid="text-description">
           Compare MaxFlow algorithms against Sybil attack scenarios. Test Advogato-style supersink vs. per-node scoring.
@@ -345,7 +345,7 @@ export default function Simulation() {
       </div>
 
       {runMutation.data && (
-        <>
+        <div className="space-y-6 mt-6">
           <Card data-testid="card-results">
             <CardHeader>
               <CardTitle data-testid="heading-results">Results</CardTitle>
@@ -518,7 +518,7 @@ export default function Simulation() {
             </Card>
           );
         })()}
-        </>
+        </div>
       )}
 
       {benchmarkMutation.data && (
