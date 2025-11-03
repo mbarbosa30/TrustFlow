@@ -1,6 +1,7 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useAccount } from "wagmi";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
@@ -32,13 +33,22 @@ import Kudos from "@/pages/Kudos";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
-const appNavItems = [
-  { path: "/overview", label: "nav.overview" },
-  { path: "/network", label: "My Network" },
-  { path: "/kudos", label: "KUDOS" },
-  { path: "/credit", label: "nav.credit" },
-  { path: "/communities", label: "nav.communities" },
-];
+// Dynamic app nav items - will be filtered based on user's community access
+const getAppNavItems = (hasMicrocreditAccess: boolean) => {
+  const items = [
+    { path: "/overview", label: "nav.overview" },
+    { path: "/network", label: "My Network" },
+    { path: "/kudos", label: "KUDOS" },
+    { path: "/communities", label: "nav.communities" },
+  ];
+  
+  // Only show Credit if user has access to microcredit communities
+  if (hasMicrocreditAccess) {
+    items.splice(3, 0, { path: "/credit", label: "nav.credit" });
+  }
+  
+  return items;
+};
 
 function Router() {
   return (
@@ -80,6 +90,21 @@ const landingNavItems = [
 function App() {
   const [location] = useLocation();
   const isLandingPage = location === "/";
+  
+  // Import necessary hooks for checking community access
+  const { address } = useAccount();
+  
+  // Check if user has access to any communities with microcredit enabled
+  const { data: communitiesResponse } = useQuery<{ communities: any[] }>({
+    queryKey: ['/api/communities'],
+    enabled: !!address,
+  });
+
+  const hasMicrocreditAccess = (communitiesResponse?.communities || []).some(
+    (c: any) => c.lendingPolicyJson?.enabled === true
+  );
+  
+  const appNavItems = getAppNavItems(hasMicrocreditAccess);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -95,7 +120,7 @@ function App() {
               <Router />
             </main>
             <Footer />
-            {!isLandingPage && <MobileBottomNav />}
+            {!isLandingPage && <MobileBottomNav hasMicrocreditAccess={hasMicrocreditAccess} />}
           </div>
           <Toaster />
         </TooltipProvider>

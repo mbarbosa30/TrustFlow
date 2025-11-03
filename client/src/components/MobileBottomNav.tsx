@@ -4,7 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import type { Community } from "@shared/schema";
 import { useAccount } from "wagmi";
 
-export function MobileBottomNav() {
+interface MobileBottomNavProps {
+  hasMicrocreditAccess?: boolean;
+}
+
+export function MobileBottomNav({ hasMicrocreditAccess = false }: MobileBottomNavProps) {
   const [location] = useLocation();
   const { address } = useAccount();
 
@@ -43,16 +47,18 @@ export function MobileBottomNav() {
           <span className="text-xs mt-1">Home</span>
         </Link>
 
-        <Link
-          href="/credit"
-          data-testid="nav-credit"
-          className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/credit') ? 'text-primary' : 'text-muted-foreground'
-          }`}
-        >
-          <CreditCard className="w-6 h-6" />
-          <span className="text-xs mt-1">Credit</span>
-        </Link>
+        {hasMicrocreditAccess && (
+          <Link
+            href="/credit"
+            data-testid="nav-credit"
+            className={`flex flex-col items-center justify-center flex-1 h-full ${
+              isActive('/credit') ? 'text-primary' : 'text-muted-foreground'
+            }`}
+          >
+            <CreditCard className="w-6 h-6" />
+            <span className="text-xs mt-1">Credit</span>
+          </Link>
+        )}
 
         <Link
           href={communityPath}
