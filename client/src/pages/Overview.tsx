@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
 import { QRCodeDialog } from "@/components/QRCodeDialog";
 import type { PublicEndorsement } from "@shared/schema";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 export default function Overview() {
   const { address, isConnected } = useWallet();

@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Users, Settings, Globe, Lock, Activity, 
-  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock, Copy, Check, Key, BookOpen
+  TrendingUp, Network, Shield, DollarSign, CheckCircle, HandHeart, Wallet, Clock, Copy, Check, Key, BookOpen, Share2
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -423,6 +423,83 @@ export default function CommunityDetail() {
             </CardContent>
           </Card>
         </div>
+
+        {/* User's Score in This Community */}
+        {address && (
+          (() => {
+            const userScore = communityScores.find((s: any) => 
+              s.address.toLowerCase() === address.toLowerCase()
+            );
+            
+            if (userScore) {
+              return (
+                <Card data-testid="card-user-community-score">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Your Score in {community.name}</CardTitle>
+                        <CardDescription>Your community-specific trust score (STS)</CardDescription>
+                      </div>
+                      <Badge variant={userScore.isAccepted ? "default" : "secondary"}>
+                        {userScore.tier || "Unranked"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-6 md:grid-cols-3">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">STS Score</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-bold" data-testid="text-user-sts">
+                            {Math.round(userScore.sts || 0)}
+                          </span>
+                          <span className="text-xl text-muted-foreground">/100</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Flow</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-semibold" data-testid="text-user-flow">
+                            {userScore.flow?.toFixed(2) || '0.00'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Min-Cut</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-semibold" data-testid="text-user-mincut">
+                            {userScore.minCut?.toFixed(1) || '0.0'}
+                          </span>
+                          <span className="text-sm text-muted-foreground">edges</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            } else {
+              return (
+                <Card data-testid="card-user-no-score">
+                  <CardHeader>
+                    <CardTitle>Your Score in {community.name}</CardTitle>
+                    <CardDescription>Get vouched to earn your community trust score</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      You don't have a trust score in this community yet. Receive vouches from community members to build your reputation.
+                    </p>
+                    <Link href={`/overview?vouch=${address}`}>
+                      <Button variant="outline" data-testid="button-share-vouch-link">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share Vouch Link
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            }
+          })()
+        )}
 
         <Tabs defaultValue="about" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
