@@ -354,7 +354,6 @@ export class KudosService {
     const normalized = address.toLowerCase();
     const { storage } = await import("../storage");
     const { EgoScorer } = await import("../algorithm/egoScoring");
-    const { publicEndorsements } = await import("@shared/schema");
     
     try {
       // Get or create ego context
@@ -367,21 +366,20 @@ export class KudosService {
         ...coSeeds.map(cs => cs.address.toLowerCase())
       ];
 
-      // Get global endorsements
-      const endorsements = await db
-        .select()
-        .from(publicEndorsements)
-        .where(eq(publicEndorsements.scope, 'global'))
-        .then(rows => 
-          rows.map(e => ({
-            endorser: e.endorser.toLowerCase() as any,
-            endorsee: e.endorsee.toLowerCase() as any,
-          }))
-        );
+      // Get global endorsements (communityId: 0)
+      const endorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 100000
+      });
+      
+      const formattedEndorsements = endorsements.map(e => ({
+        endorser: e.endorser.toLowerCase() as any,
+        endorsee: e.endorsee.toLowerCase() as any,
+      }));
 
       // Calculate KUDOS boosts for all edges in a single batch query
       const uniqueEdges = Array.from(
-        new Set(endorsements.map(e => `${e.endorser}->${e.endorsee}`))
+        new Set(formattedEndorsements.map(e => `${e.endorser}->${e.endorsee}`))
       ).map(edgeKey => {
         const [from, to] = edgeKey.split('->');
         return { fromAddress: from, toAddress: to };
@@ -402,7 +400,7 @@ export class KudosService {
       const result = scorer.computeLocalHealth(
         normalized as any,
         seedAddresses as any,
-        endorsements,
+        formattedEndorsements,
         kudosBoosts
       );
 
