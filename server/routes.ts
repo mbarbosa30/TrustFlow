@@ -2789,6 +2789,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lending routes
   app.use("/api/loans", lendingRouter);
 
+  // KUDOS Token Economy Routes
+  const { kudosService } = await import("./kudos/kudosService");
+
+  // Get KUDOS balance for an address
+  app.get("/api/kudos/balance/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const balance = await kudosService.getBalance(address);
+      
+      if (!balance) {
+        return res.json({
+          address: address.toLowerCase(),
+          balance: 0,
+          totalClaimed: 0,
+          totalSent: 0,
+          totalReceived: 0,
+          lastClaimAt: null,
+        });
+      }
+
+      res.json(balance);
+    } catch (error) {
+      console.error("Error fetching KUDOS balance:", error);
+      res.status(500).json({ error: "Failed to fetch balance" });
+    }
+  });
+
+  // Transfer KUDOS from one address to another
+  app.post("/api/kudos/transfer", async (req, res) => {
+    try {
+      const { fromAddress, toAddress, amount, note, signature } = req.body;
+
+      if (!fromAddress || !toAddress || !amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (!signature) {
+        return res.status(400).json({ error: "Signature required for transfer" });
+      }
+
+      // Verify signature
+      const message = `Transfer ${amount} KUDOS to ${toAddress.toLowerCase()}`;
+      const isValid = await verifyMessage({
+        address: fromAddress as Address,
+        message,
+        signature: signature as Hex,
+      });
+
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      const result = await kudosService.transfer({
+        fromAddress,
+        toAddress,
+        amount: parseFloat(amount),
+        note,
+      });
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        transfer: result.transfer,
+      });
+    } catch (error) {
+      console.error("Error transferring KUDOS:", error);
+      res.status(500).json({ error: "Failed to transfer KUDOS" });
+    }
+  });
+
+  // Claim KUDOS based on LocalHealth score (computed server-side)
+  app.post("/api/kudos/claim", async (req, res) => {
+    try {
+      const { address, signature } = req.body;
+
+      if (!address) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      if (!signature) {
+        return res.status(400).json({ error: "Signature required for claim" });
+      }
+
+      // Verify signature
+      const message = `Claim KUDOS`;
+      const isValid = await verifyMessage({
+        address: address as Address,
+        message,
+        signature: signature as Hex,
+      });
+
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid signature" });
+      }
+
+      const result = await kudosService.claim({ address });
+
+      if (!result.success) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      res.json({
+        success: true,
+        claimed: result.claimed,
+        localHealthScore: result.localHealthScore,
+      });
+    } catch (error) {
+      console.error("Error claiming KUDOS:", error);
+      res.status(500).json({ error: "Failed to claim KUDOS" });
+    }
+  });
+
+  // Check if address can claim
+  app.get("/api/kudos/can-claim/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const result = await kudosService.canClaim(address);
+      res.json(result);
+    } catch (error) {
+      console.error("Error checking claim eligibility:", error);
+      res.status(500).json({ error: "Failed to check claim eligibility" });
+    }
+  });
+
+  // Get transfer history for an address
+  app.get("/api/kudos/transfers/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const transfers = await kudosService.getTransferHistory({
+        address,
+        limit,
+        offset,
+      });
+
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching transfer history:", error);
+      res.status(500).json({ error: "Failed to fetch transfers" });
+    }
+  });
+
+  // Get global transfer feed
+  app.get("/api/kudos/feed", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const transfers = await kudosService.getGlobalTransferFeed({
+        limit,
+        offset,
+      });
+
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching transfer feed:", error);
+      res.status(500).json({ error: "Failed to fetch feed" });
+    }
+  });
+
+  // Get claim history for an address
+  app.get("/api/kudos/claims/:address", async (req, res) => {
+    try {
+      const { address } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const claims = await kudosService.getClaimHistory({
+        address,
+        limit,
+        offset,
+      });
+
+      res.json(claims);
+    } catch (error) {
+      console.error("Error fetching claim history:", error);
+      res.status(500).json({ error: "Failed to fetch claims" });
+    }
+  });
+
+  // Get daily stats
+  app.get("/api/kudos/stats/daily", async (req, res) => {
+    try {
+      const dateStr = req.query.date as string;
+      const date = dateStr ? new Date(dateStr) : new Date();
+      
+      const stats = await kudosService.getDailyStats(date);
+      const availableClaim = await kudosService.getAvailableClaimAmount();
+
+      res.json({
+        date,
+        stats,
+        availableClaim,
+      });
+    } catch (error) {
+      console.error("Error fetching daily stats:", error);
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
+
   // Simulation API - Algorithm comparison framework
   app.post("/api/simulation/run", async (req, res) => {
     try {

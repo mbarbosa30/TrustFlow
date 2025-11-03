@@ -1,6 +1,6 @@
 ## Overview
 
-MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It supports hybrid P2P ego contexts alongside traditional communities, enabling every user to run their own seeded trust network. The system offers dual-layer scoring: Personal Networks (Local Health) for user-seeded trust and Community Reputation (STS) for context-specific trust. All vouches are publicly visible and stored on-chain in a Merkle transparency log. MaxFlow also supports multi-tenant trust graphs through "Communities" with custom policies and an economic layer providing daily USDC distribution and a microcredit lending system based on trust.
+MaxFlow is a Sybil-resistant trust scoring system that converts public vouches into verifiable trust attestations using max-flow/min-cut graph algorithms. It supports hybrid P2P ego contexts alongside traditional communities, enabling every user to run their own seeded trust network. The system offers dual-layer scoring: Personal Networks (Local Health) for user-seeded trust and Community Reputation (STS) for context-specific trust. All vouches are publicly visible and stored on-chain in a Merkle transparency log. MaxFlow also supports multi-tenant trust graphs through "Communities" with custom policies, an economic layer providing daily USDC distribution and a microcredit lending system based on trust, and an off-chain KUDOS token economy for reputation-based rewards.
 
 ## User Preferences
 
@@ -15,6 +15,14 @@ The frontend uses React with TypeScript (Vite), Shadcn/ui (Radix UI, Tailwind CS
 The backend is built with Express.js and TypeScript (Node.js) providing RESTful APIs. Data is managed in PostgreSQL via Neon serverless with Drizzle ORM. Reown AppKit handles multi-network authentication (Ethereum, Celo, Polygon, Arbitrum, Optimism, Base) and supports off-chain EIP-712 signatures.
 
 ### Feature Specifications
+*   **KUDOS Token Economy (Off-Chain MVP)**: 
+    *   Off-chain reputation tokens earned through LocalHealth scores
+    *   Weekly claiming: amount = (LocalHealth² / 100), capped at 1000 KUDOS/day
+    *   1% transfer fee: 0.5% burned (deflationary), 0.5% pooled for future claims
+    *   7-day cooldown between claims
+    *   KUDOS transfers boost edge capacities (exponential decay, 180-day halflife)
+    *   Server-side LocalHealth computation prevents score manipulation
+    *   **Known MVP Limitations**: Signature replay protection not yet implemented (acceptable for off-chain testing, required for production)
 *   **Monorepo Structure**: Organized into `client/`, `server/`, and `shared/` for code reuse.
 *   **Privacy by Default**: Aggregated scores and opted-in reveals are public; the endorsement graph remains opaque.
 *   **Binary Vouch Model**: Simplified endorsement for transparency.

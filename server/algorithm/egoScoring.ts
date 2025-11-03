@@ -8,16 +8,26 @@ export interface EgoEndorsement {
   endorsee: Address;
 }
 
+export interface KudosBoost {
+  fromAddress: Address;
+  toAddress: Address;
+  weight: number; // Exponentially decayed KUDOS weight
+}
+
 export interface EgoScoringConfig {
   maxDistance: number;
   minAcceptanceFlow: number;
   minAcceptanceMinCut: number;
+  kudosBoostThreshold?: number; // KUDOS needed for 1x boost (default: 100)
+  kudosMaxBoost?: number; // Maximum boost multiplier (default: 2x)
 }
 
 const DEFAULT_EGO_CONFIG: EgoScoringConfig = {
   maxDistance: 3,
   minAcceptanceFlow: 0.5,
   minAcceptanceMinCut: 2,
+  kudosBoostThreshold: 100,
+  kudosMaxBoost: 2.0,
 };
 
 export class EgoScorer {
@@ -30,7 +40,8 @@ export class EgoScorer {
   computeLocalHealth(
     ownerAddress: Address,
     seedAddresses: Address[],
-    globalVouches: EgoEndorsement[]
+    globalVouches: EgoEndorsement[],
+    kudosBoosts: KudosBoost[] = []
   ): EgoScoreResult {
     if (seedAddresses.length === 0) {
       return {
@@ -71,7 +82,8 @@ export class EgoScorer {
         node,
         seedAddresses,
         globalVouches,
-        distances
+        distances,
+        kudosBoosts
       );
 
       const maxFlowSolver = new DinicMaxFlow(graph);
@@ -207,7 +219,8 @@ export class EgoScorer {
     targetNode: Address,
     seeds: Address[],
     endorsements: EgoEndorsement[],
-    distances: Map<Address, number>
+    distances: Map<Address, number>,
+    kudosBoosts: KudosBoost[] = []
   ): FlowGraph {
     const SOURCE = "SOURCE";
     const SINK = targetNode;
@@ -215,6 +228,13 @@ export class EgoScorer {
 
     for (const seed of seeds) {
       graph.addEdge(SOURCE, seed, Infinity);
+    }
+
+    // Build KUDOS boost map for quick lookup
+    const boostMap = new Map<string, number>();
+    for (const boost of kudosBoosts) {
+      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
+      boostMap.set(key, boost.weight);
     }
 
     for (const { endorser, endorsee } of endorsements) {
@@ -225,7 +245,21 @@ export class EgoScorer {
         endorserDist <= this.config.maxDistance &&
         endorseeDist <= this.config.maxDistance
       ) {
-        const capacity = this.calculateCapacity(endorseeDist);
+        let capacity = this.calculateCapacity(endorseeDist);
+        
+        // Apply KUDOS boost if exists
+        const boostKey = `${endorser.toLowerCase()}->${endorsee.toLowerCase()}`;
+        const kudosWeight = boostMap.get(boostKey) || 0;
+        
+        if (kudosWeight > 0) {
+          const threshold = this.config.kudosBoostThreshold || 100;
+          const maxBoost = this.config.kudosMaxBoost || 2.0;
+          
+          // Boost multiplier: 1 + min(maxBoost - 1, kudosWeight / threshold)
+          const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
+          capacity *= boostMultiplier;
+        }
+        
         graph.addEdge(endorser, endorsee, capacity);
       }
     }

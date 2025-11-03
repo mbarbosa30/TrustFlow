@@ -28,12 +28,14 @@ import LendingAdmin from "@/pages/LendingAdmin";
 import ApiDocs from "@/pages/ApiDocs";
 import MyNetwork from "@/pages/MyNetwork";
 import Simulation from "@/pages/Simulation";
+import Kudos from "@/pages/Kudos";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const appNavItems = [
   { path: "/overview", label: "nav.overview" },
   { path: "/network", label: "My Network" },
+  { path: "/kudos", label: "KUDOS" },
   { path: "/credit", label: "nav.credit" },
   { path: "/communities", label: "nav.communities" },
 ];
@@ -63,6 +65,7 @@ function Router() {
       <Route path="/admin/lending/:communityId" component={LendingAdmin} />
       <Route path="/api-docs" component={ApiDocs} />
       <Route path="/simulation" component={Simulation} />
+      <Route path="/kudos" component={Kudos} />
       <Route component={NotFound} />
     </Switch>
   );
