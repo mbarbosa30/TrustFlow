@@ -3,19 +3,21 @@ import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { QrCode, Download } from "lucide-react";
+import { QrCode, Download, Share2 } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
 import { QRCodeDialog } from "@/components/QRCodeDialog";
 import type { PublicEndorsement } from "@shared/schema";
 import { useLocation, Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Overview() {
   const { address, isConnected } = useWallet();
   const [showQRCode, setShowQRCode] = useState(false);
   const [location] = useLocation();
   const endorseFormRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   const urlParams = new URLSearchParams(window.location.search);
   const vouchAddress = urlParams.get('vouch');
@@ -60,6 +62,26 @@ export default function Overview() {
     date: typeof e.createdAt === 'string' ? e.createdAt : new Date(e.createdAt).toISOString(),
     commitment: e.leafHash,
   })) || [];
+
+  const handleShareLink = async () => {
+    if (!address) return;
+    
+    const vouchUrl = `${window.location.origin}/overview?vouch=${address}`;
+    
+    try {
+      await navigator.clipboard.writeText(vouchUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share this link so others can vouch for you",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy link",
+        description: vouchUrl,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleExport = () => {
     if (!scoreData) return;
@@ -135,8 +157,18 @@ export default function Overview() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={handleShareLink}
+                      data-testid="button-share-link"
+                      title="Share vouch link"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => setShowQRCode(true)}
                       data-testid="button-show-qr"
+                      title="Show QR code"
                     >
                       <QrCode className="w-4 h-4" />
                     </Button>
@@ -145,6 +177,7 @@ export default function Overview() {
                       size="icon"
                       onClick={handleExport}
                       data-testid="button-export"
+                      title="Export attestation"
                     >
                       <Download className="w-4 h-4" />
                     </Button>
