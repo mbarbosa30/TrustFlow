@@ -132,7 +132,11 @@ export class EgoScorer {
     const medianMinCut = this.calculateMedian(minCuts);
 
     const flowComponent = 50 * (avgResidualFlow / maxPossibleFlow);
-    const cutComponent = 50 * (medianMinCut / seedAddresses.length);
+    
+    // Cut component: normalize against expected max min-cut of 10 edges
+    // This measures network resilience regardless of seed count
+    const expectedMaxMinCut = 10;
+    const cutComponent = 50 * Math.min(medianMinCut / expectedMaxMinCut, 1);
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
@@ -146,7 +150,7 @@ export class EgoScorer {
     console.log(`  - Avg residual flow: ${avgResidualFlow}`);
     console.log(`  - Median min cut: ${medianMinCut}`);
     console.log(`  - Flow component (50 * ${avgResidualFlow} / ${maxPossibleFlow}): ${flowComponent}`);
-    console.log(`  - Cut component (50 * ${medianMinCut} / ${seedAddresses.length}): ${cutComponent}`);
+    console.log(`  - Cut component (50 * min(${medianMinCut} / ${expectedMaxMinCut}, 1)): ${cutComponent}`);
     console.log(`  - Final LocalHealth: ${localHealth}`);
 
     return {
