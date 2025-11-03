@@ -2885,26 +2885,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Claim KUDOS based on LocalHealth score (computed server-side)
   app.post("/api/kudos/claim", async (req, res) => {
     try {
-      const { address, signature } = req.body;
+      const { address } = req.body;
 
       if (!address) {
         return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      if (!signature) {
-        return res.status(400).json({ error: "Signature required for claim" });
-      }
-
-      // Verify signature
-      const message = `Claim KUDOS`;
-      const isValid = await verifyMessage({
-        address: address as Address,
-        message,
-        signature: signature as Hex,
-      });
-
-      if (!isValid) {
-        return res.status(401).json({ error: "Invalid signature" });
       }
 
       const result = await kudosService.claim({ address });

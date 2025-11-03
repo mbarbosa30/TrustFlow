@@ -65,13 +65,15 @@ export default function Kudos() {
       const message = `Transfer ${params.amount} KUDOS to ${params.toAddress.toLowerCase()}`;
       const signature = await signMessageAsync({ message });
 
-      return apiRequest("/api/kudos/transfer", "POST", {
+      const response = await apiRequest("POST", "/api/kudos/transfer", {
         fromAddress: address,
         toAddress: params.toAddress,
         amount: params.amount,
         note: params.note,
         signature,
       });
+      const data = await response.json();
+      return data;
     },
     onSuccess: () => {
       if (address) {
@@ -99,13 +101,11 @@ export default function Kudos() {
   // Claim mutation
   const claimMutation = useMutation({
     mutationFn: async () => {
-      const message = `Claim KUDOS`;
-      const signature = await signMessageAsync({ message });
-
-      return apiRequest("/api/kudos/claim", "POST", {
+      const response = await apiRequest("POST", "/api/kudos/claim", {
         address,
-        signature,
       });
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data: any) => {
       if (address) {
