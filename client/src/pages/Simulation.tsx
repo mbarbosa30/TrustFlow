@@ -74,10 +74,7 @@ export default function Simulation() {
         },
       ];
 
-      const response = await apiRequest("/api/simulation/run", {
-        method: "POST",
-        body: JSON.stringify({ config, algorithms }),
-      });
+      const response = await apiRequest("POST", "/api/simulation/run", { config, algorithms });
 
       return await response.json();
     },
@@ -85,10 +82,7 @@ export default function Simulation() {
 
   const benchmarkMutation = useMutation({
     mutationFn: async (): Promise<{ results: SimulationResult[] }> => {
-      const response = await apiRequest("/api/simulation/benchmark", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
+      const response = await apiRequest("POST", "/api/simulation/benchmark", {});
 
       return await response.json();
     },
