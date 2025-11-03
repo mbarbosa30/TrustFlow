@@ -63,7 +63,7 @@ export default function FAQs() {
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Trust Score (STS) from 0–100.</p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              STS = 100 × (0.55F + 0.25C + 0.10S + 0.10D)
+              STS = 100 × (0.55F + 0.25C + 0.05S + 0.10D + 0.05P)
             </div>
             <p>See "How it Works" for detailed formulas.</p>
           </AccordionContent>
@@ -143,7 +143,7 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Personal Network (Local Health):</strong> You run your own seeded trust network by selecting up to 3 co-seeds. Global vouches flow across all personal networks. Your Local Health score (0-100) measures the quality of your curated network using distance-based capacity decay.
+              <strong>Personal Network (Ego Score):</strong> You run your own seeded trust network by selecting up to 3 co-seeds. Global vouches flow across all personal networks. Your Ego Score (0-100) measures the quality of your curated network using distance-based capacity decay.
             </p>
             <p>
               <strong>Community Reputation (STS):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately.
@@ -160,7 +160,7 @@ export default function FAQs() {
               A "seed" is a starting point for trust computation. You're automatically a seed for your own network. "Co-seeds" are trusted accounts you add to strengthen your personal network—think of them as "trust anchors" who help validate others.
             </p>
             <p>
-              Adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Local Health score (0-100). You can manage co-seeds on your My Network page.
+              Adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Ego Score (0-100). You can manage co-seeds on your My Network page.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -179,22 +179,22 @@ export default function FAQs() {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="local-health" data-testid="faq-local-health">
+        <AccordionItem value="ego-score" data-testid="faq-ego-score">
           <AccordionTrigger className="text-left">
-            How is Local Health (personal network score) calculated?
+            How is Ego Score (personal network score) calculated?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              Local Health (0-100) measures the quality of your ego network using max-flow/min-cut on your personal subgraph:
+              Ego Score (0-100) measures the quality of your ego network using max-flow/min-cut on your personal subgraph:
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              LocalHealth = 50 × (avgResidualFlow / maxPossibleFlow) + 50 × (medianMinCut / seedCount)
+              EgoScore = 50 × avgResidualFlow + 50 × min(medianMinCut / 10, 1)
             </div>
             <p className="text-sm mb-2">
               <strong>Distance-Based Capacity:</strong> Node capacity decays with distance from your seed set (you + co-seeds). Distance 0 = 1.0, Distance 1 = 0.5, Distance 2+ = 0.25. This prevents spam endorsements from diluting your network.
             </p>
             <p className="text-sm">
-              <strong>Note:</strong> The Local Health scoring engine is planned for Sprint 2. Currently displays placeholder values.
+              <strong>Note:</strong> The Ego Score calculation is currently implemented. View your score on the My Network page.
             </p>
           </AccordionContent>
         </AccordionItem>

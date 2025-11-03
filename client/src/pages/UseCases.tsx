@@ -76,9 +76,9 @@ const useCases = [
   {
     icon: Network,
     title: "Decentralized P2P Lending",
-    description: "Use personal trust scores (Local Health, 0-100) for peer-to-peer micro-lending without centralized credit agencies. Distance-based trust ensures borrowers have genuine community connections.",
+    description: "Use personal trust scores (Ego Score, 0-100) for peer-to-peer micro-lending without centralized credit agencies. Distance-based trust ensures borrowers have genuine community connections.",
     examples: [
-      "Loan limits based on Local Health score (0-100)",
+      "Loan limits based on Ego Score (0-100)",
       "Trusted co-anchors can vouch to increase borrowing capacity",
       "Track repayment history in your personal network",
       "Lend to friends-of-friends with visible trust paths"

@@ -18,7 +18,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into verifiable trust scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth)</strong> for ego-context trust with user-controlled co-seeds, and <strong>Community Networks (STS)</strong> for traditional multi-tenant trust with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into verifiable trust scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (Ego Score)</strong> for ego-context trust with user-controlled co-seeds, and <strong>Community Networks (STS)</strong> for traditional multi-tenant trust with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
           </CardContent>
         </Card>
@@ -45,7 +45,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p className="text-sm mb-3">
-              <strong>Note:</strong> This section describes the traditional <strong>Community STS</strong> scoring system. For <strong>Personal Networks (LocalHealth)</strong>, see the dedicated section below which uses simpler capacity decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>.
+              <strong>Note:</strong> This section describes the traditional <strong>Community STS</strong> scoring system. For <strong>Personal Networks (Ego Score)</strong>, see the dedicated section below which uses simpler capacity decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>.
             </p>
             <ul>
               <li>Split each user <span className="font-mono">u</span> into <span className="font-mono">u<sup>−</sup> → u<sup>+</sup></span> with node capacity <span className="font-mono">c(d)</span> based on BFS distance <span className="font-mono">d</span> from any seed:
@@ -294,13 +294,13 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
-              <h4 className="font-semibold text-base mb-3">Local Health Score (0-100)</h4>
+              <h4 className="font-semibold text-base mb-3">Ego Score (0-100)</h4>
               <p className="text-sm mb-3">
-                Your personal network quality is measured by <strong>Local Health</strong>, computed using max-flow/min-cut on your ego subgraph (nodes within distance K from your seed set).
+                Your personal network quality is measured by <strong>Ego Score</strong>, computed using max-flow/min-cut on your ego subgraph (nodes within distance K from your seed set).
               </p>
               
               <div className="my-3 p-3 rounded-lg bg-muted/30 font-mono text-sm">
-                LocalHealth = 50 × avgResidualFlow + 50 × min(medianMinCut / 10, 1)
+                EgoScore = 50 × avgResidualFlow + 50 × min(medianMinCut / 10, 1)
               </div>
 
               <div className="text-sm space-y-2">
@@ -345,13 +345,13 @@ export default function HowItWorks() {
               </h4>
               <div className="text-sm text-muted-foreground space-y-2">
                 <div>
-                  <strong className="text-foreground">Ego Scoring Engine:</strong> Full implementation of Local Health calculation with distance-based capacities and min-cut computation.
+                  <strong className="text-foreground">Ego Scoring Engine:</strong> Full implementation of Ego Score calculation with distance-based capacities and min-cut computation.
                 </div>
                 <div>
                   <strong className="text-foreground">Anti-Gaming Rules:</strong> Per-epoch vouch cap (5), warm-up period (50% capacity first epoch), reciprocality brake (mutual vouches = 0.5x capacity).
                 </div>
                 <div>
-                  <strong className="text-foreground">Global Trust Score:</strong> Cross-network reputation combining Local Health (60%) + IncomingFlow from other ego networks (40%).
+                  <strong className="text-foreground">Global Trust Score:</strong> Cross-network reputation combining Ego Score (60%) + IncomingFlow from other ego networks (40%).
                 </div>
                 <div>
                   <strong className="text-foreground">Score Explanations:</strong> "Why" strings showing min-cut, seed paths, and acceptance reasoning.
@@ -360,7 +360,7 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-4 text-sm text-muted-foreground">
-              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to manage your co-seeds and see placeholder Local Health metrics.
+              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to manage your co-seeds and see placeholder Ego Score metrics.
             </div>
           </CardContent>
         </Card>

@@ -174,13 +174,13 @@ export default function Landing() {
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                   <UserCircle className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Personal Network (Local Health)</CardTitle>
+                <CardTitle>Personal Network (Ego Score)</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
                   Run your own seeded trust network. You're automatically a "seed" (starting point for trust computation). 
                   Add up to 3 trusted "co-seeds" (trusted people who help anchor your network) and build your personal 
-                  graph through global vouches. Your Local Health score (0-100) measures the quality of your curated network.
+                  graph through global vouches. Your Ego Score (0-100) measures the quality of your curated network.
                 </p>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-start gap-2">
@@ -282,7 +282,7 @@ export default function Landing() {
                 <h3 className="text-xl font-semibold mb-2">System Runs Flow Algorithms</h3>
                 <p className="text-muted-foreground">
                   Each epoch, we construct an Advogato-style graph and run max-flow/min-cut computation 
-                  (Dinic/preflow-push). Your score combines Flow (55%), Cut (25%), Stability (10%), and Depth (10%).
+                  (Dinic/preflow-push). Your score combines Flow (55%), Cut (25%), Stability (5%), Depth (10%), and PageRank (5%).
                 </p>
               </div>
             </div>

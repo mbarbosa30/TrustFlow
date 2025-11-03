@@ -209,7 +209,7 @@ export default function MyNetwork() {
                 </div>
               )}
               <p className="text-sm text-muted-foreground" data-testid="text-health-score-label">
-                Local Health (0-100)
+                Ego Score (0-100)
               </p>
             </div>
             <div className="text-right">
@@ -401,7 +401,7 @@ export default function MyNetwork() {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 Local Health Score</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 Ego Score</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-score">
               Your network quality is measured by average flow and median min-cut. Higher scores mean stronger,
               more Sybil-resistant connections.

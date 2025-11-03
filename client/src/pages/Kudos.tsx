@@ -115,7 +115,7 @@ export default function Kudos() {
       queryClient.invalidateQueries({ queryKey: ["/api/kudos/stats/daily"] });
       toast({
         title: "Claim successful",
-        description: `Claimed ${data.claimed.toFixed(2)} KUDOS (LocalHealth: ${data.localHealthScore?.toFixed(1) || 'N/A'})`,
+        description: `Claimed ${data.claimed.toFixed(2)} KUDOS (Ego Score: ${data.localHealthScore?.toFixed(1) || 'N/A'})`,
       });
     },
     onError: (error: any) => {
@@ -230,7 +230,7 @@ export default function Kudos() {
           <CardHeader>
             <CardTitle>Claim KUDOS</CardTitle>
             <CardDescription>
-              Claim tokens daily based on your LocalHealth score (score² / 100)
+              Claim tokens daily based on your Ego Score (score² / 100)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -238,8 +238,8 @@ export default function Kudos() {
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-md space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">LocalHealth Score</span>
-                    <span className="text-lg font-bold" data-testid="text-local-health">
+                    <span className="text-sm text-muted-foreground">Ego Score</span>
+                    <span className="text-lg font-bold" data-testid="text-ego-score">
                       {canClaim.localHealthScore?.toFixed(1) || "0.0"}
                     </span>
                   </div>
@@ -250,7 +250,7 @@ export default function Kudos() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-2 border-t">
-                    Formula: (LocalHealth² / 100) capped by daily availability
+                    Formula: (EgoScore² / 100) capped by daily availability
                   </p>
                 </div>
                 <Button
