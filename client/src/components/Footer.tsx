@@ -41,7 +41,7 @@ export function Footer() {
             <h3 className="font-semibold mb-3 text-sm">Network</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/my-network" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-my-network">
+                <Link href="/network" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-my-network">
                   My Network
                 </Link>
               </li>
