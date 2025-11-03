@@ -1,10 +1,9 @@
-import { ScoreCard } from "@/components/ScoreCard";
 import { EndorseForm } from "@/components/EndorseForm";
 import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { QrCode } from "lucide-react";
+import { QrCode, Download } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
@@ -22,24 +21,18 @@ export default function Overview() {
   const vouchAddress = urlParams.get('vouch');
 
   const { data: scoreData, isLoading: isLoadingScore } = useQuery<{
-    did: string;
-    epoch: number;
-    trust: { sts: number; flow: number; mincut: number };
-    percentile: number;
-    components?: {
-      flow: number;
-      minCut: number;
-      stability: number;
-      depth: number;
-      pageRank: number;
-    };
-    confidence: {
-      percent: number;
-      global: { GHI: number; sizeN: number; cutN: number; churnN: number };
-      local: { mincutN: number };
+    ownerAddress: string;
+    localHealth: number;
+    seedAddresses: string[];
+    metrics: {
+      totalNodes: number;
+      acceptedUsers: number;
+      avgResidualFlow: number;
+      medianMinCut: number;
+      maxPossibleFlow: number;
     };
   }>({
-    queryKey: ['/api/score', address || 'default'],
+    queryKey: ['/api/ego', address?.toLowerCase(), 'score'],
     enabled: isConnected && !!address,
   });
 
@@ -73,12 +66,10 @@ export default function Overview() {
     
     const attestation = {
       sub: `user:${address}`,
-      sts: scoreData.trust.sts,
-      flow: scoreData.trust.flow,
-      minCut: scoreData.trust.mincut,
-      epoch: scoreData.epoch,
-      policy: "advogato-v1",
-      confidence: scoreData.confidence.percent,
+      localHealth: scoreData.localHealth,
+      seedCount: scoreData.seedAddresses.length,
+      metrics: scoreData.metrics,
+      policy: "ego-network-v1",
       iss: "trustflow.app",
     };
     
@@ -123,50 +114,107 @@ export default function Overview() {
           ) : !isConnected ? (
             <Card>
               <CardHeader>
-                <CardTitle>Your Trust Score</CardTitle>
-                <CardDescription>Connect your wallet to view your trust score</CardDescription>
+                <CardTitle>Your Network Health</CardTitle>
+                <CardDescription>Connect your wallet to view your network health score</CardDescription>
               </CardHeader>
             </Card>
           ) : scoreData ? (
-            <ScoreCard
-              tier={
-                scoreData.trust.sts >= 75 ? "Trusted" :
-                scoreData.trust.sts >= 50 ? "Verified" : "Connected"
-              }
-              sts={scoreData.trust.sts}
-              flow={scoreData.trust.flow}
-              percentile={Math.round(scoreData.percentile)}
-              minCutSize={scoreData.trust.mincut}
-              epochTimestamp={new Date().toISOString()}
-              walletAddress={address || undefined}
-              onExportAttestation={handleExport}
-              confidence={{
-                percent: scoreData.confidence.percent,
-                ghi: scoreData.confidence.global.GHI,
-                localMincutN: scoreData.confidence.local.mincutN,
-              }}
-            />
+            <Card className="p-8 rounded-2xl" data-testid="card-score">
+              <CardContent className="p-0 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Your Network Health</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold" data-testid="text-local-health">
+                        {Math.round(scoreData.localHealth)}
+                      </span>
+                      <span className="text-2xl text-muted-foreground">/100</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowQRCode(true)}
+                      data-testid="button-show-qr"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleExport}
+                      data-testid="button-export"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Seeds</span>
+                    <span className="text-sm font-medium" data-testid="text-seed-count">
+                      {scoreData.seedAddresses.length} (you + {scoreData.seedAddresses.length - 1} co-seeds)
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Network Size</span>
+                    <span className="text-sm font-medium" data-testid="text-total-nodes">
+                      {scoreData.metrics.totalNodes} nodes
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Median Min-Cut</span>
+                    <span className="text-sm font-medium" data-testid="text-median-mincut">
+                      {scoreData.metrics.medianMinCut.toFixed(1)} edges
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Avg Residual Flow</span>
+                    <span className="text-sm font-medium" data-testid="text-avg-flow">
+                      {(scoreData.metrics.avgResidualFlow * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <Link href="/network">
+                    <Button variant="outline" className="w-full" data-testid="button-manage-network">
+                      Manage Your Network
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Your Trust Score</CardTitle>
-                <CardDescription>No trust score available yet</CardDescription>
+                <CardTitle>Your Network Health</CardTitle>
+                <CardDescription>Building your network</CardDescription>
               </CardHeader>
               <CardContent className="py-8 space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
-                  Your trust score will be calculated after you receive vouches from the network and an epoch computation runs.
+                  Your network health score will improve as you add co-seeds and grow your trusted network.
                 </p>
                 {address && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 mx-auto flex"
-                    onClick={() => setShowQRCode(true)}
-                    data-testid="button-show-qr-no-score"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    Show My QR Code
-                  </Button>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setShowQRCode(true)}
+                      data-testid="button-show-qr-no-score"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      Show My QR Code
+                    </Button>
+                    <Link href="/network">
+                      <Button size="sm" data-testid="button-setup-network">
+                        Setup Network
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </CardContent>
             </Card>
