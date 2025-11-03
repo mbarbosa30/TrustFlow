@@ -32,6 +32,8 @@ export default function Kudos() {
     canClaim: boolean;
     reason?: string;
     nextClaimDate?: string;
+    claimableAmount?: number;
+    localHealthScore?: number;
   }>({
     queryKey: address ? [`/api/kudos/can-claim/${address.toLowerCase()}`] : ["no-claim"],
     enabled: !!address,
@@ -236,11 +238,20 @@ export default function Kudos() {
           <CardContent className="space-y-4">
             {canClaim?.canClaim ? (
               <div className="space-y-4">
-                <div className="p-4 bg-muted rounded-md">
-                  <p className="text-sm text-muted-foreground">
-                    Ready to claim! Your claimable amount is based on your LocalHealth score.
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
+                <div className="p-4 bg-muted rounded-md space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">LocalHealth Score</span>
+                    <span className="text-lg font-bold" data-testid="text-local-health">
+                      {canClaim.localHealthScore?.toFixed(1) || "0.0"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Claimable Amount</span>
+                    <span className="text-2xl font-bold text-primary" data-testid="text-claimable">
+                      {canClaim.claimableAmount?.toFixed(2) || "0.00"} KUDOS
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2 border-t">
                     Formula: (LocalHealth² / 100) capped by daily availability
                   </p>
                 </div>
