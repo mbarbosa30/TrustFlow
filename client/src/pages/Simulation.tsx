@@ -106,6 +106,82 @@ export default function Simulation() {
     return <TrendingDown className="w-4 h-4 text-red-600" data-testid="icon-worse" />;
   };
 
+  const analyzeResults = (metrics: SimulationMetrics[], scenario: string) => {
+    if (metrics.length !== 2) return null;
+
+    const advogato = metrics[0];
+    const maxflow = metrics[1];
+
+    const securityWinner = advogato.falsePositiveRate < maxflow.falsePositiveRate ? "Advogato" : 
+                          advogato.falsePositiveRate > maxflow.falsePositiveRate ? "MaxFlow" : "Tie";
+    
+    const performanceWinner = advogato.runtimeMs < maxflow.runtimeMs ? "Advogato" : "MaxFlow";
+    
+    const usabilityWinner = advogato.falseNegativeRate < maxflow.falseNegativeRate ? "Advogato" :
+                           advogato.falseNegativeRate > maxflow.falseNegativeRate ? "MaxFlow" : "Tie";
+
+    const fprDiff = Math.abs(advogato.falsePositiveRate - maxflow.falsePositiveRate) * 100;
+    const fnrDiff = Math.abs(advogato.falseNegativeRate - maxflow.falseNegativeRate) * 100;
+    const speedup = maxflow.runtimeMs / advogato.runtimeMs;
+
+    let scenarioInsight = "";
+    if (scenario.includes("linear")) {
+      scenarioInsight = "Linear chain attacks test how well algorithms handle sequential Sybil infiltration through a single entry point.";
+    } else if (scenario.includes("clique")) {
+      scenarioInsight = "Clique attacks test resistance against dense Sybil networks with multiple interconnections.";
+    } else if (scenario.includes("whale")) {
+      scenarioInsight = "Whale attacks test how algorithms handle a compromised high-trust seed funding Sybil accounts.";
+    } else if (scenario.includes("honest")) {
+      scenarioInsight = "Honest networks validate that algorithms don't create false positives in legitimate communities.";
+    } else if (scenario.includes("sparse")) {
+      scenarioInsight = "Sparse networks test scalability and performance on large, loosely connected graphs.";
+    }
+
+    const overallWinner = 
+      securityWinner === "Tie" ? usabilityWinner :
+      securityWinner === usabilityWinner ? securityWinner :
+      securityWinner; // Security is most important
+
+    let explanation = "";
+    if (overallWinner === "Advogato") {
+      explanation = `Advogato performs better overall with ${fprDiff.toFixed(1)}% ${securityWinner === "Advogato" ? "lower" : "higher"} Sybil acceptance rate. `;
+      if (performanceWinner === "Advogato") {
+        explanation += `It's also ${speedup.toFixed(1)}x faster due to single max-flow computation. `;
+      } else {
+        explanation += `However, MaxFlow is ${speedup.toFixed(1)}x faster with per-node optimization. `;
+      }
+    } else if (overallWinner === "MaxFlow") {
+      explanation = `MaxFlow performs better with ${fprDiff.toFixed(1)}% ${securityWinner === "MaxFlow" ? "lower" : "higher"} Sybil acceptance and ${fnrDiff.toFixed(1)}% ${usabilityWinner === "MaxFlow" ? "lower" : "higher"} honest rejection. `;
+      if (performanceWinner === "MaxFlow") {
+        explanation += `It achieves this while being ${speedup.toFixed(1)}x faster. `;
+      } else {
+        explanation += `The trade-off is ${speedup.toFixed(1)}x slower runtime than Advogato. `;
+      }
+    } else {
+      explanation = `Both algorithms show similar security characteristics with minimal difference (${fprDiff.toFixed(1)}% FPR difference). `;
+      explanation += `Advogato has a ${speedup.toFixed(1)}x speed advantage due to its single max-flow approach. `;
+    }
+
+    if (fnrDiff > 5) {
+      const betterUsability = advogato.falseNegativeRate < maxflow.falseNegativeRate ? "Advogato" : "MaxFlow";
+      explanation += `Note: ${betterUsability} rejects ${fnrDiff.toFixed(1)}% fewer honest users, improving usability. `;
+    }
+
+    return {
+      winner: overallWinner,
+      securityWinner,
+      performanceWinner,
+      usabilityWinner,
+      explanation,
+      scenarioInsight,
+      metrics: {
+        fprDiff: fprDiff.toFixed(1),
+        fnrDiff: fnrDiff.toFixed(1),
+        speedup: speedup.toFixed(1),
+      }
+    };
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl space-y-6">
       <div>
@@ -269,15 +345,16 @@ export default function Simulation() {
       </div>
 
       {runMutation.data && (
-        <Card data-testid="card-results">
-          <CardHeader>
-            <CardTitle data-testid="heading-results">Results</CardTitle>
-            <CardDescription data-testid="text-results-description">
-              Scenario: {runMutation.data.config.scenario} | Nodes: {runMutation.data.config.numHonestUsers + runMutation.data.config.numSybilUsers} | Seeds: {runMutation.data.config.numSeeds}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table data-testid="table-comparison">
+        <>
+          <Card data-testid="card-results">
+            <CardHeader>
+              <CardTitle data-testid="heading-results">Results</CardTitle>
+              <CardDescription data-testid="text-results-description">
+                Scenario: {runMutation.data.config.scenario} | Nodes: {runMutation.data.config.numHonestUsers + runMutation.data.config.numSybilUsers} | Seeds: {runMutation.data.config.numSeeds}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table data-testid="table-comparison">
               <TableHeader>
                 <TableRow>
                   <TableHead data-testid="header-metric">Metric</TableHead>
@@ -375,6 +452,73 @@ export default function Simulation() {
             </Table>
           </CardContent>
         </Card>
+
+        {(() => {
+          const analysis = analyzeResults(runMutation.data.metrics, runMutation.data.config.scenario);
+          if (!analysis) return null;
+
+          return (
+            <Card data-testid="card-analysis">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2" data-testid="heading-analysis">
+                  Analysis & Interpretation
+                  <Badge variant={analysis.winner === "Advogato" ? "default" : "secondary"} data-testid="badge-winner">
+                    Winner: {analysis.winner}
+                  </Badge>
+                </CardTitle>
+                <CardDescription data-testid="text-scenario-insight">
+                  {analysis.scenarioInsight}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm" data-testid="heading-explanation">Performance Summary</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-explanation">
+                    {analysis.explanation}
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-4 pt-2">
+                  <div className="space-y-1" data-testid="section-security">
+                    <div className="text-xs font-medium text-muted-foreground">Security (Sybil Resistance)</div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" data-testid="badge-security-winner">{analysis.securityWinner}</Badge>
+                      <span className="text-xs text-muted-foreground" data-testid="text-fpr-diff">±{analysis.metrics.fprDiff}% FPR</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1" data-testid="section-usability">
+                    <div className="text-xs font-medium text-muted-foreground">Usability (Honest Acceptance)</div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" data-testid="badge-usability-winner">{analysis.usabilityWinner}</Badge>
+                      <span className="text-xs text-muted-foreground" data-testid="text-fnr-diff">±{analysis.metrics.fnrDiff}% FNR</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1" data-testid="section-performance">
+                    <div className="text-xs font-medium text-muted-foreground">Performance (Runtime)</div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" data-testid="badge-performance-winner">{analysis.performanceWinner}</Badge>
+                      <span className="text-xs text-muted-foreground" data-testid="text-speedup">{analysis.metrics.speedup}x speedup</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t">
+                  <h4 className="font-semibold text-sm mb-2" data-testid="heading-key-takeaway">Key Takeaway</h4>
+                  <p className="text-sm text-muted-foreground" data-testid="text-takeaway">
+                    {analysis.winner === "Advogato" 
+                      ? "Advogato's supersink approach with binary node capacities provides stronger Sybil resistance through its single max-flow computation, making it ideal for security-critical applications where preventing fake accounts is paramount."
+                      : analysis.winner === "MaxFlow"
+                      ? "MaxFlow's per-node scoring offers more granular trust evaluation with distance-based capacity decay, providing better separation between honest and Sybil users while maintaining practical performance."
+                      : "Both algorithms demonstrate comparable effectiveness for this scenario. Choose Advogato for simplicity and speed, or MaxFlow for granular per-user trust scores."}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+        </>
       )}
 
       {benchmarkMutation.data && (
