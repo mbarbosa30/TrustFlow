@@ -2386,7 +2386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Local Health score for ego context
+  // Get Local Health score for ego context (includes KUDOS boosts)
   app.get("/api/ego/:address/score", async (req, res) => {
     try {
       const ownerAddress = req.params.address.toLowerCase();
@@ -2409,13 +2409,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         endorsee: e.endorsee.toLowerCase() as `0x${string}`,
       }));
       
+      // Calculate KUDOS boosts for all edges in a single batch query
+      const kudosService = await import("./kudos/kudosService").then(m => m.kudosService);
+      const uniqueEdges = Array.from(
+        new Set(formattedVouches.map(e => `${e.endorser}->${e.endorsee}`))
+      ).map(edgeKey => {
+        const [from, to] = edgeKey.split('->');
+        return { fromAddress: from, toAddress: to };
+      });
+
+      const edgeWeights = await kudosService.calculateBatchEdgeWeights(uniqueEdges);
+      
+      const kudosBoosts = [];
+      for (const [edgeKey, weight] of edgeWeights.entries()) {
+        if (weight > 0) {
+          const [from, to] = edgeKey.split('->');
+          kudosBoosts.push({ fromAddress: from as any, toAddress: to as any, weight });
+        }
+      }
+      
       const { EgoScorer } = await import("./algorithm/egoScoring");
       const scorer = new EgoScorer();
       
       const result = scorer.computeLocalHealth(
         ownerAddress as `0x${string}`,
         seedAddresses as `0x${string}`[],
-        formattedVouches
+        formattedVouches,
+        kudosBoosts
       );
       
       res.json(result);

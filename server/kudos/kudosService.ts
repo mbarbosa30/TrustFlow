@@ -9,7 +9,7 @@ import {
   type KudosBalance,
   type KudosTransfer
 } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 
 const TRANSFER_FEE_RATE = 0.01; // 1% total fee
 const BURN_RATE = 0.005; // 0.5% burned
@@ -230,6 +230,48 @@ export class KudosService {
   }
 
   /**
+   * Calculate weighted KUDOS transfers for multiple edges in a single batch
+   * Much more efficient than calling calculateEdgeWeights per edge
+   */
+  async calculateBatchEdgeWeights(edges: Array<{ fromAddress: string; toAddress: string }>): Promise<Map<string, number>> {
+    if (edges.length === 0) {
+      return new Map();
+    }
+
+    // Build OR conditions for all edges
+    const edgeConditions = edges.map(edge => 
+      and(
+        eq(kudosTransfers.fromAddress, edge.fromAddress.toLowerCase()),
+        eq(kudosTransfers.toAddress, edge.toAddress.toLowerCase())
+      )
+    );
+
+    // Get all transfers for all edges in one query
+    const allTransfers = await db
+      .select()
+      .from(kudosTransfers)
+      .where(or(...edgeConditions));
+
+    const now = Date.now();
+    const halfliveMs = EDGE_BOOST_HALFLIFE_DAYS * 24 * 60 * 60 * 1000;
+
+    // Group transfers by edge and calculate weights
+    const edgeWeights = new Map<string, number>();
+    
+    for (const transfer of allTransfers) {
+      const edgeKey = `${transfer.fromAddress}->${transfer.toAddress}`;
+      const ageMs = now - new Date(transfer.createdAt).getTime();
+      const decayFactor = Math.exp(-ageMs / halfliveMs);
+      const weight = transfer.amount * decayFactor;
+      
+      const currentWeight = edgeWeights.get(edgeKey) || 0;
+      edgeWeights.set(edgeKey, currentWeight + weight);
+    }
+
+    return edgeWeights;
+  }
+
+  /**
    * Calculate weighted KUDOS transfers for edge boosting
    * Uses exponential decay: weight = amount * e^(-age_days / halflife)
    */
@@ -337,17 +379,20 @@ export class KudosService {
           }))
         );
 
-      // Calculate KUDOS boosts for all edges
-      const uniqueEdges = new Set<string>();
-      for (const e of endorsements) {
-        uniqueEdges.add(`${e.endorser}->${e.endorsee}`);
-      }
-
-      const kudosBoosts = [];
-      for (const edgeKey of Array.from(uniqueEdges)) {
+      // Calculate KUDOS boosts for all edges in a single batch query
+      const uniqueEdges = Array.from(
+        new Set(endorsements.map(e => `${e.endorser}->${e.endorsee}`))
+      ).map(edgeKey => {
         const [from, to] = edgeKey.split('->');
-        const weight = await this.calculateEdgeWeights({ fromAddress: from, toAddress: to });
+        return { fromAddress: from, toAddress: to };
+      });
+
+      const edgeWeights = await this.calculateBatchEdgeWeights(uniqueEdges);
+      
+      const kudosBoosts = [];
+      for (const [edgeKey, weight] of edgeWeights.entries()) {
         if (weight > 0) {
+          const [from, to] = edgeKey.split('->');
           kudosBoosts.push({ fromAddress: from as any, toAddress: to as any, weight });
         }
       }
