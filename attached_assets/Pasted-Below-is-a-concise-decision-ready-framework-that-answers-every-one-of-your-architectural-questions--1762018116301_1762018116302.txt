@@ -1,0 +1,177 @@
+Below is a concise, decision-ready framework that answers every one of your architectural questions, positions MaxFlow as the core identity engine, and gives you a clear integration roadmap for the token-economics layer.
+
+1. Is this a new direction for MaxFlow?
+No – it is an evolution, not a fork.
+Current MaxFlow
+Future MaxFlow (v2)
+Goal
+Human-only vouch graph → Sybil-resistant identity
+Core Primitive
+Binary vouch (1-unit edge)
+Output
+residual_flow → trust score
+Monetisation
+None (pure reputation)
+MaxFlow stays the backbone. The token layer is a plug-in module that feeds economic proof into the same scoring pipeline.
+
+2. Integration Strategy: Keep Vouch + Add Token Layer
+Layer
+Keep?
+How it fits
+Vouch Graph
+YES
+Remains binary, human-initiated, EIP-712 signed.
+Max-Flow Engine
+YES
+Unchanged – still computes residual_flow from all seeds.
+Node Registry
+EXTEND
+Add `nodeType: “human”
+Scoring
+HYBRID
+Final_Score = 0.7 * V_Score + 0.3 * T_Score
+Token Module
+NEW
+TRUST ERC-20 + transfer listener → T-Score
+No replacement – layered composition.
+
+3. Node Types & Auth System (Critical Upgrade)
+Current: EIP-712 only → human wallets
+Problem
+Solution
+Contracts can’t sign
+Off-chain registry + on-chain attestation
+Bots need identity
+Same registry, owner-signed
+New Auth Flow
+graph LR
+    A[Human] -->|EIP-712| B[Register Node]
+    C[Contract Owner] -->|tx| D[Call registerNode(contractAddr)]
+    B --> E[Node Registry]
+    D --> E
+    E --> F[MaxFlow Graph]
+`NodeRegistry.sol`
+struct Node {
+    address addr;
+    NodeType nodeType; // HUMAN, CONTRACT, BOT
+    uint40 registeredAt;
+    bytes32 vouchHash; // optional
+}
+
+function registerNode(address node, NodeType ntype) external;
+function vouch(address from, address to) external; // EIP-712 only
+Humans → EIP-712 vouch Contracts → owner calls registerNode → can receive vouches & transfers
+
+4. Sybil Resistance: Binary Vouch + Weighted Token Flow
+Edge Type
+Capacity
+Who creates it
+Sybil Cost
+Vouch
+1
+Human only (EIP-712)
+Social cost (reputation)
+Token Transfer
+amount
+Anyone → Anyone
+Economic cost (net flow)
+Game Theory Outcome
+Attack
+Vouch Impact
+Token Impact
+Final Effect
+Sybil farm vouches
+Limited by min-cut
+Net flow = 0 → T-Score = 0
+Blocked
+Whale pumps contract
+V-Score high
+T-Score high
+Capped by 5% UBI
+Bot loops tokens
+—
+Net = 0
+No score gain
+Binary vouch = identity anchor Token flow = economic proof Min-cut still bounds total trusted nodes
+
+5. Scoring Architecture (Final)
+// 1. V-Score (unchanged)
+V_Score = percentile(residual_flow)
+
+// 2. T-Score (new)
+net_received = sum(received) - sum(sent)  // 30-day
+unique_senders = count(distinct senders)
+sender_avg_vscore = avg(V_Score of senders)
+
+raw_t = 0.5 * clamp(net_received / max_net, 0, 1)
+        + 0.3 * (unique_senders / max_senders)
+        + 0.2 * sender_avg_vscore
+
+T_Score = percentile(raw_t)
+
+// 3. Final
+Final_Score = 0.7 * V_Score + 0.3 * T_Score
+
+6. UBI Mint (Universal)
+uint constant MONTHLY_POOL = 1_000_000 * 1e18;
+uint constant MIN_SCORE = 30;
+uint constant MAX_PAYOUT = MONTHLY_POOL * 5 / 100;
+
+for (node in nodes) {
+    if (finalScore[node] >= MIN_SCORE) {
+        uint payout = min(MAX_PAYOUT, pool * finalScore[node] / totalScore);
+        TRUST.mint(node, payout);
+    }
+}
+Contracts get UBI → reinvest in liquidity → attract more flow
+
+7. Roadmap: What to Explore First
+Phase
+Goal
+Deliverable
+Phase 0 (Now)
+Keep current vouch system
+No code change
+Phase 1 (1 week)
+Add NodeRegistry + contract nodes
+Solidity + off-chain indexer
+Phase 2 (2 weeks)
+Add TRUST token + transfer listener
+ERC-20 + subgraph
+Phase 3 (3 weeks)
+T-Score module + UBI mint
+Backend + dashboard
+Phase 4
+DEX auto-vouch + LP boost
+Optional
+
+8. Immediate Action Plan
+	1	Keep MaxFlow vouch engine 100% intact
+	2	Deploy NodeRegistry.sol → allow contract registration
+	3	Index TRUST transfers (The Graph or custom listener)
+	4	Compute T-Score nightly
+	5	Launch UBI v1 → mint to all nodes (human + contract)
+
+TL;DR – Your Vision, Fully Integrated
+Question
+Answer
+New direction?
+Evolution of MaxFlow
+Replace vouch?
+No – keep + add token layer
+Contracts?
+Yes – via NodeRegistry
+Sybil risk?
+Min-cut + net flow = double barrier
+First step?
+Deploy NodeRegistry + index transfers
+
+MaxFlow is becoming the on-chain credit score of Web3. Humans vouch. Markets vote with tokens. UBI rewards the trusted.
+
+Ready to ship?
+I can deliver:
+	•	NodeRegistry.sol + TRUST.sol
+	•	Subgraph schema for transfers
+	•	T-Score calculation script
+	•	Dashboard mockup
+Just say “GO”.
