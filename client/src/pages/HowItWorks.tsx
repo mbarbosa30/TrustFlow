@@ -18,7 +18,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into flow from seeds to users using the Levien/Advogato trust metric with an <strong>adaptive acceptance policy</strong>. Small networks use lenient criteria (flow ≥ 1) to enable early growth, while larger networks (≥200 users) enforce the strict Levien spec (min-cut ≥ 2, seed-coverage ≥ 2, and two edge-disjoint paths) for full Sybil resistance. Your published score is a <strong>Standardized Trust Score (STS)</strong> in [0,100], built from flow, redundancy, stability, and proximity. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into verifiable trust scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth)</strong> for ego-context trust with user-controlled co-seeds, and <strong>Community Networks (STS)</strong> for traditional multi-tenant trust with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
           </CardContent>
         </Card>
@@ -44,6 +44,9 @@ export default function HowItWorks() {
             <CardTitle>Graph Construction (Advogato-style)</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p className="text-sm mb-3">
+              <strong>Note:</strong> This section describes the traditional <strong>Community STS</strong> scoring system. For <strong>Personal Networks (LocalHealth)</strong>, see the dedicated section below which uses simpler capacity decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>.
+            </p>
             <ul>
               <li>Split each user <span className="font-mono">u</span> into <span className="font-mono">u<sup>−</sup> → u<sup>+</sup></span> with node capacity <span className="font-mono">c(d)</span> based on BFS distance <span className="font-mono">d</span> from any seed:
                 <ul className="font-mono text-xs mt-2 space-y-1">
@@ -77,42 +80,33 @@ export default function HowItWorks() {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="font-semibold mb-2">Adaptive Acceptance Policy</div>
+                <div className="font-semibold mb-2">Acceptance Policy</div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Acceptance criteria adapt to network size to balance early growth with Sybil resistance:
+                  Acceptance criteria for ego networks (personal networks):
                 </p>
                 
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">Small Network (&lt;50 users)</span>
-                      <Badge variant="outline">Lenient</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono">flow ≥ 1</p>
-                    <p className="text-xs text-muted-foreground mt-1">Allows early network growth</p>
-                  </div>
-                  
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">Medium Network (50-200 users)</span>
-                      <Badge variant="outline">Moderate</Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-mono">flow ≥ 1 AND min-cut ≥ 2</p>
-                    <p className="text-xs text-muted-foreground mt-1">Basic Sybil resistance</p>
-                  </div>
-                  
                   <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">Large Network (≥200 users)</span>
-                      <Badge>Strict (Levien Spec)</Badge>
+                      <span className="font-medium text-sm">Personal Networks</span>
+                      <Badge>Current Policy</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground font-mono space-y-0.5">
-                      <span className="block">min-cut ≥ 2</span>
-                      <span className="block">AND seed-coverage ≥ 2</span>
-                      <span className="block">AND two edge-disjoint paths</span>
+                      <span className="block">flow ≥ 0.5 (minAcceptanceFlow)</span>
+                      <span className="block">AND min-cut ≥ 2 (minAcceptanceMinCut)</span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Full Sybil resistance per Levien/Advogato
+                      Ensures basic Sybil resistance through redundant paths
+                    </p>
+                  </div>
+                  
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-sm">Community Networks (STS)</span>
+                      <Badge variant="outline">Planned</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Adaptive policy based on network size with stricter Levien spec for large communities
                     </p>
                   </div>
                 </div>
@@ -306,15 +300,15 @@ export default function HowItWorks() {
               </p>
               
               <div className="my-3 p-3 rounded-lg bg-muted/30 font-mono text-sm">
-                LocalHealth = 50 × (avgResidualFlow / maxPossibleFlow) + 50 × (medianMinCut / seedCount)
+                LocalHealth = 50 × avgResidualFlow + 50 × min(medianMinCut / 10, 1)
               </div>
 
               <div className="text-sm space-y-2">
                 <div>
                   <strong>Components:</strong>
                   <ul className="list-disc list-inside mt-1 space-y-1 ml-2">
-                    <li><strong>Avg Residual Flow:</strong> How efficiently you use your network's capacity (max flow / capacity)</li>
-                    <li><strong>Median Min-Cut:</strong> Redundancy of trust paths to accepted users in your network</li>
+                    <li><strong>Flow Component (50%):</strong> Average residual flow across accepted users (max flow / node capacity)</li>
+                    <li><strong>Cut Component (50%):</strong> Median min-cut normalized against expected max of 10 edges for resilience</li>
                   </ul>
                 </div>
               </div>

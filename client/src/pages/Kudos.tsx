@@ -230,7 +230,7 @@ export default function Kudos() {
           <CardHeader>
             <CardTitle>Claim KUDOS</CardTitle>
             <CardDescription>
-              Claim tokens weekly based on your LocalHealth score (score² / 100)
+              Claim tokens daily based on your LocalHealth score (score² / 100)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
