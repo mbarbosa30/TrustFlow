@@ -15,7 +15,7 @@ const TRANSFER_FEE_RATE = 0.01; // 1% total fee
 const BURN_RATE = 0.005; // 0.5% burned
 const POOL_RATE = 0.005; // 0.5% to pool
 const DAILY_CLAIM_CAP = 1000; // 1000 KUDOS per day
-const CLAIM_COOLDOWN_DAYS = 7; // 7 days between claims
+const CLAIM_COOLDOWN_DAYS = 1; // 24 hours between claims
 const EDGE_BOOST_HALFLIFE_DAYS = 180; // 180 days for edge boost decay
 
 export class KudosService {
@@ -436,9 +436,10 @@ export class KudosService {
         const nextClaimDate = new Date(lastClaimDate);
         nextClaimDate.setDate(nextClaimDate.getDate() + CLAIM_COOLDOWN_DAYS);
         
+        const daysText = CLAIM_COOLDOWN_DAYS === 1 ? 'day' : 'days';
         return {
           canClaim: false,
-          reason: `Must wait ${CLAIM_COOLDOWN_DAYS} days between claims`,
+          reason: `Must wait ${CLAIM_COOLDOWN_DAYS} ${daysText} between claims`,
           nextClaimDate,
         };
       }
