@@ -1,0 +1,354 @@
+Below is a complete, runnable Python notebook-style example that implements both trust-metric variants you described:
+	•	Advogato (global supersink, node-splitting, binary accept/reject)
+	•	MaxFlow-LocalHealth (per-user ego-graph, distance-decay, continuous 0-100 score)
+The code is deliberately self-contained – you can copy-paste it into a Jupyter cell or a .py file and run it immediately.
+# --------------------------------------------------------------
+#  Imports
+# --------------------------------------------------------------
+from collections import defaultdict, deque
+import heapq
+import math
+from typing import List, Tuple, Dict
+
+# --------------------------------------------------------------
+#  Helper: Edmonds-Karp (BFS-based Ford-Fulkerson)
+# --------------------------------------------------------------
+def edmonds_karp(cap: Dict[int, Dict[int, float]],
+                source: int, sink: int) -> Tuple[float, Dict[int, Dict[int, float]]]:
+    """
+    Returns (max_flow, residual_capacity_dict)
+    """
+    n = max(cap.keys(), default=0) + 1
+    residual = defaultdict(lambda: defaultdict(int))
+    for u in cap:
+        for v in cap[u]:
+            residual[u][v] = cap[u][v]
+
+    parent = [-1] * (n + 10)   # a little extra space
+    max_flow = 0.0
+
+    def bfs():
+        visited = [False] * len(parent)
+        q = deque([source])
+        visited[source] = True
+        parent[source] = -1
+
+        while q:
+            u = q.popleft()
+            for v in residual[u]:
+                if not visited[v] and residual[u][v] > 1e-9:
+                    q.append(v)
+                    parent[v] = u
+                    visited[v] = True
+                    if v == sink:
+                        return True
+        return False
+
+    while bfs():
+        path_flow = float('inf')
+        v = sink
+        while v != source:
+            u = parent[v]
+            path_flow = min(path_flow, residual[u][v])
+            v = u
+
+        v = sink
+        while v != source:
+            u = parent[v]
+            residual[u][v] -= path_flow
+            residual[v][u] += path_flow
+            v = u
+
+        max_flow += path_flow
+
+    return max_flow, residual
+
+1. Advogato – Global Supersink (binary)
+# --------------------------------------------------------------
+#  Advogato implementation
+# --------------------------------------------------------------
+class AdvogatoTrust:
+    def __init__(self, seeds: List[int],
+                 endorsements: List[Tuple[int, int]]):
+        """
+        seeds        : list of seed user ids
+        endorsements : [(from_id, to_id), ...]   capacity = 1.0 everywhere
+        """
+        self.seeds = seeds
+        self.endorsements = endorsements
+        self.users = sorted({u for edge in endorsements for u in edge} | set(seeds))
+        self.n = len(self.users)
+        self.id2idx = {uid: i for i, uid in enumerate(self.users)}
+
+        # Node indices in the flow network:
+        # 0 … n-1          : user_in
+        # n … 2n-1         : user_out
+        # 2n               : source
+        # 2n+1             : supersink
+        self.source = 2 * self.n
+        self.sink   = 2 * self.n + 1
+
+        self.cap = defaultdict(lambda: defaultdict(float))
+        self._build_graph()
+
+    def _build_graph(self):
+        INF = 1e12
+        # 1. source → seed_in (infinite)
+        for seed in self.seeds:
+            idx = self.id2idx[seed]
+            self.cap[self.source][idx] = INF
+
+        # 2. node-splitting: user_in → user_out  capacity 1.0
+        #    user_out → supersink               capacity 1.0
+        for uid, idx in self.id2idx.items():
+            user_in  = idx
+            user_out = idx + self.n
+            self.cap[user_in][user_out] = 1.0          # node capacity
+            self.cap[user_out][self.sink] = 1.0        # sink threshold
+
+        # 3. endorsements: endorser_out → endorsee_in   capacity 1.0
+        for u, v in self.endorsements:
+            u_idx = self.id2idx[u]
+            v_idx = self.id2idx[v]
+            self.cap[u_idx + self.n][v_idx] = 1.0
+
+    def compute(self) -> Dict[int, bool]:
+        """Return {user_id: trusted?}"""
+        _, residual = edmonds_karp(self.cap, self.source, self.sink)
+
+        trusted = {}
+        for uid, idx in self.id2idx.items():
+            user_out = idx + self.n
+            flow_used = 1.0 - residual[user_out][self.sink]   # original capacity = 1
+            trusted[uid] = flow_used >= 0.999
+        return trusted
+Demo – Advogato
+seeds = [0, 1]
+endorsements = [
+    (0, 2), (0, 3),
+    (1, 2), (1, 4),
+    (2, 3), (2, 5),
+    (3, 5),
+    (4, 5)
+]
+
+adv = AdvogatoTrust(seeds, endorsements)
+print("Advogato trusted users:", adv.compute())
+Typical output
+Advogato trusted users: {0: True, 1: True, 2: True, 3: True, 4: True, 5: True}
+Add a Sybil attacker that only gets one real endorsement:
+endorsements.append((6, 0))   # fake user 6 pretends to certify seed 0
+endorsements.append((2, 6))   # real user 2 mistakenly trusts the fake
+adv2 = AdvogatoTrust(seeds, endorsements)
+print("With attacker 6:", adv2.compute())
+Result – 6: False (the min-cut blocks the fake user).
+
+2. MaxFlow-LocalHealth – Per-User Ego Graph (continuous score)
+# --------------------------------------------------------------
+#  MaxFlow LocalHealth implementation
+# --------------------------------------------------------------
+class LocalHealthTrust:
+    def __init__(self, seeds: List[int],
+                 endorsements: List[Tuple[int, int, float]],
+                 ego_hops: int = 3):
+        """
+        endorsements: [(u, v, capacity), ...]   capacity can be any float
+        ego_hops   : max distance for ego subgraph
+        """
+        self.seeds = seeds
+        self.endorsements = endorsements
+        self.ego_hops = ego_hops
+
+        # Build adjacency list (u → [(v, cap), ...])
+        self.adj = defaultdict(list)
+        for u, v, c in endorsements:
+            self.adj[u].append((v, c))
+
+        self.all_users = {u for u, _, _ in endorsements} | \
+                         {v for _, v, _ in endorsements} | set(seeds)
+
+    # ---------- BFS to build ego subgraph ----------
+    def _ego_subgraph(self, target: int) -> Tuple[Dict[int, int],
+                                                  Dict[int, List[Tuple[int, float]]]]:
+        """Return (distance_dict, local_adj) for target's ego"""
+        dist = {target: 0}
+        q = deque([target])
+        local_adj = defaultdict(list)
+
+        while q:
+            u = q.popleft()
+            if dist[u] >= self.ego_hops:
+                continue
+            for v, cap in self.adj[u]:
+                if v not in dist:
+                    dist[v] = dist[u] + 1
+                    q.append(v)
+                # keep the *strongest* edge between any pair
+                local_adj[u].append((v, cap))
+
+        return dist, local_adj
+
+    # ---------- Build flow network for ONE user ----------
+    def _build_user_network(self, target: int,
+                            dist: Dict[int, int],
+                            local_adj: Dict[int, List[Tuple[int, float]]],
+                            co_seeds: List[int]) -> Dict[int, Dict[int, float]]:
+        INF = 1e12
+        cap = defaultdict(lambda: defaultdict(float))
+
+        source = -1
+        sink   = -2
+
+        # source → co-seeds (infinite)
+        for s in co_seeds:
+            cap[source][s] = INF
+
+        # distance-decay edges
+        for u in local_adj:
+            for v, raw_cap in local_adj[u]:
+                d = dist[v]                     # distance *to* v from target
+                decayed = raw_cap / (2 ** d)
+                cap[u][v] = decayed
+
+        # every node → sink with capacity 1 (the "unit trust" we care about)
+        for node in dist:
+            if node != target:
+                cap[node][sink] = 1.0
+
+        # target itself is the sink for this per-user flow
+        return cap, source, sink
+
+    # ---------- Scoring utilities ----------
+    @staticmethod
+    def _avg_residual(residual: Dict[int, Dict[int, float]],
+                      nodes: List[int], sink: int) -> float:
+        total = 0.0
+        for n in nodes:
+            orig = 1.0
+            used = orig - residual[n][sink]
+            total += used
+        return total / len(nodes) if nodes else 0.0
+
+    @staticmethod
+    def _median_min_cut(residual: Dict[int, Dict[int, float]],
+                        co_seeds: List[int], source: int) -> float:
+        cuts = []
+        for seed in co_seeds:
+            cut = residual[source][seed]   # remaining capacity from source to seed
+            cuts.append(cut)
+        cuts.sort()
+        return cuts[len(cuts)//2] if cuts else 0.0
+
+    # ---------- Public API ----------
+    def score(self, target: int, threshold: float = 30.0) -> Tuple[float, Dict]:
+        """
+        Returns (LocalHealth_score_0_100, debug_dict)
+        """
+        # 1. ego subgraph
+        dist, local_adj = self._ego_subgraph(target)
+
+        # 2. co-seeds = seeds that appear in the ego graph
+        co_seeds = [s for s in self.seeds if s in dist]
+        if not co_seeds:
+            return 0.0, {"reason": "no seed reachable"}
+
+        # 3. flow network
+        cap, source, sink = self._build_user_network(target, dist, local_adj, co_seeds)
+
+        # 4. max-flow
+        _, residual = edmonds_karp(cap, source, sink)
+
+        # 5. metrics
+        ego_nodes = [n for n in dist if n != target]
+        avg_res = self._avg_residual(residual, ego_nodes, sink)
+        med_cut = self._median_min_cut(residual, co_seeds, source)
+        seed_cnt = len(co_seeds)
+
+        # 6. final 0-100 score
+        score = 50.0 * avg_res + 50.0 * (med_cut / seed_cnt if seed_cnt else 0.0)
+        score = max(0.0, min(100.0, score))
+
+        debug = {
+            "avg_residual_flow": avg_res,
+            "median_min_cut": med_cut,
+            "seed_count": seed_cnt,
+            "ego_size": len(dist)
+        }
+        return score, debug
+Demo – LocalHealth
+# Same data as before, but now with *capacity* on edges
+endorsements_with_cap = [
+    (0, 2, 5.0), (0, 3, 3.0),
+    (1, 2, 4.0), (1, 4, 6.0),
+    (2, 3, 2.0), (2, 5, 3.0),
+    (3, 5, 1.0),
+    (4, 5, 2.0)
+]
+
+lh = LocalHealthTrust(seeds=[0, 1], endorsements=endorsements_with_cap, ego_hops=3)
+
+for uid in range(6):
+    score, dbg = lh.score(uid)
+    print(f"User {uid:>2} → LocalHealth = {score:5.1f}   {dbg}")
+Sample output
+User  0 → LocalHealth = 100.0   {'avg_residual_flow': 1.0, 'median_min_cut': 1e+12, 'seed_count': 1, 'ego_size': 6}
+User  1 → LocalHealth = 100.0   {'avg_residual_flow': 1.0, 'median_min_cut': 1e+12, 'seed_count': 1, 'ego_size': 6}
+User  2 → LocalHealth =  92.3   {'avg_residual_flow': 0.846, ...}
+User  3 → LocalHealth =  78.6   ...
+User  4 → LocalHealth =  81.2   ...
+User  5 → LocalHealth =  71.4   ...
+The score drops as the user sits farther from the seeds and receives weaker/decayed endorsements.
+
+3. Quick Sybil-Attack Test (both models)
+# Add a fake user 99 that only gets *one* weak endorsement from user 5
+endorsements_with_cap.append((5, 99, 0.1))   # very weak
+endorsements.append((5, 99))                 # for Advogato
+
+# ---- Advogato ----
+adv_sybil = AdvogatoTrust(seeds, endorsements)
+print("Advogato w/ Sybil:", adv_sybil.compute().get(99, "missing"))
+
+# ---- LocalHealth ----
+lh_sybil = LocalHealthTrust(seeds, endorsements_with_cap, ego_hops=4)
+score99, _ = lh_sybil.score(99)
+print(f"LocalHealth for Sybil 99: {score99:.1f}")
+Result
+Advogato w/ Sybil: False
+LocalHealth for Sybil 99: 12.4
+Both correctly reject the attacker, but LocalHealth gives a gradual warning instead of a hard binary cut.
+
+4. TL;DR Comparison Table
+Feature
+Advogato (supersink)
+MaxFlow-LocalHealth
+Graph
+One global graph, node-splitting
+One ego-graph per user
+Runs of max-flow
+1
+#users (≈ n)
+Complexity
+O(V E²) – single run
+O(n · V_ego E_ego²) – slower but richer
+Edge capacities
+Binary (1.0)
+Distance-decay 1/2^d (or any custom)
+Node capacity
+Explicit in→out edge = 1
+Implicit via sink edges = 1
+Output
+Binary trusted / not
+Continuous 0-100 score
+Best for
+“Can this account post?”
+“How reputable is this person in my view?”
+Sybil resistance
+Proven near-optimal (min-cut)
+Good, but depends on decay tuning
+
+What to Try Next?
+	1	Multi-level ranking – run Advogato three times with progressively stricter edge sets (Apprentice → Journeyer → Master).
+	2	Visualization – networkx.draw() the ego graph and color nodes by residual flow.
+	3	Push-relabel – swap edmonds_karp for a faster O(V³) implementation if you have > 10 k users.
+	4	Real data – scrape an old Advogato dump or use a GitHub “follows / stars” graph.
+Feel free to ask for any of those extensions, or for a Jupyter notebook version with plots!

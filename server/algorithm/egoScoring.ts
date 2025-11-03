@@ -59,6 +59,7 @@ export class EgoScorer {
     const nodeMetrics: EgoNodeMetrics[] = [];
     const residualFlows: number[] = [];
     const minCuts: number[] = [];
+    let acceptedCount = 0;
 
     for (const node of egoSubgraph) {
       if (seedAddresses.includes(node)) continue;
@@ -94,9 +95,11 @@ export class EgoScorer {
         minCut >= this.config.minAcceptanceMinCut;
 
       if (isAccepted) {
-        residualFlows.push(residualFlow);
-        minCuts.push(minCut);
+        acceptedCount++;
       }
+
+      residualFlows.push(residualFlow);
+      minCuts.push(minCut);
 
       nodeMetrics.push({
         address: node,
@@ -127,7 +130,7 @@ export class EgoScorer {
       seedAddresses,
       metrics: {
         totalNodes: egoSubgraph.length,
-        acceptedUsers: residualFlows.length,
+        acceptedUsers: acceptedCount,
         avgResidualFlow: Math.round(avgResidualFlow * 1000) / 1000,
         medianMinCut: Math.round(medianMinCut * 100) / 100,
         maxPossibleFlow,
@@ -137,9 +140,7 @@ export class EgoScorer {
   }
 
   private calculateCapacity(distance: number): number {
-    if (distance === 0) return 1.0;
-    if (distance === 1) return 0.5;
-    return 0.25;
+    return 1.0 / Math.pow(2, distance);
   }
 
   private computeDistances(
