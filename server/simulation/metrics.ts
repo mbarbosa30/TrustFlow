@@ -7,9 +7,14 @@ export class MetricsCalculator {
     scenario: ScenarioType,
     graph: SyntheticGraph,
     scores: Map<Address, number>,
-    runtimeMs: number
+    runtimeMs: number,
+    flowValues?: Map<Address, number>  // Optional: raw flow for Advogato binary threshold
   ): SimulationMetrics {
-    const threshold = 30; // Minimum score for "accepted"
+    // For Advogato supersink: use flow >= 1.0 as binary threshold
+    // For per-node scoring: use normalized score >= 30
+    const useFlowThreshold = flowValues !== undefined;
+    const scoreThreshold = 30;
+    const flowThreshold = 1.0;
 
     const honestScores: number[] = [];
     const sybilScores: number[] = [];
@@ -19,12 +24,17 @@ export class MetricsCalculator {
     for (const [addr, score] of Array.from(scores.entries())) {
       const isHonest = graph.honestAddresses.has(addr);
       
+      // Determine if accepted based on algorithm type
+      const isAccepted = useFlowThreshold
+        ? (flowValues!.get(addr) ?? 0) >= flowThreshold
+        : score >= scoreThreshold;
+      
       if (isHonest) {
         honestScores.push(score);
-        if (score >= threshold) honestAccepted++;
+        if (isAccepted) honestAccepted++;
       } else {
         sybilScores.push(score);
-        if (score >= threshold) sybilAccepted++;
+        if (isAccepted) sybilAccepted++;
       }
     }
 

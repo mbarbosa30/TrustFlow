@@ -52,7 +52,8 @@ export class TrustMetricSimulator {
         config.scenario,
         graph,
         scores.scoreMap,
-        scores.runtimeMs
+        scores.runtimeMs,
+        scores.flowValues  // Pass raw flow values for Advogato binary threshold
       );
 
       allMetrics.push(metrics);
@@ -69,7 +70,11 @@ export class TrustMetricSimulator {
   private async runAlgorithm(
     config: AlgorithmConfig,
     graph: SyntheticGraph
-  ): Promise<{ scoreMap: Map<Address, number>; runtimeMs: number }> {
+  ): Promise<{ 
+    scoreMap: Map<Address, number>; 
+    runtimeMs: number;
+    flowValues?: Map<Address, number>;
+  }> {
     if (config.useSupersink) {
       return this.runSupersinkAlgorithm(config, graph);
     } else {
@@ -80,7 +85,11 @@ export class TrustMetricSimulator {
   private async runSupersinkAlgorithm(
     config: AlgorithmConfig,
     graph: SyntheticGraph
-  ): Promise<{ scoreMap: Map<Address, number>; runtimeMs: number }> {
+  ): Promise<{ 
+    scoreMap: Map<Address, number>; 
+    runtimeMs: number;
+    flowValues: Map<Address, number>;
+  }> {
     const scorer = new SupersinkScorer(config);
     const result = scorer.computeTrust(graph);
     const scores = scorer.computeScores(result.flowPerNode);
@@ -88,6 +97,7 @@ export class TrustMetricSimulator {
     return {
       scoreMap: scores,
       runtimeMs: result.runtimeMs,
+      flowValues: result.flowPerNode,  // Pass raw flow for binary threshold
     };
   }
 

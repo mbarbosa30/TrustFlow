@@ -33,10 +33,11 @@ export class SupersinkScorer {
     const SINK = "SUPERSINK";
     const flowGraph = new FlowGraph(SOURCE, SINK);
 
-    // Node-splitting technique for node capacities:
+    // Node-splitting technique for node capacities (Advogato-style):
     // Each user becomes two nodes: user_in and user_out
-    // user_in -> user_out with capacity = nodeCapacity
-    // This limits total flow through the user
+    // - user_in -> user_out with capacity = nodeCapacity (limits flow through node)
+    // - user_out -> SUPERSINK with capacity = nodeCapacity (enforces binary threshold at min-cut)
+    // This ensures the min-cut respects node capacities
 
     const nodeCapacity = this.config.nodeCapacity ?? 1.0;
 
@@ -47,8 +48,11 @@ export class SupersinkScorer {
       
       flowGraph.addEdge(SOURCE, seedIn, Infinity);
       
-      // Seed node-split (seeds have same capacity constraint)
+      // Seed node-split with capacity constraint
       flowGraph.addEdge(seedIn, seedOut, nodeCapacity);
+      
+      // Seeds also connect to sink with same capacity (for min-cut enforcement)
+      flowGraph.addEdge(seedOut, SINK, nodeCapacity);
     }
 
     // 2. Add all nodes with node-splitting
@@ -59,8 +63,12 @@ export class SupersinkScorer {
       const nodeIn = `${addr}_in`;
       const nodeOut = `${addr}_out`;
       
-      // Node capacity edge
+      // Node capacity edge (limits total flow through the node)
       flowGraph.addEdge(nodeIn, nodeOut, nodeCapacity);
+      
+      // Connect to sink with same capacity (enforces binary threshold)
+      // This is key: min-cut will enforce that flow to sink ≤ nodeCapacity
+      flowGraph.addEdge(nodeOut, SINK, nodeCapacity);
     }
 
     // 3. Add endorsement edges (from_out -> to_in)
@@ -70,14 +78,6 @@ export class SupersinkScorer {
       
       // Edge capacity from original graph
       flowGraph.addEdge(fromOut, toIn, edge.capacity);
-    }
-
-    // 4. Connect all non-seed nodes to SUPERSINK
-    for (const addr of allAddresses) {
-      if (graph.seeds.includes(addr)) continue;
-      
-      const nodeOut = `${addr}_out`;
-      flowGraph.addEdge(nodeOut, SINK, Infinity);
     }
 
     // 5. Run max-flow

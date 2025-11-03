@@ -27,6 +27,7 @@ import LendingDashboard from "@/pages/LendingDashboard";
 import LendingAdmin from "@/pages/LendingAdmin";
 import ApiDocs from "@/pages/ApiDocs";
 import MyNetwork from "@/pages/MyNetwork";
+import Simulation from "@/pages/Simulation";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
@@ -61,6 +62,7 @@ function Router() {
       <Route path="/lending/:communityId" component={LendingDashboard} />
       <Route path="/admin/lending/:communityId" component={LendingAdmin} />
       <Route path="/api-docs" component={ApiDocs} />
+      <Route path="/simulation" component={Simulation} />
       <Route component={NotFound} />
     </Switch>
   );
