@@ -6,6 +6,8 @@ import { verifyEndorsementSignature, validateEndorsementFields } from '../crypto
 import { validateNonce } from '../crypto/nonce';
 import { computeLeafHash } from '../crypto/merkle';
 import type { Address } from 'viem';
+import { EgoScorer } from '../algorithm/egoScoring';
+import type { EgoEndorsement, KudosBoost } from '../algorithm/egoScoring';
 
 /**
  * Minimal API routes for external integrations
@@ -140,7 +142,7 @@ export function registerMinimalApiRoutes(app: Express) {
   );
   
   // GET /api/v1/communities/:id/scores.min/:address
-  // Get detailed score for a single user
+  // Get detailed score for a single user (includes both community STS and personal LocalHealth)
   app.get(
     "/api/v1/communities/:id/scores.min/:address",
     apiRateLimit,
@@ -164,10 +166,51 @@ export function registerMinimalApiRoutes(app: Express) {
         const allScores = await storage.getAllScoresForUser(address);
         const scores = allScores.filter(s => s.communityId === communityId);
         
+        // Compute LocalHealth score (personal network score)
+        let localHealth = 0;
+        try {
+          const egoContext = await storage.getOrCreateEgoContext(address);
+          const coSeeds = await storage.getCoSeeds(egoContext.id);
+          const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase() as Address);
+          
+          // Get global vouches (all vouches not tied to a community)
+          const allEndorsements = await storage.getEndorsementsByAddress(address);
+          const globalVouches: EgoEndorsement[] = allEndorsements
+            .filter((e: any) => e.communityId === null)
+            .map((e: any) => ({
+              endorser: e.endorser.toLowerCase() as Address,
+              endorsee: e.endorsee.toLowerCase() as Address,
+            }));
+          
+          // Get KUDOS boosts
+          const allKudosTransfers = await storage.getAllKudosTransfers();
+          const kudosBoosts: KudosBoost[] = allKudosTransfers.map((kt: any) => ({
+            from: kt.fromAddress.toLowerCase() as Address,
+            to: kt.toAddress.toLowerCase() as Address,
+            weight: kt.amount,
+            timestamp: new Date(kt.transferredAt).getTime(),
+          }));
+          
+          // Compute LocalHealth score
+          const egoScorer = new EgoScorer();
+          const result = egoScorer.computeLocalHealth(
+            address as Address,
+            seedAddresses,
+            globalVouches,
+            kudosBoosts
+          );
+          
+          localHealth = Math.round(result.localHealth);
+        } catch (egoError) {
+          console.error('Error computing LocalHealth for API:', egoError);
+          // Continue with localHealth = 0 if computation fails
+        }
+        
         if (!scores || scores.length === 0) {
           return res.json({
             accepted: false,
             score: 0,
+            local_health: localHealth,
             min_cut: 0,
             vertex_disjoint: 0,
             seed_coverage_ok: false,
@@ -196,6 +239,7 @@ export function registerMinimalApiRoutes(app: Express) {
         res.json({
           accepted: latestScore.tier !== 'Outlier',
           score: Number(latestScore.sts?.toFixed(1)) || 0,
+          local_health: localHealth,
           min_cut: latestScore.minCut || 0,
           vertex_disjoint: vertexDisjoint,
           seed_coverage_ok: seedCoverageOk,

@@ -274,13 +274,14 @@ print(data['accepted'])  # True or False`}
                           <code className="text-sm font-mono">/communities/:id/scores.min/:address</code>
                         </div>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Get detailed trust metrics for a user including score, min-cut, and acceptance status.
+                          Get detailed trust metrics for a user including community trust score (STS), personal network score (LocalHealth), min-cut, and acceptance status.
                         </p>
 
                         <h4 className="font-semibold text-sm mb-2">Response Fields</h4>
                         <ul className="text-sm space-y-2 mb-4">
-                          <li><code className="px-1 py-0.5 bg-accent/50 rounded">accepted</code>: Boolean - whether user meets acceptance criteria</li>
-                          <li><code className="px-1 py-0.5 bg-accent/50 rounded">score</code>: Number - standardized trust score (0-100)</li>
+                          <li><code className="px-1 py-0.5 bg-accent/50 rounded">accepted</code>: Boolean - whether user meets community acceptance criteria</li>
+                          <li><code className="px-1 py-0.5 bg-accent/50 rounded">score</code>: Number - community trust score (STS, 0-100)</li>
+                          <li><code className="px-1 py-0.5 bg-accent/50 rounded">local_health</code>: Number - personal network quality score (LocalHealth, 0-100)</li>
                           <li><code className="px-1 py-0.5 bg-accent/50 rounded">min_cut</code>: Number - minimum vertex-disjoint paths from seeds</li>
                           <li><code className="px-1 py-0.5 bg-accent/50 rounded">vertex_disjoint</code>: Number - redundant trust paths</li>
                           <li><code className="px-1 py-0.5 bg-accent/50 rounded">seed_coverage_ok</code>: Boolean - meets seed diversity requirement</li>
@@ -292,6 +293,7 @@ print(data['accepted'])  # True or False`}
 {`{
   "accepted": true,
   "score": 72.5,
+  "local_health": 68,
   "min_cut": 3,
   "vertex_disjoint": 3,
   "seed_coverage_ok": true,
