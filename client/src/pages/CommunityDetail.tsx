@@ -190,6 +190,15 @@ export default function CommunityDetail() {
     queryKey: ["/api/scores"],
   });
 
+  // Fetch pending payments for management tab
+  const { data: pendingPaymentsData } = useQuery<{ payments: any[] }>({
+    queryKey: ["/api/lending/pending-payments", communityId],
+    enabled: !!address && !!communityData?.community,
+  });
+
+  const pendingPayments = pendingPaymentsData?.payments || [];
+  const isManager = address && communityData?.community?.creatorAddress?.toLowerCase() === address.toLowerCase();
+
   if (communityLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-12">
@@ -504,12 +513,22 @@ export default function CommunityDetail() {
 
         <Tabs defaultValue="about" className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:w-full sm:grid-cols-5">
+            <TabsList className={`inline-flex w-auto min-w-full sm:grid sm:w-full ${isManager ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>
               <TabsTrigger value="about" data-testid="tab-about" className="whitespace-nowrap">About</TabsTrigger>
               <TabsTrigger value="credit" data-testid="tab-credit" className="whitespace-nowrap">{t('communityDetail.tabCredit')}</TabsTrigger>
               <TabsTrigger value="support" data-testid="tab-support" className="whitespace-nowrap">{t('communityDetail.tabSupport')}</TabsTrigger>
               <TabsTrigger value="updates" data-testid="tab-updates" className="whitespace-nowrap">{t('communityDetail.tabUpdates')}</TabsTrigger>
               <TabsTrigger value="api" data-testid="tab-api" className="whitespace-nowrap">API</TabsTrigger>
+              {isManager && (
+                <TabsTrigger value="management" data-testid="tab-management" className="whitespace-nowrap">
+                  Management
+                  {pendingPayments.length > 0 && (
+                    <Badge variant="destructive" className="ml-2">
+                      {pendingPayments.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
@@ -1095,6 +1114,120 @@ export default function CommunityDetail() {
               </Card>
             )}
           </TabsContent>
+
+          {isManager && (
+            <TabsContent value="management" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5" />
+                    Lending Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage loan applications and payment approvals for your community
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Pending Payments Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Pending Payment Approvals</h3>
+                      {pendingPayments.length > 0 && (
+                        <Badge variant="destructive" data-testid="badge-pending-count">
+                          {pendingPayments.length} pending
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {pendingPayments.length === 0 ? (
+                      <div className="text-center py-8 border rounded-lg bg-accent/20">
+                        <CheckCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                        <p className="text-muted-foreground">No pending payments to review</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Payment submissions will appear here for approval
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {pendingPayments.slice(0, 5).map((payment: any) => (
+                          <Card key={payment.id} data-testid={`pending-payment-${payment.id}`} className="border-l-4 border-l-yellow-500">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold">
+                                      {payment.amount?.toLocaleString() || '0'} {payment.currency || community.currency || 'USD'}
+                                    </span>
+                                    <Badge variant="secondary">Loan #{payment.loanId}</Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    From: {payment.payerAddress?.slice(0, 6)}...{payment.payerAddress?.slice(-4)}
+                                  </p>
+                                  {payment.notes && (
+                                    <p className="text-sm text-muted-foreground italic">{payment.notes}</p>
+                                  )}
+                                </div>
+                                <Badge variant="outline">Pending Review</Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        
+                        {pendingPayments.length > 5 && (
+                          <p className="text-sm text-muted-foreground text-center">
+                            + {pendingPayments.length - 5} more pending payments
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <Link href={`/lending/${communityId}`}>
+                      <Button className="w-full mt-4" data-testid="button-open-lending-dashboard">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Open Lending Dashboard
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {/* Community Lending Stats */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold text-primary">
+                            {availableLoans?.length || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Active Loans</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold text-yellow-600">
+                            {pendingPayments.length}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Pending Approvals</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Additional Management Links */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold mb-4">Management Tools</h3>
+                    <div className="space-y-2">
+                      <Link href={`/admin/lending/${communityId}`}>
+                        <Button variant="outline" className="w-full" data-testid="button-lending-admin">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Lending Configuration
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </div>
