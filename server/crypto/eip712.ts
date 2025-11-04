@@ -94,11 +94,11 @@ export function validateEndorsementFields(endorsement: {
     return { valid: false, error: "Cannot endorse yourself" };
   }
 
-  if (endorsement.epoch < 0) {
+  if (endorsement.epoch < 0n) {
     return { valid: false, error: "Invalid epoch" };
   }
 
-  if (endorsement.nonce < 0) {
+  if (endorsement.nonce < 0n) {
     return { valid: false, error: "Invalid nonce" };
   }
 
