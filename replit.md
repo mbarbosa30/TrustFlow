@@ -33,7 +33,7 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
 *   **Communities Architecture**: Supports isolated scoring with custom policies and seed sets.
 *   **Ego Context Architecture**: Enables users to run personal trust networks with global and community-scoped vouches and co-seed management.
 *   **Economic Layer**: Daily USDC distribution on Celo using EIP-3009 gasless transfers, based on STS scores.
-*   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters, installment schedules, and various subsidy systems.
+*   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters, installment schedules, and various subsidy systems. The Credit menu is automatically shown to users who either have access to lending-enabled communities OR have active loans (ensuring borrowers can always access their repayment interface).
 *   **API Integration**: Provides a minimal REST API for third-party applications to integrate with MaxFlow, using community API keys and EIP-712 signatures.
 *   **Dual Scoring Model**:
     *   **Local Health (Ego Score)**: Personal network quality score (0-100) using max-flow/min-cut algorithms. Supports two modes:
