@@ -85,6 +85,20 @@ export default function Overview() {
     ? Math.min(1000, Math.floor((scoreData.localHealth * scoreData.localHealth) / 100))
     : 0;
 
+  // Debug logging
+  useEffect(() => {
+    if (kudosData) {
+      console.log('KUDOS Debug:', {
+        balance: kudosData.balance,
+        canClaim: kudosData.canClaim,
+        lastClaimedAt: kudosData.lastClaimedAt,
+        claimableAmount,
+        countdown,
+        localHealth: scoreData?.localHealth
+      });
+    }
+  }, [kudosData, claimableAmount, countdown, scoreData]);
+
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     endorsee: e.endorsee,
@@ -375,36 +389,47 @@ export default function Overview() {
                   <span className="text-sm text-muted-foreground">KUDOS</span>
                 </div>
                 
-                {kudosData.canClaim && claimableAmount > 0 && (
-                  <>
-                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                      <div className="text-sm text-muted-foreground mb-1">Claimable now</div>
-                      <div className="text-2xl font-bold text-primary" data-testid="text-claimable-amount">
-                        +{claimableAmount.toLocaleString()} KUDOS
+                {kudosData.canClaim ? (
+                  claimableAmount > 0 ? (
+                    <>
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                        <div className="text-sm text-muted-foreground mb-1">Claimable now</div>
+                        <div className="text-2xl font-bold text-primary" data-testid="text-claimable-amount">
+                          +{claimableAmount.toLocaleString()} KUDOS
+                        </div>
                       </div>
+                      <Link href="/kudos">
+                        <Button className="w-full gap-2" data-testid="button-claim-kudos">
+                          <Coins className="w-4 h-4" />
+                          Claim {claimableAmount.toLocaleString()} KUDOS
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Build your network to claim KUDOS</p>
                     </div>
-                    <Link href="/kudos">
-                      <Button className="w-full gap-2" data-testid="button-claim-kudos">
-                        <Coins className="w-4 h-4" />
-                        Claim {claimableAmount.toLocaleString()} KUDOS
-                      </Button>
-                    </Link>
-                  </>
-                )}
-
-                {!kudosData.canClaim && countdown && (
+                  )
+                ) : countdown ? (
                   <div className="p-3 rounded-lg bg-muted/50">
                     <div className="text-sm text-muted-foreground mb-1">Next claim in</div>
                     <div className="text-lg font-semibold" data-testid="text-countdown">
                       {countdown}
                     </div>
                   </div>
-                )}
-
-                {!kudosData.canClaim && !countdown && kudosData.lastClaimedAt && (
-                  <p className="text-xs text-muted-foreground">
-                    Last claimed {new Date(kudosData.lastClaimedAt).toLocaleDateString()}
-                  </p>
+                ) : kudosData.lastClaimedAt ? (
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <p className="text-sm text-muted-foreground">
+                      Last claimed {new Date(kudosData.lastClaimedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <Link href="/kudos">
+                    <Button className="w-full gap-2" data-testid="button-claim-kudos">
+                      <Coins className="w-4 h-4" />
+                      Claim KUDOS
+                    </Button>
+                  </Link>
                 )}
               </CardContent>
             </Card>
