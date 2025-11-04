@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { checkLoanEligibility } from "../lending/eligibility";
-import { createLoan, approveLoan, rejectLoan } from "../lending/loan";
+import { createLoan, approveLoan, rejectLoan, calculateLoanHealth } from "../lending/loan";
 import { processLoanPayment, processInstallmentPayment, getLoanPaymentStatus, checkLateInstallments } from "../lending/payment";
 import { applyInterestBuyDown, applyInterestVoucher, createRepayAssist, initializeGuaranteePool } from "../lending/subsidies";
 import { getUserTrustEventHistory } from "../lending/trust_events";
@@ -475,6 +475,158 @@ router.get("/stats/:communityId", async (req, res) => {
       ghiScore,
       ghiThreshold,
       lendingEnabled,
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Get comprehensive lending dashboard metrics for a community
+ * GET /api/lending/dashboard/:communityId
+ * 
+ * Returns:
+ * - Basic stats (total loans, disbursed, active, completed, defaulted)
+ * - Status distribution
+ * - Risk distribution (low/medium/high/critical)
+ * - At-risk loans with health metrics
+ * - Recent loan activity
+ * - Default rate trends
+ */
+router.get("/dashboard/:communityId", async (req, res) => {
+  try {
+    const communityId = parseInt(req.params.communityId);
+
+    const loans = await storage.getLoansByCommunity(communityId);
+    const community = await storage.getCommunity(communityId);
+    
+    if (!community) {
+      return res.status(404).json({ error: "Community not found" });
+    }
+
+    // Basic counts by status
+    const statusDistribution = {
+      PENDING_APPROVAL: loans.filter(l => l.status === "PENDING_APPROVAL").length,
+      ACTIVE: loans.filter(l => l.status === "ACTIVE").length,
+      PAID: loans.filter(l => l.status === "PAID").length,
+      DEFAULTED: loans.filter(l => l.status === "DEFAULTED").length,
+      REJECTED: loans.filter(l => l.status === "REJECTED").length,
+    };
+
+    // Calculate volume metrics
+    const totalDisbursed = loans
+      .filter(l => l.disbursedAt) // Only count actually disbursed loans
+      .reduce((sum, l) => sum + l.principalUsdc, 0);
+    
+    const activeVolume = loans
+      .filter(l => l.status === "ACTIVE")
+      .reduce((sum, l) => sum + l.principalUsdc, 0);
+
+    // Calculate repayment and default rates
+    let totalDue = 0;
+    let totalPaid = 0;
+    
+    for (const loan of loans.filter(l => l.status === "ACTIVE" || l.status === "PAID" || l.status === "DEFAULTED")) {
+      const installments = await storage.getInstallmentsByLoan(loan.id);
+      totalDue += installments.reduce((sum, i) => sum + i.totalDue, 0);
+      totalPaid += installments.reduce((sum, i) => sum + i.totalPaid, 0);
+    }
+
+    const repaymentRate = totalDue > 0 ? (totalPaid / totalDue) * 100 : 0;
+    const totalLoansCount = statusDistribution.ACTIVE + statusDistribution.PAID + statusDistribution.DEFAULTED;
+    const defaultRate = totalLoansCount > 0 ? (statusDistribution.DEFAULTED / totalLoansCount) * 100 : 0;
+
+    // Risk distribution and at-risk loans analysis
+    const riskDistribution = {
+      low: 0,
+      medium: 0,
+      high: 0,
+      critical: 0,
+    };
+    
+    const atRiskLoans: any[] = [];
+    
+    for (const loan of loans.filter(l => l.status === "ACTIVE")) {
+      try {
+        const installments = await storage.getInstallmentsByLoan(loan.id);
+        const loanTotalPaid = installments.reduce((sum, i) => sum + i.totalPaid, 0);
+        
+        const health = calculateLoanHealth(loan, loanTotalPaid);
+        
+        // Count by risk level
+        riskDistribution[health.riskLevel]++;
+        
+        // Track at-risk loans (medium or higher)
+        if (health.isAtRisk) {
+          atRiskLoans.push({
+            loanId: loan.id,
+            borrowerAddress: loan.borrowerAddress,
+            principalUsdc: loan.principalUsdc,
+            currency: loan.currency,
+            disbursedAt: loan.disbursedAt,
+            healthScore: health.healthScore,
+            riskLevel: health.riskLevel,
+            paymentProgress: health.paymentProgress,
+            timeProgress: health.timeProgress,
+          });
+        }
+      } catch (error) {
+        console.error(`Error calculating health for loan ${loan.id}:`, error);
+      }
+    }
+
+    // Sort at-risk loans by health score (lowest first = most at risk)
+    atRiskLoans.sort((a, b) => a.healthScore - b.healthScore);
+
+    // Recent loan activity (last 10 disbursed loans)
+    const recentLoans = loans
+      .filter(l => l.disbursedAt)
+      .sort((a, b) => new Date(b.disbursedAt!).getTime() - new Date(a.disbursedAt!).getTime())
+      .slice(0, 10)
+      .map(l => ({
+        loanId: l.id,
+        borrowerAddress: l.borrowerAddress,
+        principalUsdc: l.principalUsdc,
+        currency: l.currency,
+        tenorMonths: l.tenorMonths,
+        disbursedAt: l.disbursedAt,
+        status: l.status,
+      }));
+
+    // Get lending policy info
+    const policy = community.lendingPolicyJson as any;
+    const lendingEnabled = policy?.enabled || false;
+    const ghiThreshold = policy?.eligibility?.ghiThreshold || 0;
+
+    res.json({
+      // Basic metrics
+      totalLoans: loans.length,
+      totalDisbursed,
+      activeLoans: statusDistribution.ACTIVE,
+      activeVolume,
+      completedLoans: statusDistribution.PAID,
+      defaultedLoans: statusDistribution.DEFAULTED,
+      pendingApproval: statusDistribution.PENDING_APPROVAL,
+      
+      // Rates
+      repaymentRate: Math.round(repaymentRate * 100) / 100,
+      defaultRate: Math.round(defaultRate * 100) / 100,
+      
+      // Distributions
+      statusDistribution,
+      riskDistribution,
+      
+      // At-risk analysis
+      atRiskLoans,
+      atRiskCount: atRiskLoans.length,
+      
+      // Recent activity
+      recentLoans,
+      
+      // Community settings
+      lendingEnabled,
+      ghiThreshold,
+      currency: community.currency || 'USD',
     });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
