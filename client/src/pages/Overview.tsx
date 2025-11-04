@@ -74,7 +74,7 @@ export default function Overview() {
 
   // KUDOS balance
   const { data: kudosData } = useQuery<{ balance: number; lastClaimedAt: string | null; canClaim: boolean }>({
-    queryKey: ['/api/kudos/balance', address],
+    queryKey: [`/api/kudos/balance/${address}`],
     enabled: isConnected && !!address,
   });
 
