@@ -124,20 +124,23 @@ export class EgoScorer {
       });
     }
 
-    const maxPossibleFlow = 1.0;
     const avgResidualFlow =
       residualFlows.length > 0
         ? residualFlows.reduce((a, b) => a + b, 0) / residualFlows.length
         : 0;
 
     const medianMinCut = this.calculateMedian(minCuts);
+    const seedCount = seedAddresses.length;
 
-    const flowComponent = 50 * (avgResidualFlow / maxPossibleFlow);
+    // Flow component: Pure saturation average (0-50)
+    // avgResidualFlow is already normalized per-node (flow/maxInbound), so just scale by 50
+    const flowComponent = 50 * avgResidualFlow;
     
-    // Cut component: normalize against expected max min-cut of 10 edges
-    // This measures network resilience regardless of seed count
-    const expectedMaxMinCut = 10;
-    const cutComponent = 50 * Math.min(medianMinCut / expectedMaxMinCut, 1);
+    // Cut component: Redundancy per seed (0-50)
+    // Normalize by actual seed count, not hardcoded value
+    const cutComponent = seedCount > 0 
+      ? 50 * Math.min(1.0, medianMinCut / seedCount)
+      : 0;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
@@ -150,7 +153,7 @@ export class EgoScorer {
         acceptedUsers: acceptedCount,
         avgResidualFlow: Math.round(avgResidualFlow * 1000) / 1000,
         medianMinCut: Math.round(medianMinCut * 100) / 100,
-        maxPossibleFlow,
+        maxPossibleFlow: 1.0, // Kept for backward compatibility, but not used in scoring
       },
       nodeDetails: nodeMetrics,
     };
