@@ -24,6 +24,19 @@ interface LoanDetails {
   totalPaid: number;
   totalDue: number;
   nextInstallment?: Installment;
+  currentDebt?: {
+    currentDebt: number;
+    principalRemaining: number;
+    interestAccrued: number;
+    totalExpected: number;
+  };
+  health?: {
+    healthScore: number;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    paymentProgress: number;
+    timeProgress: number;
+    isAtRisk: boolean;
+  };
 }
 
 interface LendingPolicy {
@@ -573,28 +586,97 @@ export default function Credit() {
                 </Alert>
               )}
 
-              {/* Loan Overview */}
+              {/* Loan Overview with Health Metrics */}
               <Card data-testid="card-loan-overview">
                 <CardHeader>
-                  <CardTitle>{t('credit.activeLoan')}</CardTitle>
-                  <CardDescription>
-                    {formatCurrency(loanDetails.loan.principalUsdc, loanDetails.loan.currency)} • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
-                    {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{t('credit.paymentProgress')}</span>
-                    <span className="text-sm font-medium">
-                      {formatCurrency(loanDetails.totalPaid, loanDetails.loan.currency)} / {formatCurrency(loanDetails.totalDue, loanDetails.loan.currency)}
-                    </span>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{t('credit.activeLoan')}</CardTitle>
+                      <CardDescription>
+                        {formatCurrency(loanDetails.loan.principalUsdc, loanDetails.loan.currency)} • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
+                        {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
+                      </CardDescription>
+                    </div>
+                    {loanDetails.health && (
+                      <Badge 
+                        variant={
+                          loanDetails.health.riskLevel === 'low' ? 'default' :
+                          loanDetails.health.riskLevel === 'medium' ? 'secondary' :
+                          'destructive'
+                        }
+                        data-testid="badge-loan-health"
+                      >
+                        {loanDetails.health.riskLevel === 'low' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {loanDetails.health.riskLevel === 'medium' && <AlertCircle className="h-3 w-3 mr-1" />}
+                        {loanDetails.health.riskLevel === 'high' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                        {loanDetails.health.riskLevel === 'critical' && <XCircle className="h-3 w-3 mr-1" />}
+                        {loanDetails.health.riskLevel.toUpperCase()} RISK
+                      </Badge>
+                    )}
                   </div>
-                  <Progress value={(loanDetails.totalPaid / loanDetails.totalDue) * 100} />
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Current Debt Breakdown */}
+                  {loanDetails.currentDebt && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Current Debt</span>
+                        <span className="text-2xl font-bold">
+                          {formatCurrency(loanDetails.currentDebt.currentDebt, loanDetails.loan.currency)}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Principal Remaining</p>
+                          <p className="font-medium">{formatCurrency(loanDetails.currentDebt.principalRemaining, loanDetails.loan.currency)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Interest Accrued</p>
+                          <p className="font-medium">{formatCurrency(loanDetails.currentDebt.interestAccrued, loanDetails.loan.currency)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
+                  {/* Payment Progress */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Payment Progress</span>
+                      <span className="text-sm font-medium">
+                        {formatCurrency(loanDetails.totalPaid, loanDetails.loan.currency)} / {formatCurrency(loanDetails.totalDue, loanDetails.loan.currency)}
+                      </span>
+                    </div>
+                    <Progress value={(loanDetails.totalPaid / loanDetails.totalDue) * 100} />
+                    {loanDetails.health && (
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{Math.round(loanDetails.health.paymentProgress)}% paid</span>
+                        <span>{Math.round(loanDetails.health.timeProgress)}% of term elapsed</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Health Score */}
+                  {loanDetails.health && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Loan Health Score</span>
+                        <span className="text-sm font-medium">{loanDetails.health.healthScore.toFixed(1)}/100</span>
+                      </div>
+                      <Progress value={loanDetails.health.healthScore} />
+                      {loanDetails.health.isAtRisk && (
+                        <div className="flex items-center gap-2 text-xs text-destructive">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>Payments are falling behind schedule</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Next Payment */}
                   {loanDetails.nextInstallment && (
                     <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
                       <DollarSign className="h-5 w-5" />
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium">{t('credit.nextPayment')}</p>
                         <p className="text-sm text-muted-foreground">
                           {formatCurrency(loanDetails.nextInstallment.totalDue, loanDetails.loan.currency)} {t('credit.dueOn')}{" "}
