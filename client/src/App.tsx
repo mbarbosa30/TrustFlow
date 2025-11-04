@@ -35,8 +35,8 @@ import Admin from "@/pages/Admin";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
-// Dynamic app nav items - will be filtered based on user's community access
-const getAppNavItems = (hasMicrocreditAccess: boolean) => {
+// Dynamic app nav items - will be filtered based on user's community access or active loans
+const getAppNavItems = (hasMicrocreditAccess: boolean, hasActiveLoans: boolean) => {
   const items = [
     { path: "/overview", label: "nav.overview" },
     { path: "/network", label: "My Network" },
@@ -44,8 +44,8 @@ const getAppNavItems = (hasMicrocreditAccess: boolean) => {
     { path: "/communities", label: "nav.communities" },
   ];
   
-  // Only show Credit if user has access to microcredit communities
-  if (hasMicrocreditAccess) {
+  // Show Credit if user has access to microcredit communities OR has active loans
+  if (hasMicrocreditAccess || hasActiveLoans) {
     items.splice(3, 0, { path: "/credit", label: "nav.credit" });
   }
   
@@ -108,7 +108,15 @@ function App() {
     (c: any) => c.lendingPolicyJson?.enabled === true
   );
   
-  const appNavItems = getAppNavItems(hasMicrocreditAccess);
+  // Check if user has any active loans
+  const { data: activeLoansData } = useQuery<{ hasActiveLoans: boolean; activeLoans: any[] }>({
+    queryKey: [`/api/loans/user/${address}/active`],
+    enabled: !!address,
+  });
+
+  const hasActiveLoans = activeLoansData?.hasActiveLoans || false;
+  
+  const appNavItems = getAppNavItems(hasMicrocreditAccess, hasActiveLoans);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -124,7 +132,7 @@ function App() {
               <Router />
             </main>
             <Footer />
-            {!isLandingPage && <MobileBottomNav hasMicrocreditAccess={hasMicrocreditAccess} />}
+            {!isLandingPage && <MobileBottomNav hasMicrocreditAccess={hasMicrocreditAccess} hasActiveLoans={hasActiveLoans} />}
           </div>
           <Toaster />
         </TooltipProvider>

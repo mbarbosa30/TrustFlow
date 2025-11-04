@@ -6,9 +6,10 @@ import { useAccount } from "wagmi";
 
 interface MobileBottomNavProps {
   hasMicrocreditAccess?: boolean;
+  hasActiveLoans?: boolean;
 }
 
-export function MobileBottomNav({ hasMicrocreditAccess = false }: MobileBottomNavProps) {
+export function MobileBottomNav({ hasMicrocreditAccess = false, hasActiveLoans = false }: MobileBottomNavProps) {
   const [location] = useLocation();
   const { address } = useAccount();
 
@@ -58,7 +59,7 @@ export function MobileBottomNav({ hasMicrocreditAccess = false }: MobileBottomNa
           <span className="text-xs mt-1">KUDOS</span>
         </Link>
 
-        {hasMicrocreditAccess && (
+        {(hasMicrocreditAccess || hasActiveLoans) && (
           <Link
             href="/credit"
             data-testid="nav-credit"

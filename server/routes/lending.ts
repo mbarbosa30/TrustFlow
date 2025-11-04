@@ -28,6 +28,29 @@ router.get("/eligibility/:communityId/:userAddress", async (req, res) => {
 });
 
 /**
+ * Get all active loans for a user across all communities
+ * GET /api/loans/user/:userAddress/active
+ */
+router.get("/user/:userAddress/active", async (req, res) => {
+  try {
+    const userAddress = req.params.userAddress.toLowerCase();
+
+    // Get all loans for this user (storage method supports filtering by borrower)
+    const allLoans = await storage.getLoans({ borrowerAddress: userAddress, limit: 1000 });
+    
+    // Filter for active loans only
+    const activeLoans = allLoans.filter((loan) => loan.status === "ACTIVE");
+
+    res.json({ 
+      hasActiveLoans: activeLoans.length > 0,
+      activeLoans 
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
  * Get loans by borrower (MUST come before /:loanId to avoid route collision)
  * GET /api/loans/borrower/:communityId/:userAddress
  */
