@@ -272,8 +272,13 @@ export default function Overview() {
           {address && (
             <Card data-testid="card-share-link">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Share Your Profile</CardTitle>
-                <CardDescription>Let others vouch for you</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Share Your Profile</CardTitle>
+                    <CardDescription>Let others vouch for you</CardDescription>
+                  </div>
+                  <Share2 className="w-5 h-5 text-muted-foreground" />
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 {showInlineQR && (
@@ -324,8 +329,8 @@ export default function Overview() {
                   <Coins className="w-5 h-5 text-muted-foreground" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline gap-2 mb-3">
+              <CardContent className="space-y-3">
+                <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold" data-testid="text-kudos-balance">
                     {kudosData.balance.toLocaleString()}
                   </span>
@@ -360,7 +365,7 @@ export default function Overview() {
                   <CreditCard className="w-5 h-5 text-muted-foreground" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 {activeLoans.slice(0, 2).map((loan: any) => (
                   <Link key={loan.id} href={`/credit/${loan.communityId}`}>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover-elevate cursor-pointer" data-testid={`loan-card-${loan.id}`}>
@@ -389,10 +394,15 @@ export default function Overview() {
           {userCommunities.length > 0 && activeLoans.length === 0 && firstCommunity && (
             <Card data-testid="card-apply-microcredit">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Need Funding?</CardTitle>
-                <CardDescription>Apply for microcredit in your community</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Need Funding?</CardTitle>
+                    <CardDescription>Apply for microcredit in your community</CardDescription>
+                  </div>
+                  <DollarSign className="w-5 h-5 text-muted-foreground" />
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <Link href={`/credit/${firstCommunity.id}`}>
                   <Button className="w-full gap-2" data-testid="button-apply-microcredit">
                     <DollarSign className="w-4 h-4" />
@@ -415,7 +425,7 @@ export default function Overview() {
                   <Settings className="w-5 h-5 text-muted-foreground" />
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <Link href="/lending-dashboard">
                   <Button variant="outline" className="w-full gap-2" data-testid="button-lending-dashboard">
                     View Dashboard
