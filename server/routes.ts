@@ -2475,17 +2475,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate nonce
-      const maxNonce = await storage.getMaxNonce(
+      const nonceValidation = await validateNonce(
         endorsementWithBigInt.endorser,
-        endorsementWithBigInt.epoch,
-        0 // Global graph uses communityId=0
+        Number(endorsementWithBigInt.epoch),
+        endorsementWithBigInt.nonce
       );
       
-      const nonceValid = validateNonce(endorsementWithBigInt.nonce, maxNonce);
-      if (!nonceValid) {
+      if (!nonceValidation.valid) {
         return res.status(400).json({ 
-          error: "Invalid nonce", 
-          maxNonce, 
+          error: nonceValidation.error || "Invalid nonce", 
+          expectedNonce: nonceValidation.expectedNonce,
           providedNonce: endorsementWithBigInt.nonce 
         });
       }
