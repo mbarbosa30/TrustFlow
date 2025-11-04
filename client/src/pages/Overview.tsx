@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Download, Share2, CreditCard, DollarSign, Settings, Coins, ChevronRight } from "lucide-react";
+import { QrCode, Download, Share2, CreditCard, Settings, Coins, ChevronRight } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
@@ -61,7 +61,6 @@ export default function Overview() {
   });
 
   const userCommunities = userCommunitiesData?.communities?.filter((c: any) => c != null) || [];
-  const firstCommunity = userCommunities[0];
   const isManager = userCommunities.some((c: any) => 
     c?.seedAddresses?.includes(address?.toLowerCase())
   );
@@ -468,29 +467,6 @@ export default function Overview() {
                     +{activeLoans.length - 2} more loan{activeLoans.length - 2 > 1 ? 's' : ''}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Apply for Microcredit Card */}
-          {userCommunities.length > 0 && activeLoans.length === 0 && firstCommunity && (
-            <Card data-testid="card-apply-microcredit">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Need Funding?</CardTitle>
-                    <CardDescription>Apply for microcredit in your community</CardDescription>
-                  </div>
-                  <DollarSign className="w-5 h-5 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Link href={`/credit/${firstCommunity.id}`}>
-                  <Button className="w-full gap-2" data-testid="button-apply-microcredit">
-                    <DollarSign className="w-4 h-4" />
-                    Apply for Microcredit
-                  </Button>
-                </Link>
               </CardContent>
             </Card>
           )}
