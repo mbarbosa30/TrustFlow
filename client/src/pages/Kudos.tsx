@@ -441,10 +441,10 @@ export default function Kudos() {
           <div>
             <h3 className="font-semibold mb-2">Economics</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Weekly claiming based on LocalHealth score (score² / 100)</li>
+              <li>• Daily claiming based on Ego Score (score² / 100)</li>
               <li>• 1000 KUDOS daily cap across all users</li>
               <li>• 1% transfer fee: 0.5% burned (deflationary), 0.5% pooled</li>
-              <li>• 7-day cooldown between claims</li>
+              <li>• 24-hour cooldown between claims</li>
               <li>• Edge boosts decay exponentially (180-day halflife)</li>
             </ul>
           </div>
