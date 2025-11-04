@@ -51,6 +51,12 @@ interface Community {
   lendingPolicyJson: LendingPolicy;
 }
 
+interface CommunityResponse {
+  community: Community;
+  seeds: any[];
+  latestEpoch: any;
+}
+
 interface EligibilityResult {
   eligible: boolean;
   reasons: string[];
@@ -76,11 +82,12 @@ export default function Credit() {
   const [borrowerName, setBorrowerName] = useState("");
 
   // Get community data for currency and lending policy
-  const { data: community, isLoading: communityLoading } = useQuery<Community>({
+  const { data: communityData, isLoading: communityLoading } = useQuery<CommunityResponse>({
     queryKey: [`/api/communities/${communityId}`],
     enabled: true,
   });
 
+  const community = communityData?.community;
   const currency = community?.currency || 'ARS';
   const lendingPolicy = community?.lendingPolicyJson;
 
