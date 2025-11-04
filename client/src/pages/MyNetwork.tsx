@@ -195,7 +195,7 @@ export default function MyNetwork() {
             <span data-testid="text-card-title-health">Personal Network Health</span>
           </CardTitle>
           <CardDescription data-testid="text-card-description-health">
-            Your trust score based on your curated network
+            How much the network trusts you, based on incoming vouches
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,7 +223,7 @@ export default function MyNetwork() {
               <p className="text-sm text-muted-foreground" data-testid="text-status-message">
                 {scoreData && scoreData.metrics.totalNodes > 0 
                   ? `${scoreData.metrics.totalNodes} nodes in network` 
-                  : "Add co-seeds to strengthen your network"}
+                  : "Get vouched to build your score"}
               </p>
             </div>
           </div>
@@ -271,7 +271,7 @@ export default function MyNetwork() {
             <Alert className="mt-6" data-testid="alert-scoring-info">
               <Info className="h-4 w-4" />
               <AlertDescription data-testid="text-scoring-info-message">
-                Your network is empty. Start by vouching for others using global vouches, or add co-seeds to seed your network.
+                Your score starts at 0. Get vouched by others to build trust. Optional: Add co-seeds for enhanced Sybil resistance.
               </AlertDescription>
             </Alert>
           )}
@@ -286,7 +286,7 @@ export default function MyNetwork() {
             <span data-testid="text-co-seeds-title">Trusted Co-Seeds ({coSeedCount}/{maxCoSeeds})</span>
           </CardTitle>
           <CardDescription data-testid="text-co-seeds-description">
-            Add up to 3 trusted wallets as co-seeds to strengthen your network
+            Optional: Add up to 3 trusted wallets for hybrid mode with enhanced Sybil resistance
           </CardDescription>
         </CardHeader>
         <CardContent>

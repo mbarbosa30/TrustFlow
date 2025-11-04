@@ -75,6 +75,101 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Personal Networks (Ego Score)</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p className="text-sm mb-3">
+              <strong>Ego Score</strong> is your personal network health score (0-100) that measures "how much the network trusts you" based on incoming vouches. Unlike Community STS which uses a fixed seed set, Ego Score can operate in two modes:
+            </p>
+            
+            <div className="space-y-4 my-4">
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge>Default</Badge>
+                  <span className="font-semibold">Pure Option 2: Incoming Trust</span>
+                </div>
+                <p className="text-sm mb-2">
+                  <strong>No co-seeds required.</strong> Your score is based purely on vouches you receive from others.
+                </p>
+                <ul className="text-sm space-y-1 pl-4">
+                  <li>Flow sources: Everyone who vouched for you</li>
+                  <li>Target: YOU</li>
+                  <li>Measures: "How saturated am I with incoming trust?"</li>
+                  <li>Intuitive: More vouches = higher score</li>
+                  <li>Example: With 1 vouch, score ~60-100 (not 0)</li>
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline">Optional</Badge>
+                  <span className="font-semibold">Hybrid Mode: Enhanced Sybil Resistance</span>
+                </div>
+                <p className="text-sm mb-2">
+                  <strong>Add 1-3 co-seeds</strong> (people you trust) to anchor your network.
+                </p>
+                <ul className="text-sm space-y-1 pl-4">
+                  <li>Flow sources: Your co-seeds</li>
+                  <li>Target: YOU</li>
+                  <li>Measures: "How well-connected am I within my trusted circle?"</li>
+                  <li>Benefit: Attackers can't fake connections to YOUR specific trusted people</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
+              <p className="text-center text-lg font-bold font-mono mb-2">
+                Ego Score = 60 × avgResidualFlow + 40 × min(1, medianMinCut/voucherCount) × vouchQuality
+              </p>
+              <p className="text-center text-sm text-muted-foreground">
+                Flow (60%) + Cut (40%) × Vouch Accountability
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="font-semibold mb-1">Flow Component (60%):</p>
+                <p className="text-sm text-muted-foreground">
+                  Measures incoming trust saturation. For each node, compute <span className="font-mono">residualFlow = min(1.0, flow/maxInboundCapacity)</span>. 
+                  Higher saturation = more trust flowing to you.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">Cut Component (40%):</p>
+                <p className="text-sm text-muted-foreground">
+                  Measures network redundancy. <span className="font-mono">medianMinCut</span> divided by number of vouchers (or co-seeds in hybrid mode). 
+                  Higher cut = more independent paths, harder to isolate you.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <p className="font-semibold mb-1 text-amber-600 dark:text-amber-400">Outgoing Vouch Adjustment (Accountability):</p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Your score is slightly influenced by <strong>who YOU vouch for</strong>, preventing vouch spam:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1 pl-4">
+                  <li><strong>Quality-based:</strong> Mean residual flow of your vouchees (0.9-1.1x multiplier on cut)</li>
+                  <li><strong>Dilution penalty:</strong> 5% per vouch beyond 10 vouches</li>
+                  <li><strong>Missing residuals:</strong> Treated neutrally (vouchees outside your network not penalized)</li>
+                  <li><strong>Impact:</strong> ~5-10% score swing, keeps incoming trust as primary driver</li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="font-semibold mb-1">Distance Decay & KUDOS Boosts:</p>
+                <p className="text-sm text-muted-foreground">
+                  Edge capacities use simple distance decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>. 
+                  KUDOS transfers boost edge capacity with exponential decay (180-day halflife): 
+                  <span className="font-mono"> boostMultiplier = 1 + min(1, kudosWeight/100)</span>, max 2x.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Acceptance & Tiers</CardTitle>
           </CardHeader>
           <CardContent>

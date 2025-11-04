@@ -143,24 +143,27 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Personal Network (Ego Score):</strong> You run your own seeded trust network by selecting up to 3 co-seeds. Global vouches flow across all personal networks. Your Ego Score (0-100) measures the quality of your curated network using distance-based capacity decay.
+              <strong>Personal Network (Ego Score):</strong> Measures "how much the network trusts you" based on incoming vouches. No co-seeds required by default. Optionally add up to 3 co-seeds for hybrid mode with enhanced Sybil resistance. Your Ego Score (0-100) uses max-flow/min-cut with 60% weight on incoming trust, 40% on network redundancy.
             </p>
             <p>
-              <strong>Community Reputation (STS):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately.
+              <strong>Community Reputation (STS):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately using a 5-component weighted formula.
             </p>
           </AccordionContent>
         </AccordionItem>
 
         <AccordionItem value="co-seeds" data-testid="faq-co-seeds">
           <AccordionTrigger className="text-left">
-            What are co-seeds and why do I need them?
+            What are co-seeds and do I need them?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              A "seed" is a starting point for trust computation. You're automatically a seed for your own network. "Co-seeds" are trusted accounts you add to strengthen your personal network—think of them as "trust anchors" who help validate others.
+              <strong>Co-seeds are optional.</strong> By default, your Ego Score is based purely on incoming vouches (Pure Option 2 mode) - no co-seeds required. You'll get a non-zero score as soon as someone vouches for you.
             </p>
-            <p>
-              Adding 2-3 co-seeds improves Sybil resistance by requiring multiple independent paths. The max-flow/min-cut algorithm runs from all seeds (you + co-seeds) to compute your Ego Score (0-100). You can manage co-seeds on your My Network page.
+            <p className="mb-2">
+              <strong>Why add co-seeds?</strong> Optionally add 1-3 trusted people to enable "hybrid mode" for enhanced Sybil resistance. The algorithm then measures flow from your co-seeds through the network to you, making it harder for attackers to fake connections to YOUR specific trusted people.
+            </p>
+            <p className="text-sm">
+              <strong>Tip:</strong> Start without co-seeds. Add them later if you want the extra security layer. You can manage co-seeds on your My Network page.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -185,13 +188,19 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              Ego Score (0-100) measures the quality of your ego network using max-flow/min-cut on your personal subgraph:
+              Ego Score (0-100) measures "how much the network trusts you" using max-flow/min-cut:
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              EgoScore = 50 × avgResidualFlow + 50 × min(medianMinCut / 10, 1)
+              EgoScore = 60 × avgResidualFlow + 40 × min(medianMinCut / voucherCount, 1) × vouchQuality
             </div>
             <p className="text-sm mb-2">
-              <strong>Distance-Based Capacity:</strong> Node capacity decays with distance from your seed set (you + co-seeds). Distance 0 = 1.0, Distance 1 = 0.5, Distance 2+ = 0.25. This prevents spam endorsements from diluting your network.
+              <strong>Flow Component (60%):</strong> Incoming trust saturation - measures how much trust flows TO you from vouchers.
+            </p>
+            <p className="text-sm mb-2">
+              <strong>Cut Component (40%):</strong> Network redundancy - how many independent paths connect you to the network.
+            </p>
+            <p className="text-sm">
+              <strong>Vouch Quality Factor:</strong> Your score is slightly influenced by who YOU vouch for (preventing vouch spam). Quality-based adjustment (0.9-1.1x) + dilution penalty for &gt;10 vouches. Impact: ~5-10% score swing.
             </p>
             <p className="text-sm">
               <strong>Note:</strong> The Ego Score calculation is currently implemented. View your score on the My Network page.
