@@ -12,11 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { WalletProfile, Loan, Installment, PendingPayment } from "@shared/schema";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatCurrency } from "@/lib/utils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface LoanDetails {
   loan: Loan;
@@ -70,6 +71,131 @@ interface EligibilityResult {
   amounts?: number[];
 }
 
+interface LoanHistoryItemProps {
+  loan: Loan;
+  isExpanded: boolean;
+  onToggle: () => void;
+  currency: string;
+}
+
+function LoanHistoryItem({ loan, isExpanded, onToggle, currency }: LoanHistoryItemProps) {
+  const { t } = useLanguage();
+  
+  const { data: loanDetails } = useQuery<LoanDetails & { installments: Installment[] }>({
+    queryKey: [`/api/loans/${loan.id}`],
+    enabled: isExpanded,
+  });
+
+  const { data: paymentsData } = useQuery<{ payments: PendingPayment[] }>({
+    queryKey: [`/api/loans/${loan.id}/payments`],
+    enabled: isExpanded,
+  });
+
+  const installments = loanDetails?.installments || [];
+  const payments = paymentsData?.payments || [];
+
+  const getInstallmentPayments = (installmentId: number) => {
+    return payments.filter(p => p.installmentId === installmentId);
+  };
+
+  const getInstallmentPaidAmount = (installmentId: number) => {
+    return payments
+      .filter(p => p.installmentId === installmentId && p.status === 'APPROVED')
+      .reduce((sum, p) => sum + p.amount, 0);
+  };
+
+  const getPaymentStatusBadge = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return <Badge variant="default" className="text-xs"><CheckCircle2 className="h-3 w-3 mr-1" />Approved</Badge>;
+      case 'REJECTED':
+        return <Badge variant="destructive" className="text-xs"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+      case 'PENDING':
+        return <Badge variant="secondary" className="text-xs"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Collapsible open={isExpanded} onOpenChange={onToggle}>
+      <div className="border rounded-lg" data-testid={`loan-${loan.id}`}>
+        <CollapsibleTrigger className="w-full p-4 hover-elevate flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <div className="text-left">
+              <p className="font-medium">{formatCurrency(loan.principalUsdc, currency)}</p>
+              <p className="text-sm text-muted-foreground">
+                {loan.tenorMonths} {t('common.months')} • {(loan.aprNominal * 100).toFixed(0)}% TNA
+              </p>
+            </div>
+          </div>
+          <Badge variant={loan.status === "PAID" ? "default" : loan.status === "ACTIVE" ? "secondary" : "destructive"}>
+            {loan.status === "PAID" ? t('credit.statusPaid') : loan.status === "ACTIVE" ? t('credit.statusActive') : t('credit.statusDefault')}
+          </Badge>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="border-t p-4 space-y-4">
+            {installments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No installment data available</p>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Payment Schedule</h4>
+                {installments.map((installment, idx) => {
+                  const paidAmount = getInstallmentPaidAmount(installment.id);
+                  const installmentPayments = getInstallmentPayments(installment.id);
+                  const isPaid = paidAmount >= installment.totalDue;
+                  const isOverdue = new Date(installment.dueDate) < new Date() && !isPaid;
+
+                  return (
+                    <div key={installment.id} className="border rounded-md p-3 space-y-2" data-testid={`installment-${installment.id}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">Installment #{idx + 1}</span>
+                            {isPaid && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                            {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Due: {new Date(installment.dueDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{formatCurrency(installment.totalDue, currency)}</p>
+                          {paidAmount > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Paid: {formatCurrency(paidAmount, currency)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {installmentPayments.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground">Payment Submissions:</p>
+                          {installmentPayments.map((payment) => (
+                            <div key={payment.id} className="flex items-center justify-between text-xs" data-testid={`payment-${payment.id}`}>
+                              <span className="text-muted-foreground">
+                                {new Date(payment.submittedAt).toLocaleDateString()} - {formatCurrency(payment.amount, currency)}
+                              </span>
+                              {getPaymentStatusBadge(payment.status)}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  );
+}
+
 export default function Credit() {
   const params = useParams();
   const communityId = Number(params.id) || 0;
@@ -80,6 +206,7 @@ export default function Credit() {
   const [selectedTenor, setSelectedTenor] = useState<number | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [borrowerName, setBorrowerName] = useState("");
+  const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
 
   // Get community data for currency and lending policy
   const { data: communityData, isLoading: communityLoading } = useQuery<CommunityResponse>({
@@ -627,21 +754,13 @@ export default function Credit() {
               ) : (
                 <div className="space-y-4">
                   {loans.map((loan) => (
-                    <div
+                    <LoanHistoryItem
                       key={loan.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover-elevate"
-                      data-testid={`loan-${loan.id}`}
-                    >
-                      <div>
-                        <p className="font-medium">{formatCurrency(loan.principalUsdc, loan.currency)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {loan.tenorMonths} {t('common.months')} • {(loan.aprNominal * 100).toFixed(0)}% TNA
-                        </p>
-                      </div>
-                      <Badge variant={loan.status === "PAID" ? "default" : loan.status === "ACTIVE" ? "secondary" : "destructive"}>
-                        {loan.status === "PAID" ? t('credit.statusPaid') : loan.status === "ACTIVE" ? t('credit.statusActive') : t('credit.statusDefault')}
-                      </Badge>
-                    </div>
+                      loan={loan}
+                      isExpanded={expandedLoanId === loan.id}
+                      onToggle={() => setExpandedLoanId(expandedLoanId === loan.id ? null : loan.id)}
+                      currency={currency}
+                    />
                   ))}
                 </div>
               )}

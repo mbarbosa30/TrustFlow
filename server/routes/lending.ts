@@ -588,6 +588,22 @@ router.post("/pending-payments/:id/approve", async (req, res) => {
 });
 
 /**
+ * Get all payment submissions for a specific loan
+ * GET /api/loans/:loanId/payments
+ */
+router.get("/:loanId/payments", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+    
+    const payments = await storage.getPendingPaymentsByLoan(loanId);
+    
+    res.json({ payments });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
  * Reject a pending payment
  * POST /api/lending/pending-payments/:id/reject
  * Body: { reviewerAddress, reviewNotes? }
