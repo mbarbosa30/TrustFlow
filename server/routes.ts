@@ -2396,30 +2396,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // policyJson is already deserialized by Drizzle (JSONB type)
       const policy = community.policyJson;
 
-      // Convert lending policy from backend format to frontend format
+      // Pass lending policy with raw arrays (don't convert to min/max/step)
       let lendingPolicyJson = community.lendingPolicyJson;
       if (lendingPolicyJson && typeof lendingPolicyJson === 'object') {
         const rawPolicy = lendingPolicyJson as any;
         
-        // Check if it's in backend format (has loanButtonsUsdc array)
+        // Keep the backend format but make it easier to consume
+        // Frontend will use the raw arrays directly
         if (rawPolicy.loanButtonsUsdc && Array.isArray(rawPolicy.loanButtonsUsdc)) {
-          // Convert to frontend format
-          const loanAmounts = rawPolicy.loanButtonsUsdc;
-          const tenors = rawPolicy.tenorsMonths || [];
-          
           lendingPolicyJson = {
             enabled: rawPolicy.enabled ?? true,
             currency: rawPolicy.currency || 'ARS',
-            loanAmounts: {
-              min: loanAmounts.length > 0 ? Math.min(...loanAmounts) : 0,
-              max: loanAmounts.length > 0 ? Math.max(...loanAmounts) : 0,
-              step: loanAmounts.length > 1 ? loanAmounts[1] - loanAmounts[0] : 1,
-            },
-            tenorMonths: {
-              min: tenors.length > 0 ? Math.min(...tenors) : 0,
-              max: tenors.length > 0 ? Math.max(...tenors) : 0,
-              step: tenors.length > 1 ? tenors[1] - tenors[0] : 1,
-            },
+            loanButtonsUsdc: rawPolicy.loanButtonsUsdc,
+            tenorsMonths: rawPolicy.tenorsMonths || [],
+            aprNominal: rawPolicy.aprNominal ?? 0,
             annualInterestRate: (rawPolicy.aprNominal ?? 0) * 100,
             subsidies: {
               ibdEnabled: rawPolicy.subsidy?.interestBuydown?.enabled ?? false,

@@ -218,80 +218,30 @@ export default function Credit() {
   const lendingPolicy = community?.lendingPolicyJson;
   const currency = lendingPolicy?.currency || community?.currency || 'ARS';
 
-  // Generate available loan amounts from policy
+  // Get available loan amounts from policy
   const availableLoanAmounts = () => {
     if (eligibility?.amounts && eligibility.amounts.length > 0) {
       return eligibility.amounts;
     }
-    // Handle both array format (loanButtonsUsdc) and object format (loanAmounts)
+    // Use raw arrays from lending policy
     if (lendingPolicy?.loanButtonsUsdc && Array.isArray(lendingPolicy.loanButtonsUsdc)) {
       return lendingPolicy.loanButtonsUsdc;
-    }
-    if (lendingPolicy?.loanAmounts) {
-      const { min, max, step } = lendingPolicy.loanAmounts;
-      const amounts = [];
-      for (let amount = min; amount <= max; amount += step) {
-        amounts.push(amount);
-      }
-      return amounts;
     }
     return [160000, 240000, 400000, 600000, 800000];
   };
 
-  // Generate available tenors from policy
+  // Get available tenors from policy
   const availableTenors = () => {
-    // Handle both array format (tenorsMonths) and object format (tenorMonths)
     if (lendingPolicy?.tenorsMonths && Array.isArray(lendingPolicy.tenorsMonths)) {
       return lendingPolicy.tenorsMonths;
-    }
-    if (lendingPolicy?.tenorMonths) {
-      const { min, max, step } = lendingPolicy.tenorMonths;
-      const tenors = [];
-      for (let tenor = min; tenor <= max; tenor += step) {
-        tenors.push(tenor);
-      }
-      return tenors;
     }
     return [6, 9, 12];
   };
 
   // Reset loan amount/tenor when community changes
   useEffect(() => {
-    // Generate amounts from policy only (ignore eligibility to avoid stale cache)
-    const getPolicyAmounts = () => {
-      // Handle both array format (loanButtonsUsdc) and object format (loanAmounts)
-      if (lendingPolicy?.loanButtonsUsdc && Array.isArray(lendingPolicy.loanButtonsUsdc)) {
-        return lendingPolicy.loanButtonsUsdc;
-      }
-      if (lendingPolicy?.loanAmounts) {
-        const { min, max, step } = lendingPolicy.loanAmounts;
-        const amounts = [];
-        for (let amount = min; amount <= max; amount += step) {
-          amounts.push(amount);
-        }
-        return amounts;
-      }
-      return [160000, 240000, 400000, 600000, 800000];
-    };
-
-    const getPolicyTenors = () => {
-      // Handle both array format (tenorsMonths) and object format (tenorMonths)
-      if (lendingPolicy?.tenorsMonths && Array.isArray(lendingPolicy.tenorsMonths)) {
-        return lendingPolicy.tenorsMonths;
-      }
-      if (lendingPolicy?.tenorMonths) {
-        const { min, max, step } = lendingPolicy.tenorMonths;
-        const tenors = [];
-        for (let tenor = min; tenor <= max; tenor += step) {
-          tenors.push(tenor);
-        }
-        return tenors;
-      }
-      return [6, 9, 12];
-    };
-
-    const amounts = getPolicyAmounts();
-    const tenors = getPolicyTenors();
+    const amounts = lendingPolicy?.loanButtonsUsdc || [160000, 240000, 400000, 600000, 800000];
+    const tenors = lendingPolicy?.tenorsMonths || [6, 9, 12];
     
     // Reset to first option when community changes
     if (amounts.length > 0) {
