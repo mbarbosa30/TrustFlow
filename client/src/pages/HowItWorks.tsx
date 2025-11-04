@@ -89,14 +89,14 @@ export default function HowItWorks() {
                   <span className="font-semibold">Pure Option 2: Incoming Trust</span>
                 </div>
                 <p className="text-sm mb-2">
-                  <strong>No co-seeds required.</strong> Your score is based purely on vouches you receive from others.
+                  <strong>No co-seeds required.</strong> Your score is based purely on vouches you receive from others using quadratic exponential scaling (2.0 exponent).
                 </p>
                 <ul className="text-sm space-y-1 pl-4">
                   <li>Flow sources: Everyone who vouched for you</li>
                   <li>Target: YOU</li>
                   <li>Measures: "How saturated am I with incoming trust?"</li>
-                  <li>Intuitive: More vouches = higher score</li>
-                  <li>Example: With 1 vouch, score ~60-100 (not 0)</li>
+                  <li>Quadratic scaling: 1 vouch ~2-3pts, 3 vouches ~18pts, 5 vouches ~61pts, 10 vouches ~74pts</li>
+                  <li>Score range: 0-100, with stricter distribution for wider discrimination</li>
                 </ul>
               </div>
 
@@ -119,10 +119,10 @@ export default function HowItWorks() {
 
             <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
               <p className="text-center text-lg font-bold font-mono mb-2">
-                Ego Score = 60 × avgResidualFlow + 40 × min(1, medianMinCut/voucherCount) × vouchQuality
+                Ego Score = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
               </p>
               <p className="text-center text-sm text-muted-foreground">
-                Flow (60%) + Cut (40%) × Vouch Accountability
+                Flow (60%) + Redundancy (40%) × Vouch Accountability, with quadratic scaling (exponent 2.0)
               </p>
             </div>
 
@@ -130,29 +130,31 @@ export default function HowItWorks() {
               <div>
                 <p className="font-semibold mb-1">Flow Component (60%):</p>
                 <p className="text-sm text-muted-foreground">
-                  Measures incoming trust saturation. For each node, compute <span className="font-mono">residualFlow = min(1.0, flow/maxInboundCapacity)</span>. 
+                  Measures incoming trust saturation normalized by healthy baseline (5 vouches), with quadratic scaling.
+                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = min(1.0, directFlow / HEALTHY_VOUCH_COUNT).
                   Higher saturation = more trust flowing to you.
                 </p>
               </div>
 
               <div>
-                <p className="font-semibold mb-1">Cut Component (40%):</p>
+                <p className="font-semibold mb-1">Redundancy Component (40%):</p>
                 <p className="text-sm text-muted-foreground">
-                  Measures network redundancy. <span className="font-mono">medianMinCut</span> divided by number of vouchers (or co-seeds in hybrid mode). 
-                  Higher cut = more independent paths, harder to isolate you.
+                  Measures effective redundancy (vouch count + upstream depth + edge density) normalized by healthy baseline (20 points), with quadratic scaling.
+                  Formula: <span className="font-mono">40 × (redundancy)²</span> where redundancy = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
+                  Higher redundancy = more multi-hop support, harder to isolate you.
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <p className="font-semibold mb-1 text-amber-600 dark:text-amber-400">Outgoing Vouch Adjustment (Accountability):</p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Your score is slightly influenced by <strong>who YOU vouch for</strong>, preventing vouch spam:
+                  Your redundancy score is influenced by <strong>who YOU vouch for</strong>, preventing vouch spam:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 pl-4">
-                  <li><strong>Quality-based:</strong> Mean residual flow of your vouchees (0.9-1.1x multiplier on cut)</li>
-                  <li><strong>Dilution penalty:</strong> 5% per vouch beyond 10 vouches</li>
-                  <li><strong>Missing residuals:</strong> Treated neutrally (vouchees outside your network not penalized)</li>
-                  <li><strong>Impact:</strong> ~5-10% score swing, keeps incoming trust as primary driver</li>
+                  <li><strong>Dilution penalty:</strong> 10% per vouch beyond 10 vouches (doubled from 5%)</li>
+                  <li><strong>Caps at 50% reduction:</strong> Prevents complete score destruction while deterring spam</li>
+                  <li><strong>Impact:</strong> ~10-20% typical score swing, keeps incoming trust as primary driver</li>
+                  <li><strong>Formula:</strong> dilutionFactor = max(0.5, 1 - 0.1 × excessVouches)</li>
                 </ul>
               </div>
 
@@ -161,7 +163,8 @@ export default function HowItWorks() {
                 <p className="text-sm text-muted-foreground">
                   Edge capacities use simple distance decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>. 
                   KUDOS transfers boost edge capacity with exponential decay (180-day halflife): 
-                  <span className="font-mono"> boostMultiplier = 1 + min(1, kudosWeight/100)</span>, max 2x.
+                  <span className="font-mono"> boostMultiplier = 1 + min(1, kudosWeight/500)</span>, max 2x.
+                  Higher threshold (500 vs 100) makes KUDOS a subtle nudge, not a scoring lever.
                 </p>
               </div>
             </div>

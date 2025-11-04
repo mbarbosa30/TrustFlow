@@ -188,10 +188,10 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              Ego Score (0-100) measures "how much the network trusts you" using max-flow/min-cut:
+              Ego Score (0-100) measures "how much the network trusts you" using max-flow/min-cut with quadratic exponential scaling (exponent 2.0):
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              EgoScore = 60 × avgResidualFlow + 40 × min(medianMinCut / voucherCount, 1) × vouchQuality
+              EgoScore = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
             </div>
             <p className="text-sm mb-2">
               <strong>Flow Component (60%):</strong> Incoming trust saturation - measures how much trust flows TO you from vouchers.
@@ -204,6 +204,49 @@ export default function FAQs() {
             </p>
             <p className="text-sm">
               <strong>Note:</strong> The Ego Score calculation is currently implemented. View your score on the My Network page.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="score-range" data-testid="faq-score-range">
+          <AccordionTrigger className="text-left">
+            What do the different score ranges mean?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              With quadratic scaling, Ego Scores have wider distribution for better discrimination:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm">
+              <li><strong>2-3 points (1 vouch):</strong> Barely trusted - need to build more network depth</li>
+              <li><strong>~18 points (3 vouches):</strong> Basic trust - getting started</li>
+              <li><strong>~61 points (5 vouches):</strong> Solid network - good depth and connectivity</li>
+              <li><strong>~74 points (10 vouches):</strong> Strong network - rich multi-hop connections</li>
+            </ul>
+            <p className="text-sm mt-2">
+              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring genuine network building for higher scores.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="kudos" data-testid="faq-kudos">
+          <AccordionTrigger className="text-left">
+            What is KUDOS and how does it work?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              KUDOS is an off-chain reputation token that you earn based on your LocalHealth score:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm mb-2">
+              <li><strong>Daily Claims:</strong> Claim amount = (LocalHealth² / 100), capped at 1000 KUDOS/day</li>
+              <li><strong>24-Hour Cooldown:</strong> Must wait 24 hours between claims</li>
+              <li><strong>1% Transfer Fee:</strong> 0.5% burned (deflationary), 0.5% pooled for future claims</li>
+              <li><strong>Edge Capacity Boost:</strong> Transfer KUDOS to boost trust edge capacities (180-day exponential decay)</li>
+            </ul>
+            <p className="text-sm mb-2">
+              <strong>Boost Formula:</strong> Threshold of 500 KUDOS for 1x boost, max 2x boost. Higher threshold makes KUDOS a subtle nudge rather than a scoring lever.
+            </p>
+            <p className="text-sm">
+              View KUDOS economics and supply metrics on the KUDOS Economics page.
             </p>
           </AccordionContent>
         </AccordionItem>

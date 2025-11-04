@@ -385,7 +385,7 @@ export class KudosService {
       const edgeWeights = await this.calculateBatchEdgeWeights(uniqueEdges);
       
       const kudosBoosts = [];
-      for (const [edgeKey, weight] of edgeWeights.entries()) {
+      for (const [edgeKey, weight] of Array.from(edgeWeights.entries())) {
         if (weight > 0) {
           const [from, to] = edgeKey.split('->');
           kudosBoosts.push({ fromAddress: from as any, toAddress: to as any, weight });
@@ -604,6 +604,98 @@ export class KudosService {
       .offset(offset);
 
     return claims;
+  }
+
+  /**
+   * Get KUDOS economics data
+   * Returns total supply, total burned, pool amount, daily stats, and top holders
+   */
+  async getEconomics(): Promise<{
+    totalSupply: number;
+    totalBurned: number;
+    poolAmount: number;
+    dailyStats: Array<{
+      date: string;
+      totalMinted: number;
+      totalBurned: number;
+      transferVolume: number;
+    }>;
+    topHolders: Array<{
+      address: string;
+      balance: number;
+      totalClaimed: number;
+      totalSent: number;
+      totalReceived: number;
+    }>;
+  }> {
+    // Get total supply (sum of all balances)
+    const totalSupplyResult = await db
+      .select({ total: sql<number>`COALESCE(SUM(${kudosBalances.balance}), 0)` })
+      .from(kudosBalances)
+      .then(rows => rows[0]?.total || 0);
+
+    // Get total burned (sum of all fees burned from daily stats)
+    const totalBurnedResult = await db
+      .select({ total: sql<number>`COALESCE(SUM(${kudosDailyStats.totalBurned}), 0)` })
+      .from(kudosDailyStats)
+      .then(rows => rows[0]?.total || 0);
+
+    // Get current pool amount (today's pool amount)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayStats = await db
+      .select()
+      .from(kudosDailyStats)
+      .where(eq(kudosDailyStats.date, today))
+      .limit(1)
+      .then(rows => rows[0] || null);
+
+    const poolAmount = todayStats?.poolAmount || 0;
+
+    // Get daily stats for last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+    const dailyStatsRaw = await db
+      .select({
+        date: kudosDailyStats.date,
+        totalMinted: kudosDailyStats.totalMinted,
+        totalBurned: kudosDailyStats.totalBurned,
+        transferVolume: kudosDailyStats.transferVolume,
+      })
+      .from(kudosDailyStats)
+      .where(sql`${kudosDailyStats.date} >= ${thirtyDaysAgo}`)
+      .orderBy(kudosDailyStats.date);
+
+    const dailyStats = dailyStatsRaw.map(stat => ({
+      date: stat.date.toISOString().split('T')[0],
+      totalMinted: stat.totalMinted,
+      totalBurned: stat.totalBurned,
+      transferVolume: stat.transferVolume,
+    }));
+
+    // Get top 10 holders by balance
+    const topHolders = await db
+      .select({
+        address: kudosBalances.address,
+        balance: kudosBalances.balance,
+        totalClaimed: kudosBalances.totalClaimed,
+        totalSent: kudosBalances.totalSent,
+        totalReceived: kudosBalances.totalReceived,
+      })
+      .from(kudosBalances)
+      .orderBy(desc(kudosBalances.balance))
+      .limit(10);
+
+    return {
+      totalSupply: totalSupplyResult,
+      totalBurned: totalBurnedResult,
+      poolAmount,
+      dailyStats,
+      topHolders,
+    };
   }
 }
 

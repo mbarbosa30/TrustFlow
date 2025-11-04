@@ -3003,6 +3003,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get KUDOS economics data
+  app.get("/api/kudos/economics", async (req, res) => {
+    try {
+      const economics = await kudosService.getEconomics();
+      res.json(economics);
+    } catch (error) {
+      console.error("Error fetching KUDOS economics:", error);
+      res.status(500).json({ error: "Failed to fetch economics" });
+    }
+  });
+
   // Simulation API - Algorithm comparison framework
   app.post("/api/simulation/run", async (req, res) => {
     try {

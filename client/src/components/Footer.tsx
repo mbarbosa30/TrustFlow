@@ -51,6 +51,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/kudos-economics" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-kudos-economics">
+                  KUDOS Economics
+                </Link>
+              </li>
+              <li>
                 <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-dashboard">
                   Global Dashboard
                 </Link>

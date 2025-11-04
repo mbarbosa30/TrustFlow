@@ -45,6 +45,96 @@ export default function WhyScore() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Network className="w-5 h-5" />
+              Personal Network Score (LocalHealth)
+            </CardTitle>
+            <CardDescription>
+              Your personal trust network quality score using quadratic scaling
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">How LocalHealth Works</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your <strong>LocalHealth score (0-100)</strong> measures "how much the network trusts you" based on incoming vouches 
+                  and network depth. It uses quadratic exponential scaling (2.0 exponent) for strict score distribution.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <div className="p-3 rounded bg-muted/30">
+                  <div className="text-sm font-semibold">Flow Component (60%)</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Direct flow from vouchers to you, normalized by healthy baseline (5 vouches)
+                  </div>
+                </div>
+                <div className="p-3 rounded bg-muted/30">
+                  <div className="text-sm font-semibold">Redundancy Component (40%)</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Network depth and connectivity: vouch count + upstream supporters + edge density
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t bg-muted rounded-lg p-4">
+                <h3 className="font-semibold mb-3 text-sm">Score Distribution (Quadratic Scaling)</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">1 vouch, minimal network</span>
+                    <Badge variant="outline">~2-3 pts</Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">3 vouches, basic trust</span>
+                    <Badge variant="outline">~18 pts</Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">5 vouches, solid depth</span>
+                    <Badge variant="outline">~61 pts</Badge>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">10 vouches, rich connectivity</span>
+                    <Badge variant="outline">~74 pts</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  Anti-Gaming Mechanisms
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <h4 className="font-semibold text-xs mb-1">Dilution Penalty</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Vouching for too many people (more than 10) reduces your redundancy component by 10% per excess vouch, 
+                      capped at 50% reduction. Prevents vouch spam.
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <h4 className="font-semibold text-xs mb-1">KUDOS Integration</h4>
+                    <p className="text-xs text-muted-foreground">
+                      KUDOS transfers boost edge capacities with exponential decay (180-day halflife). 
+                      Threshold: 500 KUDOS for 1x boost, max 2x. Makes KUDOS a subtle nudge, not a scoring lever.
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <h4 className="font-semibold text-xs mb-1">Quadratic Scaling</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Exponential scaling (2.0) creates wider discrimination: single vouches signal "build more trust" (~2 pts), 
+                      while top scores require genuine multi-hop network depth (~74 pts).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Understanding Flow vs. STS</CardTitle>
             <CardDescription>
               Two ways to view your trust: raw algorithm output and standardized score
