@@ -61,6 +61,7 @@ export class EgoScorer {
     const nodeMetrics: EgoNodeMetrics[] = [];
     const residualFlows: number[] = [];
     const minCuts: number[] = [];
+    const nodeResiduals = new Map<Address, number>(); // Track residuals for vouch quality
     let acceptedCount = 0;
 
     for (const node of egoSubgraph) {
@@ -104,6 +105,7 @@ export class EgoScorer {
 
       residualFlows.push(residualFlow);
       minCuts.push(minCut);
+      nodeResiduals.set(node.toLowerCase() as Address, residualFlow);
 
       nodeMetrics.push({
         address: node,
@@ -129,9 +131,17 @@ export class EgoScorer {
     
     // Cut component: Network redundancy (0-40)
     // Normalize by actual seed count for hybrid mode
-    const cutComponent = seedCount > 0 
+    const baseCutComponent = seedCount > 0 
       ? 40 * Math.min(1.0, medianMinCut / seedCount)
       : 0;
+    
+    // Apply vouch quality factor to cut component (accountability for outgoing vouches)
+    const vouchQualityFactor = this.calculateVouchQualityFactor(
+      ownerAddress,
+      globalVouches,
+      nodeResiduals
+    );
+    const cutComponent = baseCutComponent * vouchQualityFactor;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
@@ -276,6 +286,54 @@ export class EgoScorer {
       return (sorted[mid - 1] + sorted[mid]) / 2;
     }
     return sorted[mid];
+  }
+
+  /**
+   * Calculate vouch quality factor based on outgoing vouches
+   * Rewards vouching for high-quality nodes, penalizes vouching for low-quality or too many nodes
+   * Returns a multiplier in range 0.9-1.1 (default 1.0)
+   */
+  private calculateVouchQualityFactor(
+    ownerAddress: Address,
+    globalVouches: EgoEndorsement[],
+    nodeResiduals: Map<Address, number>
+  ): number {
+    // Find all nodes that the owner vouches for (outgoing edges)
+    const outgoingVouchees = globalVouches
+      .filter(v => v.endorser.toLowerCase() === ownerAddress.toLowerCase())
+      .map(v => v.endorsee.toLowerCase() as Address);
+
+    // If no outgoing vouches, neutral factor
+    if (outgoingVouchees.length === 0) {
+      return 1.0;
+    }
+
+    // Calculate mean residual flow of vouchees
+    // Only include vouchees that have residual data (within ego subgraph)
+    // Missing residuals are treated as neutral (not penalized)
+    const voucheeResiduals = outgoingVouchees
+      .map(addr => nodeResiduals.get(addr))
+      .filter(r => r !== undefined) as number[];
+    
+    const meanVoucheeResidual = voucheeResiduals.length > 0
+      ? voucheeResiduals.reduce((sum, r) => sum + r, 0) / voucheeResiduals.length
+      : 1.0; // Neutral if no vouchees have residual data
+
+    // Base quality factor: 0.9 to 1.1 based on vouchee quality
+    // If vouchees have high residuals (close to 1.0), factor approaches 1.1
+    // If vouchees have low residuals (close to 0), factor approaches 0.9
+    let qualityFactor = 0.9 + (0.2 * meanVoucheeResidual);
+    qualityFactor = Math.max(0.9, Math.min(1.1, qualityFactor));
+
+    // Dilution penalty: If vouching for too many people (>10)
+    const DILUTION_THRESHOLD = 10;
+    if (outgoingVouchees.length > DILUTION_THRESHOLD) {
+      const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
+      const dilutionPenalty = 0.05 * excess; // 5% per excess vouch
+      qualityFactor *= Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
+    }
+
+    return qualityFactor;
   }
 
   private calculateMinCutCapacity(
@@ -423,9 +481,24 @@ export class EgoScorer {
 
     // Pure Option 2 scoring: 60% flow saturation + 40% redundancy per voucher
     const flowComponent = 60 * residualFlow;
-    const cutComponent = directVouchers.length > 0
+    const baseCutComponent = directVouchers.length > 0
       ? 40 * Math.min(1.0, minCut / directVouchers.length)
       : 0;
+    
+    // Apply dilution penalty for outgoing vouches (simplified for Pure Option 2)
+    // Only apply count-based dilution, not quality-based (since we don't compute other nodes' scores)
+    const outgoingVouchees = globalVouches
+      .filter(v => v.endorser.toLowerCase() === ownerAddress.toLowerCase());
+    
+    let vouchQualityFactor = 1.0;
+    const DILUTION_THRESHOLD = 10;
+    if (outgoingVouchees.length > DILUTION_THRESHOLD) {
+      const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
+      const dilutionPenalty = 0.05 * excess; // 5% per excess vouch
+      vouchQualityFactor = Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
+    }
+    
+    const cutComponent = baseCutComponent * vouchQualityFactor;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
