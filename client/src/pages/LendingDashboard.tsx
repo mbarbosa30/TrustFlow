@@ -86,17 +86,17 @@ export default function LendingDashboard() {
 
   // Fetch lending statistics
   const { data: stats, isLoading: statsLoading } = useQuery<LendingStats>({
-    queryKey: ["/api/lending/stats", communityId],
+    queryKey: ["/api/loans/stats", communityId],
   });
 
   // Fetch recent lending activity
-  const { data: activities, isLoading: activitiesLoading } = useQuery<LendingActivity[]>({
-    queryKey: ["/api/lending/activity", communityId],
+  const { data: activities, isLoading: activitiesLoading} = useQuery<LendingActivity[]>({
+    queryKey: ["/api/loans/activity", communityId],
   });
 
   // Fetch pending payments
   const { data: pendingPaymentsData, isLoading: pendingPaymentsLoading } = useQuery<{ payments: any[] }>({
-    queryKey: ["/api/lending/pending-payments", communityId],
+    queryKey: ["/api/loans/pending-payments", communityId],
   });
 
   const pendingPayments = pendingPaymentsData?.payments || [];
@@ -113,14 +113,14 @@ export default function LendingDashboard() {
     mutationFn: async (paymentId: number) => {
       return apiRequest(
         "POST",
-        `/api/lending/pending-payments/${paymentId}/approve`,
+        `/api/loans/pending-payments/${paymentId}/approve`,
         { reviewerAddress: address }
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/activity", communityId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/stats", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/pending-payments", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/activity", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/stats", communityId] });
       toast({
         title: "Payment Approved",
         description: "The payment has been processed successfully.",
@@ -140,12 +140,12 @@ export default function LendingDashboard() {
     mutationFn: async (paymentId: number) => {
       return apiRequest(
         "POST",
-        `/api/lending/pending-payments/${paymentId}/reject`,
+        `/api/loans/pending-payments/${paymentId}/reject`,
         { reviewerAddress: address }
       );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/pending-payments", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/pending-payments", communityId] });
       toast({
         title: "Payment Rejected",
         description: "The payment has been rejected.",
@@ -171,8 +171,8 @@ export default function LendingDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/loans/community", communityId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/activity", communityId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/lending/stats", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/activity", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/stats", communityId] });
       toast({
         title: "Loan Approved",
         description: "The loan application has been approved and activated.",

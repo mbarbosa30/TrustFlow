@@ -192,7 +192,7 @@ export default function CommunityDetail() {
 
   // Fetch pending payments for management tab
   const { data: pendingPaymentsData } = useQuery<{ payments: any[] }>({
-    queryKey: ["/api/lending/pending-payments", communityId],
+    queryKey: ["/api/loans/pending-payments", communityId],
     enabled: !!address && !!communityData?.community,
   });
 
