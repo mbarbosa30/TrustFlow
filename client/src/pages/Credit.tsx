@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle, AlertTriangle, ChevronDown, ChevronRight, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { WalletProfile, Loan, Installment, PendingPayment } from "@shared/schema";
+import type { WalletProfile, Loan, Installment, PendingPayment, LoanDonation } from "@shared/schema";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { formatCurrency } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -272,6 +272,15 @@ export default function Credit() {
     enabled: !!activeLoan,
   });
 
+  // Get donations for active loan
+  const { data: donationsData } = useQuery<{ donations: LoanDonation[] }>({
+    queryKey: [`/api/loans/${activeLoan?.id}/donations`],
+    enabled: !!activeLoan,
+  });
+
+  const donations = donationsData?.donations || [];
+  const totalDonations = donations.reduce((sum, d) => sum + d.creditedAmount, 0);
+
   // Get pending payments for active loan
   const { data: pendingPaymentsData } = useQuery<{ payments: PendingPayment[] }>({
     queryKey: [`/api/lending/pending-payments/${communityId}`, { status: 'PENDING' }],
@@ -400,6 +409,7 @@ export default function Credit() {
       setDonationAmount("");
       setDonationMessage("");
       queryClient.invalidateQueries({ queryKey: [`/api/loans/${activeLoan?.id}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/loans/${activeLoan?.id}/donations`] });
     },
     onError: (error: any) => {
       toast({ title: "Donation Failed", description: error.message, variant: "destructive" });
@@ -702,6 +712,14 @@ export default function Credit() {
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{Math.round(loanDetails.health.paymentProgress)}% paid</span>
                         <span>{Math.round(loanDetails.health.timeProgress)}% of term elapsed</span>
+                      </div>
+                    )}
+                    {totalDonations > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                        <Heart className="h-3 w-3 text-primary" />
+                        <span>
+                          {formatCurrency(totalDonations, loanDetails.loan.currency)} from {donations.length} {donations.length === 1 ? 'donation' : 'donations'}
+                        </span>
                       </div>
                     )}
                   </div>
