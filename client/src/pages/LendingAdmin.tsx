@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Settings, 
@@ -19,11 +20,13 @@ import {
   Shield,
   HandHeart,
   Save,
-  AlertCircle
+  AlertCircle,
+  Coins
 } from "lucide-react";
 
 interface LendingPolicy {
   enabled: boolean;
+  currency: string;
   loanAmounts: {
     min: number;
     max: number;
@@ -56,6 +59,7 @@ interface LendingPolicy {
 
 const DEFAULT_POLICY: LendingPolicy = {
   enabled: false,
+  currency: "ARS",
   loanAmounts: {
     min: 160,
     max: 800,
@@ -235,9 +239,40 @@ export default function LendingAdmin() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Currency Selection */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium flex items-center gap-2">
+              <Coins className="h-4 w-4" />
+              Loan Currency
+            </Label>
+            <Select
+              value={localPolicy.currency}
+              onValueChange={(value) => {
+                updatePolicy({ currency: value });
+              }}
+            >
+              <SelectTrigger className="w-full" data-testid="select-currency">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ARS">ARS - Argentine Peso</SelectItem>
+                <SelectItem value="USD">USD - US Dollar</SelectItem>
+                <SelectItem value="USDC">USDC - USD Coin</SelectItem>
+                <SelectItem value="MXN">MXN - Mexican Peso</SelectItem>
+                <SelectItem value="BRL">BRL - Brazilian Real</SelectItem>
+                <SelectItem value="COP">COP - Colombian Peso</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Primary currency for loan amounts and repayments
+            </p>
+          </div>
+
+          <Separator />
+
           {/* Loan Amounts */}
           <div className="space-y-3">
-            <Label className="text-base font-medium">Loan Amounts (USDC)</Label>
+            <Label className="text-base font-medium">Loan Amounts ({localPolicy.currency})</Label>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="loan-min" className="text-sm text-muted-foreground">

@@ -1303,6 +1303,7 @@ export class MemStorage implements IStorage {
       // Return default policy if none exists
       return {
         enabled: false,
+        currency: "ARS",
         loanAmounts: {
           min: 160,
           max: 800,
@@ -1334,7 +1335,51 @@ export class MemStorage implements IStorage {
       };
     }
 
-    return community.lendingPolicyJson;
+    const rawPolicy = community.lendingPolicyJson;
+    
+    // Convert old backend format to frontend format
+    // Backend format: loanButtonsUsdc (array), tenorsMonths (array), aprNominal
+    // Frontend format: loanAmounts { min, max, step }, tenorMonths { min, max, step }, annualInterestRate
+    if (rawPolicy.loanButtonsUsdc && Array.isArray(rawPolicy.loanButtonsUsdc)) {
+      const loanButtons = rawPolicy.loanButtonsUsdc.sort((a: number, b: number) => a - b);
+      const tenors = rawPolicy.tenorsMonths?.sort((a: number, b: number) => a - b) || [6, 9, 12];
+      
+      return {
+        enabled: rawPolicy.enabled ?? false,
+        currency: rawPolicy.currency || "ARS",
+        loanAmounts: {
+          min: loanButtons[0] || 160,
+          max: loanButtons[loanButtons.length - 1] || 800,
+          step: loanButtons.length > 1 ? loanButtons[1] - loanButtons[0] : 80,
+        },
+        tenorMonths: {
+          min: tenors[0] || 6,
+          max: tenors[tenors.length - 1] || 12,
+          step: tenors.length > 1 ? tenors[1] - tenors[0] : 1,
+        },
+        annualInterestRate: (rawPolicy.aprNominal || 0.4) * 100,
+        subsidies: {
+          ibdEnabled: rawPolicy.subsidy?.interestBuydown?.enabled ?? true,
+          raEnabled: rawPolicy.subsidy?.repayAssist?.enabled ?? true,
+          vouchersEnabled: rawPolicy.subsidy?.vouchers?.enabled ?? false,
+          flgEnabled: rawPolicy.subsidy?.firstLossGuarantee?.enabled ?? false,
+        },
+        trustDeltas: {
+          onTimePayment: rawPolicy.trustAdjust?.borrower?.onTimeMonthly ?? 0.02,
+          latePayment: rawPolicy.trustAdjust?.borrower?.anyLate7d ?? -0.05,
+          defaultEvent: rawPolicy.trustAdjust?.borrower?.default ?? -0.15,
+          repayAssist: rawPolicy.trustAdjust?.supporter?.assistSuccess ?? 0.03,
+          maxPerEpoch: rawPolicy.trustAdjust?.maxPerEpoch ?? 0.10,
+        },
+        eligibility: {
+          ghiThreshold: rawPolicy.eligibility?.minGHI ?? 60,
+          minCutThreshold: rawPolicy.eligibility?.minCut ?? 2,
+        },
+      };
+    }
+
+    // Already in frontend format
+    return rawPolicy;
   }
 
   async updateLendingPolicy(communityId: number, policy: any): Promise<void> {
