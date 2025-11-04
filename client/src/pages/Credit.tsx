@@ -215,42 +215,8 @@ export default function Credit() {
   });
 
   const community = communityData?.community;
-  const lendingPolicy = community?.lendingPolicyJson;
+  const lendingPolicy = community?.lendingPolicyJson as any;
   const currency = lendingPolicy?.currency || community?.currency || 'ARS';
-
-  // Get available loan amounts from policy
-  const availableLoanAmounts = () => {
-    if (eligibility?.amounts && eligibility.amounts.length > 0) {
-      return eligibility.amounts;
-    }
-    // Use raw arrays from lending policy
-    if (lendingPolicy?.loanButtonsUsdc && Array.isArray(lendingPolicy.loanButtonsUsdc)) {
-      return lendingPolicy.loanButtonsUsdc;
-    }
-    return [160000, 240000, 400000, 600000, 800000];
-  };
-
-  // Get available tenors from policy
-  const availableTenors = () => {
-    if (lendingPolicy?.tenorsMonths && Array.isArray(lendingPolicy.tenorsMonths)) {
-      return lendingPolicy.tenorsMonths;
-    }
-    return [6, 9, 12];
-  };
-
-  // Reset loan amount/tenor when community changes
-  useEffect(() => {
-    const amounts = lendingPolicy?.loanButtonsUsdc || [160000, 240000, 400000, 600000, 800000];
-    const tenors = lendingPolicy?.tenorsMonths || [6, 9, 12];
-    
-    // Reset to first option when community changes
-    if (amounts.length > 0) {
-      setSelectedAmount(amounts[0]);
-    }
-    if (tenors.length > 0) {
-      setSelectedTenor(tenors[0]);
-    }
-  }, [communityId, lendingPolicy]);
 
   // Get wallet profile
   const { data: walletProfile } = useQuery<WalletProfile>({
@@ -543,37 +509,29 @@ export default function Credit() {
 
                 <div className="space-y-2">
                   <Label htmlFor="amount">Loan Amount ({currency})</Label>
-                  <Select
-                    value={selectedAmount?.toString() || ""}
-                    onValueChange={(v) => setSelectedAmount(parseInt(v))}
-                  >
-                    <SelectTrigger id="amount" data-testid="select-loan-amount">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableLoanAmounts().map((amount: number) => (
-                        <SelectItem key={amount} value={amount.toString()}>
-                          {formatCurrency(amount, currency)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="amount"
+                    type="number"
+                    placeholder={`Enter amount in ${currency}`}
+                    value={selectedAmount || ""}
+                    onChange={(e) => setSelectedAmount(e.target.value ? parseInt(e.target.value) : null)}
+                    min="0"
+                    step="1000"
+                    data-testid="input-loan-amount"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="tenor">{t('credit.paymentTerm')}</Label>
-                  <Select value={selectedTenor?.toString() || ""} onValueChange={(v) => setSelectedTenor(parseInt(v))}>
-                    <SelectTrigger id="tenor" data-testid="select-tenor">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTenors().map((months: number) => (
-                        <SelectItem key={months} value={months.toString()}>
-                          {months} {t('common.months')}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="tenor"
+                    type="number"
+                    placeholder="Enter number of months"
+                    value={selectedTenor || ""}
+                    onChange={(e) => setSelectedTenor(e.target.value ? parseInt(e.target.value) : null)}
+                    min="1"
+                    data-testid="input-tenor"
+                  />
                 </div>
 
                 <div className="pt-4">
