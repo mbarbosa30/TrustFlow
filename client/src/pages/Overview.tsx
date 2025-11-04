@@ -3,7 +3,8 @@ import { EndorsementsList } from "@/components/EndorsementsList";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { QrCode, Download, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { QrCode, Download, Share2, CreditCard, DollarSign, Settings, Coins, ChevronRight } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
@@ -47,6 +48,32 @@ export default function Overview() {
     queryKey: [`/api/endorsements?endorsee=${address}`],
     enabled: isConnected && !!address,
   });
+
+  // User's communities (for membership and seed/manager status)
+  const { data: userCommunitiesData } = useQuery<{ communities: any[] }>({
+    queryKey: ['/api/communities/user', address],
+    enabled: isConnected && !!address,
+  });
+
+  const userCommunities = userCommunitiesData?.communities || [];
+  const firstCommunity = userCommunities[0];
+  const isManager = userCommunities.some((c: any) => 
+    c.seedAddresses?.includes(address?.toLowerCase())
+  );
+
+  // User's active loans (for borrower actions) - fetch from first community
+  const { data: userLoansData } = useQuery<{ loans: any[] }>({
+    queryKey: [`/api/loans/borrower/${firstCommunity?.id}/${address}`],
+    enabled: isConnected && !!address && !!firstCommunity,
+  });
+
+  // KUDOS balance
+  const { data: kudosData } = useQuery<{ balance: number; lastClaimedAt: string | null; canClaim: boolean }>({
+    queryKey: ['/api/kudos/balance', address],
+    enabled: isConnected && !!address,
+  });
+
+  const activeLoans = userLoansData?.loans?.filter((loan: any) => loan.status === 'ACTIVE') || [];
 
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
