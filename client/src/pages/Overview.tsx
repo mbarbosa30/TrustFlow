@@ -153,6 +153,7 @@ export default function Overview() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Left Column: Network Health Score */}
         <div className="space-y-6">
           {isLoadingScore ? (
             <Card>
@@ -180,35 +181,15 @@ export default function Overview() {
                       <span className="text-2xl text-muted-foreground">/100</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleShareLink}
-                      data-testid="button-share-link"
-                      title="Share vouch link"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setShowQRCode(true)}
-                      data-testid="button-show-qr"
-                      title="Show QR code"
-                    >
-                      <QrCode className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleExport}
-                      data-testid="button-export"
-                      title="Export attestation"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleExport}
+                    data-testid="button-export"
+                    title="Export attestation"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                 </div>
 
                 <div className="space-y-3">
@@ -281,9 +262,158 @@ export default function Overview() {
           )}
         </div>
 
-        <div ref={endorseFormRef}>
-          <EndorseForm onEndorse={handleEndorse} initialAddress={vouchAddress || undefined} />
+        {/* Right Column: Action Cards */}
+        <div className="space-y-4">
+          {/* Share Link Card */}
+          {address && (
+            <Card data-testid="card-share-link">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Share Your Profile</CardTitle>
+                <CardDescription>Let others vouch for you</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => setShowQRCode(true)}
+                    data-testid="button-show-qr-card"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Show QR Code
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="flex-1 gap-2"
+                    onClick={handleShareLink}
+                    data-testid="button-share-link-card"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Copy Link
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* KUDOS Balance Card */}
+          {kudosData && (
+            <Card data-testid="card-kudos">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">KUDOS Balance</CardTitle>
+                    <CardDescription>Reputation tokens</CardDescription>
+                  </div>
+                  <Coins className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2 mb-3">
+                  <span className="text-3xl font-bold" data-testid="text-kudos-balance">
+                    {kudosData.balance.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-muted-foreground">KUDOS</span>
+                </div>
+                {kudosData.canClaim && (
+                  <Link href="/kudos">
+                    <Button className="w-full gap-2" data-testid="button-claim-kudos">
+                      <Coins className="w-4 h-4" />
+                      Claim KUDOS
+                    </Button>
+                  </Link>
+                )}
+                {!kudosData.canClaim && kudosData.lastClaimedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Last claimed {new Date(kudosData.lastClaimedAt).toLocaleDateString()}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Active Loans Card (Borrower Actions) */}
+          {activeLoans.length > 0 && (
+            <Card data-testid="card-active-loans">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Active Loans</CardTitle>
+                    <CardDescription>{activeLoans.length} loan{activeLoans.length > 1 ? 's' : ''} in progress</CardDescription>
+                  </div>
+                  <CreditCard className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {activeLoans.slice(0, 2).map((loan: any) => (
+                  <div key={loan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div>
+                      <div className="font-medium">${loan.principalAmount.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {loan.installmentsPaid}/{loan.numberOfInstallments} payments
+                      </div>
+                    </div>
+                    <Badge variant="outline" data-testid={`badge-loan-status-${loan.id}`}>
+                      {loan.riskLevel || 'Active'}
+                    </Badge>
+                  </div>
+                ))}
+                <Link href={`/credit/${firstCommunity?.id}`}>
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-view-credit">
+                    <DollarSign className="w-4 h-4" />
+                    Manage Loans
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Apply for Microcredit Card */}
+          {userCommunities.length > 0 && activeLoans.length === 0 && firstCommunity && (
+            <Card data-testid="card-apply-microcredit">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">Need Funding?</CardTitle>
+                <CardDescription>Apply for microcredit in your community</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href={`/credit/${firstCommunity.id}`}>
+                  <Button className="w-full gap-2" data-testid="button-apply-microcredit">
+                    <DollarSign className="w-4 h-4" />
+                    Apply for Microcredit
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Lending Management Card (for managers/seeds) */}
+          {isManager && (
+            <Card data-testid="card-lending-management">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Lending Management</CardTitle>
+                    <CardDescription>Review loan applications & payments</CardDescription>
+                  </div>
+                  <Settings className="w-5 h-5 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/lending-dashboard">
+                  <Button variant="outline" className="w-full gap-2" data-testid="button-lending-dashboard">
+                    View Dashboard
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
+      </div>
+
+      {/* Vouch Form */}
+      <div ref={endorseFormRef} className="mb-8">
+        <EndorseForm onEndorse={handleEndorse} initialAddress={vouchAddress || undefined} />
       </div>
 
       <Card data-testid="card-endorsements">
