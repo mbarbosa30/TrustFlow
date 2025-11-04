@@ -359,12 +359,9 @@ export class KudosService {
       // Get or create ego context
       const egoContext = await storage.getOrCreateEgoContext(normalized);
       
-      // Get seeds (owner + co-seeds)
+      // Pure Option 2: Use co-seeds only (never include ownerAddress as a seed)
       const coSeeds = await storage.getCoSeeds(egoContext.id);
-      const seedAddresses = [
-        normalized,
-        ...coSeeds.map(cs => cs.address.toLowerCase())
-      ];
+      const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase());
 
       // Get global endorsements (communityId: 0)
       const endorsements = await storage.getEndorsements({
