@@ -2744,7 +2744,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      await storage.updateLendingPolicy(communityId, policy);
+      // Convert frontend format to backend format before saving
+      // Frontend: loanAmounts { min, max, step }, tenorMonths { min, max, step }, annualInterestRate
+      // Backend: loanButtonsUsdc (array), tenorsMonths (array), aprNominal
+      const backendPolicy: any = {
+        enabled: policy.enabled,
+        currency: policy.currency || "ARS",
+      };
+
+      // Convert loan amounts from range to array
+      if (policy.loanAmounts) {
+        const { min, max, step } = policy.loanAmounts;
+        const loanButtons = [];
+        for (let amount = min; amount <= max; amount += step) {
+          loanButtons.push(amount);
+        }
+        backendPolicy.loanButtonsUsdc = loanButtons;
+      }
+
+      // Convert tenors from range to array
+      if (policy.tenorMonths) {
+        const { min, max, step } = policy.tenorMonths;
+        const tenors = [];
+        for (let tenor = min; tenor <= max; tenor += step) {
+          tenors.push(tenor);
+        }
+        backendPolicy.tenorsMonths = tenors;
+      }
+
+      // Convert annual interest rate from percentage to decimal
+      if (policy.annualInterestRate !== undefined) {
+        backendPolicy.aprNominal = policy.annualInterestRate / 100;
+      }
+
+      // Convert subsidies
+      if (policy.subsidies) {
+        backendPolicy.subsidy = {
+          interestBuydown: {
+            enabled: policy.subsidies.ibdEnabled,
+            priority: 1,
+          },
+          repayAssist: {
+            enabled: policy.subsidies.raEnabled,
+            premium: 0.06,
+            priority: 2,
+          },
+          vouchers: {
+            enabled: policy.subsidies.vouchersEnabled,
+            monthsFree: [1, 2],
+          },
+          firstLossGuarantee: {
+            enabled: policy.subsidies.flgEnabled,
+            capUsdc: 2000,
+          },
+        };
+      }
+
+      // Convert trust deltas
+      if (policy.trustDeltas) {
+        backendPolicy.trustAdjust = {
+          borrower: {
+            onTimeMonthly: policy.trustDeltas.onTimePayment,
+            anyLate7d: policy.trustDeltas.latePayment,
+            default: policy.trustDeltas.defaultEvent,
+          },
+          supporter: {
+            assistSuccess: policy.trustDeltas.repayAssist,
+            assistLoss: -0.7,
+            guaranteeMonthly: 0.1,
+          },
+          maxPerEpoch: policy.trustDeltas.maxPerEpoch,
+        };
+      }
+
+      // Convert eligibility
+      if (policy.eligibility) {
+        backendPolicy.eligibility = {
+          minCut: policy.eligibility.minCutThreshold,
+          vertexDisjoint: 2,
+          minSeedCount: 2,
+          perSeedMinShare: 0.30,
+          minGHI: policy.eligibility.ghiThreshold,
+        };
+      }
+
+      // Add late fee settings (keeping defaults for now)
+      backendPolicy.late = {
+        graceDays: 5,
+        lateFeeMonthly: 0.01,
+        defaultAfterDaysLate: 60,
+      };
+
+      await storage.updateLendingPolicy(communityId, backendPolicy);
       res.json({ success: true });
     } catch (error) {
       console.error("Error updating lending policy:", error);

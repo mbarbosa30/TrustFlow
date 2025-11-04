@@ -215,8 +215,8 @@ export default function Credit() {
   });
 
   const community = communityData?.community;
-  const currency = community?.currency || 'ARS';
   const lendingPolicy = community?.lendingPolicyJson;
+  const currency = lendingPolicy?.currency || community?.currency || 'ARS';
 
   // Generate available loan amounts from policy
   const availableLoanAmounts = () => {
