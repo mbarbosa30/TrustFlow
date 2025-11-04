@@ -524,10 +524,10 @@ export class EgoScorer {
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow equals number of vouchers in simple case
-    // Exponential scaling (1.2) spreads scores more naturally
-    // 1 vouch → (1/5)^1.2 = 0.157 = 9.4 pts, 3 vouches → 0.525 = 31.5 pts, 5+ vouches → 1.0 = 60 pts
+    // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
+    // 1 vouch → (1/5)^2.0 = 0.04 = 2.4 pts, 3 vouches → 0.36 = 21.6 pts, 5+ vouches → 1.0 = 60 pts
     const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
-    const flowComponent = 60 * Math.pow(flowScore, 1.2);
+    const flowComponent = 60 * Math.pow(flowScore, 2.0);
 
     // Redundancy score: normalized by healthy redundancy baseline
     // Measures network depth (ego size) and connectivity (edge density)
@@ -549,8 +549,8 @@ export class EgoScorer {
     }
 
     // Cut component: 40% based on effective redundancy
-    // Exponential scaling (1.2) spreads scores more naturally
-    const cutComponent = 40 * Math.pow(redundancy, 1.2) * vouchQualityFactor;
+    // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
+    const cutComponent = 40 * Math.pow(redundancy, 2.0) * vouchQualityFactor;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
