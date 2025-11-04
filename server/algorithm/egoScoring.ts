@@ -95,7 +95,8 @@ export class EgoScorer {
       const maxPossibleNodeFlow = this.calculateMaxInboundCapacity(
         node,
         globalVouches,
-        distances
+        distances,
+        kudosBoosts
       );
       
       const residualFlow = maxPossibleNodeFlow > 0 
@@ -307,16 +308,36 @@ export class EgoScorer {
   private calculateMaxInboundCapacity(
     targetNode: Address,
     endorsements: EgoEndorsement[],
-    distances: Map<Address, number>
+    distances: Map<Address, number>,
+    kudosBoosts: KudosBoost[] = []
   ): number {
     let maxInbound = 0;
     const targetDist = distances.get(targetNode) ?? Infinity;
+
+    // Build KUDOS boost map
+    const boostMap = new Map<string, number>();
+    for (const boost of kudosBoosts) {
+      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
+      boostMap.set(key, boost.weight);
+    }
 
     for (const { endorser, endorsee } of endorsements) {
       if (endorsee === targetNode) {
         const endorserDist = distances.get(endorser) ?? Infinity;
         if (endorserDist <= this.config.maxDistance && targetDist <= this.config.maxDistance) {
-          const capacity = this.calculateCapacity(targetDist);
+          let capacity = this.calculateCapacity(targetDist);
+          
+          // Apply KUDOS boost if exists (matching buildNodeGraph logic)
+          const boostKey = `${endorser.toLowerCase()}->${endorsee.toLowerCase()}`;
+          const kudosWeight = boostMap.get(boostKey) || 0;
+          
+          if (kudosWeight > 0) {
+            const threshold = this.config.kudosBoostThreshold || 100;
+            const maxBoost = this.config.kudosMaxBoost || 2.0;
+            const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
+            capacity *= boostMultiplier;
+          }
+          
           maxInbound += capacity;
         }
       }
