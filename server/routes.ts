@@ -3096,10 +3096,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalSent: 0,
           totalReceived: 0,
           lastClaimAt: null,
+          canClaim: true,
         });
       }
 
-      res.json(balance);
+      // Calculate if user can claim (24-hour cooldown)
+      let canClaim = true;
+      if (balance.lastClaimAt) {
+        const lastClaimTime = new Date(balance.lastClaimAt).getTime();
+        const now = Date.now();
+        const timeSinceLastClaim = now - lastClaimTime;
+        const cooldownPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+        canClaim = timeSinceLastClaim >= cooldownPeriod;
+      }
+
+      res.json({
+        ...balance,
+        canClaim,
+      });
     } catch (error) {
       console.error("Error fetching KUDOS balance:", error);
       res.status(500).json({ error: "Failed to fetch balance" });

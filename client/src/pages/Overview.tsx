@@ -72,7 +72,7 @@ export default function Overview() {
   });
 
   // KUDOS balance
-  const { data: kudosData } = useQuery<{ balance: number; lastClaimedAt: string | null; canClaim: boolean }>({
+  const { data: kudosData } = useQuery<{ balance: number; lastClaimAt: string | null; canClaim: boolean }>({
     queryKey: [`/api/kudos/balance/${address}`],
     enabled: isConnected && !!address,
   });
@@ -90,7 +90,7 @@ export default function Overview() {
       console.log('KUDOS Debug:', {
         balance: kudosData.balance,
         canClaim: kudosData.canClaim,
-        lastClaimedAt: kudosData.lastClaimedAt,
+        lastClaimAt: kudosData.lastClaimAt,
         claimableAmount,
         countdown,
         localHealth: scoreData?.localHealth
@@ -168,13 +168,13 @@ export default function Overview() {
 
   // Countdown timer for KUDOS claim cooldown
   useEffect(() => {
-    if (!kudosData?.lastClaimedAt || kudosData.canClaim) {
+    if (!kudosData?.lastClaimAt || kudosData.canClaim) {
       setCountdown('');
       return;
     }
 
     const updateCountdown = () => {
-      const lastClaimed = new Date(kudosData.lastClaimedAt!);
+      const lastClaimed = new Date(kudosData.lastClaimAt!);
       const nextClaimTime = new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000); // 24 hours
       const now = new Date();
       const diff = nextClaimTime.getTime() - now.getTime();
@@ -416,10 +416,10 @@ export default function Overview() {
                       {countdown}
                     </div>
                   </div>
-                ) : kudosData.lastClaimedAt ? (
+                ) : kudosData.lastClaimAt ? (
                   <div className="p-3 rounded-lg bg-muted/50">
                     <p className="text-sm text-muted-foreground">
-                      Last claimed {new Date(kudosData.lastClaimedAt).toLocaleDateString()}
+                      Last claimed {new Date(kudosData.lastClaimAt).toLocaleDateString()}
                     </p>
                   </div>
                 ) : (
