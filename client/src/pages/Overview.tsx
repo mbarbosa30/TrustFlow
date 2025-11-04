@@ -59,10 +59,10 @@ export default function Overview() {
     enabled: isConnected && !!address,
   });
 
-  const userCommunities = userCommunitiesData?.communities || [];
+  const userCommunities = userCommunitiesData?.communities?.filter((c: any) => c != null) || [];
   const firstCommunity = userCommunities[0];
   const isManager = userCommunities.some((c: any) => 
-    c.seedAddresses?.includes(address?.toLowerCase())
+    c?.seedAddresses?.includes(address?.toLowerCase())
   );
 
   // User's active loans across ALL communities (for borrower actions)
@@ -365,13 +365,13 @@ export default function Overview() {
                   <Link key={loan.id} href={`/credit/${loan.communityId}`}>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover-elevate cursor-pointer" data-testid={`loan-card-${loan.id}`}>
                       <div>
-                        <div className="font-medium">${loan.principalAmount.toLocaleString()}</div>
+                        <div className="font-medium">{loan.currency} {loan.principalUsdc.toLocaleString()}</div>
                         <div className="text-xs text-muted-foreground">
-                          {loan.installmentsPaid}/{loan.numberOfInstallments} payments
+                          {loan.tenorMonths} month{loan.tenorMonths > 1 ? 's' : ''} term
                         </div>
                       </div>
                       <Badge variant="outline" data-testid={`badge-loan-status-${loan.id}`}>
-                        {loan.riskLevel || 'Active'}
+                        {loan.status}
                       </Badge>
                     </div>
                   </Link>

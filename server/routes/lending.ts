@@ -35,8 +35,8 @@ router.get("/user/:userAddress/active", async (req, res) => {
   try {
     const userAddress = req.params.userAddress.toLowerCase();
 
-    // Get all loans for this user (storage method supports filtering by borrower)
-    const allLoans = await storage.getLoans({ borrowerAddress: userAddress, limit: 1000 });
+    // Get all loans for this user across all communities (no communityId filter)
+    const allLoans = await storage.getLoansByBorrower(userAddress);
     
     // Filter for active loans only
     const activeLoans = allLoans.filter((loan) => loan.status === "ACTIVE");
