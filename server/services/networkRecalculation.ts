@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { contexts, publicEndorsements, coSeeds } from "@shared/schema";
-import { eq, isNull } from "drizzle-orm";
+import { eq, isNull, or } from "drizzle-orm";
 import { EgoScorer, type EgoEndorsement, type KudosBoost } from "../algorithm/egoScoring";
 import { KudosService } from "../kudos/kudosService";
 import type { Address } from "viem";
@@ -49,13 +49,23 @@ export class NetworkRecalculationService {
 
       console.log(`Found ${egoContexts.length} ego contexts to recalculate`);
 
-      // Get all global vouches (not community-specific)
+      // Get all global vouches (communityId = 0 or null)
       const allGlobalVouches = await db
         .select()
         .from(publicEndorsements)
-        .where(isNull(publicEndorsements.communityId));
+        .where(
+          or(
+            eq(publicEndorsements.communityId, 0),
+            isNull(publicEndorsements.communityId)
+          )
+        );
 
       console.log(`Found ${allGlobalVouches.length} global vouches`);
+
+      // Safety check: refuse to persist if no vouches found (prevents data corruption)
+      if (allGlobalVouches.length === 0) {
+        throw new Error("No global vouches found - refusing to recalculate to prevent data corruption");
+      }
 
       // Process each ego context
       for (const context of egoContexts) {
@@ -81,6 +91,8 @@ export class NetworkRecalculationService {
           const kudosBoosts = await this.getKudosBoosts(ownerAddress);
 
           // Compute LocalHealth score with current algorithm
+          // Note: LocalHealth scores are computed on-the-fly via /api/ego/:address/score
+          // This recalculation is for verification/dashboard purposes only
           const scoreResult = this.egoScorer.computeLocalHealth(
             ownerAddress,
             seedAddresses,
