@@ -20,6 +20,7 @@ export default function Overview() {
   const [showAllGiven, setShowAllGiven] = useState(false);
   const [showAllReceived, setShowAllReceived] = useState(false);
   const [showInlineQR, setShowInlineQR] = useState(true);
+  const [countdown, setCountdown] = useState<string>('');
   const [location] = useLocation();
   const endorseFormRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -78,6 +79,11 @@ export default function Overview() {
   });
 
   const activeLoans = activeLoansData?.activeLoans || [];
+
+  // Calculate claimable KUDOS amount based on LocalHealth
+  const claimableAmount = scoreData?.localHealth 
+    ? Math.min(1000, Math.floor((scoreData.localHealth * scoreData.localHealth) / 100))
+    : 0;
 
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
@@ -146,6 +152,44 @@ export default function Overview() {
       }, 100);
     }
   }, [vouchAddress]);
+
+  // Countdown timer for KUDOS claim cooldown
+  useEffect(() => {
+    if (!kudosData?.lastClaimedAt || kudosData.canClaim) {
+      setCountdown('');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const lastClaimed = new Date(kudosData.lastClaimedAt!);
+      const nextClaimTime = new Date(lastClaimed.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const now = new Date();
+      const diff = nextClaimTime.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setCountdown('');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        setCountdown(`${days}d ${hours}h ${minutes}m`);
+      } else if (hours > 0) {
+        setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+      } else {
+        setCountdown(`${minutes}m ${seconds}s`);
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [kudosData]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -336,15 +380,34 @@ export default function Overview() {
                   </span>
                   <span className="text-sm text-muted-foreground">KUDOS</span>
                 </div>
-                {kudosData.canClaim && (
-                  <Link href="/kudos">
-                    <Button className="w-full gap-2" data-testid="button-claim-kudos">
-                      <Coins className="w-4 h-4" />
-                      Claim KUDOS
-                    </Button>
-                  </Link>
+                
+                {kudosData.canClaim && claimableAmount > 0 && (
+                  <>
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <div className="text-sm text-muted-foreground mb-1">Claimable now</div>
+                      <div className="text-2xl font-bold text-primary" data-testid="text-claimable-amount">
+                        +{claimableAmount.toLocaleString()} KUDOS
+                      </div>
+                    </div>
+                    <Link href="/kudos">
+                      <Button className="w-full gap-2" data-testid="button-claim-kudos">
+                        <Coins className="w-4 h-4" />
+                        Claim {claimableAmount.toLocaleString()} KUDOS
+                      </Button>
+                    </Link>
+                  </>
                 )}
-                {!kudosData.canClaim && kudosData.lastClaimedAt && (
+
+                {!kudosData.canClaim && countdown && (
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="text-sm text-muted-foreground mb-1">Next claim in</div>
+                    <div className="text-lg font-semibold" data-testid="text-countdown">
+                      {countdown}
+                    </div>
+                  </div>
+                )}
+
+                {!kudosData.canClaim && !countdown && kudosData.lastClaimedAt && (
                   <p className="text-xs text-muted-foreground">
                     Last claimed {new Date(kudosData.lastClaimedAt).toLocaleDateString()}
                   </p>
