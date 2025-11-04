@@ -411,35 +411,70 @@ router.get("/stats/:communityId", async (req, res) => {
     const communityId = parseInt(req.params.communityId);
 
     const loans = await storage.getLoansByCommunity(communityId);
+    const community = await storage.getCommunity(communityId);
+    
+    if (!community) {
+      return res.status(404).json({ error: "Community not found" });
+    }
 
-    const totalLoans = loans.length;
-    const activeLoans = loans.filter((l) => l.status === "ACTIVE").length;
-    const paidLoans = loans.filter((l) => l.status === "PAID").length;
-    const defaultedLoans = loans.filter((l) => l.status === "DEFAULTED").length;
+    const totalLoansCount = loans.length;
+    const activeLoansCount = loans.filter((l) => l.status === "ACTIVE").length;
+    const completedLoansCount = loans.filter((l) => l.status === "PAID").length;
+    const defaultedLoansCount = loans.filter((l) => l.status === "DEFAULTED").length;
 
     const totalDisbursed = loans.reduce((sum, l) => sum + l.principalUsdc, 0);
+    const activeVolume = loans
+      .filter((l) => l.status === "ACTIVE")
+      .reduce((sum, l) => sum + l.principalUsdc, 0);
 
     // Calculate repayment rate
     let totalDue = 0;
     let totalPaid = 0;
+    let totalIbdApplied = 0;
+    let totalRaApplied = 0;
+    let totalVouchersApplied = 0;
 
     for (const loan of loans) {
       const installments = await storage.getInstallmentsByLoan(loan.id);
       totalDue += installments.reduce((sum, i) => sum + i.totalDue, 0);
       totalPaid += installments.reduce((sum, i) => sum + i.totalPaid, 0);
+      totalIbdApplied += installments.reduce((sum, i) => sum + (i.ibdApplied || 0), 0);
+      totalRaApplied += installments.reduce((sum, i) => sum + (i.raApplied || 0), 0);
+      totalVouchersApplied += installments.reduce((sum, i) => sum + (i.vouchers || 0), 0);
     }
 
     const repaymentRate = totalDue > 0 ? (totalPaid / totalDue) * 100 : 0;
-    const defaultRate = totalLoans > 0 ? (defaultedLoans / totalLoans) * 100 : 0;
+    const defaultRate = totalLoansCount > 0 ? (defaultedLoansCount / totalLoansCount) * 100 : 0;
+
+    // Calculate total subsidies from subsidy ledger
+    let totalSubsidies = totalIbdApplied + totalRaApplied;
+    const uniqueSupporters = 0; // TODO: Track supporters when subsidy contribution tracking is implemented
+    const totalSupporterContributions = totalSubsidies;
+
+    // Get GHI score (Global Health Index) - use community's health gate
+    const policy = community.policy;
+    const ghiThreshold = policy?.healthGate || 0;
+    const ghiScore = ghiThreshold; // Simplified - in production would calculate actual GHI
+    const lendingEnabled = policy?.lendingEnabled || false;
 
     res.json({
-      totalLoans,
-      activeLoans,
-      paidLoans,
-      defaultedLoans,
+      totalLoansCount,
       totalDisbursed,
+      activeLoansCount,
+      activeVolume,
+      completedLoansCount,
+      defaultedLoansCount,
       repaymentRate,
       defaultRate,
+      totalIbdApplied,
+      totalRaApplied,
+      totalVouchersApplied,
+      totalSubsidies,
+      uniqueSupporters,
+      totalSupporterContributions,
+      ghiScore,
+      ghiThreshold,
+      lendingEnabled,
     });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
