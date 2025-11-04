@@ -321,6 +321,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Network recalculation endpoint (admin function)
+  app.post("/api/admin/recalculate-network", async (req, res) => {
+    try {
+      const { NetworkRecalculationService } = await import("./services/networkRecalculation");
+      const recalcService = new NetworkRecalculationService();
+      
+      console.log("Starting network recalculation...");
+      const result = await recalcService.recalculateAllScores();
+      
+      return res.status(200).json({
+        message: "Network recalculation complete",
+        result,
+      });
+    } catch (error) {
+      console.error("Error recalculating network:", error);
+      return res.status(500).json({ 
+        error: "Network recalculation failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   app.get("/api/epoch/:id/health", async (req, res) => {
     try {
       const epochId = parseInt(req.params.id);
