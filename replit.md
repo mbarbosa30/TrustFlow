@@ -52,6 +52,7 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
         *   Caps at 50% reduction, ~10-20% typical impact
     *   **KUDOS Integration**: Edge capacities boosted by KUDOS transfers (exponential decay, 180-day halflife). Boost multiplier: `1 + min(1, kudosWeight/500)`, max 2x. Higher threshold (500 vs previous 100) makes KUDOS a subtle nudge rather than a scoring lever.
     *   **Global Trust (Planned)**: Cross-network reputation score combining Local Health and Incoming Flow.
+*   **Network Recalculation**: Admin tool for batch computing all LocalHealth scores across the entire network. Verification-only feature that computes scores using current algorithm parameters without persisting to database (scores are computed on-the-fly via `/api/ego/:address/score`). Includes zero-vouch safety guard to prevent empty-graph runs and provides detailed per-user results with timing metrics.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
 
 ### System Design Choices
