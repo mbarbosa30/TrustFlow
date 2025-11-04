@@ -8,6 +8,7 @@ export interface LoanRequest {
   currency?: string; // 'ARS' | 'USDC' | 'USD' | etc (defaults to ARS)
   tenorMonths: number;
   aprNominal: number;
+  notes?: string | null; // Borrower's explanation for loan purpose
 }
 
 export interface LoanWithInstallments {
@@ -243,7 +244,7 @@ export function generateInstallmentSchedule(
 export async function createLoan(
   request: LoanRequest
 ): Promise<LoanWithInstallments> {
-  const { communityId, borrowerAddress, principalUsdc, currency = 'ARS', tenorMonths, aprNominal } = request;
+  const { communityId, borrowerAddress, principalUsdc, currency = 'ARS', tenorMonths, aprNominal, notes } = request;
   
   // Use a transaction to ensure atomicity - either both loan and installments are created, or neither
   return await storage.createLoanWithInstallments({
@@ -255,6 +256,7 @@ export async function createLoan(
       aprNominal,
       tenorMonths,
       status: 'PENDING_APPROVAL', // Loan requires manager approval before activation
+      notes: notes || null,
       disbursedAt: null, // Will be set when approved
     },
     principalUsdc,

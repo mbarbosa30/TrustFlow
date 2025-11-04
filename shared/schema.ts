@@ -381,6 +381,7 @@ export const loan = pgTable("loan", {
   aprNominal: doublePrecision("apr_nominal").notNull(), // e.g., 0.40 for 40%
   tenorMonths: integer("tenor_months").notNull(),
   status: text("status").notNull(), // 'ACTIVE' | 'PAID' | 'DEFAULTED'
+  notes: text("notes"), // Borrower's explanation for loan purpose
   disbursedAt: timestamp("disbursed_at"),
   closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

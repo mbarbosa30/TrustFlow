@@ -221,6 +221,7 @@ export default function Credit() {
   const [selectedTenor, setSelectedTenor] = useState<number | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [borrowerName, setBorrowerName] = useState("");
+  const [loanNotes, setLoanNotes] = useState<string>("");
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
   const [donationAmount, setDonationAmount] = useState<string>("");
   const [donationCurrency, setDonationCurrency] = useState<string>("USDC");
@@ -306,6 +307,7 @@ export default function Credit() {
           borrowerName: borrowerName.trim(),
           amount: selectedAmount,
           tenorMonths: selectedTenor,
+          notes: loanNotes.trim() || null,
         }),
       });
       if (!response.ok) {
@@ -608,6 +610,22 @@ export default function Credit() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="loan-notes">What do you need this loan for?</Label>
+                  <Textarea
+                    id="loan-notes"
+                    placeholder="Explain how you plan to use this loan (e.g., business expansion, equipment purchase, working capital...)"
+                    value={loanNotes}
+                    onChange={(e) => setLoanNotes(e.target.value)}
+                    className="resize-none"
+                    rows={3}
+                    data-testid="input-loan-notes"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This helps community managers and potential donors understand your needs
+                  </p>
+                </div>
+
                 <div className="pt-4">
                   <Button
                     onClick={() => createLoanMutation.mutate()}
@@ -651,12 +669,18 @@ export default function Credit() {
               <Card data-testid="card-loan-overview">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="space-y-2">
                       <CardTitle>{t('credit.activeLoan')}</CardTitle>
                       <CardDescription>
                         {formatCurrency(loanDetails.loan.principalUsdc, loanDetails.loan.currency)} • {loanDetails.loan.tenorMonths} {t('common.months')} •{" "}
                         {(loanDetails.loan.aprNominal * 100).toFixed(0)}% TNA
                       </CardDescription>
+                      {loanDetails.loan.notes && (
+                        <div className="pt-2">
+                          <p className="text-sm font-medium text-muted-foreground">Purpose:</p>
+                          <p className="text-sm mt-1" data-testid="text-loan-notes">{loanDetails.loan.notes}</p>
+                        </div>
+                      )}
                     </div>
                     {loanDetails.health && (
                       <Badge 

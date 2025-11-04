@@ -92,7 +92,7 @@ router.get("/community/:communityId", async (req, res) => {
 router.post("/:communityId", async (req, res) => {
   try {
     const communityId = parseInt(req.params.communityId);
-    const { userAddress, borrowerName, amount, amountUsdc, tenorMonths } = req.body;
+    const { userAddress, borrowerName, amount, amountUsdc, tenorMonths, notes } = req.body;
 
     // Support both 'amount' (new) and 'amountUsdc' (legacy) for backwards compatibility
     const loanAmount = amount || amountUsdc;
@@ -138,6 +138,7 @@ router.post("/:communityId", async (req, res) => {
       currency,
       tenorMonths,
       aprNominal,
+      notes: notes || null,
     });
 
     res.json(result);
