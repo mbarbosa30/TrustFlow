@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment, type Context, type InsertContext, contexts, type CoSeed, type InsertCoSeed, coSeeds } from "@shared/schema";
+import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment, type LoanDonation, type InsertLoanDonation, loanDonation, type Context, type InsertContext, contexts, type CoSeed, type InsertCoSeed, coSeeds } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc, sql, isNull } from "drizzle-orm";
@@ -144,6 +144,11 @@ export interface IStorage {
   getPendingPaymentsByLoan(loanId: number): Promise<PendingPayment[]>;
   getPendingPaymentsByCommunity(communityId: number, status?: string): Promise<PendingPayment[]>;
   updatePendingPaymentStatus(id: number, status: string, reviewedBy: string, reviewNotes?: string): Promise<void>;
+  
+  // Loan Donation operations
+  createLoanDonation(donationData: InsertLoanDonation): Promise<LoanDonation>;
+  getLoanDonations(loanId: number): Promise<LoanDonation[]>;
+  getLoanDonationsByCommunity(communityId: number): Promise<LoanDonation[]>;
   
   // Lending Policy Admin operations
   getLendingPolicy(communityId: number): Promise<any>;
@@ -1443,6 +1448,31 @@ export class MemStorage implements IStorage {
         reviewedAt: new Date(),
       })
       .where(eq(pendingPayment.id, id));
+  }
+
+  // Loan Donation operations
+  async createLoanDonation(donationData: InsertLoanDonation): Promise<LoanDonation> {
+    const [created] = await db
+      .insert(loanDonation)
+      .values(donationData)
+      .returning();
+    return created;
+  }
+
+  async getLoanDonations(loanId: number): Promise<LoanDonation[]> {
+    return db
+      .select()
+      .from(loanDonation)
+      .where(eq(loanDonation.loanId, loanId))
+      .orderBy(desc(loanDonation.createdAt));
+  }
+
+  async getLoanDonationsByCommunity(communityId: number): Promise<LoanDonation[]> {
+    return db
+      .select()
+      .from(loanDonation)
+      .where(eq(loanDonation.communityId, communityId))
+      .orderBy(desc(loanDonation.createdAt));
   }
 }
 

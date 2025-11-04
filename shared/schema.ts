@@ -548,6 +548,29 @@ export const insertPendingPaymentSchema = createInsertSchema(pendingPayment).omi
 export type InsertPendingPayment = z.infer<typeof insertPendingPaymentSchema>;
 export type PendingPayment = typeof pendingPayment.$inferSelect;
 
+// Loan Donations - External contributions toward loan repayment
+export const loanDonation = pgTable("loan_donation", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  loanId: bigint("loan_id", { mode: "number" }).notNull().references(() => loan.id),
+  communityId: bigint("community_id", { mode: "number" }).notNull(),
+  donorAddress: text("donor_address"), // null if anonymous
+  amount: doublePrecision("amount").notNull(), // Amount in stablecoin (USDC/USDT/cUSD)
+  currency: text("currency").notNull(), // 'USDC' | 'USDT' | 'cUSD'
+  creditedAmount: doublePrecision("credited_amount").notNull(), // Amount credited to loan after FX conversion
+  txHash: text("tx_hash"), // Optional: blockchain transaction hash
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  message: text("message"), // Optional: donor message
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertLoanDonationSchema = createInsertSchema(loanDonation).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertLoanDonation = z.infer<typeof insertLoanDonationSchema>;
+export type LoanDonation = typeof loanDonation.$inferSelect;
+
 // ===== KUDOS REPUTATION TOKEN SYSTEM =====
 
 // KUDOS Balances - track user KUDOS holdings and claim eligibility

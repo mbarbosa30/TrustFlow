@@ -801,4 +801,147 @@ router.post("/pending-payments/:id/reject", async (req, res) => {
   }
 });
 
+// ===== DONATION ENDPOINTS =====
+
+/**
+ * Submit a donation toward a loan
+ * POST /api/loans/:loanId/donate
+ */
+router.post("/:loanId/donate", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+    const { donorAddress, amount, currency, txHash, isAnonymous, message } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Valid donation amount is required" });
+    }
+
+    if (!currency || !["USDC", "USDT", "cUSD"].includes(currency.toUpperCase())) {
+      return res.status(400).json({ error: "Currency must be USDC, USDT, or cUSD" });
+    }
+
+    // Get loan details
+    const loan = await storage.getLoan(loanId);
+    if (!loan) {
+      return res.status(404).json({ error: "Loan not found" });
+    }
+
+    if (loan.status !== "ACTIVE") {
+      return res.status(400).json({ error: "Loan is not active" });
+    }
+
+    // Import exchange rate utility and db
+    const { usdcToLocal } = await import("../lending/exchange_rate");
+    const { db } = await import("../db");
+
+    // Convert donation amount to loan currency
+    // Assuming USDC/USDT/cUSD are all 1:1 with USD
+    const conversion = await usdcToLocal(amount, loan.currency);
+
+    // Get current loan status to calculate outstanding balance
+    const paymentStatus = await getLoanPaymentStatus(loanId);
+    const outstandingBalance = paymentStatus.totalDue - paymentStatus.totalPaid;
+
+    // Validate loan has outstanding balance
+    if (outstandingBalance <= 0) {
+      return res.status(400).json({ error: "Loan is already fully paid" });
+    }
+
+    // For MVP, reject overpayments to keep logic simple
+    if (conversion.amountLocal > outstandingBalance) {
+      return res.status(400).json({ 
+        error: "Donation amount exceeds outstanding balance",
+        outstandingBalance,
+        currency: loan.currency,
+        message: `Please donate no more than ${outstandingBalance.toFixed(2)} ${loan.currency} (${(outstandingBalance / conversion.rate).toFixed(2)} ${currency.toUpperCase()})`
+      });
+    }
+
+    const actualCreditedAmount = conversion.amountLocal;
+
+    // Wrap donation creation and installment crediting in a transaction
+    const result = await db.transaction(async (tx) => {
+      // Create donation record with actual credited amount
+      const [donation] = await tx
+        .insert(loanDonation)
+        .values({
+          loanId,
+          communityId: loan.communityId,
+          donorAddress: isAnonymous ? null : donorAddress?.toLowerCase() || null,
+          amount,
+          currency: currency.toUpperCase(),
+          creditedAmount: actualCreditedAmount,
+          txHash: txHash || null,
+          isAnonymous: isAnonymous || false,
+          message: message || null,
+        })
+        .returning();
+
+      // Apply donation to loan (credit the installments)
+      let remainingCredit = actualCreditedAmount;
+      const installments = await storage.getInstallmentsByLoan(loanId);
+      
+      // Sort by due date to pay off earliest installments first
+      const unpaidInstallments = installments
+        .filter(inst => inst.status !== "PAID")
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+      for (const installment of unpaidInstallments) {
+        if (remainingCredit <= 0) break;
+
+        const amountDue = installment.totalDue - installment.totalPaid;
+        const paymentAmount = Math.min(remainingCredit, amountDue);
+
+        // Apply payment to installment
+        await processInstallmentPayment(installment.id, paymentAmount);
+        
+        remainingCredit -= paymentAmount;
+      }
+
+      return { donation, actualCreditedAmount };
+    });
+
+    // Check if loan is fully paid (outside transaction)
+    await checkLateInstallments(loanId);
+    const updatedPaymentStatus = await getLoanPaymentStatus(loanId);
+    
+    if (updatedPaymentStatus.totalPaid >= updatedPaymentStatus.totalDue) {
+      await storage.updateLoanStatus(loanId, "PAID");
+    }
+
+    res.json({
+      success: true,
+      donation: result.donation,
+      credited: result.actualCreditedAmount,
+      currency: loan.currency,
+      loanStatus: updatedPaymentStatus.totalPaid >= updatedPaymentStatus.totalDue ? "PAID" : "ACTIVE",
+    });
+  } catch (error: any) {
+    console.error("Error processing donation:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Get donations for a loan
+ * GET /api/loans/:loanId/donations
+ */
+router.get("/:loanId/donations", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+
+    const donations = await storage.getLoanDonations(loanId);
+
+    // Hide donor address for anonymous donations
+    const sanitizedDonations = donations.map(d => ({
+      ...d,
+      donorAddress: d.isAnonymous ? null : d.donorAddress,
+    }));
+
+    res.json({ donations: sanitizedDonations });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 export default router;
