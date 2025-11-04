@@ -2454,46 +2454,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "endorsement object required" });
       }
       
+      // Convert numeric fields to BigInt for validation
+      const endorsementWithBigInt = {
+        ...endorsement,
+        epoch: BigInt(endorsement.epoch),
+        nonce: BigInt(endorsement.nonce),
+        timestamp: BigInt(endorsement.timestamp),
+      };
+      
       // Validate signature and fields
-      const isValid = await verifyEndorsementSignature(endorsement);
+      const isValid = await verifyEndorsementSignature(endorsementWithBigInt);
       if (!isValid) {
         return res.status(400).json({ error: "Invalid signature" });
       }
       
       // Validate fields
-      const fieldsValidation = validateEndorsementFields(endorsement);
+      const fieldsValidation = validateEndorsementFields(endorsementWithBigInt);
       if (!fieldsValidation.valid) {
         return res.status(400).json({ error: fieldsValidation.error || "Invalid endorsement fields" });
       }
       
       // Validate nonce
       const maxNonce = await storage.getMaxNonce(
-        endorsement.endorser,
-        endorsement.epoch,
+        endorsementWithBigInt.endorser,
+        endorsementWithBigInt.epoch,
         0 // Global graph uses communityId=0
       );
       
-      const nonceValid = validateNonce(endorsement.nonce, maxNonce);
+      const nonceValid = validateNonce(endorsementWithBigInt.nonce, maxNonce);
       if (!nonceValid) {
         return res.status(400).json({ 
           error: "Invalid nonce", 
           maxNonce, 
-          providedNonce: endorsement.nonce 
+          providedNonce: endorsementWithBigInt.nonce 
         });
       }
       
       // Compute leaf hash
-      const leafHash = computeLeafHash(endorsement);
+      const leafHash = computeLeafHash(endorsementWithBigInt);
       
       // Create global vouch (scope='global', no promptHash)
       const dbEndorsement = await storage.createEndorsement({
         communityId: 0,
         scope: 'global', // Mark as global vouch
-        endorser: endorsement.endorser.toLowerCase(),
-        endorsee: endorsement.endorsee.toLowerCase(),
-        epoch: endorsement.epoch,
-        nonce: endorsement.nonce,
-        sig: endorsement.sig,
+        endorser: endorsementWithBigInt.endorser.toLowerCase(),
+        endorsee: endorsementWithBigInt.endorsee.toLowerCase(),
+        epoch: endorsementWithBigInt.epoch,
+        nonce: endorsementWithBigInt.nonce,
+        sig: endorsementWithBigInt.sig,
         leafHash,
         promptHash: null, // No prompt for global vouches
         note: endorsement.note || null,
