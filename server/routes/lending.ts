@@ -2,7 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { checkLoanEligibility } from "../lending/eligibility";
 import { createLoan } from "../lending/loan";
-import { processInstallmentPayment, getLoanPaymentStatus, checkLateInstallments } from "../lending/payment";
+import { processLoanPayment, processInstallmentPayment, getLoanPaymentStatus, checkLateInstallments } from "../lending/payment";
 import { applyInterestBuyDown, applyInterestVoucher, createRepayAssist, initializeGuaranteePool } from "../lending/subsidies";
 import { getUserTrustEventHistory } from "../lending/trust_events";
 
@@ -451,9 +451,10 @@ router.post("/pending-payments/:id/approve", async (req, res) => {
       reviewNotes
     );
 
-    // Process the actual payment
-    const result = await processInstallmentPayment(
-      pendingPayment.installmentId,
+    // Process the actual payment across multiple installments if needed
+    // This allows borrowers to pay more than one installment at a time
+    const result = await processLoanPayment(
+      pendingPayment.loanId,
       pendingPayment.amount
     );
 

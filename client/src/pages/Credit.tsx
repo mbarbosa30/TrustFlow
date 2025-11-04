@@ -585,7 +585,7 @@ export default function Credit() {
                         id="payment"
                         type="number"
                         min="0"
-                        max={loanDetails.nextInstallment.totalDue}
+                        max={loanDetails.totalDue - loanDetails.totalPaid}
                         step="0.01"
                         placeholder="0.00"
                         value={paymentAmount}
@@ -593,7 +593,10 @@ export default function Credit() {
                         data-testid="input-payment-amount"
                       />
                       <p className="text-xs text-muted-foreground">
-                        Maximum: {formatCurrency(loanDetails.nextInstallment.totalDue, loanDetails.loan.currency)}
+                        Total Outstanding: {formatCurrency(loanDetails.totalDue - loanDetails.totalPaid, loanDetails.loan.currency)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Next Installment Due: {formatCurrency(loanDetails.nextInstallment.totalDue, loanDetails.loan.currency)}
                       </p>
                     </div>
 

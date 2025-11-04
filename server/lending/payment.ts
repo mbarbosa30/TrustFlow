@@ -31,7 +31,67 @@ const LATE_THRESHOLD_DAYS = 7;
 const DEFAULT_THRESHOLD_DAYS = 60;
 
 /**
- * Process payment for an installment
+ * Process payment across multiple installments
+ * Allows borrowers to pay any amount up to their total outstanding balance
+ * Automatically applies overflow to future installments
+ */
+export async function processLoanPayment(
+  loanId: number,
+  paymentAmountUsdc: number
+): Promise<{
+  totalAmountPaid: number;
+  installmentsPaid: PaymentResult[];
+  loanFullyPaid: boolean;
+}> {
+  const loan = await storage.getLoan(loanId);
+  
+  if (!loan) {
+    throw new Error(`Loan ${loanId} not found`);
+  }
+
+  if (loan.status !== "ACTIVE") {
+    throw new Error(`Loan is ${loan.status}, cannot process payment`);
+  }
+
+  // Get all unpaid installments in chronological order
+  const allInstallments = await storage.getInstallmentsByLoan(loanId);
+  const unpaidInstallments = allInstallments
+    .filter((i) => i.status !== "PAID")
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+
+  if (unpaidInstallments.length === 0) {
+    throw new Error("Loan is already fully paid");
+  }
+
+  let remainingPayment = paymentAmountUsdc;
+  const installmentsPaid: PaymentResult[] = [];
+
+  // Apply payment to each installment until payment is exhausted
+  for (const installment of unpaidInstallments) {
+    if (remainingPayment <= 0) break;
+
+    const result = await processInstallmentPayment(installment.id, remainingPayment);
+    installmentsPaid.push(result);
+    remainingPayment -= result.amountPaid;
+  }
+
+  // Check if loan is now fully paid
+  const updatedInstallments = await storage.getInstallmentsByLoan(loanId);
+  const allPaid = updatedInstallments.every((i) => i.status === "PAID");
+  
+  if (allPaid) {
+    await storage.updateLoanStatus(loanId, "COMPLETED");
+  }
+
+  return {
+    totalAmountPaid: paymentAmountUsdc - remainingPayment,
+    installmentsPaid,
+    loanFullyPaid: allPaid,
+  };
+}
+
+/**
+ * Process payment for a single installment
  * Applies subsidies, handles RA repayments, updates status
  */
 export async function processInstallmentPayment(
