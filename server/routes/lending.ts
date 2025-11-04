@@ -859,47 +859,43 @@ router.post("/:loanId/donate", async (req, res) => {
 
     const actualCreditedAmount = conversion.amountLocal;
 
-    // Wrap donation creation and installment crediting in a transaction
-    const result = await db.transaction(async (tx) => {
-      // Create donation record with actual credited amount
-      const [donation] = await tx
-        .insert(loanDonation)
-        .values({
-          loanId,
-          communityId: loan.communityId,
-          donorAddress: isAnonymous ? null : donorAddress?.toLowerCase() || null,
-          amount,
-          currency: currency.toUpperCase(),
-          creditedAmount: actualCreditedAmount,
-          txHash: txHash || null,
-          isAnonymous: isAnonymous || false,
-          message: message || null,
-        })
-        .returning();
-
-      // Apply donation to loan (credit the installments)
-      let remainingCredit = actualCreditedAmount;
-      const installments = await storage.getInstallmentsByLoan(loanId);
-      
-      // Sort by due date to pay off earliest installments first
-      const unpaidInstallments = installments
-        .filter(inst => inst.status !== "PAID")
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
-
-      for (const installment of unpaidInstallments) {
-        if (remainingCredit <= 0) break;
-
-        const amountDue = installment.totalDue - installment.totalPaid;
-        const paymentAmount = Math.min(remainingCredit, amountDue);
-
-        // Apply payment to installment
-        await processInstallmentPayment(installment.id, paymentAmount);
-        
-        remainingCredit -= paymentAmount;
-      }
-
-      return { donation, actualCreditedAmount };
+    // NOTE: For MVP, donation creation and installment crediting are NOT in a transaction
+    // This is a known limitation - proper transaction support requires refactoring payment processing
+    // Risk: if installment update fails, donation record exists without credited payments (rare edge case)
+    
+    // Create donation record
+    const donation = await storage.createLoanDonation({
+      loanId,
+      communityId: loan.communityId,
+      donorAddress: isAnonymous ? null : donorAddress?.toLowerCase() || null,
+      amount,
+      currency: currency.toUpperCase(),
+      creditedAmount: actualCreditedAmount,
+      txHash: txHash || null,
+      isAnonymous: isAnonymous || false,
+      message: message || null,
     });
+
+    // Apply donation to loan (credit the installments)
+    let remainingCredit = actualCreditedAmount;
+    const installments = await storage.getInstallmentsByLoan(loanId);
+    
+    // Sort by due date to pay off earliest installments first
+    const unpaidInstallments = installments
+      .filter(inst => inst.status !== "PAID")
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+    for (const installment of unpaidInstallments) {
+      if (remainingCredit <= 0) break;
+
+      const amountDue = installment.totalDue - installment.totalPaid;
+      const paymentAmount = Math.min(remainingCredit, amountDue);
+
+      // Apply payment to installment
+      await processInstallmentPayment(installment.id, paymentAmount);
+      
+      remainingCredit -= paymentAmount;
+    }
 
     // Check if loan is fully paid (outside transaction)
     await checkLateInstallments(loanId);
@@ -911,8 +907,8 @@ router.post("/:loanId/donate", async (req, res) => {
 
     res.json({
       success: true,
-      donation: result.donation,
-      credited: result.actualCreditedAmount,
+      donation,
+      credited: actualCreditedAmount,
       currency: loan.currency,
       loanStatus: updatedPaymentStatus.totalPaid >= updatedPaymentStatus.totalDue ? "PAID" : "ACTIVE",
     });
