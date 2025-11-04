@@ -517,9 +517,10 @@ export class EgoScorer {
     const effectiveRedundancy = baseRedundancy + depthBonus + connectivityBonus;
 
     // Step 4: Calculate scoring with fixed healthy baseline
-    // Fixed baseline: ~5 vouches with some depth = "healthy" network
+    // Fixed baseline: ~5 vouches with rich depth/connectivity = "healthy" network
     const HEALTHY_VOUCH_COUNT = 5.0;
-    const HEALTHY_REDUNDANCY = 5.0 + (20 * 0.2) + 0.5; // ~10 redundancy points for healthy network
+    // Calibrated for dense networks: accounts for random endorsements creating rich connectivity
+    const HEALTHY_REDUNDANCY = 20.0; // Baseline for healthy network in dense graph
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow equals number of vouchers in simple case
