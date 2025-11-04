@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { storage } from "../storage";
 import { checkLoanEligibility } from "../lending/eligibility";
-import { createLoan } from "../lending/loan";
+import { createLoan, approveLoan, rejectLoan } from "../lending/loan";
 import { processLoanPayment, processInstallmentPayment, getLoanPaymentStatus, checkLateInstallments } from "../lending/payment";
 import { applyInterestBuyDown, applyInterestVoucher, createRepayAssist, initializeGuaranteePool } from "../lending/subsidies";
 import { getUserTrustEventHistory } from "../lending/trust_events";
@@ -141,6 +141,67 @@ router.post("/:communityId", async (req, res) => {
     });
 
     res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Approve a pending loan application
+ * POST /api/loans/:loanId/approve
+ * Body: { reviewerAddress }
+ * 
+ * SECURITY WARNING: reviewerAddress is currently UNAUTHENTICATED
+ * TODO: Add authentication to verify reviewer is community manager
+ */
+router.post("/:loanId/approve", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+    const { reviewerAddress } = req.body;
+
+    if (!reviewerAddress) {
+      return res.status(400).json({ error: "reviewerAddress is required" });
+    }
+
+    // TODO: Verify reviewerAddress is community manager/admin
+
+    const approvedLoan = await approveLoan(loanId, reviewerAddress.toLowerCase());
+
+    res.json({
+      success: true,
+      message: "Loan application approved",
+      loan: approvedLoan
+    });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Reject a pending loan application
+ * POST /api/loans/:loanId/reject
+ * Body: { reviewerAddress, reason? }
+ * 
+ * SECURITY WARNING: reviewerAddress is currently UNAUTHENTICATED
+ * TODO: Add authentication to verify reviewer is community manager
+ */
+router.post("/:loanId/reject", async (req, res) => {
+  try {
+    const loanId = parseInt(req.params.loanId);
+    const { reviewerAddress, reason } = req.body;
+
+    if (!reviewerAddress) {
+      return res.status(400).json({ error: "reviewerAddress is required" });
+    }
+
+    // TODO: Verify reviewerAddress is community manager/admin
+
+    await rejectLoan(loanId, reviewerAddress.toLowerCase(), reason);
+
+    res.json({
+      success: true,
+      message: "Loan application rejected"
+    });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

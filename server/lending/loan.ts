@@ -117,13 +117,55 @@ export async function createLoan(
       currency,
       aprNominal,
       tenorMonths,
-      status: 'ACTIVE',
-      disbursedAt: new Date(),
+      status: 'PENDING_APPROVAL', // Loan requires manager approval before activation
+      disbursedAt: null, // Will be set when approved
     },
     principalUsdc,
     aprNominal,
     tenorMonths,
   });
+}
+
+/**
+ * Approve a loan application and activate it
+ */
+export async function approveLoan(loanId: number, reviewerAddress: string): Promise<Loan> {
+  const existingLoan = await storage.getLoan(loanId);
+  if (!existingLoan) {
+    throw new Error("Loan not found");
+  }
+  
+  if (existingLoan.status !== 'PENDING_APPROVAL') {
+    throw new Error("Loan is not pending approval");
+  }
+  
+  // Update loan status to ACTIVE and set disbursement date
+  await storage.updateLoanStatus(loanId, 'ACTIVE');
+  
+  // Get updated loan
+  const updatedLoan = await storage.getLoan(loanId);
+  if (!updatedLoan) {
+    throw new Error("Failed to retrieve updated loan");
+  }
+  
+  return updatedLoan;
+}
+
+/**
+ * Reject a loan application
+ */
+export async function rejectLoan(loanId: number, reviewerAddress: string, reason?: string): Promise<void> {
+  const existingLoan = await storage.getLoan(loanId);
+  if (!existingLoan) {
+    throw new Error("Loan not found");
+  }
+  
+  if (existingLoan.status !== 'PENDING_APPROVAL') {
+    throw new Error("Loan is not pending approval");
+  }
+  
+  // Update loan status to REJECTED
+  await storage.updateLoanStatus(loanId, 'REJECTED');
 }
 
 export {

@@ -70,10 +70,12 @@ export default function LendingDashboard() {
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: "approve" | "reject" | null;
-    paymentId: number | null;
+    itemId: number | null;
+    itemType: "payment" | "loan" | null;
     amount: number | null;
     currency: string | null;
-  }>({ open: false, action: null, paymentId: null, amount: null, currency: null });
+    borrowerAddress?: string | null;
+  }>({ open: false, action: null, itemId: null, itemType: null, amount: null, currency: null, borrowerAddress: null });
 
   // Fetch community data to get currency
   const { data: communityData } = useQuery<{ community: any }>({
@@ -98,6 +100,13 @@ export default function LendingDashboard() {
   });
 
   const pendingPayments = pendingPaymentsData?.payments || [];
+
+  // Fetch pending loan applications
+  const { data: loansData, isLoading: loansLoading } = useQuery<{ loans: any[] }>({
+    queryKey: ["/api/loans/community", communityId],
+  });
+
+  const pendingLoans = (loansData?.loans || []).filter((loan: any) => loan.status === 'PENDING_APPROVAL');
 
   // Approve payment mutation
   const approveMutation = useMutation({
@@ -151,35 +160,121 @@ export default function LendingDashboard() {
     },
   });
 
-  const handleApprove = (payment: any) => {
+  // Approve loan application mutation
+  const approveLoanMutation = useMutation({
+    mutationFn: async (loanId: number) => {
+      return apiRequest(
+        "POST",
+        `/api/loans/${loanId}/approve`,
+        { reviewerAddress: address }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/community", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/activity", communityId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/lending/stats", communityId] });
+      toast({
+        title: "Loan Approved",
+        description: "The loan application has been approved and activated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Approval Failed",
+        description: error.message || "Failed to approve loan application",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reject loan application mutation
+  const rejectLoanMutation = useMutation({
+    mutationFn: async (loanId: number) => {
+      return apiRequest(
+        "POST",
+        `/api/loans/${loanId}/reject`,
+        { reviewerAddress: address }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/loans/community", communityId] });
+      toast({
+        title: "Loan Rejected",
+        description: "The loan application has been rejected.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Rejection Failed",
+        description: error.message || "Failed to reject loan application",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprovePayment = (payment: any) => {
     setConfirmDialog({
       open: true,
       action: "approve",
-      paymentId: payment.id,
+      itemId: payment.id,
+      itemType: "payment",
       amount: payment.amount,
       currency: payment.currency,
     });
   };
 
-  const handleReject = (payment: any) => {
+  const handleRejectPayment = (payment: any) => {
     setConfirmDialog({
       open: true,
       action: "reject",
-      paymentId: payment.id,
+      itemId: payment.id,
+      itemType: "payment",
       amount: payment.amount,
       currency: payment.currency,
+    });
+  };
+
+  const handleApproveLoan = (loan: any) => {
+    setConfirmDialog({
+      open: true,
+      action: "approve",
+      itemId: loan.id,
+      itemType: "loan",
+      amount: loan.principalUsdc,
+      currency: loan.currency,
+      borrowerAddress: loan.borrowerAddress,
+    });
+  };
+
+  const handleRejectLoan = (loan: any) => {
+    setConfirmDialog({
+      open: true,
+      action: "reject",
+      itemId: loan.id,
+      itemType: "loan",
+      amount: loan.principalUsdc,
+      currency: loan.currency,
+      borrowerAddress: loan.borrowerAddress,
     });
   };
 
   const confirmAction = () => {
-    if (confirmDialog.paymentId && confirmDialog.action) {
-      if (confirmDialog.action === "approve") {
-        approveMutation.mutate(confirmDialog.paymentId);
-      } else {
-        rejectMutation.mutate(confirmDialog.paymentId);
+    if (confirmDialog.itemId && confirmDialog.action && confirmDialog.itemType) {
+      if (confirmDialog.itemType === "payment") {
+        if (confirmDialog.action === "approve") {
+          approveMutation.mutate(confirmDialog.itemId);
+        } else {
+          rejectMutation.mutate(confirmDialog.itemId);
+        }
+      } else if (confirmDialog.itemType === "loan") {
+        if (confirmDialog.action === "approve") {
+          approveLoanMutation.mutate(confirmDialog.itemId);
+        } else {
+          rejectLoanMutation.mutate(confirmDialog.itemId);
+        }
       }
     }
-    setConfirmDialog({ open: false, action: null, paymentId: null, amount: null, currency: null });
+    setConfirmDialog({ open: false, action: null, itemId: null, itemType: null, amount: null, currency: null, borrowerAddress: null });
   };
 
   if (statsLoading) {
@@ -415,6 +510,91 @@ export default function LendingDashboard() {
         </CardContent>
       </Card>
 
+      {/* Pending Loan Applications */}
+      {pendingLoans.length > 0 && (
+        <Card data-testid="card-pending-loans">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600" />
+              Pending Loan Applications
+              <Badge variant="destructive" data-testid="badge-pending-loans-count">
+                {pendingLoans.length}
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              New loan applications awaiting approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loansLoading ? (
+              <p className="text-muted-foreground">Loading loan applications...</p>
+            ) : (
+              <div className="overflow-x-auto -mx-6 px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Borrower</TableHead>
+                      <TableHead className="whitespace-nowrap">Amount</TableHead>
+                      <TableHead>Term</TableHead>
+                      <TableHead>APR</TableHead>
+                      <TableHead className="whitespace-nowrap">Applied</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingLoans.map((loan: any) => (
+                      <TableRow key={loan.id} data-testid={`row-pending-loan-${loan.id}`}>
+                        <TableCell className="font-mono text-sm">
+                          {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold">
+                            {formatCurrency(loan.principalUsdc, loan.currency)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {loan.tenorMonths} months
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {(loan.aprNominal * 100).toFixed(1)}%
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {format(new Date(loan.createdAt), "MMM d, h:mm a")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`button-approve-loan-${loan.id}`}
+                              className="text-green-600 hover:text-green-700"
+                              onClick={() => handleApproveLoan(loan)}
+                              disabled={approveLoanMutation.isPending || rejectLoanMutation.isPending}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              data-testid={`button-reject-loan-${loan.id}`}
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleRejectLoan(loan)}
+                              disabled={approveLoanMutation.isPending || rejectLoanMutation.isPending}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Payment Approvals */}
       {pendingPayments.filter((p: any) => p.status === 'PENDING').length > 0 && (
         <Card data-testid="card-pending-payments">
@@ -471,7 +651,7 @@ export default function LendingDashboard() {
                                 variant="ghost"
                                 data-testid={`button-approve-${payment.id}`}
                                 className="text-green-600 hover:text-green-700"
-                                onClick={() => handleApprove(payment)}
+                                onClick={() => handleApprovePayment(payment)}
                                 disabled={approveMutation.isPending || rejectMutation.isPending}
                               >
                                 Approve
@@ -481,7 +661,7 @@ export default function LendingDashboard() {
                                 variant="ghost"
                                 data-testid={`button-reject-${payment.id}`}
                                 className="text-red-600 hover:text-red-700"
-                                onClick={() => handleReject(payment)}
+                                onClick={() => handleRejectPayment(payment)}
                                 disabled={approveMutation.isPending || rejectMutation.isPending}
                               >
                                 Reject
@@ -558,25 +738,43 @@ export default function LendingDashboard() {
       </div>
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, action: null, paymentId: null, amount: null, currency: null })}>
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, action: null, itemId: null, itemType: null, amount: null, currency: null, borrowerAddress: null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmDialog.action === "approve" ? "Approve Payment" : "Reject Payment"}
+              {confirmDialog.itemType === "loan" 
+                ? (confirmDialog.action === "approve" ? "Approve Loan Application" : "Reject Loan Application")
+                : (confirmDialog.action === "approve" ? "Approve Payment" : "Reject Payment")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmDialog.action === "approve" ? (
-                <>
-                  Are you sure you want to approve this payment of{" "}
-                  <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
-                  This will process the payment and apply it to the loan.
-                </>
+              {confirmDialog.itemType === "loan" ? (
+                confirmDialog.action === "approve" ? (
+                  <>
+                    Are you sure you want to approve this loan application for{" "}
+                    <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                    This will activate the loan and make it ready for disbursement.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to reject this loan application for{" "}
+                    <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                    The applicant will be notified.
+                  </>
+                )
               ) : (
-                <>
-                  Are you sure you want to reject this payment of{" "}
-                  <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
-                  The borrower will need to resubmit.
-                </>
+                confirmDialog.action === "approve" ? (
+                  <>
+                    Are you sure you want to approve this payment of{" "}
+                    <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                    This will process the payment and apply it to the loan.
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to reject this payment of{" "}
+                    <strong>{formatCurrency(confirmDialog.amount || 0, confirmDialog.currency || currency)}</strong>?
+                    The borrower will need to resubmit.
+                  </>
+                )
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

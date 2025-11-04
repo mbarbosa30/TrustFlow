@@ -819,7 +819,11 @@ export class MemStorage implements IStorage {
   async updateLoanStatus(id: number, status: string): Promise<void> {
     await db
       .update(loan)
-      .set({ status, closedAt: status !== 'ACTIVE' ? new Date() : null })
+      .set({ 
+        status, 
+        closedAt: status !== 'ACTIVE' && status !== 'PENDING_APPROVAL' ? new Date() : null,
+        disbursedAt: status === 'ACTIVE' ? new Date() : undefined
+      })
       .where(eq(loan.id, id));
   }
 

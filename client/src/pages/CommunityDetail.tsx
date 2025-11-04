@@ -197,6 +197,14 @@ export default function CommunityDetail() {
   });
 
   const pendingPayments = pendingPaymentsData?.payments || [];
+
+  // Fetch pending loan applications for management tab
+  const { data: loansData } = useQuery<{ loans: any[] }>({
+    queryKey: ["/api/loans/community", communityId],
+    enabled: !!address && !!communityData?.community,
+  });
+
+  const pendingLoans = (loansData?.loans || []).filter((loan: any) => loan.status === 'PENDING_APPROVAL');
   const isManager = address && communityData?.community?.creatorAddress?.toLowerCase() === address.toLowerCase();
 
   if (communityLoading) {
@@ -522,9 +530,9 @@ export default function CommunityDetail() {
               {isManager && (
                 <TabsTrigger value="management" data-testid="tab-management" className="whitespace-nowrap">
                   Management
-                  {pendingPayments.length > 0 && (
+                  {(pendingPayments.length + pendingLoans.length) > 0 && (
                     <Badge variant="destructive" className="ml-2">
-                      {pendingPayments.length}
+                      {pendingPayments.length + pendingLoans.length}
                     </Badge>
                   )}
                 </TabsTrigger>
@@ -1128,8 +1136,54 @@ export default function CommunityDetail() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Pending Payments Section */}
+                  {/* Pending Loan Applications Section */}
                   <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold">Pending Loan Applications</h3>
+                      {pendingLoans.length > 0 && (
+                        <Badge variant="destructive" data-testid="badge-pending-loans">
+                          {pendingLoans.length}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {pendingLoans.length === 0 ? (
+                      <div className="text-center py-6 bg-card rounded-lg border">
+                        <p className="text-sm text-muted-foreground">No pending loan applications</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {pendingLoans.slice(0, 5).map((loan: any) => (
+                          <div
+                            key={loan.id}
+                            className="flex items-center justify-between p-4 bg-card rounded-lg border hover-elevate"
+                            data-testid={`pending-loan-${loan.id}`}
+                          >
+                            <div className="flex-1">
+                              <div className="font-mono text-sm mb-1">
+                                {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {loan.principalUsdc} {loan.currency || community.currency || 'USD'} • {loan.tenorMonths} months • {(loan.aprNominal * 100).toFixed(1)}% APR
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="ml-4">
+                              {new Date(loan.createdAt).toLocaleDateString()}
+                            </Badge>
+                          </div>
+                        ))}
+                        
+                        {pendingLoans.length > 5 && (
+                          <p className="text-sm text-muted-foreground text-center">
+                            + {pendingLoans.length - 5} more pending applications
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pending Payments Section */}
+                  <div className="border-t pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold">Pending Payment Approvals</h3>
                       {pendingPayments.length > 0 && (
@@ -1192,7 +1246,7 @@ export default function CommunityDetail() {
                   {/* Community Lending Stats */}
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <Card>
                         <CardContent className="p-4">
                           <div className="text-2xl font-bold text-primary">
@@ -1204,9 +1258,17 @@ export default function CommunityDetail() {
                       <Card>
                         <CardContent className="p-4">
                           <div className="text-2xl font-bold text-yellow-600">
+                            {pendingLoans.length}
+                          </div>
+                          <div className="text-sm text-muted-foreground">Pending Applications</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold text-orange-600">
                             {pendingPayments.length}
                           </div>
-                          <div className="text-sm text-muted-foreground">Pending Approvals</div>
+                          <div className="text-sm text-muted-foreground">Pending Payments</div>
                         </CardContent>
                       </Card>
                     </div>
