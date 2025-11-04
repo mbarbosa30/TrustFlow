@@ -52,8 +52,9 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
     enabled: !!address,
   });
 
-  // Filter out null communities and determine community selection logic
-  const validCommunities = userCommunities?.communities?.filter((c: any) => c !== null) || [];
+  // Filter out null communities and Community 0 (Global Network)
+  // Community 0 is always available for global vouches, but shouldn't appear in the dropdown
+  const actualCommunities = userCommunities?.communities?.filter((c: any) => c !== null && c.id !== 0) || [];
   
   const [selectedCommunityId, setSelectedCommunityId] = useState<string>("0");
   
@@ -61,7 +62,7 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
   // This prevents stale state when switching wallets or when community data changes
   useEffect(() => {
     setSelectedCommunityId("0");
-  }, [address, validCommunities.map(c => c?.id).join(',')]);
+  }, [address, actualCommunities.map(c => c?.id).join(',')]);
   
   // Auto-submit after wallet connection if user clicked while disconnected
   useEffect(() => {
@@ -71,8 +72,8 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, pendingSubmit, searchQuery, address]);
   
-  // Show selector when user has 1+ communities (so they can choose between community and Global Network)
-  const showCommunitySelector = validCommunities.length >= 1;
+  // Only show selector when user has joined/created actual communities (not counting Global Network)
+  const showCommunitySelector = actualCommunities.length > 0;
   
   // ENS resolution uses Ethereum mainnet (standard practice)
   const publicClient = createPublicClient({
@@ -249,7 +250,7 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">Global Network</SelectItem>
-                {validCommunities.map((community: any) => (
+                {actualCommunities.map((community: any) => (
                   <SelectItem key={community.id} value={community.id.toString()}>
                     {community.name}
                   </SelectItem>
