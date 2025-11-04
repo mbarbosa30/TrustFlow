@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import type { Loan, Installment } from "@shared/schema";
 import { calculateEffectiveInterest, executeDefaultWaterfall } from "./subsidies";
+import { calculateCurrentDebt, calculateLoanHealth } from "./loan";
 
 export interface PaymentResult {
   installmentId: number;
@@ -277,6 +278,19 @@ export async function getLoanPaymentStatus(loanId: number): Promise<{
   nextInstallment: InstallmentWithSubsidies | null;
   daysOverdue: number;
   installments: InstallmentWithSubsidies[];
+  currentDebt?: {
+    currentDebt: number;
+    principalRemaining: number;
+    interestAccrued: number;
+    totalExpected: number;
+  };
+  health?: {
+    healthScore: number;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    paymentProgress: number;
+    timeProgress: number;
+    isAtRisk: boolean;
+  };
 }> {
   const loan = await storage.getLoan(loanId);
   
@@ -335,6 +349,26 @@ export async function getLoanPaymentStatus(loanId: number): Promise<{
     );
   }
 
+  // Calculate current debt and health metrics if loan is active
+  let currentDebtInfo;
+  let healthInfo;
+  
+  if (loan.status === 'ACTIVE' && loan.disbursedAt) {
+    try {
+      currentDebtInfo = calculateCurrentDebt(
+        loan.principalUsdc,
+        loan.aprNominal,
+        loan.tenorMonths,
+        new Date(loan.disbursedAt),
+        totalPaid
+      );
+      
+      healthInfo = calculateLoanHealth(loan, totalPaid);
+    } catch (error) {
+      console.error(`Error calculating debt/health for loan ${loanId}:`, error);
+    }
+  }
+
   return {
     loan,
     totalDue: totalDueSubsidized, // What borrower actually owes
@@ -344,6 +378,8 @@ export async function getLoanPaymentStatus(loanId: number): Promise<{
     nextInstallment,
     daysOverdue,
     installments: enrichedInstallments,
+    currentDebt: currentDebtInfo,
+    health: healthInfo,
   };
 }
 

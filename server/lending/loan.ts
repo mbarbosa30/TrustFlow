@@ -42,6 +42,124 @@ function calculateMonthlyPayment(
 }
 
 /**
+ * Calculate current debt including accrued interest to date
+ * Returns the remaining principal plus interest that has accumulated
+ */
+function calculateCurrentDebt(
+  principal: number,
+  aprNominal: number,
+  tenorMonths: number,
+  disbursedAt: Date,
+  totalPaid: number
+): {
+  currentDebt: number;
+  principalRemaining: number;
+  interestAccrued: number;
+  totalExpected: number;
+} {
+  const schedule = generateInstallmentSchedule(principal, aprNominal, tenorMonths, disbursedAt);
+  const monthlyPayment = calculateMonthlyPayment(principal, aprNominal, tenorMonths);
+  
+  let principalPaid = 0;
+  let interestPaid = 0;
+  let remainingPayment = totalPaid;
+  
+  // Apply payments to schedule (interest first, then principal)
+  for (const installment of schedule) {
+    if (remainingPayment <= 0) break;
+    
+    // Pay interest first
+    const interestPayment = Math.min(remainingPayment, installment.interestDue - interestPaid);
+    interestPaid += interestPayment;
+    remainingPayment -= interestPayment;
+    
+    // Then principal
+    if (remainingPayment > 0) {
+      const principalPayment = Math.min(remainingPayment, installment.principalDue);
+      principalPaid += principalPayment;
+      remainingPayment -= principalPayment;
+    }
+  }
+  
+  const principalRemaining = principal - principalPaid;
+  const totalExpected = monthlyPayment * tenorMonths;
+  const totalInterest = totalExpected - principal;
+  const interestAccrued = totalInterest - interestPaid;
+  const currentDebt = principalRemaining + interestAccrued;
+  
+  return {
+    currentDebt: Math.round(currentDebt * 100) / 100,
+    principalRemaining: Math.round(principalRemaining * 100) / 100,
+    interestAccrued: Math.round(interestAccrued * 100) / 100,
+    totalExpected: Math.round(totalExpected * 100) / 100,
+  };
+}
+
+/**
+ * Calculate loan health metrics for risk assessment
+ */
+function calculateLoanHealth(
+  loan: Loan,
+  totalPaid: number
+): {
+  healthScore: number; // 0-100, higher is better
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  paymentProgress: number; // 0-1, percentage of expected payments made
+  timeProgress: number; // 0-1, percentage of loan term elapsed
+  isAtRisk: boolean;
+} {
+  if (!loan.disbursedAt) {
+    return {
+      healthScore: 0,
+      riskLevel: 'critical',
+      paymentProgress: 0,
+      timeProgress: 0,
+      isAtRisk: true,
+    };
+  }
+  
+  const schedule = generateInstallmentSchedule(
+    loan.principalUsdc,
+    loan.aprNominal,
+    loan.tenorMonths,
+    new Date(loan.disbursedAt)
+  );
+  
+  const totalExpected = schedule.reduce((sum, inst) => sum + inst.totalDue, 0);
+  const paymentProgress = Math.min(1, totalPaid / totalExpected);
+  
+  const startDate = new Date(loan.disbursedAt);
+  const endDate = schedule[schedule.length - 1].dueDate;
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsed = Date.now() - startDate.getTime();
+  const timeProgress = Math.min(1, Math.max(0, elapsed / totalDuration));
+  
+  // Health score: payment progress should match or exceed time progress
+  // If paymentProgress >= timeProgress, score is 80-100
+  // If paymentProgress < timeProgress, score decreases proportionally
+  const progressRatio = timeProgress > 0 ? paymentProgress / timeProgress : 1;
+  let healthScore = Math.min(100, Math.max(0, progressRatio * 100));
+  
+  // Determine risk level
+  let riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  if (healthScore >= 80) riskLevel = 'low';
+  else if (healthScore >= 60) riskLevel = 'medium';
+  else if (healthScore >= 40) riskLevel = 'high';
+  else riskLevel = 'critical';
+  
+  // At risk if payment progress is significantly behind time progress
+  const isAtRisk = paymentProgress < timeProgress * 0.8;
+  
+  return {
+    healthScore: Math.round(healthScore),
+    riskLevel,
+    paymentProgress,
+    timeProgress,
+    isAtRisk,
+  };
+}
+
+/**
  * Generate installment schedule with principal/interest breakdown
  */
 export function generateInstallmentSchedule(
@@ -170,4 +288,6 @@ export async function rejectLoan(loanId: number, reviewerAddress: string, reason
 
 export {
   calculateMonthlyPayment,
+  calculateCurrentDebt,
+  calculateLoanHealth,
 };
