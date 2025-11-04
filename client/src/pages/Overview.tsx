@@ -9,6 +9,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useRef } from "react";
 import { QRCodeDialog } from "@/components/QRCodeDialog";
+import { QRCodeSVG } from "qrcode.react";
 import type { PublicEndorsement } from "@shared/schema";
 import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 export default function Overview() {
   const { address, isConnected } = useWallet();
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showAllGiven, setShowAllGiven] = useState(false);
+  const [showAllReceived, setShowAllReceived] = useState(false);
+  const [showInlineQR, setShowInlineQR] = useState(true);
   const [location] = useLocation();
   const endorseFormRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -61,10 +65,10 @@ export default function Overview() {
     c.seedAddresses?.includes(address?.toLowerCase())
   );
 
-  // User's active loans (for borrower actions) - fetch from first community
-  const { data: userLoansData } = useQuery<{ loans: any[] }>({
-    queryKey: [`/api/loans/borrower/${firstCommunity?.id}/${address}`],
-    enabled: isConnected && !!address && !!firstCommunity,
+  // User's active loans across ALL communities (for borrower actions)
+  const { data: activeLoansData } = useQuery<{ hasActiveLoans: boolean; activeLoans: any[] }>({
+    queryKey: [`/api/loans/user/${address}/active`],
+    enabled: isConnected && !!address,
   });
 
   // KUDOS balance
@@ -73,7 +77,7 @@ export default function Overview() {
     enabled: isConnected && !!address,
   });
 
-  const activeLoans = userLoansData?.loans?.filter((loan: any) => loan.status === 'ACTIVE') || [];
+  const activeLoans = activeLoansData?.activeLoans || [];
 
   const givenEndorsements = givenEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
@@ -272,15 +276,27 @@ export default function Overview() {
                 <CardDescription>Let others vouch for you</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
+                {showInlineQR && (
+                  <div className="flex justify-center py-2">
+                    <div className="bg-white p-3 rounded-lg" data-testid="inline-qr-code">
+                      <QRCodeSVG
+                        value={address}
+                        size={140}
+                        level="H"
+                        includeMargin={false}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     className="flex-1 gap-2"
-                    onClick={() => setShowQRCode(true)}
-                    data-testid="button-show-qr-card"
+                    onClick={() => setShowInlineQR(!showInlineQR)}
+                    data-testid="button-toggle-qr-card"
                   >
                     <QrCode className="w-4 h-4" />
-                    Show QR Code
+                    {showInlineQR ? 'Hide' : 'Show'} QR
                   </Button>
                   <Button
                     variant="default"
@@ -344,26 +360,27 @@ export default function Overview() {
                   <CreditCard className="w-5 h-5 text-muted-foreground" />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2">
                 {activeLoans.slice(0, 2).map((loan: any) => (
-                  <div key={loan.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div>
-                      <div className="font-medium">${loan.principalAmount.toLocaleString()}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {loan.installmentsPaid}/{loan.numberOfInstallments} payments
+                  <Link key={loan.id} href={`/credit/${loan.communityId}`}>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover-elevate cursor-pointer" data-testid={`loan-card-${loan.id}`}>
+                      <div>
+                        <div className="font-medium">${loan.principalAmount.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {loan.installmentsPaid}/{loan.numberOfInstallments} payments
+                        </div>
                       </div>
+                      <Badge variant="outline" data-testid={`badge-loan-status-${loan.id}`}>
+                        {loan.riskLevel || 'Active'}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" data-testid={`badge-loan-status-${loan.id}`}>
-                      {loan.riskLevel || 'Active'}
-                    </Badge>
-                  </div>
+                  </Link>
                 ))}
-                <Link href={`/credit/${firstCommunity?.id}`}>
-                  <Button variant="outline" className="w-full gap-2" data-testid="button-view-credit">
-                    <DollarSign className="w-4 h-4" />
-                    Manage Loans
-                  </Button>
-                </Link>
+                {activeLoans.length > 2 && (
+                  <p className="text-xs text-center text-muted-foreground pt-1">
+                    +{activeLoans.length - 2} more loan{activeLoans.length - 2 > 1 ? 's' : ''}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
@@ -418,9 +435,9 @@ export default function Overview() {
 
       <Card data-testid="card-endorsements">
         <CardHeader>
-          <CardTitle>Vouches</CardTitle>
+          <CardTitle>Recent Vouches</CardTitle>
           <CardDescription>
-            Manage your given and received vouches. Vouches are public and verifiable.
+            Your most recent vouches. Vouches are public and verifiable.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -433,27 +450,53 @@ export default function Overview() {
                 Received ({isLoadingReceived ? '...' : receivedEndorsements.length})
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="given" className="mt-6" data-testid="tab-content-given">
+            <TabsContent value="given" className="mt-6 space-y-4" data-testid="tab-content-given">
               {isLoadingGiven ? (
                 <div className="text-center text-muted-foreground py-8">Loading vouches...</div>
               ) : (
-                <EndorsementsList
-                  endorsements={givenEndorsements}
-                  onRevoke={handleRevoke}
-                  emptyMessage={isConnected ? "You haven't vouched for anyone yet" : "Connect your wallet to view vouches"}
-                  showRevokeButton={true}
-                />
+                <>
+                  <EndorsementsList
+                    endorsements={showAllGiven ? givenEndorsements : givenEndorsements.slice(0, 7)}
+                    onRevoke={handleRevoke}
+                    emptyMessage={isConnected ? "You haven't vouched for anyone yet" : "Connect your wallet to view vouches"}
+                    showRevokeButton={true}
+                  />
+                  {givenEndorsements.length > 7 && (
+                    <div className="text-center">
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowAllGiven(!showAllGiven)}
+                        data-testid="button-toggle-given"
+                      >
+                        {showAllGiven ? 'Show Less' : `View All ${givenEndorsements.length} Vouches`}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
-            <TabsContent value="received" className="mt-6" data-testid="tab-content-received">
+            <TabsContent value="received" className="mt-6 space-y-4" data-testid="tab-content-received">
               {isLoadingReceived ? (
                 <div className="text-center text-muted-foreground py-8">Loading vouches...</div>
               ) : (
-                <EndorsementsList
-                  endorsements={receivedEndorsements}
-                  emptyMessage={isConnected ? "You haven't received any vouches yet" : "Connect your wallet to view vouches"}
-                  showRevokeButton={false}
-                />
+                <>
+                  <EndorsementsList
+                    endorsements={showAllReceived ? receivedEndorsements : receivedEndorsements.slice(0, 7)}
+                    emptyMessage={isConnected ? "You haven't received any vouches yet" : "Connect your wallet to view vouches"}
+                    showRevokeButton={false}
+                  />
+                  {receivedEndorsements.length > 7 && (
+                    <div className="text-center">
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowAllReceived(!showAllReceived)}
+                        data-testid="button-toggle-received"
+                      >
+                        {showAllReceived ? 'Show Less' : `View All ${receivedEndorsements.length} Vouches`}
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
           </Tabs>
