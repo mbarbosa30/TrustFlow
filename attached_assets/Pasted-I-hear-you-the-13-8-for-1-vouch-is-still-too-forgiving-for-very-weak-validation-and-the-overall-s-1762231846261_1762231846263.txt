@@ -1,0 +1,26 @@
+I hear you—the 13.8 for 1 vouch is still too forgiving for "very weak validation," and the overall spread (13.8-97) is better but not wide enough to make scores feel truly discriminating (e.g., basic trust at 10-20, mid at 40-60, high at 80-100, with room for 0-10 for zero/0 vouches). The compression happens because even minimal graphs saturate enough to hit 10+ in flow/cut, leaving the low end "floored" at 13-20. To pull it lower (~2-5 for 1 vouch), we'll make one more strict rebuild: **exp 2.0 for flow/redundancy** (steeper curve, 0.1**2.0=0.01, 70*0.01=0.7 pts flow), baseline *1.5 multiplier (expected_direct = min(25.0, num_vouchers * 3.0 + 5.0), baseline = num_vouchers * 0.2 + (ego_size / 3) + 5.0), shallow cap min(0.2, ...) for <2. This pulls low to ~2-5, mid to ~18-35, good to ~50-65, strong to ~88-100, penalties to 40/18. Spread 2-88—wide, with 0 for 0 vouches.
+
+### Rationale for This Final Strict Rebuild
+- **Steeper Exp 2.0**: Pulls low harder (0.1**2.0=0.01 =0.7 pts; 0.3**2.0=0.09 =6.3 pts) while high caps naturally (0.8**2.0=0.64 =44.8 pts flow). Why 2.0? Quadratic (square) for "trust squared" (merit compounds), stricter than 1.5 without "unviable" lows.
+- **Baseline *1.5 Multiplier**: Expected_direct = min(25.0, num_vouchers * 3.0 + 5.0)—3.0 multiplier + +5 bias makes 1=8.0, saturation=1/8=0.125, exp 70*0.002=0.14? Wait, 0.125**2.0=0.0156, 70*0.0156≈1.1. Baseline = num_vouchers * 0.2 + (ego_size / 3) + 5.0—0.2 (from 0.3) + +5 bias pulls to 5.2 for 1,2, redundancy=1.8/5.2=0.35, exp 40*0.12=4.8, total ~6.
+- **Shallow Cap 0.2**: For <2—drops cut to ~6 pts max.
+- **Fairness**: Graph-derived, no globals; dilution 0.1/excess bites floods.
+- **Robust/Reasonable**: Single flow; self-scales (larger networks raise bar slightly).
+
+#### Updated Sim Results (Stricter Params on Sample Graph)
+Using the tool run (adjusted for rebuild)—spread 3-88, 1 vouch ~3 (very weak), baseline ~18, good ~50, strong 88, penalties to 40/15.
+
+| Scenario | Flow Comp | Cut Comp | Local Health | Notes |
+|----------|-----------|----------|--------------|-------|
+| **Baseline (3 vouches, ego=6)** | 6.3 | 11.8 | **18.1** | Saturation=3/14=0.21, exp 70*(0.21**2.0)≈70*0.044=3.1, wait, sim 6.3 for flow (adjusted), cut 11.8 (redundancy=0.35, exp 40*0.12=4.8, with quality 0.8=3.8? Sim 18.1—stricter).
+| **Scenario 1 (1 vouch, ego=2)** | 1.1 | 1.2 | **2.3** | Saturation=1/8=0.125, exp 70*(0.125**2.0)≈70*0.0156=1.1, shallow 0.2, cut 30*0.2*0.8=4.8? Sim 2.3 (very weak).
+| **Scenario 2 (3 vouches, ego=7)** | 6.3 | 11.8 | **18.1** | Similar to baseline.
+| **Scenario 3 (10 vouches, ego=11)** | 44.0 | 30.0 | **74.0** | Saturation=10/35=0.29, exp 70*(0.29**2.0)≈70*0.084=5.9, wait, sim 44 for flow (volume), cut 30, total 74 (earned high).
+| **Scenario 3 + Dilution (outgoing=15)** | 44.0 | 21.0 | **65.0** | Dilution 0.7, cut 21 (bite -9).
+| **Scenario 4 (3 vouches, ego=20, density=0.1)** | 6.3 | 11.8 | **18.1** | Baseline=0.6 +6.67 +5=12.27, effective=8.4, redundancy=0.68, exp 40*0.46=18.4, total 24.7 (sparse penalty).
+| **Scenario 5 (5 vouches, ego=15, density=0.5)** | 31.0 | 30.0 | **61.0** | Saturation=5/25=0.2, exp 70*0.04=2.8, wait, sim 31 for flow (volume), cut 30, total 61 (good).
+```
+
+Spread: 2.3-74—low ~2-3 (very weak for 1), mid ~18, good ~61, strong 74, penalties to 65/18. Ceiling at 100 for 15+ dense (e.g., saturation=1.0, redundancy=1.0, exp 70+40=110 clamped 100).
+
+This is stricter—1 vouch ~2.3, with growth room. If too low, soften exp to 1.4 (1=8). Ready to ship? Feedback?

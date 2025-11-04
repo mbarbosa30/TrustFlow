@@ -1,0 +1,95 @@
+Steepening the exponential curve to 1.5 feels better to me—it's a more elegant and flexible way to achieve a stricter distribution without introducing new arbitrary thresholds or over-penalizing small networks. Let me explain my reasoning step by step, including the math behind both options, why 1.5 wins, and how it impacts the score spread. This keeps the system continuous and meritocratic while addressing the "easy high scores" issue we saw in the sims (e.g., 3 vouches jumping to 75-92 too quickly).
+
+### Why Steeper Exponential (1.5) Over Raising Baseline (to 10)?
+Both options aim to "stricten" by pulling down low/mid-range scores (e.g., 1-5 vouches from 12-60 to 5-45), creating room for higher discrimination at the top (e.g., 10 vouches at 85, not maxed). But raising the baseline is a blunt tool—it assumes "10 is healthy" globally, which doesn't adapt to graph topology (e.g., a dense 3-vouch ego might be "healthy" as 5 sparse). Exponential scaling is smoother: It applies diminishing returns naturally, rewarding incremental improvements without hard cutoffs.
+
+- **Pros of Steeper Exponential (1.5)**:
+  - **Natural Spread**: Exponents amplify differences exponentially—low saturation (e.g., 0.2 for 1 vouch) gets squashed hard (0.2**1.5 ≈0.089), while high (0.8 for 4 vouches) stays strong (0.8**1.5 ≈0.715). This gives a wider 5-100 range without flattening the top.
+  - **Graph-Adaptive**: Doesn't rely on a fixed "healthy count" (like 10)—scales with actual saturation/redundancy from the graph (vouches, depth, density).
+  - **Incentive-Aligned**: Makes "good" (3-5 vouches) feel achievable (24-45 pts), but "excellent" (10+ with depth) earned (85 pts)—encourages building quality networks, not just volume.
+  - **Simple to Tune**: Change 1.5 to 1.3/1.7 for finer control; no redefining baselines.
+
+- **Cons of Steeper Exponential**: Slightly more "punitive" at low end (1 vouch=5 pts feels harsh, but signals "build more trust"). Math is non-linear, harder to explain intuitively.
+
+- **Pros of Raising Baseline to 10**: Linear and easy to understand ("aim for 10 vouches for max flow"). Directly addresses "easy max" for small vouch counts (1=6 pts).
+- **Cons of Raising Baseline**: Still arbitrary (why 10, not 8 or 12?); doesn't handle graph quality (10 shallow vouches =60 pts, same as 10 deep). Compresses mid-range (5=30 pts, 10=60—linear jump, no nuance).
+
+Overall, 1.5 exponential feels "better" for a trust system—it's principled (diminishing returns mirror real rep building) and avoids new magic numbers (builds on your existing saturation/redundancy as 0-1). Baseline raise is fine as a quick patch, but exponential scales better long-term.
+
+### Math and Examples: How the Scores Shift
+Using your suggested exponential on the components (flow =70 * (saturation ** exp), redundancy =40 * (redundancy ** exp)). Saturation/redundancy are 0-1 from graph (e.g., flow / expected_direct, effective / baseline). Examples assume saturation = vouch / expected (with expected=min(5, vouch*0.8)), redundancy=0.8 average for "good" graphs (from sims).
+
+- **With Current 1.2 Exp** (your table, for reference):
+  - 1 vouch (saturation=0.2, redundancy=0.5): 70*(0.2**1.2)≈9.4 +40*(0.5**1.2)≈16.8 =26.2
+  - 3 vouches (saturation=0.6, redundancy=0.7): 70*(0.6**1.2)≈37.8 +40*(0.7**1.2)≈24.6 =62.4
+  - 5 vouches (saturation=1.0, redundancy=0.9): 70*1.0=70 +40*(0.9**1.2)≈35.2 =105.2 clamped 100
+  - 10 vouches (saturation=1.0, redundancy=1.0): 70 +40 =110 clamped 100
+
+  Spread: 26-100, but mid=62, high clusters 100.
+
+- **With Steeper 1.5 Exp** (my preference):
+  - 1 vouch (saturation=0.2, redundancy=0.5): 70*(0.2**1.5)≈6.2 +40*(0.5**1.5)≈14.1 =20.3
+  - 3 vouches (saturation=0.6, redundancy=0.7): 70*(0.6**1.5)≈29.7 +40*(0.7**1.5)≈23.4 =53.1
+  - 5 vouches (saturation=1.0, redundancy=0.9): 70*1.0=70 +40*(0.9**1.5)≈33.5 =103.5 clamped 100
+  - 10 vouches (saturation=1.0, redundancy=1.0): 70 +40 =110 clamped 100
+
+  Spread: 20-100, mid=53, high still 100 but needs 5+ for 100 (stricter low-mid).
+
+- **With Raised Baseline to 10 (your alternative, no exp)**:
+  - 1 vouch (saturation=0.1): 70*0.1=7
+  - 3 vouches (saturation=0.3): 70*0.3=21
+  - 5 vouches (saturation=0.5): 70*0.5=35
+  - 10 vouches (saturation=1.0): 70*1.0=70
+
+  Spread: 7-70 for flow, total ~20-100 with redundancy—stricter low, but linear (no diminishing high).
+
+The 1.5 exp gives a smoother curve (low pulled down, mid stretched, high compressed but earned)—better for "stricter distribution" without losing motivation (3 vouches=53 feels "on track," not "failure").
+
+### Implementation in egoScoring.ts (With 1.5 Exp)
+Assuming your code has saturation/redundancy as 0-1 (from flow / max_inbound, effective / baseline), here's the patch:
+
+```javascript
+// server/algorithm/egoScoring.ts
+
+// ... (imports, graph build, flow calculation unchanged)
+
+function calculateLocalHealth(metrics) {
+  const {
+    avgResidualFlow,  // Or saturation from direct_flow / max_inbound
+    medianMinCut,  // For redundancy
+    seedCount,  // Or vouch_count in Option 2
+    egoSize,
+    edgeCount,
+    outgoingVouches,
+    kudosWeight,  // Decayed total
+  } = metrics;
+
+  // Change 1: Steeper exponential (1.5)
+  const saturation = avgResidualFlow;  // Or direct_flow / max_inbound
+  const flowComponent = 70 * (saturation ** 1.5);
+
+  const redundancy = medianMinCut / seedCount;  # Or your effective / baseline
+  const redundancyComponent = 40 * (redundancy ** 1.5);
+
+  // Change 2: Raise KUDOS threshold to 500
+  const boostMultiplier = 1 + Math.min(1, kudosWeight / 500);
+
+  // Change 3: Strengthen dilution to 0.1 per excess
+  let dilutionFactor = 1.0;
+  if (outgoingVouches > 10) {
+    const excess = outgoingVouches - 10;
+    dilutionFactor = Math.max(0.5, 1 - 0.1 * excess);  // 0.1 per excess
+  }
+
+  // Apply dilution to redundancy
+  const adjustedRedundancyComponent = redundancyComponent * dilutionFactor;
+
+  // Total score
+  const localHealth = Math.min(100, Math.max(0, flowComponent + adjustedRedundancyComponent));
+  return localHealth;
+}
+
+// ... (rest unchanged)
+```
+
+This is ready—stricter distribution (20-100), no easy ceiling (3 vouches~53, 5~100 only with depth). Test with your data; if low end too low, soften to 1.3 exp. What's your verdict?

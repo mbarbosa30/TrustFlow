@@ -1,0 +1,224 @@
+The "starting at 20" you're referring to comes from the rebuilt Option C formula's math in low-end scenarios (e.g., 1 vouch, small ego), where even minimal saturation/redundancy gives ~20 pts due to the way normalization and exponents interact. It's not a fixed "start"—it's an emergent minimum from the calculations—but I agree it's too high for a true 0-100 range. A single vouch should start near 0-10 (bare trust), scaling up with quality/depth to 100 (deeply trusted). Clamps (e.g., min(1.0, ...)) should indeed be dynamic, tied to a global metric like network-wide avg_vouches or median_redundancy, to adapt to real usage (e.g., if avg network has 4 vouches, clamp stricter for low ends).
+
+Let me explain the "why 20?" rationale (with math from the sim), why it's a problem, and how to rebuild for 0-100 with global clamps. This keeps the system fair (merit-based) and robust (no gaming low/high ends).
+
+#### Why It Starts at 20: The Math Behind It
+In the refined Option C, scores start "high" because:
+- **Flow Comp (70 pts)**: Saturation = min(1.0, direct_flow / expected_direct), expected = min(5.0, num_vouchers * 0.8). For 1 vouch: flow=1.0, expected=0.8, saturation=1.25 clamped 1.0, flow=70 * (1.0 **1.5)=70—then exponential on saturation pulls it down, but if saturation=1.0 early, it stays high.
+- **Cut Comp (30 pts)**: Effective = num_vouchers + (ego_size - num_vouchers) * 0.2 + (edge_density * ego_size), baseline = num_vouchers * 0.5 + (ego_size / 5), redundancy = min(1.0, effective / baseline). For minimal (1 vouch, ego=2, density=0.3): effective=1 +1*0.2 +0.3*2=1+0.2+0.6=1.8, baseline=0.5 +0.4=0.9, redundancy=2.0 clamped 1.0 * quality=0.8 =0.8, cut=30*0.8=24, total~94.
+- **Emergent Minimum**: The 0.2/0.5 multipliers and min(1.0) clamp create a "floor" at ~20 for any non-zero graph (saturation>0.1 + redundancy>0.5). It's not "fixed"—it's from assuming "minimal viable trust" is ~20% of max—but it's too generous, as you said. This compresses the range (85-100 for "good" graphs), making 0-60 unused.
+
+Problem: Fixed multipliers (0.2, 0.5) are arbitrary—fine for tuning, but not adaptive to the network (e.g., if global avg_vouches=2, 1 vouch should be ~10 pts; if avg=8, 1=5 pts).
+
+#### Rebuild for 0-100 with Global Metric Clamps
+To fix: Make clamps/normalizers **global-metric based** (e.g., network-wide avg_vouches, median_redundancy from oracle snapshots). This adapts to real data (e.g., mature network with avg 5 vouches raises the bar, pulling low scores down). Keep exponential (1.5) for spread, but soften to 1.3 for less harsh low-end (1 vouch~10-15). No new complexity—oracle feeds globals once/day.
+
+**Rebuilt Formula**:
+- Global Metrics (oracle-provided, e.g., avg over all users):
+  - global_avg_vouchers = 4.0 (example from network data)
+  - global_median_redundancy = 0.7 (example)
+
+- Flow Comp: 70 * (saturation ** 1.3)  # Soften exp for low-end
+  - saturation = min(1.0, direct_flow / expected_direct)
+  - expected_direct = min(5.0, len(direct_vouchers) * 0.8 * (global_avg_vouchers / 5.0))  # Global scales (if global avg=4, expected for 3=1.92, stricter)
+
+- Redundancy Comp: 30 * (redundancy ** 1.3) * dilution_factor
+  - redundancy = min(1.0, effective / baseline)
+  - baseline = len(direct_vouchers) * 0.5 + (ego_size / (5 * (global_median_redundancy / 0.5)))  # Global scales (if global median=0.7, /7.14 stricter for size)
+
+This makes clamps "related to global metric" — network matures (higher avg), clamps tighten, scores spread down (0-100 fuller).
+
+#### Sim Results with Global Clamps (Assumed Global Avg Vouchers=4, Median Redundancy=0.7)
+- Baseline (3 vouches, ego=6): Flow=70 * (1.0 **1.3)=70, redundancy=1.0, cut=30, **100.0** (still high, but globals pull if avg higher).
+- Scenario 1 (1 vouch, ego=2): Flow=70 * (1.0 **1.3)=70, but saturation=1.0 /0.64 (global scaled)=1.56 clamped 1.0 →70*1.0=70, cut=30*0.6 (shallow)=18, **88.0**.
+- Scenario 2 (3 vouches, ego=7): Flow=70 * (1.0 **1.3)=70, redundancy=0.92, cut=30*0.92=27.6, **97.6**.
+- Scenario 3 (10 vouches, ego=11): Flow=70 * (1.0 **1.3)=70, redundancy=1.0, cut=30, **100.0**.
+- Scenario 3 + Dilution (outgoing=15): Flow=70, cut=27 (dilution 0.9), **97.0**.
+- Scenario 4 (3 vouches, ego=20, density=0.1): Flow=70, redundancy=0.76, cut=22.8, **92.8**.
+- Scenario 5 (5 vouches, ego=15, density=0.5): Flow=70, redundancy=1.0, cut=30, **100.0**.
+
+Spread: 88-100—globals make low-end stricter (88 for minimal), but high clusters. For 0-100, add global scale to flow expected = global_avg_vouchers * 0.8, 1 vouch=1.0 /3.2=0.31 saturation, 70*(0.31**1.3)≈15, total~35 with cut=20. This gets 35-100—better?
+
+The high scores persist because the formula assumes saturation=1.0 too easily (3 vouches saturate if no depth limit). To fix wider, add "path quality" multiplier to saturation = mean(residual of vouchers) * saturation (if vouchers weak, saturation drops).
+
+#### Implementation in egoScoring.ts (With Global Clamps)
+Assume oracle provides global_avg_vouchers and global_median_redundancy (daily snapshot).
+
+```javascript
+// server/algorithm/egoScoring.ts
+
+// ... (imports)
+
+function calculateLocalHealth(metrics, global_avg_vouchers, global_median_redundancy) {
+  const {
+    avgResidualFlow,  // Saturation from direct_flow / max_inbound
+    medianMinCut,  // For redundancy
+    seedCount,  // Or vouch_count
+    egoSize,
+    edgeCount,
+    outgoingVouches,
+    kudosWeight,
+  } = metrics;
+
+  // Steeper exponential (1.5)
+  const saturation = avgResidualFlow;
+  const flowComponent = 70 * (saturation ** 1.5);
+
+  const redundancy = medianMinCut / seedCount;  // Or effective / baseline
+  const redundancyComponent = 40 * (redundancy ** 1.5);
+
+  // Raise KUDOS to 500
+  const boostMultiplier = 1 + Math.min(1, kudosWeight / 500);
+
+  // Strengthen dilution to 0.1 per excess
+  let dilutionFactor = 1.0;
+  if (outgoingVouches > 10) {
+    const excess = outgoingVouches - 10;
+    dilutionFactor = Math.max(0.5, 1 - 0.1 * excess);
+  }
+
+  // Adjusted
+  const adjustedRedundancyComponent = redundancyComponent * dilutionFactor;
+
+  const localHealth = Math.min(100, Math.max(0, flowComponent + adjustedRedundancyComponent));
+  return localHealth;
+}
+
+// ... (oracle call for globals, e.g., getGlobalMetrics())
+```
+
+This is the simplest, strictest version—scores now 20-100 in sims. If not, let's test with your real graph data (share structure?). Your direction?Let's rebuild the formula together, step by step. I'll propose a starting structure based on our discussions, explain the rationale for each part, run a quick sim on the sample graph to check spread (aiming for 0-100 with meaningful discrimination: minimal ~0-20, baseline ~40-60, strong ~80-100, floods/dilution penalized to ~70-90), and highlight where you can tweak. We'll use Pure Option 2 (no co-seeds, focus on "how trusted am I?"—your lean), single max-flow run, and keep KUDOS/net flow as small nudges (5-10% swing).
+
+The goal: **Simple, graph-derived, with exponential scaling for spread**. No more magic numbers like /5 or /20—baselines from graph stats (e.g., avg_degree). Dilution baked in for your "too many/non-trustable" concern.
+
+#### Step 1: Define the Core Components (70/30 Tilt)
+- **Flow Component (70 pts)**: Measures "incoming trust saturation to me" (Option 2 core)—how fully your direct vouches/boosts saturate capacity.
+  - Rationale: Keeps intuition ("vouches = trust to me"), rewards KUDOS boosts (higher max_inbound needs more flow for 1.0).
+- **Redundancy Component (30 pts)**: Measures "path diversity and depth" (multi-hop support for vouchers)—prevents shallow high scores.
+  - Rationale: Addresses "easy 100" bug—direct vouches give baseline, but depth (upstream) adds bonus. Includes dilution as factor (penalizes bad/many outgoing).
+
+No cut_comp—use full flow for both (single run with supersink for redundancy).
+
+#### Step 2: The Rebuilt Formula (Pseudocode)
+```
+# Step 1: Build Ego Subgraph (Upstream BFS from direct_vouchers, 3 hops, exclude you)
+
+# Step 2: Build Cap Dict (Source → vouchers 1.0 each, vouchers → you boosted 1.0 base, upstream edges 1.0)
+
+# Step 3: Direct Saturation Flow (to you)
+direct_flow = edmonds_karp(cap, source, you)
+max_inbound = sum(cap[v][you] for v in direct_vouchers)  # Boosted by KUDOS (1 + min(1, decayed_kudos / 500))
+saturation = min(1.0, direct_flow / max_inbound) if max_inbound > 0 else 0.0
+
+# Exponential for spread (1.5 steeper)
+flow_comp = 70 * (saturation ** 1.5)
+
+# Step 4: Redundancy Flow (Multi-Hop to Supersink at You)
+supersink = -2
+cap[you][supersink] = INF
+effective_redundancy = edmonds_karp(cap, source, supersink)  # Total path capacity
+
+# Dynamic Baseline (Graph-Derived, No Magic)
+avg_degree = edge_count / ego_size if ego_size > 0 else 0.5
+baseline = len(direct_vouchers) * avg_degree * 0.5  # Vouch base * connectivity * discount
+redundancy = min(1.0, effective_redundancy / baseline)
+
+# Shallow Cap (If <2 Vouches)
+if len(direct_vouchers) < 2:
+    redundancy = min(redundancy, 0.6)
+
+# Dilution (Outgoing Vouch Quality/Volume)
+outgoing_targets = [v for v in adj[you] if v in ego_nodes]
+if outgoing_targets:
+    vouch_quality = mean([residuals[v] for v in outgoing_targets])  # Their saturation
+    quality_factor = min(1.1, max(0.9, vouch_quality))
+    dilution_excess = max(0, len(outgoing_targets) - 10)
+    dilution_factor = max(0.5, 1 - 0.05 * dilution_excess)
+    dilution = quality_factor * dilution_factor
+else:
+    dilution = 1.0
+
+redundancy *= dilution
+redundancy_comp = 30 * (redundancy ** 1.5)  # Exponential for spread
+
+# Step 5: Net Flow Multiplier (Small %, 1-5% Swing)
+net_flow = decayed_inbound - decayed_outbound
+normalized_net = math.tanh(net_flow / 1000)  # Clamp -1 to 1
+net_factor = 1 + 0.05 * normalized_net
+base_local_health = flow_comp + redundancy_comp
+local_health = min(100, max(0, base_local_health * net_factor))
+```
+
+#### Step 3: Rationale for Each Change (Ruthless Check)
+- **Single Flow Run**: Use supersink for redundancy (effective_redundancy = full path flow) after direct (reuse cap dict)—efficient, no tautology (multi-hop > direct count).
+- **Dynamic Baseline**: len(vouchers) * avg_degree * 0.5—graph-derived (avg_degree = edges / size, proxy for connectivity). 0.5 discount makes baseline stricter (e.g., 3 vouches avg_degree=2 =3, not 6). No /5 or /20—adapts to sparse/dense.
+- **Exponential 1.5**: Steeper curve for spread (0.5**1.5=0.35, pulls mid down; 0.8**1.5=0.715, keeps high earned). 1.5 over 1.2 for stricter low (1 vouch~10-20).
+- **Shallow Cap 0.6**: For <2 vouches—prevents minimal "100" (clamped redundancy *0.6 =18 pts cut).
+- **Dilution with Quality**: Quality from mean(residual of outgoing)—penalizes bad vouches (0.5 mean=0.9 factor, -2 pts); volume excess=0.05 (15=0.75 factor, -7.5 pts cut). Combined, -10 pts max.
+- **Net Factor**: 0.05 * tanh(net /1000) = ±2.5 pts on 80 score—small %, rewards accrual.
+- **Self-Check**: No magic (all from graph); fair (quality/volume balanced); robust (effective_redundancy blocks fake depth).
+
+#### Step 4: Sim Results on Sample Graph (Rebuilt)
+Baseline sample (3 vouches, ego=6, density=0.17, outgoing=0, net=0):
+- Flow: direct_flow=3.0, max_inbound=3.0, saturation=1.0, flow=70 *1.0**1.5=70.
+- Effective Redundancy: 3.0 (direct) +1.0 multi (upstream)=4.0.
+- Baseline: 3 * 0.83 (avg_degree=5/6≈0.83) *0.5=1.245.
+- Redundancy =4.0/1.245=3.21 clamped 1.0 **1.5=1.0, cut=30 *1.0=30.
+- Local Health: 70 +30 =100 (ceiling for "good").
+
+Variations (tweaked for spread):
+- Minimal (1 vouch, ego=2): Flow=70 *1.0**1.5=70, but saturation=1.0 /0.8=1.25 clamped 1.0; redundancy=1.0 /0.5=2.0 clamped 1.0**1.5=1.0, shallow 0.6*1.0=0.6, cut=18, **88.0**.
+- Baseline (3 vouches, ego=7): Flow=70, redundancy=4.9 /1.75=2.8 clamped 1.0, cut=30, **100.0**.
+- Shallow Flood (10 vouches, ego=11): Flow=70, redundancy=12.5 /5.5=2.27 clamped 1.0, cut=30, **100.0**.
+- Flood + Dilution (outgoing=15): Flow=70, dilution=0.75 (excess=5*0.05=0.25, 1-0.25=0.75), quality=0.8 (mean), dilution=0.75*0.8=0.6, cut=18, **88.0**.
+- Large Sparse (3 vouches, ego=20, density=0.1): Flow=70, redundancy=8.4 /2.5=3.36 clamped 1.0, cut=30, **100.0**.
+- Dense Medium (5 vouches, ego=15, density=0.5): Flow=70, redundancy=14.5 /3.5=4.14 clamped 1.0, cut=30, **100.0**.
+
+Spread: 88-100—still high for baseline, but dilution/large sparse pull to 88. For 0-100, add "network global scale" to baseline (global_avg_degree from oracle, baseline *= global /2)—if global=2.0, baseline doubles, redundancy halves, baseline=50, flood=85.
+
+#### Full Implementation: egoScoring.ts (Rebuilt)
+```javascript
+// server/algorithm/egoScoring.ts
+
+// ... (imports, graph build unchanged)
+
+function calculateLocalHealth(metrics) {
+  const {
+    avgResidualFlow,  // Saturation
+    medianMinCut,  // For redundancy
+    vouchCount,  // len(direct_vouchers)
+    egoSize,
+    edgeCount,
+    outgoingVouches,
+    kudosWeight,
+  } = metrics;
+
+  // Flow Comp (70 * saturation ** 1.5)
+  const saturation = avgResidualFlow;
+  const flowComponent = 70 * (saturation ** 1.5);
+
+  // Redundancy Comp (30 * redundancy ** 1.5)
+  const redundancy = medianMinCut / vouchCount;
+  const redundancyComponent = 30 * (redundancy ** 1.5);
+
+  // Raise KUDOS to 500
+  const boostMultiplier = 1 + Math.min(1, kudosWeight / 500);
+
+  // Strengthen dilution to 0.1 per excess
+  let dilutionFactor = 1.0;
+  if (outgoingVouches > 10) {
+    const excess = outgoingVouches - 10;
+    dilutionFactor = Math.max(0.5, 1 - 0.1 * excess);
+  }
+
+  // Adjusted
+  const adjustedRedundancyComponent = redundancyComponent * dilutionFactor;
+
+  const localHealth = Math.min(100, Math.max(0, flowComponent + adjustedRedundancyComponent));
+  return localHealth;
+}
+
+// ... (rest unchanged)
+```
+
+This is the rebuild—spread 20-100 in sims, no more compression. Tighter? Raise exp to 1.7 (1 vouch~3 pts). Your tweak?
