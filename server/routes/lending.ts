@@ -452,10 +452,10 @@ router.get("/stats/:communityId", async (req, res) => {
     const totalSupporterContributions = totalSubsidies;
 
     // Get GHI score (Global Health Index) - use community's health gate
-    const policy = community.policy;
-    const ghiThreshold = policy?.healthGate || 0;
+    const policy = community.lendingPolicyJson as any;
+    const ghiThreshold = policy?.eligibility?.ghiThreshold || 0;
     const ghiScore = ghiThreshold; // Simplified - in production would calculate actual GHI
-    const lendingEnabled = policy?.lendingEnabled || false;
+    const lendingEnabled = policy?.enabled || false;
 
     res.json({
       totalLoansCount,
