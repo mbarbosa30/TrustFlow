@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, DollarSign, TrendingUp, AlertCircle, AlertTriangle, ChevronDown, ChevronRight, Heart } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { WalletProfile, Loan, Installment, PendingPayment } from "@shared/schema";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -220,6 +222,10 @@ export default function Credit() {
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [borrowerName, setBorrowerName] = useState("");
   const [expandedLoanId, setExpandedLoanId] = useState<number | null>(null);
+  const [donationAmount, setDonationAmount] = useState<string>("");
+  const [donationCurrency, setDonationCurrency] = useState<string>("USDC");
+  const [donationMessage, setDonationMessage] = useState<string>("");
+  const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
 
   // Get community data for currency and lending policy
   const { data: communityData, isLoading: communityLoading } = useQuery<CommunityResponse>({
@@ -352,6 +358,51 @@ export default function Credit() {
     },
     onError: (error: any) => {
       toast({ title: t('credit.errorPayment'), description: error.message, variant: "destructive" });
+    },
+  });
+
+  // Donate to loan mutation
+  const donateMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeLoan) {
+        throw new Error("No active loan found");
+      }
+
+      const amount = parseFloat(donationAmount);
+      
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Please enter a valid donation amount");
+      }
+
+      const response = await fetch(`/api/loans/${activeLoan.id}/donate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          currency: donationCurrency,
+          donorAddress: isAnonymous ? null : address,
+          isAnonymous,
+          message: donationMessage.trim() || null,
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || error.error || "Donation failed");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Donation Successful", 
+        description: `${data.credited.toFixed(2)} ${data.currency} credited to loan`,
+      });
+      setDonationAmount("");
+      setDonationMessage("");
+      queryClient.invalidateQueries({ queryKey: [`/api/loans/${activeLoan?.id}`] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Donation Failed", description: error.message, variant: "destructive" });
     },
   });
 
@@ -725,6 +776,94 @@ export default function Credit() {
                     >
                       {makePaymentMutation.isPending ? t('common.processing') : 'Submit Payment for Approval'}
                     </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Donation Widget */}
+              {loanDetails && loanDetails.loan.status === "ACTIVE" && (
+                <Card data-testid="card-donate">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Heart className="h-5 w-5 text-primary" />
+                      <CardTitle>Support this Loan</CardTitle>
+                    </div>
+                    <CardDescription>Donate to help repay this loan (no manager approval needed)</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="donation-amount">Amount</Label>
+                        <Input
+                          id="donation-amount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={donationAmount}
+                          onChange={(e) => setDonationAmount(e.target.value)}
+                          data-testid="input-donation-amount"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="donation-currency">Currency</Label>
+                        <Select value={donationCurrency} onValueChange={setDonationCurrency}>
+                          <SelectTrigger id="donation-currency" data-testid="select-donation-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USDC">USDC</SelectItem>
+                            <SelectItem value="USDT">USDT</SelectItem>
+                            <SelectItem value="CUSD">cUSD</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="donation-message">Message (Optional)</Label>
+                      <Textarea
+                        id="donation-message"
+                        placeholder="Leave an encouraging message..."
+                        value={donationMessage}
+                        onChange={(e) => setDonationMessage(e.target.value)}
+                        className="resize-none"
+                        rows={2}
+                        data-testid="input-donation-message"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="anonymous"
+                        checked={isAnonymous}
+                        onCheckedChange={(checked) => setIsAnonymous(checked as boolean)}
+                        data-testid="checkbox-anonymous"
+                      />
+                      <Label htmlFor="anonymous" className="text-sm font-normal cursor-pointer">
+                        Donate anonymously
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm p-3 bg-muted rounded-md">
+                      <span className="text-muted-foreground">Outstanding Balance</span>
+                      <span className="font-medium">
+                        {formatCurrency(loanDetails.totalDue - loanDetails.totalPaid, loanDetails.loan.currency)}
+                      </span>
+                    </div>
+
+                    <Button
+                      onClick={() => donateMutation.mutate()}
+                      disabled={!donationAmount || parseFloat(donationAmount) <= 0 || donateMutation.isPending}
+                      className="w-full"
+                      data-testid="button-donate"
+                    >
+                      {donateMutation.isPending ? "Processing..." : "Donate Now"}
+                    </Button>
+
+                    <p className="text-xs text-muted-foreground text-center">
+                      Donations are instantly credited to the borrower's installments
+                    </p>
                   </CardContent>
                 </Card>
               )}
