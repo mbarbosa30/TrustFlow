@@ -23,8 +23,9 @@ interface Loan {
   borrowerAddress: string;
   communityId: number;
   principalUsdc: number;
+  currency: string;
   tenorMonths: number;
-  aprBps: number;
+  aprNominal: number;
   status: string;
   nextInstallmentIdx?: number;
   nextDueDate?: string;
@@ -628,8 +629,8 @@ export default function CommunityDetail() {
                               : t('communityDetail.applyForCredit')}
                           </Button>
                         </Link>
-                        <Link href={`/lending-dashboard/${communityId}`}>
-                          <Button variant="outline">
+                        <Link href={`/lending/${communityId}`}>
+                          <Button variant="outline" data-testid="button-view-lending-dashboard">
                             {t('communityDetail.viewOffers')}
                           </Button>
                         </Link>
@@ -651,7 +652,7 @@ export default function CommunityDetail() {
                               <div className="grid grid-cols-2 gap-3 text-sm">
                                 <div>
                                   <p className="text-muted-foreground">{t('communityDetail.principal')}</p>
-                                  <p className="font-semibold">${(loan.principalUsdc / 1000).toFixed(0)}k ARS</p>
+                                  <p className="font-semibold">{loan.principalUsdc.toLocaleString()} {loan.currency || community.currency || 'USD'}</p>
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">{t('communityDetail.term')}</p>
@@ -659,7 +660,7 @@ export default function CommunityDetail() {
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">{t('communityDetail.apr')}</p>
-                                  <p className="font-semibold">{(loan.aprBps / 100).toFixed(1)}%</p>
+                                  <p className="font-semibold">{(loan.aprNominal * 100).toFixed(1)}%</p>
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">{t('communityDetail.nextDue')}</p>
@@ -760,10 +761,10 @@ export default function CommunityDetail() {
                                         {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
                                       </p>
                                       <p className="text-lg font-semibold">
-                                        ${(loan.principalUsdc / 1000).toFixed(0)}k ARS
+                                        {loan.principalUsdc.toLocaleString()} {loan.currency || community.currency || 'USD'}
                                       </p>
                                       <p className="text-sm text-muted-foreground">
-                                        {loan.tenorMonths} months @ {(loan.aprBps / 100).toFixed(1)}% APR
+                                        {loan.tenorMonths} months @ {(loan.aprNominal * 100).toFixed(1)}% APR
                                       </p>
                                     </div>
                                     <Badge variant="secondary">{loan.status === "ACTIVE" ? "ACTIVE" : loan.status}</Badge>
