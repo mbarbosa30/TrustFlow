@@ -162,7 +162,7 @@ export default function Overview() {
 
     const updateCountdown = () => {
       const lastClaimed = new Date(kudosData.lastClaimedAt!);
-      const nextClaimTime = new Date(lastClaimed.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const nextClaimTime = new Date(lastClaimed.getTime() + 24 * 60 * 60 * 1000); // 24 hours
       const now = new Date();
       const diff = nextClaimTime.getTime() - now.getTime();
 
@@ -241,12 +241,6 @@ export default function Overview() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Seeds</span>
-                    <span className="text-sm font-medium" data-testid="text-seed-count">
-                      {scoreData.seedAddresses.length} (you + {scoreData.seedAddresses.length - 1} co-seeds)
-                    </span>
-                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Network Size</span>
                     <span className="text-sm font-medium" data-testid="text-total-nodes">
