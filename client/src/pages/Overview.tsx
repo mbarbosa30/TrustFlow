@@ -19,7 +19,7 @@ export default function Overview() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [showAllGiven, setShowAllGiven] = useState(false);
   const [showAllReceived, setShowAllReceived] = useState(false);
-  const [showInlineQR, setShowInlineQR] = useState(true);
+  const [showInlineQR, setShowInlineQR] = useState(false);
   const [countdown, setCountdown] = useState<string>('');
   const [location] = useLocation();
   const endorseFormRef = useRef<HTMLDivElement>(null);
