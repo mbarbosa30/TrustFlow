@@ -2,6 +2,7 @@ import { GlobalStats } from "@/components/GlobalStats";
 import { RecentActivity } from "@/components/RecentActivity";
 import { GHIGauge } from "@/components/GHIGauge";
 import { STSHistogram } from "@/components/STSHistogram";
+import { LocalHealthHistogram } from "@/components/LocalHealthHistogram";
 import { TrustDistribution } from "@/components/TrustDistribution";
 import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
@@ -13,6 +14,8 @@ import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
 import { PageRankMetrics } from "@/components/PageRankMetrics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { Users, Heart, TrendingUp } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function Dashboard() {
   const { data: epochData } = useQuery<{ epochId: number }>({
@@ -20,6 +23,14 @@ export default function Dashboard() {
   });
 
   const currentEpochId = epochData?.epochId ?? 0;
+
+  const { data: localHealthData, isLoading: isLoadingLocalHealth } = useQuery<{
+    totalUsers: number;
+    avgLocalHealth: number;
+    distribution: { bin: string; count: number }[];
+  }>({
+    queryKey: ['/api/stats/local-health'],
+  });
 
   const { data: healthData, isLoading: isLoadingHealth } = useQuery<{
     epoch: number;
@@ -173,29 +184,129 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        {isLoadingStats ? (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">Loading network statistics...</div>
-            </CardContent>
-          </Card>
-        ) : statsData ? (
-          <GlobalStats stats={{
-            totalUsers: statsData.totalUsers,
-            totalEndorsements: statsData.totalEndorsements,
-            totalEndorsers: statsData.totalEndorsers,
-            totalEndorsees: statsData.totalEndorsees,
-            trustedUsers: statsData.trustedUsers,
-            avgScore: statsData.avgScore,
-          }} />
-        ) : (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center text-muted-foreground">No network statistics available</div>
-            </CardContent>
-          </Card>
-        )}
+      <div className="space-y-8">
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Heart className="w-6 h-6 text-primary" />
+            <div>
+              <h2 className="text-2xl font-bold" data-testid="heading-personal-networks">Personal Networks</h2>
+              <p className="text-sm text-muted-foreground">
+                LocalHealth scores measure individual trust network quality (0-100)
+              </p>
+            </div>
+          </div>
+
+          {isLoadingLocalHealth ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">Loading LocalHealth statistics...</div>
+              </CardContent>
+            </Card>
+          ) : localHealthData ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card data-testid="card-local-health-users">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Ego Contexts
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-local-health-total-users">
+                    {localHealthData.totalUsers}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Users with personal networks
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-avg-local-health">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Average LocalHealth
+                  </CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-avg-local-health">
+                    {localHealthData.avgLocalHealth.toFixed(1)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Network-wide average (0-100 scale)
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-local-health-algorithm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Algorithm
+                  </CardTitle>
+                  <Heart className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm font-bold">
+                    Quadratic Scaling
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    60% flow / 40% redundancy, 2.0 exponent
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">No LocalHealth statistics available</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {localHealthData && localHealthData.distribution.length > 0 && (
+            <LocalHealthHistogram
+              distribution={localHealthData.distribution}
+              isLoading={isLoadingLocalHealth}
+            />
+          )}
+        </div>
+
+        <Separator className="my-8" />
+
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Users className="w-6 h-6 text-primary" />
+            <div>
+              <h2 className="text-2xl font-bold" data-testid="heading-community-reputation">Community Reputation</h2>
+              <p className="text-sm text-muted-foreground">
+                STS scores measure context-specific trust across communities
+              </p>
+            </div>
+          </div>
+
+          {isLoadingStats ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">Loading network statistics...</div>
+              </CardContent>
+            </Card>
+          ) : statsData ? (
+            <GlobalStats stats={{
+              totalUsers: statsData.totalUsers,
+              totalEndorsements: statsData.totalEndorsements,
+              totalEndorsers: statsData.totalEndorsers,
+              totalEndorsees: statsData.totalEndorsees,
+              trustedUsers: statsData.trustedUsers,
+              avgScore: statsData.avgScore,
+            }} />
+          ) : (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">No network statistics available</div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         <Card data-testid="card-ghi">
           <CardHeader>

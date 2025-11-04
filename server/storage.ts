@@ -250,7 +250,8 @@ export class MemStorage implements IStorage {
       query = query.where(and(...conditions)) as any;
     }
     
-    const limit = filters?.limit || 100;
+    // Allow large limits for batch operations (default to 1000 for safety)
+    const limit = filters?.limit !== undefined ? filters.limit : 1000;
     const offset = filters?.offset || 0;
     
     const results = await query.limit(limit).offset(offset);

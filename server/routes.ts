@@ -499,6 +499,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // LocalHealth statistics endpoint
+  app.get("/api/stats/local-health", async (req, res) => {
+    try {
+      // Get all ego contexts
+      const allContexts = await db
+        .select()
+        .from(contexts)
+        .where(eq(contexts.type, 'ego'));
+
+      if (allContexts.length === 0) {
+        return res.status(200).json({
+          totalUsers: 0,
+          avgLocalHealth: 0,
+          distribution: [],
+        });
+      }
+
+      // Get global endorsements once (no limit for accurate statistics)
+      const globalEndorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 1000000
+      });
+
+      const formattedVouches = globalEndorsements.map(e => ({
+        endorser: e.endorser.toLowerCase() as `0x${string}`,
+        endorsee: e.endorsee.toLowerCase() as `0x${string}`,
+      }));
+
+      // Calculate KUDOS boosts once for all edges
+      const kudosService = await import("./kudos/kudosService").then(m => m.kudosService);
+      const uniqueEdges = Array.from(
+        new Set(formattedVouches.map(e => `${e.endorser}->${e.endorsee}`))
+      ).map(edgeKey => {
+        const [from, to] = edgeKey.split('->');
+        return { fromAddress: from, toAddress: to };
+      });
+
+      const edgeWeights = await kudosService.calculateBatchEdgeWeights(uniqueEdges);
+      
+      const kudosBoosts = [];
+      for (const [edgeKey, weight] of edgeWeights.entries()) {
+        if (weight > 0) {
+          const [from, to] = edgeKey.split('->');
+          kudosBoosts.push({ fromAddress: from as any, toAddress: to as any, weight });
+        }
+      }
+
+      const { EgoScorer } = await import("./algorithm/egoScoring");
+      const scorer = new EgoScorer();
+
+      // Batch fetch all co-seeds for all contexts
+      const coSeedsByContext = new Map<number, string[]>();
+      await Promise.all(
+        allContexts.map(async (context) => {
+          try {
+            const coSeedsData = await storage.getCoSeeds(context.id);
+            const seedAddresses = coSeedsData.map(cs => cs.address.toLowerCase());
+            coSeedsByContext.set(context.id, seedAddresses);
+          } catch (error) {
+            console.error(`Error fetching co-seeds for context ${context.id}:`, error);
+            coSeedsByContext.set(context.id, []);
+          }
+        })
+      );
+
+      // Compute LocalHealth for each ego context
+      const scores: number[] = [];
+      for (const context of allContexts) {
+        try {
+          const ownerAddress = context.ownerAddress?.toLowerCase();
+          if (!ownerAddress) continue;
+
+          const seedAddresses = (coSeedsByContext.get(context.id) || []) as `0x${string}`[];
+
+          const result = scorer.computeLocalHealth(
+            ownerAddress as `0x${string}`,
+            seedAddresses,
+            formattedVouches,
+            kudosBoosts
+          );
+
+          scores.push(result.localHealth);
+        } catch (error) {
+          console.error(`Error computing LocalHealth for ${context.ownerAddress}:`, error);
+        }
+      }
+
+      // Calculate statistics
+      const avgLocalHealth = scores.length > 0
+        ? scores.reduce((sum, s) => sum + s, 0) / scores.length
+        : 0;
+
+      // Create distribution bins (0-10, 10-20, ..., 90-100)
+      const bins = Array(10).fill(0);
+      scores.forEach(score => {
+        const binIndex = Math.min(Math.floor(score / 10), 9);
+        bins[binIndex]++;
+      });
+
+      const distribution = bins.map((count, index) => ({
+        bin: `${index * 10}-${(index + 1) * 10}`,
+        count,
+      }));
+
+      return res.status(200).json({
+        totalUsers: scores.length,
+        avgLocalHealth: Math.round(avgLocalHealth * 100) / 100,
+        distribution,
+      });
+    } catch (error) {
+      console.error("Error fetching LocalHealth stats:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/stats", async (req, res) => {
     try {
       // Platform-wide aggregates
