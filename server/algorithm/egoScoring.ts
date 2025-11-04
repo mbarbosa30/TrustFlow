@@ -18,7 +18,7 @@ export interface EgoScoringConfig {
   maxDistance: number;
   minAcceptanceFlow: number;
   minAcceptanceMinCut: number;
-  kudosBoostThreshold?: number; // KUDOS needed for 1x boost (default: 100)
+  kudosBoostThreshold?: number; // KUDOS needed for 1x boost (default: 500)
   kudosMaxBoost?: number; // Maximum boost multiplier (default: 2x)
 }
 
@@ -26,7 +26,7 @@ const DEFAULT_EGO_CONFIG: EgoScoringConfig = {
   maxDistance: 3,
   minAcceptanceFlow: 0.5,
   minAcceptanceMinCut: 2,
-  kudosBoostThreshold: 100,
+  kudosBoostThreshold: 500,
   kudosMaxBoost: 2.0,
 };
 
@@ -329,7 +329,7 @@ export class EgoScorer {
     const DILUTION_THRESHOLD = 10;
     if (outgoingVouchees.length > DILUTION_THRESHOLD) {
       const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
-      const dilutionPenalty = 0.05 * excess; // 5% per excess vouch
+      const dilutionPenalty = 0.1 * excess; // 10% per excess vouch
       qualityFactor *= Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
     }
 
@@ -524,9 +524,10 @@ export class EgoScorer {
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow equals number of vouchers in simple case
-    // 1 vouch → 1/5 = 20% = 12 pts, 3 vouches → 60% = 36 pts, 5+ vouches → 100% = 60 pts
+    // Exponential scaling (1.2) spreads scores more naturally
+    // 1 vouch → (1/5)^1.2 = 0.157 = 9.4 pts, 3 vouches → 0.525 = 31.5 pts, 5+ vouches → 1.0 = 60 pts
     const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
-    const flowComponent = 60 * flowScore;
+    const flowComponent = 60 * Math.pow(flowScore, 1.2);
 
     // Redundancy score: normalized by healthy redundancy baseline
     // Measures network depth (ego size) and connectivity (edge density)
@@ -543,12 +544,13 @@ export class EgoScorer {
     const DILUTION_THRESHOLD = 10;
     if (outgoingVouchees.length > DILUTION_THRESHOLD) {
       const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
-      const dilutionPenalty = 0.05 * excess; // 5% per excess vouch
+      const dilutionPenalty = 0.1 * excess; // 10% per excess vouch
       vouchQualityFactor = Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
     }
 
     // Cut component: 40% based on effective redundancy
-    const cutComponent = 40 * redundancy * vouchQualityFactor;
+    // Exponential scaling (1.2) spreads scores more naturally
+    const cutComponent = 40 * Math.pow(redundancy, 1.2) * vouchQualityFactor;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
