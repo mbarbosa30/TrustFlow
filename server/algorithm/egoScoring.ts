@@ -403,6 +403,10 @@ export class EgoScorer {
    * Sources = everyone who vouched for the owner
    * Target = owner
    * Measures: "How much does the network trust me?"
+   * 
+   * Scoring Formula:
+   * - Flow component (60%): Incoming trust saturation
+   * - Cut component (40%): Effective redundancy (multi-hop path diversity)
    */
   private computePureOption2Score(
     ownerAddress: Address,
@@ -430,27 +434,35 @@ export class EgoScorer {
       };
     }
 
-    // Build flow graph: SOURCE → [vouchers] → owner
-    const SOURCE = "SOURCE";
-    const SINK = ownerAddress;
-    const graph = new FlowGraph(SOURCE, SINK);
+    // Step 1: Build extended ego subgraph from vouchers using BFS (captures multi-hop connections)
+    const egoSubgraph = this.buildEgoSubgraphFromVouchers(
+      directVouchers,
+      globalVouches,
+      this.config.maxDistance
+    );
+    
+    // Remove owner from ego subgraph (owner shouldn't count toward depth/connectivity metrics)
+    egoSubgraph.delete(ownerAddress.toLowerCase());
 
-    // Connect source to all vouchers with unit capacity
-    for (const voucher of directVouchers) {
-      graph.addEdge(SOURCE, voucher, 1.0);
-    }
-
-    // Build KUDOS boost map
+    // Build KUDOS boost map for edge capacity boosting
     const boostMap = new Map<string, number>();
     for (const boost of kudosBoosts) {
       const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
       boostMap.set(key, boost.weight);
     }
 
-    // Add voucher → owner edges with KUDOS boosts
+    // Step 2: Compute direct flow (SOURCE → vouchers → owner) for flow component
+    const SOURCE = "SOURCE";
+    const directGraph = new FlowGraph(SOURCE, ownerAddress);
+
+    // Connect source to all direct vouchers with unit capacity
+    for (const voucher of directVouchers) {
+      directGraph.addEdge(SOURCE, voucher, 1.0);
+    }
+
+    // Add direct voucher → owner edges with KUDOS boosts
     let maxInboundCapacity = 0;
     for (const voucher of directVouchers) {
-      // Base capacity = 1.0 (no distance decay in pure Option 2)
       let capacity = 1.0;
       
       // Apply KUDOS boost if exists
@@ -464,29 +476,65 @@ export class EgoScorer {
         capacity *= boostMultiplier;
       }
       
-      graph.addEdge(voucher, ownerAddress, capacity);
+      directGraph.addEdge(voucher, ownerAddress, capacity);
       maxInboundCapacity += capacity;
     }
 
-    // Compute max flow and min cut
-    const maxFlowSolver = new DinicMaxFlow(graph);
-    const flow = maxFlowSolver.computeMaxFlow();
-    const minCutSet = maxFlowSolver.computeMinCut();
-    const minCut = this.calculateMinCutCapacity(graph, minCutSet);
+    const directFlowSolver = new DinicMaxFlow(directGraph);
+    const directFlow = directFlowSolver.computeMaxFlow();
 
     // Calculate residual flow (saturation of incoming capacity)
     const residualFlow = maxInboundCapacity > 0 
-      ? Math.min(1.0, flow / maxInboundCapacity)
+      ? Math.min(1.0, directFlow / maxInboundCapacity)
       : 0;
 
-    // Pure Option 2 scoring: 60% flow saturation + 40% redundancy per voucher
-    const flowComponent = 60 * residualFlow;
-    const baseCutComponent = directVouchers.length > 0
-      ? 40 * Math.min(1.0, minCut / directVouchers.length)
-      : 0;
+    // Step 3: Compute effective redundancy using network metrics (simpler & more accurate)
+    // Redundancy = combination of vouch count + network depth + connectivity
+    const egoSize = egoSubgraph.size;
     
-    // Apply dilution penalty for outgoing vouches (simplified for Pure Option 2)
-    // Only apply count-based dilution, not quality-based (since we don't compute other nodes' scores)
+    // Count edges in ego subgraph (measures connectivity/redundancy)
+    let egoEdgeCount = 0;
+    for (const { endorser, endorsee } of globalVouches) {
+      const endorserLower = endorser.toLowerCase();
+      const endorseeLower = endorsee.toLowerCase();
+      if (egoSubgraph.has(endorserLower) && egoSubgraph.has(endorseeLower)) {
+        egoEdgeCount++;
+      }
+    }
+    
+    // Effective redundancy metric:
+    // - Base: number of direct vouchers (each vouch = 1 redundancy point)
+    // - Depth bonus: ego size beyond vouchers (each extra node = 0.2 points)
+    // - Connectivity bonus: edge density (edges / potential_edges) * ego_size
+    const baseRedundancy = directVouchers.length;
+    const depthBonus = Math.max(0, egoSize - directVouchers.length) * 0.2;
+    
+    // Edge density: actual edges / potential edges in ego subgraph
+    const potentialEdges = egoSize > 1 ? egoSize * (egoSize - 1) : 1;
+    const edgeDensity = egoEdgeCount / potentialEdges;
+    const connectivityBonus = edgeDensity * egoSize;
+    
+    const effectiveRedundancy = baseRedundancy + depthBonus + connectivityBonus;
+
+    // Step 4: Calculate scoring with fixed healthy baseline
+    // Fixed baseline: ~5 vouches with some depth = "healthy" network
+    const HEALTHY_VOUCH_COUNT = 5.0;
+    const HEALTHY_REDUNDANCY = 5.0 + (20 * 0.2) + 0.5; // ~10 redundancy points for healthy network
+    
+    // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
+    // directFlow equals number of vouchers in simple case
+    // 1 vouch → 1/5 = 20% = 12 pts, 3 vouches → 60% = 36 pts, 5+ vouches → 100% = 60 pts
+    const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
+    const flowComponent = 60 * flowScore;
+
+    // Redundancy score: normalized by healthy redundancy baseline
+    // Measures network depth (ego size) and connectivity (edge density)
+    // 1 vouch, no depth → ~1 redundancy / 10 = 10% = 4 pts
+    // 3 vouches, some depth → ~5 redundancy / 10 = 50% = 20 pts
+    // 5+ vouches, good depth → ~10 redundancy / 10 = 100% = 40 pts
+    const redundancy = Math.min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY);
+
+    // Apply dilution penalty for outgoing vouches
     const outgoingVouchees = globalVouches
       .filter(v => v.endorser.toLowerCase() === ownerAddress.toLowerCase());
     
@@ -497,8 +545,9 @@ export class EgoScorer {
       const dilutionPenalty = 0.05 * excess; // 5% per excess vouch
       vouchQualityFactor = Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
     }
-    
-    const cutComponent = baseCutComponent * vouchQualityFactor;
+
+    // Cut component: 40% based on effective redundancy
+    const cutComponent = 40 * redundancy * vouchQualityFactor;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
 
@@ -507,20 +556,76 @@ export class EgoScorer {
       localHealth: Math.round(localHealth * 100) / 100,
       seedAddresses: [],
       metrics: {
-        totalNodes: directVouchers.length,
-        acceptedUsers: directVouchers.length, // All vouchers are "accepted"
+        totalNodes: egoSize,
+        acceptedUsers: directVouchers.length,
         avgResidualFlow: Math.round(residualFlow * 1000) / 1000,
-        medianMinCut: Math.round(minCut * 100) / 100,
+        medianMinCut: Math.round(effectiveRedundancy * 100) / 100,
         maxPossibleFlow: maxInboundCapacity,
       },
       nodeDetails: directVouchers.map(voucher => ({
         address: voucher,
-        distance: 1, // Direct vouchers are distance 1
+        distance: 1,
         capacity: 1.0,
-        flow: flow / directVouchers.length, // Approximate per-voucher flow
+        flow: directFlow / Math.max(1, directVouchers.length),
         residualFlow,
-        minCut: minCut / directVouchers.length,
+        minCut: effectiveRedundancy / Math.max(1, directVouchers.length),
       })),
     };
+  }
+
+  /**
+   * Build extended ego subgraph from vouchers using UPSTREAM-ONLY BFS
+   * Finds people who vouch for the vouchers (multi-hop supporters)
+   * This measures "how many people support my supporters" for redundancy
+   */
+  private buildEgoSubgraphFromVouchers(
+    vouchers: Address[],
+    globalVouches: EgoEndorsement[],
+    maxDistance: number
+  ): Set<string> {
+    const subgraph = new Set<string>();
+    const queue: { address: Address; distance: number }[] = [];
+    const visited = new Set<string>();
+
+    // Initialize BFS from vouchers
+    for (const voucher of vouchers) {
+      const voucherLower = voucher.toLowerCase();
+      subgraph.add(voucherLower);
+      visited.add(voucherLower);
+      queue.push({ address: voucher, distance: 0 });
+    }
+
+    // Build REVERSE adjacency list (endorsee -> endorsers who vouch for them)
+    // This lets us traverse backwards to find upstream supporters
+    const reverseAdj = new Map<string, Address[]>();
+    for (const { endorser, endorsee } of globalVouches) {
+      const endorseeLower = endorsee.toLowerCase();
+      if (!reverseAdj.has(endorseeLower)) {
+        reverseAdj.set(endorseeLower, []);
+      }
+      reverseAdj.get(endorseeLower)!.push(endorser);
+    }
+
+    // BFS UPSTREAM ONLY to capture multi-hop supporters
+    let head = 0;
+    while (head < queue.length) {
+      const { address, distance } = queue[head++];
+
+      if (distance >= maxDistance) continue;
+
+      // Only traverse UPSTREAM (people who vouch for this node)
+      // This finds supporters of supporters, which contributes to redundancy
+      const upstream = reverseAdj.get(address.toLowerCase()) || [];
+      for (const neighbor of upstream) {
+        const neighborLower = neighbor.toLowerCase();
+        if (!visited.has(neighborLower)) {
+          visited.add(neighborLower);
+          subgraph.add(neighborLower);
+          queue.push({ address: neighbor, distance: distance + 1 });
+        }
+      }
+    }
+
+    return subgraph;
   }
 }
