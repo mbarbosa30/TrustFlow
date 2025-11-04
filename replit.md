@@ -36,7 +36,11 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
 *   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters, installment schedules, and various subsidy systems.
 *   **API Integration**: Provides a minimal REST API for third-party applications to integrate with MaxFlow, using community API keys and EIP-712 signatures.
 *   **Dual Scoring Model**:
-    *   **Local Health**: Ego network quality score (0-100) computed via max-flow/min-cut on ego subgraph, with distance-based node capacities.
+    *   **Local Health (Ego Score)**: Personal network quality score (0-100) using max-flow/min-cut algorithms. Supports two modes:
+        *   **Pure Option 2 (Default)**: No co-seeds required. Measures "how much the network trusts me" by computing flow from direct vouchers to the owner. Formula: `60 × avgResidualFlow + 40 × min(1, medianMinCut/voucherCount)`. Intuitive for users: more vouches = higher score.
+        *   **Hybrid Mode (Optional)**: When co-seeds are selected, measures "connection quality within my trusted circle" for enhanced Sybil resistance. Flow computed from co-seeds through network to owner.
+    *   **Scoring Weights**: 60% flow component (incoming trust saturation), 40% cut component (network redundancy). Emphasizes incoming trust while maintaining Sybil resistance.
+    *   **KUDOS Integration**: Edge capacities boosted by KUDOS transfers (exponential decay, 180-day halflife). Boost multiplier: `1 + min(1, kudosWeight/100)`, max 2x.
     *   **Global Trust (Planned)**: Cross-network reputation score combining Local Health and Incoming Flow.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
 
