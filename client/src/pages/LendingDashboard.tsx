@@ -52,6 +52,55 @@ interface LendingStats {
   lendingEnabled: boolean;
 }
 
+interface DashboardData {
+  totalLoans: number;
+  totalDisbursed: number;
+  activeLoans: number;
+  activeVolume: number;
+  completedLoans: number;
+  defaultedLoans: number;
+  pendingApproval: number;
+  repaymentRate: number;
+  defaultRate: number;
+  statusDistribution: {
+    PENDING_APPROVAL: number;
+    ACTIVE: number;
+    PAID: number;
+    DEFAULTED: number;
+    REJECTED: number;
+  };
+  riskDistribution: {
+    low: number;
+    medium: number;
+    high: number;
+    critical: number;
+  };
+  atRiskLoans: Array<{
+    loanId: number;
+    borrowerAddress: string;
+    principalUsdc: number;
+    currency: string;
+    disbursedAt: string;
+    healthScore: number;
+    riskLevel: 'low' | 'medium' | 'high' | 'critical';
+    paymentProgress: number;
+    timeProgress: number;
+  }>;
+  atRiskCount: number;
+  recentLoans: Array<{
+    loanId: number;
+    borrowerAddress: string;
+    principalUsdc: number;
+    currency: string;
+    tenorMonths: number;
+    disbursedAt: string;
+    status: string;
+  }>;
+  lendingEnabled: boolean;
+  ghiThreshold: number;
+  currency: string;
+}
+
 interface LendingActivity {
   id: number;
   type: "LOAN_CREATED" | "PAYMENT_MADE" | "IBD_APPLIED" | "RA_COVERED" | "LOAN_DEFAULTED" | "LOAN_COMPLETED";
@@ -87,6 +136,11 @@ export default function LendingDashboard() {
   // Fetch lending statistics
   const { data: stats, isLoading: statsLoading } = useQuery<LendingStats>({
     queryKey: ["/api/loans/stats", communityId],
+  });
+
+  // Fetch comprehensive dashboard data
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery<DashboardData>({
+    queryKey: ["/api/lending/dashboard", communityId],
   });
 
   // Fetch recent lending activity
@@ -676,6 +730,153 @@ export default function LendingDashboard() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Loan Portfolio Analysis */}
+      {dashboardData && !dashboardLoading && (
+        <>
+          {/* Status & Risk Distribution Charts */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Status Distribution */}
+            <Card data-testid="card-status-distribution">
+              <CardHeader>
+                <CardTitle>Loan Status Distribution</CardTitle>
+                <CardDescription>Breakdown by current loan status</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(dashboardData.statusDistribution).map(([status, count]) => {
+                  const total = dashboardData.totalLoans || 1;
+                  const percentage = (count / total) * 100;
+                  const badgeVariant = status === 'PAID' ? 'default' : status === 'ACTIVE' ? 'secondary' : status === 'PENDING_APPROVAL' ? 'outline' : 'destructive';
+                  
+                  return (
+                    <div key={status} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={badgeVariant} className="text-xs">
+                            {status.replace(/_/g, ' ')}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">{count} loans</span>
+                        </div>
+                        <span className="text-sm font-medium">{percentage.toFixed(0)}%</span>
+                      </div>
+                      <Progress value={percentage} />
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+
+            {/* Risk Distribution */}
+            <Card data-testid="card-risk-distribution">
+              <CardHeader>
+                <CardTitle>Risk Assessment Distribution</CardTitle>
+                <CardDescription>Active loans by health risk level</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {Object.entries(dashboardData.riskDistribution).map(([risk, count]) => {
+                  const total = dashboardData.activeLoans || 1;
+                  const percentage = (count / total) * 100;
+                  const badgeVariant = risk === 'low' ? 'default' : risk === 'medium' ? 'secondary' : 'destructive';
+                  
+                  return (
+                    <div key={risk} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={badgeVariant} className="text-xs">
+                            {risk.toUpperCase()} RISK
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">{count} loans</span>
+                        </div>
+                        <span className="text-sm font-medium">{percentage.toFixed(0)}%</span>
+                      </div>
+                      <Progress value={percentage} />
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* At-Risk Loans Table */}
+          {dashboardData.atRiskLoans.length > 0 && (
+            <Card data-testid="card-at-risk-loans">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  At-Risk Loans
+                  <Badge variant="destructive" data-testid="badge-at-risk-count">
+                    {dashboardData.atRiskCount}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Active loans with payments falling behind schedule
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto -mx-6 px-6">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">Loan ID</TableHead>
+                        <TableHead className="whitespace-nowrap">Borrower</TableHead>
+                        <TableHead className="whitespace-nowrap">Amount</TableHead>
+                        <TableHead className="whitespace-nowrap">Health Score</TableHead>
+                        <TableHead className="whitespace-nowrap">Payment Progress</TableHead>
+                        <TableHead className="whitespace-nowrap">Time Elapsed</TableHead>
+                        <TableHead className="whitespace-nowrap">Risk Level</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dashboardData.atRiskLoans.map((loan) => (
+                        <TableRow key={loan.loanId} data-testid={`row-at-risk-${loan.loanId}`}>
+                          <TableCell className="font-medium">#{loan.loanId}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {loan.borrowerAddress.slice(0, 6)}...{loan.borrowerAddress.slice(-4)}
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {formatCurrency(loan.principalUsdc, loan.currency)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{loan.healthScore.toFixed(1)}/100</span>
+                              <Progress value={loan.healthScore} className="w-16 h-2" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm">{Math.round(loan.paymentProgress)}%</span>
+                              <Progress value={loan.paymentProgress} className="w-16 h-2" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {Math.round(loan.timeProgress)}%
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                loan.riskLevel === 'medium' ? 'secondary' : 
+                                loan.riskLevel === 'high' ? 'destructive' : 
+                                'default'
+                              }
+                              className="gap-1"
+                            >
+                              {loan.riskLevel === 'medium' && <AlertCircle className="h-3 w-3" />}
+                              {(loan.riskLevel === 'high' || loan.riskLevel === 'critical') && <AlertTriangle className="h-3 w-3" />}
+                              {loan.riskLevel.toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Recent Activity Feed */}
