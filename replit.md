@@ -40,6 +40,11 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
         *   **Pure Option 2 (Default)**: No co-seeds required. Measures "how much the network trusts me" by computing flow from direct vouchers to the owner. Formula: `60 × avgResidualFlow + 40 × min(1, medianMinCut/voucherCount)`. Intuitive for users: more vouches = higher score.
         *   **Hybrid Mode (Optional)**: When co-seeds are selected, measures "connection quality within my trusted circle" for enhanced Sybil resistance. Flow computed from co-seeds through network to owner.
     *   **Scoring Weights**: 60% flow component (incoming trust saturation), 40% cut component (network redundancy). Emphasizes incoming trust while maintaining Sybil resistance.
+    *   **Outgoing Vouch Adjustment**: Adds accountability for who you vouch for. Cut component is multiplied by a vouch quality factor (0.9-1.1):
+        *   Quality-based: Mean residual flow of vouchees (rewards vouching for high-trust nodes)
+        *   Dilution penalty: 5% per vouch beyond 10 vouches (prevents vouch spam)
+        *   Missing residuals treated neutrally (vouchees outside ego subgraph not penalized)
+        *   ~5-10% score impact, keeps incoming trust as primary driver
     *   **KUDOS Integration**: Edge capacities boosted by KUDOS transfers (exponential decay, 180-day halflife). Boost multiplier: `1 + min(1, kudosWeight/100)`, max 2x.
     *   **Global Trust (Planned)**: Cross-network reputation score combining Local Health and Incoming Flow.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
