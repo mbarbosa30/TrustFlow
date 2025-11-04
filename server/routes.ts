@@ -2394,10 +2394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const egoContext = await storage.getOrCreateEgoContext(ownerAddress);
       const coSeeds = await storage.getCoSeeds(egoContext.id);
       
-      const seedAddresses = [
-        ownerAddress,
-        ...coSeeds.map(cs => cs.address.toLowerCase())
-      ];
+      // Pure Option 2: Use co-seeds only (never include ownerAddress as a seed)
+      const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase());
       
       const globalEndorsements = await storage.getEndorsements({
         communityId: 0,

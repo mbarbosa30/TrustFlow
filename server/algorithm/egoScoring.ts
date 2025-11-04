@@ -43,20 +43,11 @@ export class EgoScorer {
     globalVouches: EgoEndorsement[],
     kudosBoosts: KudosBoost[] = []
   ): EgoScoreResult {
-    if (seedAddresses.length === 0) {
-      return {
-        ownerAddress,
-        localHealth: 0,
-        seedAddresses: [],
-        metrics: {
-          totalNodes: 0,
-          acceptedUsers: 0,
-          avgResidualFlow: 0,
-          medianMinCut: 0,
-          maxPossibleFlow: 0,
-        },
-        nodeDetails: [],
-      };
+    // Pure Option 2: If no co-seeds, use vouchers as sources
+    const isPureOption2 = seedAddresses.length === 0;
+    
+    if (isPureOption2) {
+      return this.computePureOption2Score(ownerAddress, globalVouches, kudosBoosts);
     }
 
     const distances = this.computeDistances(seedAddresses, globalVouches);
@@ -132,14 +123,14 @@ export class EgoScorer {
     const medianMinCut = this.calculateMedian(minCuts);
     const seedCount = seedAddresses.length;
 
-    // Flow component: Pure saturation average (0-50)
-    // avgResidualFlow is already normalized per-node (flow/maxInbound), so just scale by 50
-    const flowComponent = 50 * avgResidualFlow;
+    // Flow component: Incoming trust saturation (0-60)
+    // avgResidualFlow is already normalized per-node (flow/maxInbound), so scale by 60
+    const flowComponent = 60 * avgResidualFlow;
     
-    // Cut component: Redundancy per seed (0-50)
-    // Normalize by actual seed count, not hardcoded value
+    // Cut component: Network redundancy (0-40)
+    // Normalize by actual seed count for hybrid mode
     const cutComponent = seedCount > 0 
-      ? 50 * Math.min(1.0, medianMinCut / seedCount)
+      ? 40 * Math.min(1.0, medianMinCut / seedCount)
       : 0;
     
     const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
@@ -347,5 +338,116 @@ export class EgoScorer {
     }
 
     return maxInbound;
+  }
+
+  /**
+   * Pure Option 2: Compute score based on incoming vouches only (no co-seeds)
+   * Sources = everyone who vouched for the owner
+   * Target = owner
+   * Measures: "How much does the network trust me?"
+   */
+  private computePureOption2Score(
+    ownerAddress: Address,
+    globalVouches: EgoEndorsement[],
+    kudosBoosts: KudosBoost[] = []
+  ): EgoScoreResult {
+    // Find everyone who vouched for the owner (direct vouchers)
+    const directVouchers = globalVouches
+      .filter(v => v.endorsee.toLowerCase() === ownerAddress.toLowerCase())
+      .map(v => v.endorser);
+
+    if (directVouchers.length === 0) {
+      return {
+        ownerAddress,
+        localHealth: 0,
+        seedAddresses: [],
+        metrics: {
+          totalNodes: 0,
+          acceptedUsers: 0,
+          avgResidualFlow: 0,
+          medianMinCut: 0,
+          maxPossibleFlow: 0,
+        },
+        nodeDetails: [],
+      };
+    }
+
+    // Build flow graph: SOURCE → [vouchers] → owner
+    const SOURCE = "SOURCE";
+    const SINK = ownerAddress;
+    const graph = new FlowGraph(SOURCE, SINK);
+
+    // Connect source to all vouchers with unit capacity
+    for (const voucher of directVouchers) {
+      graph.addEdge(SOURCE, voucher, 1.0);
+    }
+
+    // Build KUDOS boost map
+    const boostMap = new Map<string, number>();
+    for (const boost of kudosBoosts) {
+      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
+      boostMap.set(key, boost.weight);
+    }
+
+    // Add voucher → owner edges with KUDOS boosts
+    let maxInboundCapacity = 0;
+    for (const voucher of directVouchers) {
+      // Base capacity = 1.0 (no distance decay in pure Option 2)
+      let capacity = 1.0;
+      
+      // Apply KUDOS boost if exists
+      const boostKey = `${voucher.toLowerCase()}->${ownerAddress.toLowerCase()}`;
+      const kudosWeight = boostMap.get(boostKey) || 0;
+      
+      if (kudosWeight > 0) {
+        const threshold = this.config.kudosBoostThreshold || 100;
+        const maxBoost = this.config.kudosMaxBoost || 2.0;
+        const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
+        capacity *= boostMultiplier;
+      }
+      
+      graph.addEdge(voucher, ownerAddress, capacity);
+      maxInboundCapacity += capacity;
+    }
+
+    // Compute max flow and min cut
+    const maxFlowSolver = new DinicMaxFlow(graph);
+    const flow = maxFlowSolver.computeMaxFlow();
+    const minCutSet = maxFlowSolver.computeMinCut();
+    const minCut = this.calculateMinCutCapacity(graph, minCutSet);
+
+    // Calculate residual flow (saturation of incoming capacity)
+    const residualFlow = maxInboundCapacity > 0 
+      ? Math.min(1.0, flow / maxInboundCapacity)
+      : 0;
+
+    // Pure Option 2 scoring: 60% flow saturation + 40% redundancy per voucher
+    const flowComponent = 60 * residualFlow;
+    const cutComponent = directVouchers.length > 0
+      ? 40 * Math.min(1.0, minCut / directVouchers.length)
+      : 0;
+    
+    const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
+
+    return {
+      ownerAddress,
+      localHealth: Math.round(localHealth * 100) / 100,
+      seedAddresses: [],
+      metrics: {
+        totalNodes: directVouchers.length,
+        acceptedUsers: directVouchers.length, // All vouchers are "accepted"
+        avgResidualFlow: Math.round(residualFlow * 1000) / 1000,
+        medianMinCut: Math.round(minCut * 100) / 100,
+        maxPossibleFlow: maxInboundCapacity,
+      },
+      nodeDetails: directVouchers.map(voucher => ({
+        address: voucher,
+        distance: 1, // Direct vouchers are distance 1
+        capacity: 1.0,
+        flow: flow / directVouchers.length, // Approximate per-voucher flow
+        residualFlow,
+        minCut: minCut / directVouchers.length,
+      })),
+    };
   }
 }
