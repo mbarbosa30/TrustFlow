@@ -114,6 +114,9 @@ export function validateEndorsementFields(endorsement: {
   const serverTime = BigInt(Date.now());
   const clientTime = endorsement.timestamp;
   
+  console.log("DEBUG: serverTime type:", typeof serverTime, "value:", serverTime);
+  console.log("DEBUG: clientTime type:", typeof clientTime, "value:", clientTime);
+  
   // Check for unreasonably large timestamps (prevent DoS via Number overflow)
   const MAX_REASONABLE_TIMESTAMP = BigInt(Date.now()) + BigInt(365 * 24 * 60 * 60 * 1000); // 1 year in future
   const MIN_REASONABLE_TIMESTAMP = BigInt(1609459200000); // Jan 1, 2021 (before MaxFlow existed)
