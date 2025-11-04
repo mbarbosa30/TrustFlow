@@ -59,33 +59,52 @@ function calculateCurrentDebt(
 } {
   const schedule = generateInstallmentSchedule(principal, aprNominal, tenorMonths, disbursedAt);
   const monthlyPayment = calculateMonthlyPayment(principal, aprNominal, tenorMonths);
+  const now = new Date();
   
-  let principalPaid = 0;
-  let interestPaid = 0;
+  // Apply payments in order (interest first for due installments, principal only for future ones)
   let remainingPayment = totalPaid;
+  let totalPrincipalPaid = 0;
+  let interestPaidOnDueInstallments = 0;
+  let totalInterestDue = 0;
   
-  // Apply payments to schedule (interest first, then principal)
   for (const installment of schedule) {
-    if (remainingPayment <= 0) break;
+    const isDue = installment.dueDate <= now;
     
-    // Pay interest first
-    const interestPayment = Math.min(remainingPayment, installment.interestDue - interestPaid);
-    interestPaid += interestPayment;
-    remainingPayment -= interestPayment;
+    if (isDue) {
+      totalInterestDue += installment.interestDue;
+    }
     
-    // Then principal
-    if (remainingPayment > 0) {
+    if (remainingPayment <= 0) continue;
+    
+    if (isDue) {
+      // For due installments: pay interest first, then principal
+      const interestPayment = Math.min(remainingPayment, installment.interestDue);
+      interestPaidOnDueInstallments += interestPayment;
+      remainingPayment -= interestPayment;
+      
+      if (remainingPayment > 0) {
+        const principalPayment = Math.min(remainingPayment, installment.principalDue);
+        totalPrincipalPaid += principalPayment;
+        remainingPayment -= principalPayment;
+      }
+    } else {
+      // For future installments: apply surplus to principal only (advance payment)
       const principalPayment = Math.min(remainingPayment, installment.principalDue);
-      principalPaid += principalPayment;
+      totalPrincipalPaid += principalPayment;
       remainingPayment -= principalPayment;
     }
   }
   
-  const principalRemaining = principal - principalPaid;
-  const totalExpected = monthlyPayment * tenorMonths;
-  const totalInterest = totalExpected - principal;
-  const interestAccrued = totalInterest - interestPaid;
+  // Principal remaining = original principal - all principal paid (including advance payments)
+  const principalRemaining = Math.max(0, principal - totalPrincipalPaid);
+  
+  // Interest accrued = interest due to date - interest paid on due installments
+  const interestAccrued = Math.max(0, totalInterestDue - interestPaidOnDueInstallments);
+  
+  // Current debt = unpaid principal + accrued unpaid interest
   const currentDebt = principalRemaining + interestAccrued;
+  
+  const totalExpected = monthlyPayment * tenorMonths;
   
   return {
     currentDebt: Math.round(currentDebt * 100) / 100,
