@@ -53,8 +53,10 @@ export default function ApiDocs() {
         <h1 className="text-3xl font-bold mb-2" data-testid="text-api-docs-title">
           API Documentation
         </h1>
-        <p className="text-muted-foreground">
-          Integrate MaxFlow trust scoring into your application
+        <p className="text-muted-foreground max-w-3xl">
+          MaxFlow provides verifiable trust signals computed from endorsement graphs using max-flow/min-cut algorithms. 
+          How you interpret these signals is up to your application: access control, credit scoring, governance weight, 
+          grant allocation, or any other use case requiring Sybil-resistant reputation.
         </p>
       </div>
 
@@ -163,7 +165,7 @@ export default function ApiDocs() {
                 Get LocalHealth Score
               </CardTitle>
               <CardDescription>
-                Get trust score (0-100) for any wallet address. No authentication required.
+                Get network quality score (0-100) for any wallet address. No authentication required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -196,7 +198,7 @@ export default function ApiDocs() {
 
 // Usage
 const score = await getLocalHealth('0x216844eF...');
-console.log(\`Trust Score: \${score}/100\`);`}
+console.log(\`LocalHealth Score: \${score}/100\`);`}
                     </pre>
                   </TabsContent>
                   <TabsContent value="python">
@@ -207,7 +209,7 @@ response = requests.get(
     '${baseUrl}/api/ego/0x216844eF94D95279c6d1631875F2dd93FbBdfB61/score'
 )
 data = response.json()
-print(f"Trust Score: {data['localHealth']}/100")`}
+print(f"LocalHealth Score: {data['localHealth']}/100")`}
                     </pre>
                   </TabsContent>
                 </Tabs>
