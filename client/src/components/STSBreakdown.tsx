@@ -26,10 +26,10 @@ export function STSBreakdown({ components, totalSTS }: STSBreakdownProps) {
     <Card data-testid="card-sts-breakdown">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">
-          Score Calculation (STS)
+          Network Quality Signal Calculation
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Your Standardized Trust Score (0-100) is a weighted blend of four components
+          Your Network Quality Score (0-100) is a weighted blend of four graph signal components
         </p>
       </CardHeader>
       <CardContent className="space-y-6">

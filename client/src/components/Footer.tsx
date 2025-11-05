@@ -12,7 +12,7 @@ export function Footer() {
               <span>MaxFlow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Transparent trust network using max-flow scoring to issue verifiable attestations.
+              Graph signal infrastructure using max-flow computation to issue verifiable network quality attestations.
             </p>
           </div>
 
@@ -108,7 +108,7 @@ export function Footer() {
 
         <div className="pt-8 border-t">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong>Disclaimer:</strong> MaxFlow issues portable, verifiable trust attestations computed from a curated seed set using max-flow/min-cut algorithms. All vouches are publicly visible on-chain in the Merkle transparency log. Scores update by epoch. Do not rely on MaxFlow for high-stakes decisions without additional verification.
+            <strong>Disclaimer:</strong> MaxFlow issues portable, verifiable network quality attestations computed from a curated seed set using max-flow/min-cut algorithms. All endorsements are publicly visible on-chain in the Merkle transparency log. Scores update by epoch. MaxFlow provides neutral signals—applications interpret them for specific use cases. Do not rely on MaxFlow for high-stakes decisions without additional verification.
           </p>
         </div>
       </div>

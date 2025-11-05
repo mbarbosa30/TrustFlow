@@ -3,7 +3,7 @@ import { RecentActivity } from "@/components/RecentActivity";
 import { GHIGauge } from "@/components/GHIGauge";
 import { STSHistogram } from "@/components/STSHistogram";
 import { LocalHealthHistogram } from "@/components/LocalHealthHistogram";
-import { TrustDistribution } from "@/components/TrustDistribution";
+import { ScoreDistribution } from "@/components/TrustDistribution";
 import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
 import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
@@ -396,7 +396,7 @@ export default function Dashboard() {
             percentiles={stsDistData?.percentiles || { p25: 0, p50: 0, p75: 0, p95: 0 }} 
             isLoading={isLoadingSTSDist}
           />
-          <TrustDistribution 
+          <ScoreDistribution 
             distribution={tierDistData?.distribution || []} 
             isLoading={isLoadingTierDist}
           />

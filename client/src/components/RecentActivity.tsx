@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrustLevelBadge, type TrustLevel } from "./TrustLevelBadge";
+import { ScoreLevelBadge, type ScoreLevel } from "./TrustLevelBadge";
 import { ArrowRight } from "lucide-react";
 
 interface Activity {
@@ -7,7 +7,7 @@ interface Activity {
   type: "endorsement" | "score_update";
   endorser?: string;
   endorsee?: string;
-  level?: TrustLevel;
+  level?: ScoreLevel;
   timestamp: string;
   user?: string;
   newScore?: number;
@@ -43,7 +43,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                       <span className="font-mono truncate">{activity.endorsee}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
-                      {activity.level && <TrustLevelBadge level={activity.level} showIcon={false} />}
+                      {activity.level && <ScoreLevelBadge level={activity.level} showIcon={false} />}
                       <span className="text-xs text-muted-foreground">
                         {new Date(activity.timestamp).toLocaleString()}
                       </span>

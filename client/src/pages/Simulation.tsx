@@ -187,7 +187,7 @@ export default function Simulation() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="heading-simulation">Algorithm Simulation</h1>
         <p className="text-muted-foreground" data-testid="text-description">
-          Compare MaxFlow algorithms against Sybil attack scenarios. Test Advogato-style supersink vs. per-node scoring.
+          Compare MaxFlow graph signal computation algorithms against Sybil attack scenarios. Test Advogato-style supersink vs. per-node scoring.
         </p>
       </div>
 
@@ -412,7 +412,7 @@ export default function Simulation() {
                     </TableRow>
 
                     <TableRow>
-                      <TableCell className="font-medium" data-testid="metric-avg-honest">Avg Honest Score</TableCell>
+                      <TableCell className="font-medium" data-testid="metric-avg-honest">Avg Honest Signal</TableCell>
                       <TableCell data-testid="value-advogato-avg-honest">{formatScore(runMutation.data.metrics[0].avgHonestScore)}</TableCell>
                       <TableCell data-testid="value-maxflow-avg-honest">{formatScore(runMutation.data.metrics[1].avgHonestScore)}</TableCell>
                       <TableCell data-testid="comparison-avg-honest">
@@ -421,7 +421,7 @@ export default function Simulation() {
                     </TableRow>
 
                     <TableRow>
-                      <TableCell className="font-medium" data-testid="metric-avg-sybil">Avg Sybil Score (Lower is Better)</TableCell>
+                      <TableCell className="font-medium" data-testid="metric-avg-sybil">Avg Sybil Signal (Lower is Better)</TableCell>
                       <TableCell data-testid="value-advogato-avg-sybil">{formatScore(runMutation.data.metrics[0].avgSybilScore)}</TableCell>
                       <TableCell data-testid="value-maxflow-avg-sybil">{formatScore(runMutation.data.metrics[1].avgSybilScore)}</TableCell>
                       <TableCell data-testid="comparison-avg-sybil">

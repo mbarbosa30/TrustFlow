@@ -8,16 +8,21 @@ interface DistributionData {
   percentage: number;
 }
 
+interface ScoreDistributionProps {
+  distribution: DistributionData[];
+  isLoading?: boolean;
+}
+
 interface TrustDistributionProps {
   distribution: DistributionData[];
   isLoading?: boolean;
 }
 
-export function TrustDistribution({ distribution, isLoading = false }: TrustDistributionProps) {
+export function ScoreDistribution({ distribution, isLoading = false }: ScoreDistributionProps) {
   return (
-    <Card data-testid="card-trust-distribution">
+    <Card data-testid="card-score-distribution">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Tier Distribution</CardTitle>
+        <CardTitle className="text-lg font-semibold">Score Distribution</CardTitle>
         <p className="text-sm text-muted-foreground">
           Current epoch breakdown by achievement tier
         </p>
@@ -33,7 +38,7 @@ export function TrustDistribution({ distribution, isLoading = false }: TrustDist
           <div className="flex items-center justify-center py-12" data-testid="text-no-tier-distribution">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No tier distribution data available yet</p>
-              <p className="text-xs mt-1">Tiers will appear after users receive trust scores</p>
+              <p className="text-xs mt-1">Tiers will appear after users receive network scores</p>
             </div>
           </div>
         ) : (
@@ -56,3 +61,5 @@ export function TrustDistribution({ distribution, isLoading = false }: TrustDist
     </Card>
   );
 }
+
+export const TrustDistribution = ScoreDistribution;

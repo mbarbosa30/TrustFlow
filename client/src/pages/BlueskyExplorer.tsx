@@ -196,10 +196,10 @@ export default function BlueskyExplorer() {
     <div className="max-w-7xl mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2" data-testid="text-title">
-          Bluesky Trust Explorer
+          Bluesky Network Explorer
         </h1>
         <p className="text-muted-foreground" data-testid="text-description">
-          Analyze how a user's network connects using TrustFlow's max-flow scoring algorithm
+          Example application showing how MaxFlow graph signals can be interpreted for social network discovery and quality assessment
         </p>
       </div>
 
@@ -209,7 +209,7 @@ export default function BlueskyExplorer() {
           <CardHeader>
             <CardTitle>Analyze a Bluesky Account</CardTitle>
             <CardDescription>
-              Enter a Bluesky handle (e.g., alice.bsky.social) or DID to analyze how their followers and connections form a trust network
+              Enter a Bluesky handle (e.g., alice.bsky.social) or DID to analyze their network graph and compute MaxFlow signals
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -265,7 +265,7 @@ export default function BlueskyExplorer() {
                 <CardDescription className="space-y-1">
                   <div className="font-mono text-xs">{result.identifier} ({result.did})</div>
                   <div className="text-xs text-muted-foreground">
-                    Analysis of how this user's followers and connections form a trust network (user excluded from results)
+                    Network graph analysis with MaxFlow signal computation (user excluded from results)
                   </div>
                 </CardDescription>
               </CardHeader>
@@ -288,7 +288,7 @@ export default function BlueskyExplorer() {
                     <div className="text-2xl font-bold text-green-500">{result.stats.acceptedUsers}</div>
                   </div>
                   <div className="space-y-1" data-testid="card-metric-avg-sts">
-                    <div className="text-sm text-muted-foreground">Avg STS</div>
+                    <div className="text-sm text-muted-foreground">Avg Network Quality</div>
                     <div className="text-2xl font-bold">{result.stats.avgSTS}</div>
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function BlueskyExplorer() {
                     </Badge>
                   </CardTitle>
                   <CardDescription>
-                    Overall trust network assessment for @{result.identifier}'s peer connections
+                    Overall network quality assessment for @{result.identifier}'s peer connections
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -322,7 +322,7 @@ export default function BlueskyExplorer() {
                       <div className="text-sm font-semibold">Network Size</div>
                       <div className="text-2xl font-bold">{result.stats.totalUsers}</div>
                       <p className="text-xs text-muted-foreground">
-                        {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% accepted into trust network
+                        {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% accepted in network graph
                       </p>
                     </div>
                     <div className="space-y-2">
@@ -349,13 +349,13 @@ export default function BlueskyExplorer() {
                       {result.healthMetrics.connectivityRate < 0.5 && (
                         <li className="flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>Low connectivity: Only {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% of discovered users are trusted</span>
+                          <span>Low connectivity: Only {(result.healthMetrics.connectivityRate * 100).toFixed(0)}% of discovered users have acceptable signals</span>
                         </li>
                       )}
                       {result.robustnessMetrics.giniCoefficient > 0.6 && (
                         <li className="flex items-start gap-2">
                           <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <span>High inequality: Trust flow is concentrated among few users (Gini: {(result.robustnessMetrics.giniCoefficient * 100).toFixed(0)}%)</span>
+                          <span>High inequality: Network flow is concentrated among few users (Gini: {(result.robustnessMetrics.giniCoefficient * 100).toFixed(0)}%)</span>
                         </li>
                       )}
                       {result.robustnessMetrics.redundancyScore < 2 && (

@@ -5,11 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { CheckCircle2, XCircle, Shield } from "lucide-react";
-import { TrustLevelBadge, type TrustLevel } from "./TrustLevelBadge";
+import { ScoreLevelBadge, type ScoreLevel } from "./TrustLevelBadge";
 
 interface VerificationResult {
   valid: boolean;
-  level?: TrustLevel;
+  level?: ScoreLevel;
   score?: number;
   epochId?: string;
   subject?: string;
@@ -102,9 +102,9 @@ export function VerifyAttestation({ onVerify }: VerifyAttestationProps) {
               
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="text-muted-foreground mb-1">Trust Level</dt>
+                  <dt className="text-muted-foreground mb-1">Score Level</dt>
                   <dd data-testid="text-result-level">
-                    {result.level && <TrustLevelBadge level={result.level} />}
+                    {result.level && <ScoreLevelBadge level={result.level} />}
                   </dd>
                 </div>
                 

@@ -33,11 +33,11 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       <Card data-testid="card-components-breakdown">
         <CardHeader>
           <CardTitle>Score Components</CardTitle>
-          <CardDescription>Detailed breakdown of your trust score</CardDescription>
+          <CardDescription>Detailed breakdown of your network quality score</CardDescription>
         </CardHeader>
         <CardContent className="py-8">
           <p className="text-sm text-muted-foreground text-center">
-            Component data will be available after your score is calculated
+            Component data will be available after your signal is computed
           </p>
         </CardContent>
       </Card>
@@ -50,7 +50,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       value: (components.flow * 100).toFixed(1) + "%",
       rawValue: components.flow,
       weight: "55%",
-      description: "Max-flow capacity from seeds to you through independent paths. Measures the volume of trust that can reach you.",
+      description: "Max-flow capacity from seeds to you through independent paths. Measures the volume of signal capacity that can reach you.",
       color: "hsl(var(--chart-1))",
     },
     {
@@ -58,7 +58,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       value: components.minCut.toFixed(0),
       rawValue: components.minCut,
       weight: "25%",
-      description: "Minimum number of edges to disconnect you from seeds. Measures resistance to Sybil attacks.",
+      description: "Minimum number of edges to disconnect you from seeds. Measures path redundancy and resistance to graph attacks.",
       color: "hsl(var(--chart-2))",
     },
     {
@@ -66,7 +66,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       value: (components.stability * 100).toFixed(1) + "%",
       rawValue: components.stability,
       weight: "5%",
-      description: "How much your score changes when individual seeds are removed. Higher = more resilient network position.",
+      description: "How much your signal changes when individual seeds are removed. Higher = more resilient network position.",
       color: "hsl(var(--chart-3))",
     },
     {
@@ -74,7 +74,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       value: components.depth.toFixed(0) + " hops",
       rawValue: components.depth,
       weight: "10%",
-      description: "Shortest path distance from seeds. Lower depth = closer to trusted sources.",
+      description: "Shortest path distance from seeds. Lower depth = closer proximity to seed nodes.",
       color: "hsl(var(--chart-4))",
     },
     {
@@ -82,7 +82,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       value: (components.pageRank * 100).toFixed(1) + "%",
       rawValue: components.pageRank,
       weight: "5%",
-      description: "Seed-personalized PageRank measuring network embeddedness. Higher = better connected to the trust graph.",
+      description: "Seed-personalized PageRank measuring network embeddedness. Higher = better connected in the network graph.",
       color: "hsl(var(--chart-5))",
     },
   ];
@@ -138,7 +138,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
         
         <div className="mt-6 pt-4 border-t">
           <p className="text-xs text-muted-foreground">
-            <strong>STS Calculation:</strong> Your Standardized Trust Score (0-100) is computed as a weighted sum of these normalized components: 
+            <strong>Network Quality Calculation:</strong> Your Network Quality Score (0-100) is computed as a weighted sum of these normalized graph signal components: 
             55% Flow + 25% Min-Cut + 5% Stability + 10% Depth + 5% PageRank.
           </p>
         </div>

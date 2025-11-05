@@ -1,7 +1,13 @@
 import { Badge } from "@/components/ui/badge";
 import { User, Users, Shield } from "lucide-react";
 
-export type TrustLevel = "Human" | "Known" | "Trusted";
+export type ScoreLevel = "Human" | "Known" | "Trusted";
+export type TrustLevel = ScoreLevel;
+
+interface ScoreLevelBadgeProps {
+  level: ScoreLevel;
+  showIcon?: boolean;
+}
 
 interface TrustLevelBadgeProps {
   level: TrustLevel;
@@ -23,17 +29,19 @@ const levelConfig = {
   },
 };
 
-export function TrustLevelBadge({ level, showIcon = true }: TrustLevelBadgeProps) {
+export function ScoreLevelBadge({ level, showIcon = true }: ScoreLevelBadgeProps) {
   const config = levelConfig[level];
   const Icon = config.icon;
 
   return (
     <Badge
       className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full ${config.className}`}
-      data-testid={`badge-trust-level-${level.toLowerCase()}`}
+      data-testid={`badge-score-level-${level.toLowerCase()}`}
     >
       {showIcon && <Icon className="w-3 h-3" />}
       <span>{level}</span>
     </Badge>
   );
 }
+
+export const TrustLevelBadge = ScoreLevelBadge;
