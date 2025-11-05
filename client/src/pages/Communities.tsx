@@ -33,6 +33,9 @@ export default function Communities() {
           <p className="text-muted-foreground">
             {t('communities.description')}
           </p>
+          <p className="text-sm text-muted-foreground mt-2 italic">
+            Communities interpret MaxFlow's neutral network scores based on their own needs and context
+          </p>
         </div>
         <Link href="/communities/create">
           <Button data-testid="button-create-community">
@@ -187,7 +190,7 @@ export default function Communities() {
                           <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                         </div>
                         <div className="text-lg font-bold">{metrics.avgScore.toFixed(1)}</div>
-                        <div className="text-xs text-muted-foreground">Avg Score</div>
+                        <div className="text-xs text-muted-foreground">Avg STS</div>
                       </div>
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-1 mb-1">

@@ -73,6 +73,9 @@ export default function KudosEconomics() {
         <p className="text-muted-foreground">
           Track the KUDOS token economy metrics and top holders
         </p>
+        <p className="text-sm text-muted-foreground mt-2 p-3 bg-accent/50 rounded border border-border">
+          KUDOS rewards are based on LocalHealth, a neutral network quality score. This incentive layer interprets those scores as contribution quality.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -268,11 +271,12 @@ export default function KudosEconomics() {
           <div className="pt-4 border-t">
             <h3 className="text-sm font-medium mb-2">Economic Design</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Daily claim formula: (Ego Score² / 100)</li>
+              <li>• Daily claim formula: (LocalHealth Score² / 100)</li>
               <li>• Global daily cap: 1000 KUDOS across all users</li>
               <li>• Transfer fee: 1% (0.5% burned, 0.5% pooled)</li>
               <li>• Claim cooldown: 24 hours</li>
               <li>• Edge boost halflife: 180 days</li>
+              <li className="pt-2 border-t italic">• Built on neutral graph signals interpreted as contribution quality</li>
             </ul>
           </div>
         </CardContent>

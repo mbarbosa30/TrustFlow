@@ -172,7 +172,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold mb-2">Network Dashboard</h1>
             <p className="text-muted-foreground">
-              Global statistics and activity across the trust network
+              Global statistics and activity across the network graph
             </p>
           </div>
           <div className="text-right">
@@ -191,7 +191,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-2xl font-bold" data-testid="heading-personal-networks">Personal Networks</h2>
               <p className="text-sm text-muted-foreground">
-                LocalHealth scores measure individual trust network quality (0-100)
+                LocalHealth: neutral graph signals measuring individual network quality (0-100)
               </p>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function Dashboard() {
             <div>
               <h2 className="text-2xl font-bold" data-testid="heading-community-reputation">Community Reputation</h2>
               <p className="text-sm text-muted-foreground">
-                STS scores measure context-specific trust across communities
+                STS: neutral graph signals measuring context-specific network quality across communities
               </p>
             </div>
           </div>

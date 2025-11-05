@@ -153,7 +153,7 @@ export default function MyNetwork() {
         <Alert data-testid="alert-connect-wallet">
           <Info className="h-4 w-4" />
           <AlertDescription data-testid="text-connect-wallet-message">
-            Connect your wallet to view your personal trust network.
+            Connect your wallet to view your personal network graph.
           </AlertDescription>
         </Alert>
       </div>
@@ -183,7 +183,7 @@ export default function MyNetwork() {
           My Network
         </h1>
         <p className="text-muted-foreground" data-testid="text-page-description">
-          Your personal trust network powered by max-flow algorithms
+          Your personal network graph - endorsement edges create signals computed by max-flow algorithms
         </p>
       </div>
 
@@ -192,10 +192,10 @@ export default function MyNetwork() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Heart className="w-5 h-5" />
-            <span data-testid="text-card-title-health">Personal Network Health</span>
+            <span data-testid="text-card-title-health">Personal Network Quality</span>
           </CardTitle>
           <CardDescription data-testid="text-card-description-health">
-            How much the network trusts you, based on incoming vouches
+            Your LocalHealth signal computed from incoming endorsement edges
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -209,7 +209,7 @@ export default function MyNetwork() {
                 </div>
               )}
               <p className="text-sm text-muted-foreground" data-testid="text-health-score-label">
-                Ego Score (0-100)
+                LocalHealth (0-100)
               </p>
             </div>
             <div className="text-right">
@@ -271,7 +271,7 @@ export default function MyNetwork() {
             <Alert className="mt-6" data-testid="alert-scoring-info">
               <Info className="h-4 w-4" />
               <AlertDescription data-testid="text-scoring-info-message">
-                Your score starts at 0. Get vouched by others to build trust. Optional: Add co-seeds for enhanced Sybil resistance.
+                Your score starts at 0. Receive endorsements from others to increase your LocalHealth signal. Optional: Add co-seeds for enhanced Sybil resistance.
               </AlertDescription>
             </Alert>
           )}
@@ -283,10 +283,10 @@ export default function MyNetwork() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            <span data-testid="text-co-seeds-title">Trusted Co-Seeds ({coSeedCount}/{maxCoSeeds})</span>
+            <span data-testid="text-co-seeds-title">Anchor Co-Seeds ({coSeedCount}/{maxCoSeeds})</span>
           </CardTitle>
           <CardDescription data-testid="text-co-seeds-description">
-            Optional: Add up to 3 trusted wallets for hybrid mode with enhanced Sybil resistance
+            Optional: Add up to 3 anchor points for your network graph to enhance Sybil resistance
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -373,7 +373,7 @@ export default function MyNetwork() {
             <Alert data-testid="alert-no-co-seeds">
               <Info className="h-4 w-4" />
               <AlertDescription data-testid="text-no-co-seeds-message">
-                No co-seeds yet. Add trusted wallets to strengthen your network's Sybil resistance.
+                No co-seeds yet. Add anchor wallets to strengthen your network graph's Sybil resistance.
               </AlertDescription>
             </Alert>
           )}
@@ -387,30 +387,30 @@ export default function MyNetwork() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-ego">🌐 Ego-Centric Trust</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-ego">🌐 Ego-Centric Graph</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-ego">
               Your network is centered on you and your chosen co-seeds. Unlike community networks with fixed criteria,
-              your personal network reflects who you trust.
+              your personal network reflects the endorsement edges you create.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-vouches">🔄 Global Vouches</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-vouches">🔄 Global Endorsements</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-vouches">
-              Create global vouches for people you trust. These vouches flow across all personal networks,
-              not just specific communities.
+              Create global endorsements that become edges in the graph. These endorsement edges flow across all personal networks,
+              not just specific communities, creating neutral signals.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 Ego Score</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 LocalHealth Signal</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-score">
-              Your network quality is measured by average flow and median min-cut. Higher scores mean stronger,
-              more Sybil-resistant connections.
+              Your network quality is measured by average flow and median min-cut. Higher scores indicate stronger,
+              more Sybil-resistant graph structure.
             </p>
           </div>
           <div>
             <h4 className="font-semibold mb-2" data-testid="text-section-title-capacity">🎯 Distance-Based Capacity</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-capacity">
-              Nodes closer to you and your co-seeds have higher capacity in the trust graph. This prevents
+              Nodes closer to you and your co-seeds have higher capacity in the graph. This prevents
               distant collusion attacks.
             </p>
           </div>

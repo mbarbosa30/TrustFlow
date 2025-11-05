@@ -178,7 +178,10 @@ export default function Kudos() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">KUDOS Economy</h1>
         <p className="text-muted-foreground">
-          Off-chain reputation tokens earned through trust
+          Off-chain incentive tokens based on LocalHealth, a neutral network quality score
+        </p>
+        <p className="text-sm text-muted-foreground mt-2 p-3 bg-accent/50 rounded border border-border">
+          <strong>About KUDOS:</strong> This incentive layer interprets LocalHealth scores as contribution quality for rewards. The underlying graph signals remain neutral.
         </p>
       </div>
 
@@ -230,7 +233,7 @@ export default function Kudos() {
           <CardHeader>
             <CardTitle>Claim KUDOS</CardTitle>
             <CardDescription>
-              Claim tokens daily based on your Ego Score (score² / 100)
+              Claim tokens daily based on your LocalHealth score (score² / 100) — a neutral network quality metric
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -238,7 +241,7 @@ export default function Kudos() {
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-md space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Ego Score</span>
+                    <span className="text-sm text-muted-foreground">LocalHealth Score</span>
                     <span className="text-lg font-bold" data-testid="text-ego-score">
                       {canClaim.localHealthScore?.toFixed(1) || "0.0"}
                     </span>
@@ -250,7 +253,7 @@ export default function Kudos() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground pt-2 border-t">
-                    Formula: (EgoScore² / 100) capped by daily availability
+                    Formula: (LocalHealth² / 100) capped by daily availability
                   </p>
                 </div>
                 <Button
@@ -433,15 +436,15 @@ export default function Kudos() {
           <div>
             <h3 className="font-semibold mb-2">What are KUDOS?</h3>
             <p className="text-sm text-muted-foreground">
-              KUDOS are off-chain reputation tokens that reflect your trust score. They create a
-              closed-loop economy where sending tokens boosts edge capacity in the trust network,
-              improving scores for recipients.
+              KUDOS are off-chain incentive tokens built on neutral graph signals. They interpret LocalHealth scores 
+              as contribution quality for rewards. Sending tokens boosts edge capacity in the network graph, 
+              improving LocalHealth scores for recipients.
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Economics</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Daily claiming based on Ego Score (score² / 100)</li>
+              <li>• Daily claiming based on LocalHealth score (score² / 100)</li>
               <li>• 1000 KUDOS daily cap across all users</li>
               <li>• 1% transfer fee: 0.5% burned (deflationary), 0.5% pooled</li>
               <li>• 24-hour cooldown between claims</li>

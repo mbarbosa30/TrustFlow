@@ -466,6 +466,9 @@ export default function Credit() {
         <div>
           <h1 className="text-3xl font-bold">{t('credit.title')}</h1>
           <p className="text-muted-foreground">{community?.name || 'Community'} • {currency}</p>
+          <p className="text-sm text-muted-foreground mt-2 p-3 bg-accent/50 rounded border border-border">
+            <strong>About this system:</strong> This lending system interprets LocalHealth scores as creditworthiness. Other communities might interpret the same neutral network scores differently.
+          </p>
         </div>
       </div>
 
@@ -503,8 +506,8 @@ export default function Credit() {
           {/* Trust Profile Card */}
           <Card data-testid="card-trust-profile">
             <CardHeader>
-              <CardTitle>{t('credit.trustProfile')}</CardTitle>
-              <CardDescription>Your trust metrics (advisory only - not blocking)</CardDescription>
+              <CardTitle>Network Quality Profile</CardTitle>
+              <CardDescription>Your neutral graph metrics (advisory only - not blocking). This community interprets these as creditworthiness signals.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {eligibility?.trustMetrics ? (
@@ -569,7 +572,7 @@ export default function Credit() {
             <Card data-testid="card-loan-application">
               <CardHeader>
                 <CardTitle>{t('credit.applyLoan')}</CardTitle>
-                <CardDescription>In pilot mode, all users can apply regardless of trust score</CardDescription>
+                <CardDescription>In pilot mode, all users can apply regardless of network score. This is score-based lending using neutral graph signals.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">

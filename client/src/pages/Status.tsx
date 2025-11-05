@@ -50,7 +50,7 @@ export default function Status() {
       icon: Users,
       name: "Network Size",
       key: "sizeN",
-      description: "Measures the number of accepted users in the trust network",
+      description: "Measures the number of accepted users in the network graph",
       why: "Larger networks are more resilient to manipulation and provide better coverage. Size is log-scaled to prevent dominance over other metrics.",
       formulaText: (
         <span>
@@ -62,8 +62,8 @@ export default function Status() {
       icon: Network,
       name: "Min-Cut Redundancy",
       key: "cutN",
-      description: "Average minimum cut between users and the seed set",
-      why: "Higher min-cut means more independent paths exist between users and seeds, making the network resistant to collusion and Sybil attacks.",
+      description: "Average minimum cut between users and the anchor seed set",
+      why: "Higher min-cut means more independent paths exist between users and anchor seeds, making the network resistant to collusion and Sybil attacks.",
       formulaText: (
         <span>
           min(1, avgMinCut / 3)
@@ -111,7 +111,7 @@ export default function Status() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">System Status</h1>
         <p className="text-muted-foreground">
-          Real-time health metrics for the MaxFlow network
+          Real-time network quality metrics for the MaxFlow graph signal infrastructure
         </p>
       </div>
 
@@ -275,7 +275,7 @@ export default function Status() {
               <CardContent>
                 <div className="space-y-2 text-sm">
                   <p className="text-muted-foreground">
-                    Average {healthData.raw.avgMinCut.toFixed(1)} independent paths to seeds
+                    Average {healthData.raw.avgMinCut.toFixed(1)} independent paths to anchor seeds
                   </p>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div 

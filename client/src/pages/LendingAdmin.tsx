@@ -184,7 +184,10 @@ export default function LendingAdmin() {
             Lending Policy Administration
           </h1>
           <p className="text-muted-foreground mt-1">
-            Configure microcredit parameters for Community #{communityId}
+            Configure LocalHealth-based lending parameters for Community #{communityId}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2 italic">
+            Note: This system interprets neutral MaxFlow scores as creditworthiness. Other communities may use the same scores differently.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -508,10 +511,10 @@ export default function LendingAdmin() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Trust Delta Configuration
+            Network Score Delta Configuration
           </CardTitle>
           <CardDescription>
-            Configure trust score adjustments based on lending behavior
+            Configure network score adjustments based on lending behavior (this community's interpretation of neutral graph signals)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -585,7 +588,7 @@ export default function LendingAdmin() {
               data-testid="input-delta-max"
             />
             <p className="text-sm text-muted-foreground">
-              Cap on total trust delta changes per user per epoch (prevents gaming)
+              Cap on total network score delta changes per user per epoch (prevents gaming)
             </p>
           </div>
         </CardContent>

@@ -452,7 +452,7 @@ export default function Seeds() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Seed Management</h1>
         <p className="text-muted-foreground">
-          Manage seed addresses that bootstrap the trust network
+          Manage anchor seed nodes that serve as starting points for max-flow computation
         </p>
       </div>
 
@@ -577,22 +577,22 @@ export default function Seeds() {
               What are Seeds?
             </CardTitle>
             <CardDescription>
-              Seeds are trusted starting points for the max-flow algorithm
+              Anchor seeds are graph anchor points for max-flow computation
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>
-                Seeds are the foundation of the trust network. They serve as the "source" nodes
-                in the max-flow computation that calculates everyone's trust scores.
+                Seeds are anchor nodes in the network graph. They serve as the "source" nodes
+                in the max-flow computation that calculates network quality signals (STS/LocalHealth).
               </p>
               <p>
-                Without seeds, there's no origin point for trust to flow from, so no one receives
-                scores. Typically, seeds are:
+                Without seeds, there's no origin point for flow computation, so no network quality scores
+                can be generated. Typically, seeds are:
               </p>
               <ul className="list-disc list-inside ml-4 space-y-1">
                 <li>Founding community members</li>
-                <li>Well-known, trusted individuals</li>
+                <li>Well-established network participants</li>
                 <li>Addresses verified through external means</li>
               </ul>
             </div>
@@ -603,7 +603,7 @@ export default function Seeds() {
           <CardHeader>
             <CardTitle>Add New Seed</CardTitle>
             <CardDescription>
-              Add a trusted wallet address as a seed for the trust network
+              Add an anchor seed node to the network graph for flow computation
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

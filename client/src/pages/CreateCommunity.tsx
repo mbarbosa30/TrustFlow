@@ -200,6 +200,9 @@ export default function CreateCommunity() {
                 <p className="text-xs text-muted-foreground mt-1.5">
                   Defaults to: "{template?.defaultPrompt}"
                 </p>
+                <p className="text-xs text-muted-foreground mt-2 p-2 bg-accent/50 rounded border border-border">
+                  <strong>Note:</strong> Endorsement prompts shape who members vouch for, creating different graph structures. However, the scoring algorithm remains neutral.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -421,8 +424,11 @@ export default function CreateCommunity() {
             <CardHeader>
               <CardTitle className="text-base">You'll be the first seed</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              As the community creator, you're automatically added as the first seed. This gives you trusted status and ensures the network has a foundation to build from.
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>As the community creator, you're automatically added as the first seed. This gives you high network quality status and ensures the graph has a foundation to build from.</p>
+              <p className="italic pt-2 border-t border-primary/20">
+                Remember: MaxFlow provides neutral graph signals. Your community decides what these scores mean in your context.
+              </p>
             </CardContent>
           </Card>
         </div>

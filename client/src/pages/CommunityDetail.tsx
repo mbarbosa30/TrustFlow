@@ -456,7 +456,7 @@ export default function CommunityDetail() {
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle>Your Score in {community.name}</CardTitle>
-                        <CardDescription>Your community-specific trust score (STS)</CardDescription>
+                        <CardDescription>Your community-specific network score (STS) — a neutral metric interpreted by this community</CardDescription>
                       </div>
                       <Badge variant={userScore.isAccepted ? "default" : "secondary"}>
                         {userScore.tier || "Unranked"}
@@ -500,11 +500,11 @@ export default function CommunityDetail() {
                 <Card data-testid="card-user-no-score">
                   <CardHeader>
                     <CardTitle>Your Score in {community.name}</CardTitle>
-                    <CardDescription>Get vouched to earn your community trust score</CardDescription>
+                    <CardDescription>Get vouched to earn your community network score</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground mb-4">
-                      You don't have a trust score in this community yet. Receive vouches from community members to build your reputation.
+                      You don't have a network score in this community yet. Receive vouches from community members to build your graph position.
                     </p>
                     <Link href={`/overview?vouch=${address}`}>
                       <Button variant="outline" data-testid="button-share-vouch-link">
@@ -544,8 +544,8 @@ export default function CommunityDetail() {
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('communityDetail.trustDistribution')}</CardTitle>
-                  <CardDescription>{t('communityDetail.trustDistributionDesc')}</CardDescription>
+                  <CardTitle>Network Score Distribution</CardTitle>
+                  <CardDescription>How members are distributed across tiers based on neutral graph metrics</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {policy.tiers.map((tier: string, idx: number) => {

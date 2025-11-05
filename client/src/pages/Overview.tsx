@@ -209,7 +209,7 @@ export default function Overview() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Overview</h1>
         <p className="text-muted-foreground">
-          Your personal trust hub: view your score, give endorsements, and manage your network
+          Your network quality hub: view your LocalHealth score, create endorsements, and manage your network
         </p>
       </div>
 
@@ -225,8 +225,8 @@ export default function Overview() {
           ) : !isConnected ? (
             <Card>
               <CardHeader>
-                <CardTitle>Your Network Health</CardTitle>
-                <CardDescription>Connect your wallet to view your network health score</CardDescription>
+                <CardTitle>Your Network Quality Score</CardTitle>
+                <CardDescription>Connect your wallet to view your LocalHealth score - a neutral graph signal computed from your network structure</CardDescription>
               </CardHeader>
             </Card>
           ) : scoreData ? (
@@ -234,13 +234,16 @@ export default function Overview() {
               <CardContent className="p-0 space-y-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Your Network Health</p>
+                    <p className="text-sm text-muted-foreground mb-1">LocalHealth Score</p>
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-bold" data-testid="text-local-health">
                         {Math.round(scoreData.localHealth)}
                       </span>
                       <span className="text-2xl text-muted-foreground">/100</span>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Neutral graph signal - interpretable by applications/communities
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
@@ -286,12 +289,12 @@ export default function Overview() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Your Network Health</CardTitle>
-                <CardDescription>Building your network</CardDescription>
+                <CardTitle>Your Network Quality Score</CardTitle>
+                <CardDescription>Building your network graph</CardDescription>
               </CardHeader>
               <CardContent className="py-8 space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
-                  Your network health score will improve as you add co-seeds and grow your trusted network.
+                  Your LocalHealth score will improve as you add co-seeds and receive more endorsements in your network.
                 </p>
                 {address && (
                   <div className="flex gap-2 justify-center">
