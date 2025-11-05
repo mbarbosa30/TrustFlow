@@ -19,7 +19,7 @@ export function EndorsementMixChart({ data }: EndorsementMixChartProps) {
           Endorsement Mix Over Time
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Share of Human / Known / Trust among effective edges
+          Share of Human / Known / Strong endorsements among effective edges
         </p>
       </CardHeader>
       <CardContent>
@@ -36,7 +36,7 @@ export function EndorsementMixChart({ data }: EndorsementMixChartProps) {
                   <div
                     className="bg-primary flex items-center justify-center text-xs text-primary-foreground"
                     style={{ width: `${(point.trusted / total) * 100}%` }}
-                    title={`Trusted: ${((point.trusted / total) * 100).toFixed(1)}%`}
+                    title={`Strong: ${((point.trusted / total) * 100).toFixed(1)}%`}
                   />
                   <div
                     className="bg-accent flex items-center justify-center text-xs text-accent-foreground"
@@ -56,7 +56,7 @@ export function EndorsementMixChart({ data }: EndorsementMixChartProps) {
         <div className="flex items-center gap-4 mt-4 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-primary rounded" />
-            <span>Trusted</span>
+            <span>Strong</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-accent rounded" />

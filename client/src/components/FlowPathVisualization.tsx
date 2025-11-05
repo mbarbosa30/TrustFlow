@@ -20,9 +20,9 @@ export function FlowPathVisualization({ paths }: FlowPathVisualizationProps) {
   return (
     <Card data-testid="card-flow-paths">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold">Trust Paths</CardTitle>
+        <CardTitle className="text-lg font-semibold">Network Flow Paths</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Top {paths.length} independent paths from seeds to you
+          Top {paths.length} independent signal paths from seeds to you
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

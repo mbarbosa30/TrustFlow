@@ -31,7 +31,7 @@ export default function STSBreakdownExample() {
       value: 0.70,
       weight: 0.10,
       contribution: 7.0,
-      description: "Proximity to seeds with exponential decay. Rewards being closer to the trust roots without dominating the score",
+      description: "Proximity to seeds with exponential decay. Rewards being closer to the seed nodes without dominating the score",
       formula: "D = e^(-0.35 × hops)",
     },
   ];

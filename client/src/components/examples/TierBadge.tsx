@@ -4,19 +4,19 @@ export default function TierBadgeExample() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <TierBadge tier="Apprentice" size="sm" />
-        <TierBadge tier="Apprentice" size="md" />
-        <TierBadge tier="Apprentice" size="lg" />
+        <TierBadge tier="Connected" size="sm" />
+        <TierBadge tier="Connected" size="md" />
+        <TierBadge tier="Connected" size="lg" />
       </div>
       <div className="flex items-center gap-4">
-        <TierBadge tier="Journeyer" size="sm" />
-        <TierBadge tier="Journeyer" size="md" />
-        <TierBadge tier="Journeyer" size="lg" />
+        <TierBadge tier="Verified" size="sm" />
+        <TierBadge tier="Verified" size="md" />
+        <TierBadge tier="Verified" size="lg" />
       </div>
       <div className="flex items-center gap-4">
-        <TierBadge tier="Master" size="sm" />
-        <TierBadge tier="Master" size="md" />
-        <TierBadge tier="Master" size="lg" />
+        <TierBadge tier="Trusted" size="sm" />
+        <TierBadge tier="Trusted" size="md" />
+        <TierBadge tier="Trusted" size="lg" />
       </div>
     </div>
   )

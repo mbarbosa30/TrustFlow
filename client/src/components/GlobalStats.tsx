@@ -53,9 +53,9 @@ export function GlobalStats({ stats }: GlobalStatsProps) {
       />
       <StatCard
         icon={Shield}
-        title="Trusted Users"
+        title="High-Tier Users"
         value={stats.trustedUsers.toLocaleString()}
-        subtitle="Achieved Trusted level"
+        subtitle="Achieved highest tier"
       />
       <StatCard
         icon={TrendingUp}

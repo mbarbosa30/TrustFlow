@@ -13,7 +13,7 @@ export function STSHistogram({ distribution, percentiles, isLoading = false }: S
     <Card data-testid="card-sts-histogram">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">
-          STS Distribution
+          Network Score Distribution
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Score distribution in current epoch with percentile markers
@@ -30,7 +30,7 @@ export function STSHistogram({ distribution, percentiles, isLoading = false }: S
           <div className="flex items-center justify-center py-12" data-testid="text-no-sts-distribution">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No score distribution data available yet</p>
-              <p className="text-xs mt-1">Scores will appear after users receive trust scores</p>
+              <p className="text-xs mt-1">Scores will appear after users receive network scores</p>
             </div>
           </div>
         ) : (

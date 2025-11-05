@@ -18,7 +18,7 @@ export function NetworkDensityChart({ data, isLoading = false }: NetworkDensityC
       <CardHeader>
         <CardTitle>Network Connectivity</CardTitle>
         <CardDescription>
-          Endorsements per user and average trust path length
+          Endorsements per user and average path length
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -32,7 +32,7 @@ export function NetworkDensityChart({ data, isLoading = false }: NetworkDensityC
           <div className="flex items-center justify-center h-[300px]" data-testid="text-no-network-density">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No network density data available yet</p>
-              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+              <p className="text-xs mt-1">Data will appear after network scores are computed</p>
             </div>
           </div>
         ) : (

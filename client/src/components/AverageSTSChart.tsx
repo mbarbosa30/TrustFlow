@@ -34,7 +34,7 @@ export function AverageSTSChart({ data, isLoading = false }: AverageSTSChartProp
           <div className="flex items-center justify-center h-[300px]" data-testid="text-no-average-sts">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No STS trend data available yet</p>
-              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+              <p className="text-xs mt-1">Data will appear after network scores are computed</p>
             </div>
           </div>
         ) : (

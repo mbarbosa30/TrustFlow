@@ -35,7 +35,7 @@ export function ScoreComponentsChart({ data, isLoading = false }: ScoreComponent
           <div className="flex items-center justify-center h-[300px]" data-testid="text-no-score-components">
             <div className="text-center text-muted-foreground">
               <p className="text-sm">No score component data available yet</p>
-              <p className="text-xs mt-1">Data will appear after trust scores are computed</p>
+              <p className="text-xs mt-1">Data will appear after network scores are computed</p>
             </div>
           </div>
         ) : (
