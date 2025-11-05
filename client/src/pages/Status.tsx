@@ -395,7 +395,7 @@ export default function Status() {
                   A small local adjustment ensures obviously brittle users don't get inflated scores:
                 </p>
                 <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                  <li>User's min-cut to seed set (redundancy of trust paths)</li>
+                  <li>User's min-cut to seed set (path redundancy)</li>
                   <li>Edge perturbation stability (robustness to small changes)</li>
                   <li>Seed coverage (fraction of seeds contributing flow)</li>
                 </ul>

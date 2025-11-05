@@ -293,7 +293,7 @@ export default function HowItWorks() {
             <ul>
               <li><strong>Stability:</strong> we approximate the single-edge influence with fast local recomputes on the residual graph</li>
               <li><strong>Diversity:</strong> the system rewards multiple disjoint regions delivering flow through min-cut measurements</li>
-              <li><strong>Node Capacity Constraints:</strong> each person has a fixed trust budget that decays with distance from seeds, preventing spam endorsements from diluting the graph</li>
+              <li><strong>Node Capacity Constraints:</strong> each person has a fixed capacity budget that decays with distance from seeds, preventing spam endorsements from diluting the graph</li>
             </ul>
           </CardContent>
         </Card>
@@ -307,7 +307,7 @@ export default function HowItWorks() {
               Unlike privacy-preserving systems with hidden endorsements, TrustFlow uses <strong>fully public, verifiable vouches</strong>. All vouches are visible on-chain and included in the epoch's Merkle transparency log. This enables:
             </p>
             <ul>
-              <li>Complete auditability of the trust graph</li>
+              <li>Complete auditability of the network graph</li>
               <li>Independent verification of score computations</li>
               <li>Transparency about who vouches for whom</li>
             </ul>
@@ -346,7 +346,7 @@ export default function HowItWorks() {
                 <strong>Predictive Validity (35% weight):</strong> Fraction of users influenced by this seed who remain accepted when the seed's edges are removed. Measures network resilience.
               </li>
               <li>
-                <strong>Downstream Quality (30% weight):</strong> Average trust score (STS) of users primarily influenced by this seed. Quality seeds build quality networks.
+                <strong>Downstream Quality (30% weight):</strong> Average network score (STS) of users primarily influenced by this seed. Quality seeds build quality networks.
               </li>
               <li>
                 <strong>Diversity Lift (20% weight):</strong> Number of distinct communities/neighborhoods reached by this seed. Prevents single-group capture.
@@ -384,7 +384,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              MaxFlow supports <strong>personal trust networks</strong> alongside traditional community-based scoring. Every user can run their own seeded trust network, choosing co-seeds and building a network through global vouches.
+              MaxFlow supports <strong>personal networks</strong> alongside traditional community-based scoring. Every user can run their own seeded network, choosing co-seeds and building a network through global vouches.
             </p>
 
             <div className="mt-4">

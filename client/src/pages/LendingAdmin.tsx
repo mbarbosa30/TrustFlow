@@ -506,12 +506,12 @@ export default function LendingAdmin() {
         </CardContent>
       </Card>
 
-      {/* Trust Delta Configuration */}
-      <Card data-testid="card-trust-deltas">
+      {/* Score Delta Configuration */}
+      <Card data-testid="card-score-deltas">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Network Score Delta Configuration
+            Score Delta Configuration
           </CardTitle>
           <CardDescription>
             Configure network score adjustments based on lending behavior (this community's interpretation of neutral graph signals)

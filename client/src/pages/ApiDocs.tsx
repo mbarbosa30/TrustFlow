@@ -54,7 +54,7 @@ export default function ApiDocs() {
           API Documentation
         </h1>
         <p className="text-muted-foreground max-w-3xl">
-          MaxFlow provides verifiable trust signals computed from endorsement graphs using max-flow/min-cut algorithms. 
+          MaxFlow provides verifiable graph signals computed from endorsement graphs using max-flow/min-cut algorithms. 
           How you interpret these signals is up to your application: access control, credit scoring, governance weight, 
           grant allocation, or any other use case requiring Sybil-resistant reputation.
         </p>

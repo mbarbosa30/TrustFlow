@@ -7,9 +7,9 @@ const useCases = [
     title: "Sybil-Resistant Access",
     description: "Interpretation: Use score thresholds to gate community actions. Applications assign meaning to neutral signals (e.g., STS ≥ 60 = verified access).",
     examples: [
-      "Forum posting requires STS ≥ 40 (Connected threshold)",
-      "DAO governance requires STS ≥ 60 + min-cut ≥ 2",
-      "Grant proposals require STS ≥ 80 (Trusted threshold)"
+      "Forum posting requires STS ≥ 40 (Connected tier)",
+      "DAO governance requires STS ≥ 60 + min-cut ≥ 2 (Verified tier)",
+      "Grant proposals require STS ≥ 80 (High-tier threshold)"
     ]
   },
   {
@@ -45,7 +45,7 @@ const useCases = [
   {
     icon: ShoppingBag,
     title: "P2P Markets & Reputation",
-    description: "Interpretation: Use STS as reputation signal for marketplace limits. Applications translate neutral scores into trust parameters.",
+    description: "Interpretation: Use STS as reputation signal for marketplace limits. Applications translate neutral scores into application-specific parameters.",
     examples: [
       "Transaction limits scale with STS",
       "Escrow release speed based on stability score",
@@ -81,7 +81,7 @@ const useCases = [
       "Loan limits based on LocalHealth (e.g., 60+ = eligible)",
       "Co-seeds can vouch to increase borrowing capacity",
       "Repayment history tracked in personal network",
-      "Lend to network connections with visible trust paths"
+      "Lend to network connections with visible graph paths"
     ]
   }
 ];

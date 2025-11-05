@@ -86,7 +86,7 @@ export default function WhyScore() {
                     <Badge variant="outline">~2-3 pts</Badge>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">3 vouches, basic trust</span>
+                    <span className="text-muted-foreground">3 vouches, basic network</span>
                     <Badge variant="outline">~18 pts</Badge>
                   </div>
                   <div className="flex justify-between items-center text-xs">
@@ -123,7 +123,7 @@ export default function WhyScore() {
                   <div className="p-3 rounded-lg bg-muted/30">
                     <h4 className="font-semibold text-xs mb-1">Quadratic Scaling</h4>
                     <p className="text-xs text-muted-foreground">
-                      Exponential scaling (2.0) creates wider discrimination: single vouches signal "build more trust" (~2 pts), 
+                      Exponential scaling (2.0) creates wider discrimination: single vouches signal "build more network connectivity" (~2 pts), 
                       while top scores require genuine multi-hop network depth (~74 pts).
                     </p>
                   </div>
@@ -346,7 +346,7 @@ export default function WhyScore() {
                 <div className="p-3 rounded-lg bg-muted/30">
                   <h4 className="font-semibold text-sm mb-1">Downstream Quality</h4>
                   <p className="text-xs text-muted-foreground">
-                    What's the average trust score of users primarily influenced by this seed? Quality seeds build quality networks.
+                    What's the average network score of users primarily influenced by this seed? Quality seeds build quality networks.
                   </p>
                 </div>
 

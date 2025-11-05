@@ -23,7 +23,7 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
             <Network className="w-3 h-3 mr-1" />
-            Graph-Based Trust Networks
+            Sybil-Resistant Graph Signals
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
@@ -159,7 +159,7 @@ export default function Landing() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3" data-testid="text-trust-types-heading">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-scoring-types-heading">
               Two Scoring Layers
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -178,7 +178,7 @@ export default function Landing() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground mb-4">
-                  Run your own seeded trust network. You're automatically a "seed" (starting point for trust computation). 
+                  Run your own seeded network. You're automatically a "seed" (starting point for graph computation). 
                   Add up to 3 trusted "co-seeds" (trusted people who help anchor your network) and build your personal 
                   graph through global vouches. Your Ego Score (0-100) measures the quality of your curated network.
                 </p>
@@ -217,7 +217,7 @@ export default function Landing() {
               <CardContent>
                 <p className="text-muted-foreground mb-4">
                   Participate in context-specific communities for lending, hiring, or governance. 
-                  Each community has its own seeds and criteria. Your STS (Standardized Trust Score) 
+                  Each community has its own seeds and criteria. Your STS (Standardized Network Score) 
                   is computed per community.
                 </p>
                 <div className="space-y-2 text-sm">
@@ -265,7 +265,7 @@ export default function Landing() {
                 1
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Vouch for People You Trust</h3>
+                <h3 className="text-xl font-semibold mb-2">Vouch for People in Your Network</h3>
                 <p className="text-muted-foreground">
                   Create global vouches for your personal network or community-specific vouches for lending, 
                   hiring, or governance. All vouches are public and permanently recorded on-chain in the 
@@ -292,10 +292,10 @@ export default function Landing() {
                 3
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Receive Your Standardized Trust Score</h3>
+                <h3 className="text-xl font-semibold mb-2">Receive Your Standardized Network Score</h3>
                 <p className="text-muted-foreground">
                   Get an STS (0-100) and tier badge (Connected, Verified, Trusted). 
-                  See detailed breakdowns, trust paths, and stability metrics.
+                  See detailed breakdowns, graph paths, and stability metrics.
                 </p>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function Landing() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold mb-2">Export Portable Credentials</h3>
                 <p className="text-muted-foreground">
-                  Download signed attestations (JWT/VC format) to prove your trust score to third-party apps. 
+                  Download signed attestations (JWT/VC format) to prove your network quality score to third-party apps. 
                   Verifiable anywhere, anytime.
                 </p>
               </div>
@@ -319,10 +319,10 @@ export default function Landing() {
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6" data-testid="text-cta-heading">
-            Ready to Build Your Trust Score?
+            Ready to Build Your Network Score?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join the transparent trust network and start earning verifiable credentials based on 
+            Join the transparent network and start earning verifiable credentials based on 
             graph algorithms, not popularity contests.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

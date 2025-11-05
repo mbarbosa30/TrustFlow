@@ -19,7 +19,7 @@ export default function TermsPrivacy() {
 
           <h3 className="text-xl font-semibold mb-3">2. What MaxFlow Is (and Isn't)</h3>
           <p className="mb-6">
-            MaxFlow publishes <strong>world-verifiable endorsements</strong> ("VOUCH" statements) and computes <strong>Sybil-resistant trust metrics</strong> via a max-flow/min-cut algorithm. We publish per-epoch manifests so anyone can recompute results.
+            MaxFlow publishes <strong>world-verifiable endorsements</strong> ("VOUCH" statements) and computes <strong>Sybil-resistant network quality metrics</strong> via a max-flow/min-cut algorithm. We publish per-epoch manifests so anyone can recompute results.
             <br /><br />
             <strong>MaxFlow is not</strong> a bank, broker, insurer, credit bureau, rating agency, or fiduciary; outputs are <strong>probabilistic signals</strong>, not advice or guarantees.
           </p>

@@ -34,7 +34,7 @@ export default function FAQs() {
               MaxFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
             </p>
             <p className="mb-2">
-              <strong>Why no levels?</strong> The max-flow/min-cut algorithm determines trust scores based on network topology (path redundancy, distance from seeds, node capacity budgets) rather than explicit edge weights. This keeps it simple and avoids social friction from visible trust rankings.
+              <strong>Why no levels?</strong> The max-flow/min-cut algorithm determines network quality scores based on network topology (path redundancy, distance from seeds, node capacity budgets) rather than explicit edge weights. This keeps it simple and avoids social friction from visible trust rankings.
             </p>
             <p>
               Each vouch carries the same weight, but the graph structure does the heavy lifting to prevent Sybil attacks.
@@ -48,7 +48,7 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Vouches are fully public.</strong> All vouches are visible on-chain and included in the epoch's Merkle transparency log. This enables complete auditability and independent verification of trust scores.
+              <strong>Vouches are fully public.</strong> All vouches are visible on-chain and included in the epoch's Merkle transparency log. This enables complete auditability and independent verification of scores.
             </p>
             <p>
               Anyone can see who vouched for whom, making the system transparent and verifiable. However, your optional profile information remains private unless you choose to share it.
@@ -198,10 +198,10 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Global Vouches:</strong> Flow across all personal networks (ego contexts). No specific prompt or community required. Used for general interpersonal trust. Created from user profiles or the My Network page.
+              <strong>Global Vouches:</strong> Flow across all personal networks (ego contexts). No specific prompt or community required. Used for general endorsements. Created from user profiles or the My Network page.
             </p>
             <p>
-              <strong>Community Vouches:</strong> Isolated to specific communities with context-specific prompts (e.g., "Would you trust this person to repay a $500 loan?"). Include a promptHash for verification. Only affect STS within that community.
+              <strong>Community Vouches:</strong> Isolated to specific communities with context-specific prompts (e.g., "Would you vouch for this person for a $500 loan?"). Include a promptHash for verification. Only affect STS within that community.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -267,7 +267,7 @@ export default function FAQs() {
               <li><strong>Edge Capacity Boost:</strong> Transfer KUDOS to boost trust edge capacities (180-day exponential decay)</li>
             </ul>
             <p className="text-sm mb-2">
-              <strong>Boost Formula:</strong> Threshold of 500 KUDOS for 1x boost, max 2x boost. Higher threshold makes KUDOS a subtle nudge rather than a scoring lever.
+              <strong>Boost Formula:</strong> Threshold of 500 KUDOS for 1x boost, max 2x boost with exponential decay. Edge capacities use simple distance decay (1.0 / 2^distance). Higher threshold makes KUDOS a subtle nudge rather than a scoring lever.
             </p>
             <p className="text-sm">
               View KUDOS economics and supply metrics on the KUDOS Economics page.

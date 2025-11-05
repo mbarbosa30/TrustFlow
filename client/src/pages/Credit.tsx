@@ -503,8 +503,8 @@ export default function Credit() {
             </Alert>
           )}
 
-          {/* Trust Profile Card */}
-          <Card data-testid="card-trust-profile">
+          {/* Network Quality Profile Card */}
+          <Card data-testid="card-network-profile">
             <CardHeader>
               <CardTitle>Network Quality Profile</CardTitle>
               <CardDescription>Your neutral graph metrics (advisory only - not blocking). This community interprets these as creditworthiness signals.</CardDescription>
