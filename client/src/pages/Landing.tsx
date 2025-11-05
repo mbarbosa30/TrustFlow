@@ -27,13 +27,13 @@ export default function Landing() {
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
-            Sybil-Resistant Trust Using{" "}
+            Verifiable Graph Signals Using{" "}
             <span className="text-primary">Max-Flow/Min-Cut Algorithms</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert peer vouching into verifiable trust scoring through flow computation. 
-            Personal networks and community reputation—both powered by graph algorithms with complete transparency.
+            Convert endorsement graphs into neutral, Sybil-resistant scores (0-100). 
+            You decide what they mean: creditworthiness, governance weight, access control, or grant allocation.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -80,8 +80,8 @@ export default function Landing() {
               Why Max-Flow/Min-Cut?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Traditional reputation systems count votes. MaxFlow uses network flow algorithms 
-              from a curated seed set—making Sybil attacks exponentially harder.
+              Traditional systems count votes. MaxFlow computes flow and redundancy from graph structure—making 
+              Sybil attacks exponentially harder. The scores are neutral signals; your application chooses their meaning.
             </p>
           </div>
 
