@@ -21,7 +21,7 @@ export default function FAQs() {
             What is MaxFlow?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            MaxFlow turns public vouches into a Sybil-resistant trust score using a max-flow/min-cut algorithm from a small, curated seed set. You receive a portable attestation (JWT/VC) proving your trustworthiness based on network structure.
+            MaxFlow is neutral graph signal infrastructure that turns public vouches into Sybil-resistant network quality scores (LocalHealth 0-100, STS 0-100) using max-flow/min-cut algorithms. You receive portable score attestations (verifiable credentials) that applications can interpret based on their needs—creditworthiness, governance weight, access control, etc. The scores are neutral signals; your application assigns meaning.
           </AccordionContent>
         </AccordionItem>
 
@@ -61,7 +61,7 @@ export default function FAQs() {
             How is my score computed?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            <p className="mb-2">We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Trust Score (STS) from 0–100.</p>
+            <p className="mb-2">We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Network Score (STS) from 0–100. This is a neutral graph signal—applications interpret it based on their context.</p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
               STS = 100 × (0.55F + 0.25C + 0.05S + 0.10D + 0.05P)
             </div>
@@ -112,10 +112,34 @@ export default function FAQs() {
 
         <AccordionItem value="portable" data-testid="faq-portable">
           <AccordionTrigger className="text-left">
-            Can other apps use my trust score?
+            Can other apps use my scores?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            Yes. Export your Trust Attestation and present it anywhere. Verifiers can check the signature or verify the on-chain record. Your attestation is a portable, verifiable proof of your trust score.
+            Yes. Export your score attestation (verifiable credential) and present it anywhere. Verifiers can check the cryptographic signature or verify the on-chain record. Your attestation is a portable, verifiable proof of your network quality scores. Each application interprets the neutral signals based on their own context and requirements.
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="interpretation" data-testid="faq-interpretation">
+          <AccordionTrigger className="text-left">
+            How do different applications interpret MaxFlow scores?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-2">
+              <strong>MaxFlow computes neutral graph signals</strong> (LocalHealth 0-100, STS 0-100) that measure network quality: flow capacity, path redundancy, connectivity strength. These are verifiable, reproducible metrics—not prescriptive judgments.
+            </p>
+            <p className="mb-2">
+              Applications interpret these neutral signals based on their context:
+            </p>
+            <ul className="list-disc list-inside space-y-1 text-sm mb-2">
+              <li><strong>Credit/Lending:</strong> Interpret LocalHealth as creditworthiness signal</li>
+              <li><strong>Governance:</strong> Use STS to weight voting power or proposal eligibility</li>
+              <li><strong>Access Control:</strong> Gate features by score thresholds (e.g., STS ≥ 60 for verified access)</li>
+              <li><strong>Airdrops:</strong> Distribute tokens proportionally to network quality scores</li>
+              <li><strong>Reputation:</strong> Display scores as social proof or endorsement strength</li>
+            </ul>
+            <p className="text-sm">
+              MaxFlow is infrastructure, not application logic. The algorithm computes flow and redundancy; your application assigns meaning. Same score, different interpretations.
+            </p>
           </AccordionContent>
         </AccordionItem>
 
@@ -139,14 +163,14 @@ export default function FAQs() {
 
         <AccordionItem value="personal-network" data-testid="faq-personal-network">
           <AccordionTrigger className="text-left">
-            What's the difference between my personal network and community trust?
+            What's the difference between my personal network and community scores?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Personal Network (Ego Score):</strong> Measures "how much the network trusts you" based on incoming vouches. No co-seeds required by default. Optionally add up to 3 co-seeds for hybrid mode with enhanced Sybil resistance. Your Ego Score (0-100) uses max-flow/min-cut with 60% weight on incoming trust, 40% on network redundancy.
+              <strong>Personal Network (LocalHealth 0-100):</strong> A neutral graph signal measuring your network quality based on incoming vouches. No co-seeds required by default. Optionally add up to 3 co-seeds for hybrid mode with enhanced Sybil resistance. Your LocalHealth uses max-flow/min-cut with 60% weight on flow, 40% on network redundancy.
             </p>
             <p>
-              <strong>Community Reputation (STS):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately using a 5-component weighted formula.
+              <strong>Community Network (STS 0-100):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately using a 5-component weighted formula. Applications interpret these neutral signals based on their specific needs.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -184,26 +208,26 @@ export default function FAQs() {
 
         <AccordionItem value="ego-score" data-testid="faq-ego-score">
           <AccordionTrigger className="text-left">
-            How is Ego Score (personal network score) calculated?
+            How is LocalHealth (personal network score) calculated?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              Ego Score (0-100) measures "how much the network trusts you" using max-flow/min-cut with quadratic exponential scaling (exponent 2.0):
+              LocalHealth (0-100) is a neutral graph signal measuring your network quality using max-flow/min-cut with quadratic exponential scaling (exponent 2.0):
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              EgoScore = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
+              LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
             </div>
             <p className="text-sm mb-2">
-              <strong>Flow Component (60%):</strong> Incoming trust saturation - measures how much trust flows TO you from vouchers.
+              <strong>Flow Component (60%):</strong> Measures incoming flow saturation from vouchers.
             </p>
             <p className="text-sm mb-2">
-              <strong>Cut Component (40%):</strong> Network redundancy - how many independent paths connect you to the network.
+              <strong>Cut Component (40%):</strong> Network redundancy - independent paths connecting you to the network.
             </p>
             <p className="text-sm">
               <strong>Vouch Quality Factor:</strong> Your score is slightly influenced by who YOU vouch for (preventing vouch spam). Quality-based adjustment (0.9-1.1x) + dilution penalty for &gt;10 vouches. Impact: ~5-10% score swing.
             </p>
             <p className="text-sm">
-              <strong>Note:</strong> The Ego Score calculation is currently implemented. View your score on the My Network page.
+              <strong>Note:</strong> This is a neutral signal. Applications interpret it based on their context—creditworthiness, governance weight, etc. View your score on the My Network page.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -214,16 +238,16 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              With quadratic scaling, Ego Scores have wider distribution for better discrimination:
+              With quadratic scaling, LocalHealth scores have wider distribution for better discrimination. These are neutral graph signals—applications interpret them based on context:
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li><strong>2-3 points (1 vouch):</strong> Barely trusted - need to build more network depth</li>
-              <li><strong>~18 points (3 vouches):</strong> Basic trust - getting started</li>
-              <li><strong>~61 points (5 vouches):</strong> Solid network - good depth and connectivity</li>
+              <li><strong>2-3 points (1 vouch):</strong> Minimal connectivity - need to build more network depth</li>
+              <li><strong>~18 points (3 vouches):</strong> Basic connectivity - getting started</li>
+              <li><strong>~61 points (5 vouches):</strong> Solid network - good depth and redundancy</li>
               <li><strong>~74 points (10 vouches):</strong> Strong network - rich multi-hop connections</li>
             </ul>
             <p className="text-sm mt-2">
-              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring genuine network building for higher scores.
+              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring genuine network building for higher scores. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
             </p>
           </AccordionContent>
         </AccordionItem>

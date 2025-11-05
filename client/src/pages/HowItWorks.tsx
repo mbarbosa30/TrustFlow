@@ -18,18 +18,23 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into verifiable trust scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (Ego Score)</strong> for ego-context trust with user-controlled co-seeds, and <strong>Community Networks (STS)</strong> for traditional multi-tenant trust with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> for personal graph signals with user-controlled co-seeds, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
+            <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+              <p className="text-sm mb-0">
+                <strong>These scores are neutral signals</strong>—MaxFlow computes verifiable graph metrics (flow, redundancy, connectivity). Your application chooses their meaning: creditworthiness, governance weight, access control, grant allocation, etc.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Vouch-Based Trust</CardTitle>
+            <CardTitle>Vouch-Based Scoring</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              Each vouch is a simple binary endorsement representing your personal trust. There are no weighted levels—just vouch for people you trust. The max-flow/min-cut algorithm determines trust scores based on network topology (path redundancy, distance from seeds) rather than explicit edge weights.
+              Each vouch is a simple binary endorsement. There are no weighted levels—just vouch for people in your network. The max-flow/min-cut algorithm determines network quality scores based on graph topology (path redundancy, distance from seeds) rather than explicit edge weights.
             </p>
             <div className="mt-3 p-3 rounded-lg bg-muted/30">
               <p className="text-sm mb-0">
@@ -79,7 +84,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p className="text-sm mb-3">
-              <strong>Ego Score</strong> is your personal network health score (0-100) that measures "how much the network trusts you" based on incoming vouches. Unlike Community STS which uses a fixed seed set, Ego Score can operate in two modes:
+              <strong>LocalHealth (Ego Score)</strong> is your personal network quality score (0-100) that measures graph connectivity strength based on incoming vouches. Unlike Community STS which uses a fixed seed set, LocalHealth can operate in two modes:
             </p>
             
             <div className="space-y-4 my-4">
@@ -173,14 +178,14 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Acceptance & Tiers</CardTitle>
+            <CardTitle>Acceptance & Score Tiers</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
                 <div className="font-semibold mb-2">Acceptance Policy</div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Acceptance criteria for ego networks (personal networks):
+                  Acceptance criteria for personal networks (neutral thresholds):
                 </p>
                 
                 <div className="space-y-2">
@@ -211,7 +216,7 @@ export default function HowItWorks() {
               </div>
               
               <div className="border-t pt-3">
-                <div className="font-semibold mb-3">Trust Tiers:</div>
+                <div className="font-semibold mb-3">Score Tiers (Neutral Signal Thresholds):</div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                     <span className="font-medium">Connected</span>
@@ -226,6 +231,9 @@ export default function HowItWorks() {
                     <span className="text-sm text-muted-foreground">STS ≥ 80 and min-cut ≥ 3 and Stability ≥ 0.8</span>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Note: These tier labels (Connected, Verified, Trusted) are interpretive. Applications may use the underlying STS scores differently.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -233,10 +241,10 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Standardized Trust Score (STS)</CardTitle>
+            <CardTitle>Standardized Network Score (STS)</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <p>We normalize components so scores are comparable across epochs and network sizes.</p>
+            <p>We normalize graph components into a standardized 0-100 score that's comparable across epochs and network sizes. This is a neutral signal—applications interpret it based on their context.</p>
             
             <div className="my-4 p-4 rounded-lg bg-muted/30 font-mono text-sm">
               <div className="mb-2"><strong>Let:</strong></div>
@@ -311,16 +319,16 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Verifiability</CardTitle>
+            <CardTitle>Verifiability & Score Attestations</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <p>Each epoch publishes:</p>
+            <p>Each epoch publishes verifiable score attestations:</p>
             <ul>
               <li><span className="font-mono text-sm">params.json</span> (policy id, node capacity schedule, algorithm parameters)</li>
               <li><span className="font-mono text-sm">seed_root</span>, <span className="font-mono text-sm">graph_root</span> (Merkle roots)</li>
-              <li><span className="font-mono text-sm">scores.jsonl</span> (flow, min-cut, STS) + signature</li>
+              <li><span className="font-mono text-sm">scores.jsonl</span> (flow, min-cut, STS) + cryptographic signature</li>
             </ul>
-            <p>Anyone can recompute and confirm byte-exact results.</p>
+            <p>Anyone can recompute and confirm byte-exact results. Score attestations are portable verifiable credentials—applications interpret the neutral signals within their own context.</p>
           </CardContent>
         </Card>
 

@@ -95,7 +95,7 @@ export default function Landing() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Uses Dinic's algorithm to compute trust flow from verified seeds through the endorsement graph. 
+                  Uses Dinic's algorithm to compute network flow from anchor seeds through the endorsement graph. 
                   Your score (55% weight) is based on how much flow reaches you—not just who endorsed you.
                 </p>
                 <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
@@ -132,8 +132,8 @@ export default function Landing() {
               <CardContent>
                 <p className="text-muted-foreground">
                   All vouches are publicly visible and stored on-chain in a Merkle transparency log. 
-                  This enables complete auditability and independent verification of trust scores. 
-                  Trust through transparency, not obscurity.
+                  This enables complete auditability and independent verification of scores. 
+                  Verifiable through transparency, not obscurity.
                 </p>
               </CardContent>
             </Card>
@@ -148,7 +148,7 @@ export default function Landing() {
               <CardContent>
                 <p className="text-muted-foreground">
                   Every epoch publishes Merkle roots for seeds and graph state, plus scoring parameters. 
-                  Anyone can recompute and verify byte-exact results. Trust through transparency.
+                  Anyone can recompute and verify byte-exact results. Verifiable through mathematics.
                 </p>
               </CardContent>
             </Card>
@@ -160,11 +160,11 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3" data-testid="text-trust-types-heading">
-              Two Types of Trust
+              Two Scoring Layers
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              MaxFlow supports both personal networks and community reputation—giving you control 
-              over your own trust graph while participating in shared communities.
+              MaxFlow supports both personal networks (LocalHealth) and community scoring (STS)—giving you control 
+              over your own graph while participating in shared communities. Same algorithm, different contexts.
             </p>
           </div>
 

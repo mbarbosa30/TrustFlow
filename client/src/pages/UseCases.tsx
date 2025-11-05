@@ -5,83 +5,83 @@ const useCases = [
   {
     icon: Shield,
     title: "Sybil-Resistant Access",
-    description: "Gate community actions (posting, proposals, grants) by tier (e.g., Verified+). Prevent spam and bot manipulation while allowing genuine humans to participate.",
+    description: "Interpretation: Use score thresholds to gate community actions. Applications assign meaning to neutral signals (e.g., STS ≥ 60 = verified access).",
     examples: [
-      "Forum posting requires Connected level",
-      "DAO governance requires Verified level",
-      "Grant proposals require Trusted level"
+      "Forum posting requires STS ≥ 40 (Connected threshold)",
+      "DAO governance requires STS ≥ 60 + min-cut ≥ 2",
+      "Grant proposals require STS ≥ 80 (Trusted threshold)"
     ]
   },
   {
     icon: Coins,
-    title: "UBI / Claims",
-    description: "Distribute a base floor equally to accepted users and allocate a bonus pool by STS (with diminishing returns and diversity bonuses).",
+    title: "UBI / Token Distribution",
+    description: "Interpretation: Distribute tokens based on network quality scores. The neutral signals determine allocation—applications decide distribution curves.",
     examples: [
-      "Base $10 to all accepted users",
+      "Base allocation to all accepted users (flow ≥ 0.5)",
       "Bonus pool distributed by STS with sqrt scaling",
-      "Extra rewards for diverse path users"
+      "Extra rewards for high min-cut (path diversity)"
     ]
   },
   {
     icon: Gift,
     title: "Airdrops & Referrals",
-    description: "Reward humans who are stably connected to trusted regions; penalize single-edge farms and Sybil attacks.",
+    description: "Interpretation: Weight rewards by graph connectivity strength. Applications use redundancy signals to prevent Sybil attacks.",
     examples: [
       "Airdrop only to users with min-cut ≥ 2",
       "Referral bonuses weighted by referee's STS",
-      "Block users with low stability scores"
+      "Block single-edge users (low stability scores)"
     ]
   },
   {
     icon: AlertCircle,
-    title: "Collusion-Resistant Moderation",
-    description: "Use min-cut + stability to prioritize reports and throttle brigading. Trust scores help surface legitimate concerns.",
+    title: "Moderation & Prioritization",
+    description: "Interpretation: Use redundancy and stability signals to prioritize actions. Applications decide how to weight reports or votes.",
     examples: [
-      "Reports from Trusted users are prioritized",
-      "Bulk reports from low-diversity clusters are flagged",
-      "Appeal processes require Verified+ status"
+      "Reports from high-STS users prioritized",
+      "Bulk reports from low-diversity clusters flagged",
+      "Appeal processes require min-cut ≥ 2"
     ]
   },
   {
     icon: ShoppingBag,
-    title: "P2P Markets & Credit",
-    description: "Use STS as a soft reputation input for limits, escrow release, or fee discounts in peer-to-peer marketplaces.",
+    title: "P2P Markets & Reputation",
+    description: "Interpretation: Use STS as reputation signal for marketplace limits. Applications translate neutral scores into trust parameters.",
     examples: [
       "Transaction limits scale with STS",
-      "Faster escrow release for Trusted users",
-      "Fee discounts for high-stability users"
+      "Escrow release speed based on stability score",
+      "Fee discounts for high-redundancy users"
     ]
   },
   {
     icon: Users,
     title: "Community Gating",
-    description: "Create private communities or channels that require specific trust levels, ensuring quality members without KYC.",
+    description: "Interpretation: Gate access by score thresholds without KYC. Applications set their own meaning for 'verified' or 'trusted' members.",
     examples: [
-      "Premium channels for Verified+ users",
-      "Beta access for high-STS early adopters",
-      "Expert forums gated by Trusted + specific skills"
+      "Premium channels for STS ≥ 60",
+      "Beta access for high-LocalHealth users",
+      "Expert forums gated by STS ≥ 80 + specific skills"
     ]
   },
   {
     icon: UserCircle,
     title: "Personal Curation Networks",
-    description: "Run your own trust network for private recommendations, content filtering, or personal reputation tracking. Choose trusted co-anchors (co-seeds) and build quality-focused communities.",
+    description: "Interpretation: Run personal networks with co-seeds for content filtering. Applications use LocalHealth scores for recommendations.",
     examples: [
-      "Curate reading lists from your trusted network",
-      "Filter social media by your personal trust scores",
-      "Build invite-only groups based on your trust graph",
-      "Create personal endorsement circles for job referrals"
+      "Curate reading lists from your network (LocalHealth ≥ 50)",
+      "Filter social media by personal graph signals",
+      "Build invite-only groups (min-cut ≥ 2 from your co-seeds)",
+      "Job referrals weighted by LocalHealth scores"
     ]
   },
   {
     icon: Network,
-    title: "Decentralized P2P Lending",
-    description: "Use personal trust scores (Ego Score, 0-100) for peer-to-peer micro-lending without centralized credit agencies. Distance-based trust ensures borrowers have genuine community connections.",
+    title: "Credit Scoring: Interpret as Creditworthiness",
+    description: "Interpretation: Use LocalHealth (0-100) as creditworthiness signal for micro-lending. Applications map neutral graph scores to loan limits.",
     examples: [
-      "Loan limits based on Ego Score (0-100)",
-      "Trusted co-anchors can vouch to increase borrowing capacity",
-      "Track repayment history in your personal network",
-      "Lend to friends-of-friends with visible trust paths"
+      "Loan limits based on LocalHealth (e.g., 60+ = eligible)",
+      "Co-seeds can vouch to increase borrowing capacity",
+      "Repayment history tracked in personal network",
+      "Lend to network connections with visible trust paths"
     ]
   }
 ];
@@ -92,7 +92,14 @@ export default function UseCases() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Use Cases</h1>
         <p className="text-muted-foreground">
-          Real-world applications of MaxFlow's Sybil-resistant trust network
+          Real-world applications of MaxFlow's Sybil-resistant network quality scores
+        </p>
+      </div>
+
+      <div className="mb-8 p-6 rounded-lg bg-primary/10 border border-primary/20">
+        <h2 className="text-lg font-semibold mb-2">MaxFlow Provides Neutral Sybil-Resistant Scores</h2>
+        <p className="text-sm text-muted-foreground">
+          MaxFlow computes verifiable graph signals (LocalHealth 0-100, STS 0-100) that measure network quality: flow capacity, path redundancy, connectivity strength. <strong>Each application interprets them differently</strong> based on their context and needs. Below are example interpretations—not prescriptive uses.
         </p>
       </div>
 
@@ -136,7 +143,7 @@ export default function UseCases() {
       <div className="mt-12 p-6 rounded-lg border bg-muted/30">
         <h2 className="text-lg font-semibold mb-2">Building with MaxFlow?</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          MaxFlow attestations are portable and verifiable. Export your users' trust scores and integrate them into any application. All computations are transparent and reproducible from the public Merkle transparency log.
+          MaxFlow provides neutral, verifiable graph signals (LocalHealth 0-100, STS 0-100). Export portable score attestations and integrate them into any application. <strong>Your application assigns meaning</strong>: creditworthiness, governance weight, access control, grant allocation, etc. All computations are transparent and reproducible from the public Merkle transparency log.
         </p>
         <div className="flex items-center gap-4 text-sm">
           <a href="/verify" className="text-primary hover:underline">

@@ -38,7 +38,7 @@ export default function WhyScore() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Why This Score?</h1>
         <p className="text-muted-foreground">
-          Detailed score breakdowns and explainability are computed during epoch runs
+          Understanding neutral graph signal computation and how applications interpret these signals
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function WhyScore() {
               Personal Network Score (LocalHealth)
             </CardTitle>
             <CardDescription>
-              Your personal trust network quality score using quadratic scaling
+              Neutral graph signal measuring your network quality (0-100)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -58,8 +58,8 @@ export default function WhyScore() {
               <div>
                 <h3 className="font-semibold mb-2">How LocalHealth Works</h3>
                 <p className="text-sm text-muted-foreground">
-                  Your <strong>LocalHealth score (0-100)</strong> measures "how much the network trusts you" based on incoming vouches 
-                  and network depth. It uses quadratic exponential scaling (2.0 exponent) for strict score distribution.
+                  Your <strong>LocalHealth score (0-100)</strong> is a neutral graph signal measuring network connectivity strength based on incoming vouches 
+                  and network depth. It uses quadratic exponential scaling (2.0 exponent) for strict score distribution. <strong>This is infrastructure-level computation</strong>—applications interpret the signal based on their context (creditworthiness, governance eligibility, etc.).
                 </p>
               </div>
 
@@ -137,18 +137,18 @@ export default function WhyScore() {
           <CardHeader>
             <CardTitle>Understanding Flow vs. STS</CardTitle>
             <CardDescription>
-              Two ways to view your trust: raw algorithm output and standardized score
+              Two neutral graph signals: raw algorithm output and standardized score
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Raw Flow (Honest Algorithm Output)</h3>
+                <h3 className="font-semibold mb-2">Raw Flow (Pure Algorithm Output)</h3>
                 <p className="text-sm text-muted-foreground">
                   The <strong>flow value</strong> is the actual max-flow capacity from seed nodes to you, 
                   measured in capacity units. This is what the Ford-Fulkerson max-flow algorithm computes 
-                  directly, representing the total "trust capacity" that can reach you through independent 
-                  paths.
+                  directly, representing the total network capacity that can reach you through independent 
+                  paths. <strong>It's a neutral metric</strong>—applications interpret it differently.
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside mt-2">
                   <li>Unbounded value (can be any positive number)</li>
@@ -159,10 +159,10 @@ export default function WhyScore() {
               </div>
 
               <div className="pt-4 border-t">
-                <h3 className="font-semibold mb-2">Standardized Trust Score (STS)</h3>
+                <h3 className="font-semibold mb-2">Standardized Network Score (STS)</h3>
                 <p className="text-sm text-muted-foreground">
-                  The <strong>STS</strong> combines five normalized components into a 0-100 scale for easier interpretation. 
-                  It's not just flow - it's a weighted combination of multiple security and network quality metrics.
+                  The <strong>STS</strong> combines five normalized graph components into a 0-100 scale for easier interpretation. 
+                  It's not just flow—it's a weighted combination of multiple network quality metrics. <strong>This is still a neutral signal</strong>; applications assign meaning based on their context.
                 </p>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <div className="p-2 rounded bg-muted/30">
@@ -193,9 +193,81 @@ export default function WhyScore() {
               <div className="pt-4 border-t bg-muted rounded-lg p-4">
                 <h3 className="font-semibold mb-2 text-sm">Why Show Both?</h3>
                 <p className="text-xs text-muted-foreground">
-                  Flow is the "honest" algorithm output, showing absolute trust strength. STS makes scores 
+                  Flow is the pure algorithm output, showing absolute graph capacity. STS makes signals 
                   human-readable and comparable. Together, they provide transparency: you see both the raw 
-                  computation and the user-friendly interpretation.
+                  computation and the normalized score. <strong>Both are neutral signals</strong>—your application assigns meaning.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GitBranch className="w-5 h-5" />
+              Why Neutral? Infrastructure vs. Application Layer
+            </CardTitle>
+            <CardDescription>
+              MaxFlow computes verifiable graph metrics—applications interpret them
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Neutral Signal Computation</h3>
+                <p className="text-sm text-muted-foreground">
+                  MaxFlow is <strong>graph signal infrastructure</strong>, not an application. The algorithm computes neutral, verifiable metrics:
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside mt-2">
+                  <li><strong>Flow capacity:</strong> How much network strength flows to you</li>
+                  <li><strong>Redundancy (min-cut):</strong> How many independent paths connect you</li>
+                  <li><strong>Stability:</strong> How resilient your network position is</li>
+                  <li><strong>Depth:</strong> Your proximity to trusted nodes</li>
+                  <li><strong>Connectivity:</strong> Your overall network embeddedness</li>
+                </ul>
+                <p className="text-sm text-muted-foreground mt-2">
+                  These are mathematical properties of your graph position—not judgments about trustworthiness, creditworthiness, or reputation.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold mb-2">Applications Assign Meaning</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  The <strong>same neutral score</strong> can mean different things to different applications:
+                </p>
+                <div className="grid gap-2">
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="text-sm font-semibold mb-1">Credit/Lending Application</div>
+                    <div className="text-xs text-muted-foreground">
+                      Interprets LocalHealth ≥ 60 as "eligible for micro-loan" based on network connectivity
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="text-sm font-semibold mb-1">Governance Application</div>
+                    <div className="text-xs text-muted-foreground">
+                      Uses STS to weight voting power: STS 80 = 2x vote weight vs. STS 40
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="text-sm font-semibold mb-1">Access Control Application</div>
+                    <div className="text-xs text-muted-foreground">
+                      Gates premium features at STS ≥ 60 + min-cut ≥ 2 for Sybil resistance
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30">
+                    <div className="text-sm font-semibold mb-1">Airdrop Application</div>
+                    <div className="text-xs text-muted-foreground">
+                      Distributes tokens proportionally: 1000 tokens × (STS/100) to prevent bot farming
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t bg-primary/10 rounded-lg p-4">
+                <h3 className="font-semibold mb-2 text-sm">Infrastructure Principle</h3>
+                <p className="text-xs text-muted-foreground">
+                  <strong>MaxFlow provides the "what" (verifiable graph signals), not the "why" (interpretation).</strong> The algorithm computes flow and redundancy; your application decides what those signals mean in your context. This separation keeps the infrastructure neutral, auditable, and reusable across diverse use cases—from credit scoring to governance to content curation.
                 </p>
               </div>
             </div>
@@ -218,7 +290,7 @@ export default function WhyScore() {
             <CardContent className="py-8">
               {!isConnected ? (
                 <p className="text-sm text-muted-foreground text-center">
-                  Connect your wallet to view your trust score breakdown
+                  Connect your wallet to view your network quality score breakdown
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -228,18 +300,21 @@ export default function WhyScore() {
                   <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
                     <li>You receive vouches from users in the network</li>
                     <li>An epoch computation runs to calculate max-flow paths</li>
-                    <li>Your STS (Standardized Trust Score) components are computed</li>
+                    <li>Your STS (Standardized Network Score) components are computed</li>
                   </ul>
                   <p className="text-sm text-muted-foreground pt-4">
-                    The score breakdown will show five weighted components:
+                    The score breakdown shows five neutral graph components:
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-                    <li><strong>Flow (55%):</strong> Max-flow capacity from seeds</li>
-                    <li><strong>Min-Cut (25%):</strong> Path redundancy and attack resistance</li>
-                    <li><strong>Stability (5%):</strong> Resilience to seed removal</li>
-                    <li><strong>Depth (10%):</strong> Proximity to trust sources</li>
-                    <li><strong>PageRank (5%):</strong> Network embeddedness score</li>
+                    <li><strong>Flow (55%):</strong> Max-flow capacity from seeds (neutral signal)</li>
+                    <li><strong>Min-Cut (25%):</strong> Path redundancy (Sybil resistance metric)</li>
+                    <li><strong>Stability (5%):</strong> Network resilience (connectivity strength)</li>
+                    <li><strong>Depth (10%):</strong> Proximity to seed nodes (graph distance)</li>
+                    <li><strong>PageRank (5%):</strong> Network embeddedness (connectivity metric)</li>
                   </ul>
+                  <p className="text-sm text-muted-foreground pt-3">
+                    <strong>Remember:</strong> These are neutral graph signals. Applications interpret them differently based on context.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -250,14 +325,13 @@ export default function WhyScore() {
           <CardHeader>
             <CardTitle>Seed Quality & Network Health</CardTitle>
             <CardDescription>
-              Seeds are not static - they're continuously scored on their influence quality
+              Seeds are continuously scored on neutral graph quality metrics
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                In vulnerable communities lacking identity systems and access to finance, collusion risk is high. To prevent 
-                a few compromised seeds from polluting the entire network, <strong>seeds themselves are scored</strong> on multiple metrics:
+                To prevent a few compromised seeds from polluting the entire network, <strong>seeds themselves receive neutral quality scores</strong> based on graph metrics:
               </p>
 
               <div className="grid gap-3">
