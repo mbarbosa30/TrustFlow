@@ -581,7 +581,7 @@ async function getCachedScore(address) {
                       <code className="text-sm font-mono">/communities/:id/eligibility.min/:address</code>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Quick check if a user is accepted in the trust network. Perfect for access control.
+                      Quick check if a user is accepted in the network graph. Perfect for access control.
                     </p>
 
                     <h4 className="font-semibold text-sm mb-2">Example Request</h4>
@@ -641,7 +641,7 @@ print(data['accepted'])  # True or False`}
                       <code className="text-sm font-mono">/communities/:id/scores.min/:address</code>
                     </div>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Get detailed trust metrics for a user including community trust score (STS), personal network score (LocalHealth), min-cut, and acceptance status.
+                      Get detailed network quality metrics for a user including community score (STS), personal network score (LocalHealth), min-cut, and acceptance status.
                     </p>
 
                     <h4 className="font-semibold text-sm mb-2">Example Response</h4>
