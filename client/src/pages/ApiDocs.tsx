@@ -764,11 +764,11 @@ async function submitVouch(endorseeAddress) {
   
   // Get current epoch
   const epochRes = await fetch('${baseUrl}/api/epoch/current');
-  const { epoch } = await epochRes.json();
+  const { epochId } = await epochRes.json();
   
   // Get next nonce (server-side)
   const nonceRes = await fetch(
-    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epoch.id}\`
+    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epochId}\`
   );
   const { nextNonce } = await nonceRes.json();
   
@@ -793,7 +793,7 @@ async function submitVouch(endorseeAddress) {
   const message = {
     endorser: endorserAddress,
     endorsee: endorseeAddress,
-    epoch: BigInt(epoch.id),
+    epoch: BigInt(epochId),
     nonce: BigInt(nextNonce),
     timestamp: BigInt(timestamp),
   };
