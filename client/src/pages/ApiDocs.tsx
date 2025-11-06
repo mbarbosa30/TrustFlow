@@ -235,16 +235,25 @@ print(f"LocalHealth Score: {data['localHealth']}/100")`}
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
 {`{
   "ownerAddress": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
-  "egoContextId": 42,
   "localHealth": 75.72,
-  "vouchCount": 8,
-  "details": {
-    "flowComponent": 45.43,
-    "redundancyComponent": 30.29,
-    "vouchQualityFactor": 0.95,
-    "kudosBoost": 1.15,
-    "mode": "pure_option2"
-  }
+  "seedAddresses": [],
+  "metrics": {
+    "totalNodes": 8,
+    "acceptedUsers": 5,
+    "avgResidualFlow": 0.123,
+    "medianMinCut": 2.5,
+    "maxPossibleFlow": 1.0
+  },
+  "nodeDetails": [
+    {
+      "address": "0x742d35cc...",
+      "distance": 1,
+      "capacity": 1.0,
+      "flow": 0.25,
+      "residualFlow": 0.123,
+      "minCut": 0.5
+    }
+  ]
 }`}
                 </pre>
               </div>
@@ -296,10 +305,10 @@ async function createVouch(endorseeAddress) {
   
   // 2. Get current epoch and nonce
   const epochRes = await fetch('${baseUrl}/api/epoch/current');
-  const { epoch } = await epochRes.json();
+  const { epochId } = await epochRes.json();
   
   const nonceRes = await fetch(
-    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epoch.id}\`
+    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epochId}\`
   );
   const { nextNonce } = await nonceRes.json();
   
@@ -323,7 +332,7 @@ async function createVouch(endorseeAddress) {
   const message = {
     endorser: endorserAddress,
     endorsee: endorseeAddress,
-    epoch: BigInt(epoch.id),
+    epoch: BigInt(epochId),
     nonce: BigInt(nextNonce),
     timestamp: BigInt(Math.floor(Date.now() / 1000)),
   };
