@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMockData } from "./health/mock-data";
@@ -6,6 +7,14 @@ import { initializeCommunityZero } from "./communities/init";
 import { initializeLendingPolicies } from "./lending/init";
 
 const app = express();
+
+// Enable CORS for all origins to allow external apps to integrate with MaxFlow API
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+}));
 
 declare module 'http' {
   interface IncomingMessage {
