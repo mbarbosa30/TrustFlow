@@ -78,6 +78,8 @@ export const contexts = pgTable("contexts", {
   ownerAddress: text("owner_address"), // For ego contexts (wallet address)
   communityId: bigint("community_id", { mode: "number" }), // For community contexts (references communities.id)
   policyJson: jsonb("policy_json"), // Context-specific settings (min_cut_threshold, vouch_caps, etc.)
+  localHealth: integer("local_health"), // Cached LocalHealth score (0-100, only for ego contexts)
+  localHealthUpdatedAt: timestamp("local_health_updated_at"), // Last LocalHealth computation timestamp
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
