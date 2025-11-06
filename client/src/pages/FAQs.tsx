@@ -223,11 +223,68 @@ export default function FAQs() {
             <p className="text-sm mb-2">
               <strong>Cut Component (40%):</strong> Network redundancy - independent paths connecting you to the network.
             </p>
-            <p className="text-sm">
-              <strong>Vouch Quality Factor:</strong> Your score is slightly influenced by who YOU vouch for (preventing vouch spam). Quality-based adjustment (0.9-1.1x) + dilution penalty for &gt;10 vouches. Impact: ~5-10% score swing.
-            </p>
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 my-3">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
+                Vouch Accountability (Core Anti-Sybil Mechanism):
+              </p>
+              <p className="text-xs text-muted-foreground mb-2">
+                Vouching for {'>'}10 people applies a penalty to your redundancy component (40% of total score), creating economic cost to spam.
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 pl-4">
+                <li><strong>Formula (LocalHealth):</strong> 40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)</li>
+                <li><strong>Impact:</strong> 10-15% typical score reduction, up to ~20% for high-redundancy networks</li>
+                <li><strong>Why it works:</strong> Can't spam vouches without reducing your own redundancy score → selective endorsements</li>
+              </ul>
+            </div>
             <p className="text-sm">
               <strong>Note:</strong> This is a neutral signal. Applications interpret it based on their context—creditworthiness, governance weight, etc. View your score on the My Network page.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="vouch-spam" data-testid="faq-vouch-spam">
+          <AccordionTrigger className="text-left">
+            Why can't I spam vouches to game the system?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-3">
+              <strong className="text-primary">Your score is penalized based on who YOU vouch for.</strong> This two-way accountability is the core anti-Sybil mechanism that makes endorsements meaningful and prevents gaming.
+            </p>
+            
+            <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
+              <p className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">The Dilution Penalty</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Vouching for {'>'}10 people applies a multiplicative penalty to your redundancy component (40% of total score). The penalty factor grows at 10% per excess vouch, capped at 50%.
+              </p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>≤10 vouches:</span>
+                  <span className="font-mono">No penalty (factor = 1.0)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>12 vouches (20% penalty):</span>
+                  <span className="font-mono">~3-8% total score loss</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>15 vouches (50% penalty, capped):</span>
+                  <span className="font-mono">~10-20% total score loss</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>Worked example (LocalHealth):</strong> User with 5 direct vouchers, redundancy 0.7, gets 15 total vouches → redundancy component drops from 19.6pts → 9.8pts, total score 79.6 → 69.8 (12.3% reduction)
+              </p>
+            </div>
+
+            <p className="text-sm mb-2 font-semibold">Game Theory: Why This Stops Attacks</p>
+            <ul className="list-disc list-inside space-y-1 text-sm mb-3">
+              <li><strong>Attack scenario:</strong> Creating fake network of 50 Sybil accounts requires vouching for all 50</li>
+              <li><strong>Your penalty:</strong> 40 excess vouches → 50% redundancy penalty → significant score reduction</li>
+              <li><strong>Sybils' scores:</strong> Still low (no real incoming vouches from legitimate users)</li>
+              <li><strong>Result:</strong> You hurt your redundancy score to create weak fake accounts → not economically viable</li>
+            </ul>
+
+            <p className="text-sm">
+              <strong>The key insight:</strong> You can't spam vouches without reducing your own redundancy component. This makes endorsements selective, which makes the resulting graph signals (flow, redundancy) reliable—the definition of Sybil resistance.
             </p>
           </AccordionContent>
         </AccordionItem>

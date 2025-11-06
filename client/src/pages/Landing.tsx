@@ -122,6 +122,25 @@ export default function Landing() {
               </CardContent>
             </Card>
 
+            <Card data-testid="card-feature-accountability">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>Endorsement Accountability</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Your LocalHealth score is influenced by who YOU vouch for. Vouching for {'>'}10 people applies a dilution 
+                  penalty to your redundancy component (40% of LocalHealth), creating economic cost to vouch spam. 
+                  Typical impact: ~10-15% total score reduction, up to ~20% for high-redundancy networks.
+                </p>
+                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
+                  40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)
+                </div>
+              </CardContent>
+            </Card>
+
             <Card data-testid="card-feature-transparency">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">

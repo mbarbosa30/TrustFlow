@@ -101,18 +101,41 @@ export default function WhyScore() {
               </div>
 
               <div className="pt-4 border-t">
-                <h3 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                <h3 className="font-semibold mb-3 text-sm flex items-center gap-2">
                   <Shield className="w-4 h-4" />
-                  Anti-Gaming Mechanisms
+                  Why Endorsements Stay Meaningful: Built-In Accountability
                 </h3>
-                <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-muted/30">
-                    <h4 className="font-semibold text-xs mb-1">Dilution Penalty</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Vouching for too many people (more than 10) reduces your redundancy component by 10% per excess vouch, 
-                      capped at 50% reduction. Prevents vouch spam.
-                    </p>
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
+                  <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
+                    Your score is influenced by who YOU vouch for
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    This two-way accountability is the core anti-Sybil mechanism. Vouching for {'>'}10 people applies a penalty to your redundancy component (40% of total score), creating economic cost to spam.
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Penalty grows linearly:</strong> 10% per vouch beyond 10, capped at 50% on redundancy
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Impact varies by redundancy:</strong> ~10-15% typical score reduction, up to ~20% for high-redundancy networks with 50% penalty
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Result:</strong> Users vouch selectively to preserve their redundancy score → reliable graph signals
+                      </p>
+                    </div>
                   </div>
+                </div>
+
+                <h3 className="font-semibold mb-2 text-sm">Additional Anti-Gaming Mechanisms</h3>
+                <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-muted/30">
                     <h4 className="font-semibold text-xs mb-1">KUDOS Integration</h4>
                     <p className="text-xs text-muted-foreground">
