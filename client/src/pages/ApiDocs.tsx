@@ -158,6 +158,23 @@ export default function ApiDocs() {
             </CardContent>
           </Card>
 
+          <Card className="bg-green-500/5 border-green-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-green-500/10 p-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Simplest Integration: LocalHealth Scores</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Getting LocalHealth scores requires zero authentication—just make a GET request to any wallet address. 
+                    Perfect for quickly integrating Sybil-resistant reputation into your app. Most dApps start here.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -559,6 +576,24 @@ async function getCachedScore(address) {
             </CardContent>
           </Card>
 
+          <Card className="bg-blue-500/5 border-blue-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-500/10 p-2">
+                  <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">Start with the Scores Endpoint</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Most integrations only need the <code className="px-1 py-0.5 bg-accent/50 rounded">scores.min</code> endpoint, 
+                    which returns both community scores (STS) and personal network scores (LocalHealth) in a single call. 
+                    It's a simple GET request—no complex authentication required beyond your API key.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card data-testid="card-endpoints">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -568,10 +603,11 @@ async function getCachedScore(address) {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="eligibility" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="eligibility">Eligibility</TabsTrigger>
                   <TabsTrigger value="scores">Scores</TabsTrigger>
                   <TabsTrigger value="metrics">Metrics</TabsTrigger>
+                  <TabsTrigger value="vouch">Vouch</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="eligibility" className="space-y-4">
@@ -684,6 +720,114 @@ print(data['accepted'])  # True or False`}
   ]
 }`}
                     </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="vouch" className="space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">POST</Badge>
+                      <code className="text-sm font-mono">/communities/:id/vouch.min</code>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Submit a vouch using EIP-712 signature. Server automatically manages nonce incrementation.
+                    </p>
+
+                    <h4 className="font-semibold text-sm mb-2">Request Body</h4>
+                    <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`{
+  "endorser": "0x742d35Cc...",
+  "endorsee": "0x1234567...",
+  "sig": "0xabcd...",
+  "ts": "1699564800",
+  "chainId": 42220
+}`}
+                    </pre>
+
+                    <h4 className="font-semibold text-sm mb-2 mt-4">Example Request (JavaScript)</h4>
+                    <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`import { BrowserProvider } from 'ethers';
+
+async function submitVouch(endorseeAddress) {
+  const provider = new BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const endorserAddress = await signer.getAddress();
+  
+  // Get current epoch
+  const epochRes = await fetch('${baseUrl}/api/epoch/current');
+  const { epoch } = await epochRes.json();
+  
+  // Get next nonce (server-side)
+  const nonceRes = await fetch(
+    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epoch.id}\`
+  );
+  const { nextNonce } = await nonceRes.json();
+  
+  // Prepare EIP-712 message
+  const domain = {
+    name: 'MaxFlow',
+    version: '1',
+    chainId: 42220,
+  };
+  
+  const types = {
+    Endorsement: [
+      { name: 'endorser', type: 'address' },
+      { name: 'endorsee', type: 'address' },
+      { name: 'epoch', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'timestamp', type: 'uint256' },
+    ],
+  };
+  
+  const timestamp = Math.floor(Date.now() / 1000);
+  const message = {
+    endorser: endorserAddress,
+    endorsee: endorseeAddress,
+    epoch: BigInt(epoch.id),
+    nonce: BigInt(nextNonce),
+    timestamp: BigInt(timestamp),
+  };
+  
+  // Sign
+  const signature = await signer.signTypedData(domain, types, message);
+  
+  // Submit via Community API
+  const response = await fetch(
+    '${baseUrl}/api/v1/communities/${exampleCommunityId}/vouch.min',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Community-Key': '${exampleApiKey}'
+      },
+      body: JSON.stringify({
+        endorser: message.endorser,
+        endorsee: message.endorsee,
+        sig: signature,
+        ts: timestamp.toString(),
+        chainId: 42220,
+      }),
+    }
+  );
+  
+  return await response.json();
+}`}
+                    </pre>
+
+                    <h4 className="font-semibold text-sm mb-2 mt-4">Success Response (HTTP 202)</h4>
+                    <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`{
+  "ok": true
+}`}
+                    </pre>
+
+                    <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Note:</strong> The Community API vouch endpoint automatically increments nonces server-side. 
+                        You still need to fetch the next nonce for signature creation, but the server handles validation.
+                      </p>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
