@@ -111,12 +111,13 @@ export function registerMinimalApiRoutes(app: Express) {
         }
         
         // Compute leaf hash for Merkle tree
-        const leafHash = computeLeafHash(
-          endorser.toLowerCase() as Address,
-          endorsee.toLowerCase() as Address,
+        const leafHash = computeLeafHash({
+          endorser: endorser.toLowerCase(),
+          endorsee: endorsee.toLowerCase(),
           epoch,
-          nonce
-        );
+          nonce,
+          sig
+        });
         
         // Get community to retrieve promptHash
         const community = (req as any).community;
@@ -174,22 +175,37 @@ export function registerMinimalApiRoutes(app: Express) {
           const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase() as Address);
           
           // Get global vouches (all vouches not tied to a community)
-          const allEndorsements = await storage.getEndorsementsByAddress(address);
-          const globalVouches: EgoEndorsement[] = allEndorsements
-            .filter((e: any) => e.communityId === null)
-            .map((e: any) => ({
-              endorser: e.endorser.toLowerCase() as Address,
-              endorsee: e.endorsee.toLowerCase() as Address,
-            }));
-          
-          // Get KUDOS boosts
-          const allKudosTransfers = await storage.getAllKudosTransfers();
-          const kudosBoosts: KudosBoost[] = allKudosTransfers.map((kt: any) => ({
-            from: kt.fromAddress.toLowerCase() as Address,
-            to: kt.toAddress.toLowerCase() as Address,
-            weight: kt.amount,
-            timestamp: new Date(kt.transferredAt).getTime(),
+          const globalEndorsements = await storage.getEndorsements({
+            communityId: 0,
+            limit: 100000
+          });
+          const globalVouches: EgoEndorsement[] = globalEndorsements.map((e: any) => ({
+            endorser: e.endorser.toLowerCase() as Address,
+            endorsee: e.endorsee.toLowerCase() as Address,
           }));
+          
+          // Calculate KUDOS boosts for all edges in a single batch query
+          const kudosService = await import("../kudos/kudosService").then(m => m.kudosService);
+          const uniqueEdges = Array.from(
+            new Set(globalVouches.map(e => `${e.endorser}->${e.endorsee}`))
+          ).map(edgeKey => {
+            const [from, to] = edgeKey.split('->');
+            return { fromAddress: from, toAddress: to };
+          });
+
+          const edgeWeights = await kudosService.calculateBatchEdgeWeights(uniqueEdges);
+          
+          const kudosBoosts: KudosBoost[] = [];
+          for (const [edgeKey, weight] of Array.from(edgeWeights.entries())) {
+            if (weight > 0) {
+              const [from, to] = edgeKey.split('->');
+              kudosBoosts.push({ 
+                fromAddress: from as Address, 
+                toAddress: to as Address, 
+                weight 
+              });
+            }
+          }
           
           // Compute LocalHealth score
           const egoScorer = new EgoScorer();
