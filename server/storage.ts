@@ -26,6 +26,7 @@ export interface IStorage {
   getEgoContext(ownerAddress: string): Promise<Context | undefined>;
   getOrCreateEgoContext(ownerAddress: string): Promise<Context>;
   updateContext(id: number, updates: Partial<InsertContext>): Promise<void>;
+  updateLocalHealth(ownerAddress: string, localHealth: number): Promise<void>;
   
   // Co-seed operations (additional seeds for ego contexts)
   addCoSeed(coSeed: InsertCoSeed): Promise<CoSeed>;
@@ -640,6 +641,22 @@ export class MemStorage implements IStorage {
       .update(contexts)
       .set(updates)
       .where(eq(contexts.id, id));
+  }
+
+  async updateLocalHealth(ownerAddress: string, localHealth: number): Promise<void> {
+    const normalizedAddress = ownerAddress.toLowerCase();
+    await db
+      .update(contexts)
+      .set({ 
+        localHealth,
+        localHealthUpdatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(contexts.ownerAddress, normalizedAddress),
+          eq(contexts.type, 'ego')
+        )
+      );
   }
 
   async addCoSeed(coSeed: InsertCoSeed): Promise<CoSeed> {
