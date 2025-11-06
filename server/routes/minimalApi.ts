@@ -134,6 +134,16 @@ export function registerMinimalApiRoutes(app: Express) {
           promptHash: community.promptHash,
         });
         
+        // Trigger LocalHealth recalculation for both endorser and endorsee
+        // This happens asynchronously after the vouch is stored
+        const { localHealthService } = await import('../services/localHealthService');
+        localHealthService.recalculateMultipleLocalHealth([
+          endorser.toLowerCase(),
+          endorsee.toLowerCase()
+        ]).catch(err => {
+          console.error('Failed to recalculate LocalHealth after vouch:', err);
+        });
+        
         res.status(202).json({ ok: true });
       } catch (error) {
         console.error('Error in vouch.min:', error);

@@ -2678,6 +2678,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         note: endorsement.note || null,
       });
       
+      // Trigger LocalHealth recalculation for both endorser and endorsee
+      const { localHealthService } = await import('./services/localHealthService');
+      localHealthService.recalculateMultipleLocalHealth([
+        endorsementWithBigInt.endorser.toLowerCase(),
+        endorsementWithBigInt.endorsee.toLowerCase()
+      ]).catch(err => {
+        console.error('Failed to recalculate LocalHealth after global vouch:', err);
+      });
+      
       res.status(201).json({ 
         success: true, 
         endorsement: dbEndorsement,
