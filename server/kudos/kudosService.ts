@@ -150,13 +150,6 @@ export class KudosService {
     } catch (error) {
       console.error("KUDOS transfer error:", error);
       return { success: false, error: "Transfer failed" };
-    } finally {
-      // Trigger LocalHealth recalculation for both addresses after transfer
-      // KUDOS transfers affect edge weights, which impacts flow calculations
-      const { localHealthService } = await import('../services/localHealthService');
-      localHealthService.recalculateMultipleLocalHealth([from, to]).catch(err => {
-        console.error('Failed to recalculate LocalHealth after KUDOS transfer:', err);
-      });
     }
   }
 
@@ -381,31 +374,12 @@ export class KudosService {
         endorsee: e.endorsee.toLowerCase() as any,
       }));
 
-      // Calculate KUDOS boosts for all edges in a single batch query
-      const uniqueEdges = Array.from(
-        new Set(formattedEndorsements.map(e => `${e.endorser}->${e.endorsee}`))
-      ).map(edgeKey => {
-        const [from, to] = edgeKey.split('->');
-        return { fromAddress: from, toAddress: to };
-      });
-
-      const edgeWeights = await this.calculateBatchEdgeWeights(uniqueEdges);
-      
-      const kudosBoosts = [];
-      for (const [edgeKey, weight] of Array.from(edgeWeights.entries())) {
-        if (weight > 0) {
-          const [from, to] = edgeKey.split('->');
-          kudosBoosts.push({ fromAddress: from as any, toAddress: to as any, weight });
-        }
-      }
-
-      // Compute LocalHealth
+      // Compute LocalHealth (pure graph-based, no KUDOS influence)
       const scorer = new EgoScorer();
       const result = scorer.computeLocalHealth(
         normalized as any,
         seedAddresses as any,
-        formattedEndorsements,
-        kudosBoosts
+        formattedEndorsements
       );
 
       return result.localHealth;

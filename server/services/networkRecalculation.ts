@@ -1,8 +1,7 @@
 import { db } from "../db";
 import { contexts, publicEndorsements, coSeeds } from "@shared/schema";
 import { eq, isNull, or } from "drizzle-orm";
-import { EgoScorer, type EgoEndorsement, type KudosBoost } from "../algorithm/egoScoring";
-import { KudosService } from "../kudos/kudosService";
+import { EgoScorer, type EgoEndorsement } from "../algorithm/egoScoring";
 import type { Address } from "viem";
 
 export interface RecalculationResult {
@@ -18,11 +17,9 @@ export interface RecalculationResult {
 }
 
 export class NetworkRecalculationService {
-  private kudosService: KudosService;
   private egoScorer: EgoScorer;
 
   constructor() {
-    this.kudosService = new KudosService();
     this.egoScorer = new EgoScorer();
   }
 
@@ -87,17 +84,13 @@ export class NetworkRecalculationService {
             endorsee: v.endorsee.toLowerCase() as Address,
           }));
 
-          // Get KUDOS boosts for this user
-          const kudosBoosts = await this.getKudosBoosts(ownerAddress);
-
-          // Compute LocalHealth score with current algorithm
+          // Compute LocalHealth score with current algorithm (pure graph-based)
           // Note: LocalHealth scores are computed on-the-fly via /api/ego/:address/score
           // This recalculation is for verification/dashboard purposes only
           const scoreResult = this.egoScorer.computeLocalHealth(
             ownerAddress,
             seedAddresses,
-            globalVouches,
-            kudosBoosts
+            globalVouches
           );
 
           result.scoresUpdated++;
@@ -126,49 +119,5 @@ export class NetworkRecalculationService {
 
     result.duration = Date.now() - startTime;
     return result;
-  }
-
-  /**
-   * Get KUDOS boosts for a specific address
-   * Computes edge capacity boosts from KUDOS transfers
-   */
-  private async getKudosBoosts(address: Address): Promise<KudosBoost[]> {
-    const normalized = address.toLowerCase();
-    
-    // Get all KUDOS transfers for this address
-    const allTransfers = await this.kudosService.getTransferHistory({
-      address: normalized,
-      limit: 1000,
-    });
-
-    // Filter to only incoming transfers
-    const incomingTransfers = allTransfers.filter(
-      t => t.toAddress.toLowerCase() === normalized
-    );
-
-    const boosts: KudosBoost[] = [];
-    const now = Date.now();
-    const HALFLIFE_MS = 180 * 24 * 60 * 60 * 1000; // 180 days
-
-    for (const transfer of incomingTransfers) {
-      // Calculate exponential decay
-      const ageMs = now - new Date(transfer.createdAt).getTime();
-      const decayFactor = Math.pow(0.5, ageMs / HALFLIFE_MS);
-      
-      // Use the actual amount transferred (after fees)
-      const netAmount = transfer.amount - transfer.feeBurned - transfer.feeToPool;
-      const decayedAmount = netAmount * decayFactor;
-
-      if (decayedAmount > 0.01) {
-        // Only include non-negligible boosts
-        boosts.push({
-          fromAddress: transfer.fromAddress.toLowerCase() as Address,
-          toAddress: normalized as Address,
-          weight: decayedAmount,
-        });
-      }
-    }
-
-    return boosts;
   }
 }

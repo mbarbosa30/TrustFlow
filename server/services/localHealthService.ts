@@ -1,8 +1,7 @@
 import type { Address } from "viem";
 import { storage } from "../storage";
 import { EgoScorer } from "../algorithm/egoScoring";
-import type { EgoEndorsement, KudosBoost } from "../algorithm/egoScoring";
-import { kudosService } from "../kudos/kudosService";
+import type { EgoEndorsement } from "../algorithm/egoScoring";
 
 export class LocalHealthService {
   async recalculateLocalHealth(address: string): Promise<number> {
@@ -23,33 +22,11 @@ export class LocalHealthService {
         endorsee: e.endorsee.toLowerCase() as Address,
       }));
       
-      const uniqueEdges = Array.from(
-        new Set(globalVouches.map(e => `${e.endorser}->${e.endorsee}`))
-      ).map(edgeKey => {
-        const [from, to] = edgeKey.split('->');
-        return { fromAddress: from, toAddress: to };
-      });
-
-      const edgeWeights = await kudosService.calculateBatchEdgeWeights(uniqueEdges);
-      
-      const kudosBoosts: KudosBoost[] = [];
-      for (const [edgeKey, weight] of Array.from(edgeWeights.entries())) {
-        if (weight > 0) {
-          const [from, to] = edgeKey.split('->');
-          kudosBoosts.push({ 
-            fromAddress: from as Address, 
-            toAddress: to as Address, 
-            weight 
-          });
-        }
-      }
-      
       const egoScorer = new EgoScorer();
       const result = egoScorer.computeLocalHealth(
         normalizedAddress as Address,
         seedAddresses,
-        globalVouches,
-        kudosBoosts
+        globalVouches
       );
       
       const localHealth = Math.round(result.localHealth);

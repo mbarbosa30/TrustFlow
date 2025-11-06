@@ -8,26 +8,16 @@ export interface EgoEndorsement {
   endorsee: Address;
 }
 
-export interface KudosBoost {
-  fromAddress: Address;
-  toAddress: Address;
-  weight: number; // Exponentially decayed KUDOS weight
-}
-
 export interface EgoScoringConfig {
   maxDistance: number;
   minAcceptanceFlow: number;
   minAcceptanceMinCut: number;
-  kudosBoostThreshold?: number; // KUDOS needed for 1x boost (default: 500)
-  kudosMaxBoost?: number; // Maximum boost multiplier (default: 2x)
 }
 
 const DEFAULT_EGO_CONFIG: EgoScoringConfig = {
   maxDistance: 3,
   minAcceptanceFlow: 0.5,
   minAcceptanceMinCut: 2,
-  kudosBoostThreshold: 500,
-  kudosMaxBoost: 2.0,
 };
 
 export class EgoScorer {
@@ -40,14 +30,13 @@ export class EgoScorer {
   computeLocalHealth(
     ownerAddress: Address,
     seedAddresses: Address[],
-    globalVouches: EgoEndorsement[],
-    kudosBoosts: KudosBoost[] = []
+    globalVouches: EgoEndorsement[]
   ): EgoScoreResult {
     // Pure Option 2: If no co-seeds, use vouchers as sources
     const isPureOption2 = seedAddresses.length === 0;
     
     if (isPureOption2) {
-      return this.computePureOption2Score(ownerAddress, globalVouches, kudosBoosts);
+      return this.computePureOption2Score(ownerAddress, globalVouches);
     }
 
     const distances = this.computeDistances(seedAddresses, globalVouches);
@@ -74,8 +63,7 @@ export class EgoScorer {
         node,
         seedAddresses,
         globalVouches,
-        distances,
-        kudosBoosts
+        distances
       );
 
       const maxFlowSolver = new DinicMaxFlow(graph);
@@ -87,8 +75,7 @@ export class EgoScorer {
       const maxPossibleNodeFlow = this.calculateMaxInboundCapacity(
         node,
         globalVouches,
-        distances,
-        kudosBoosts
+        distances
       );
       
       const residualFlow = maxPossibleNodeFlow > 0 
@@ -228,8 +215,7 @@ export class EgoScorer {
     targetNode: Address,
     seeds: Address[],
     endorsements: EgoEndorsement[],
-    distances: Map<Address, number>,
-    kudosBoosts: KudosBoost[] = []
+    distances: Map<Address, number>
   ): FlowGraph {
     const SOURCE = "SOURCE";
     const SINK = targetNode;
@@ -237,13 +223,6 @@ export class EgoScorer {
 
     for (const seed of seeds) {
       graph.addEdge(SOURCE, seed, Infinity);
-    }
-
-    // Build KUDOS boost map for quick lookup
-    const boostMap = new Map<string, number>();
-    for (const boost of kudosBoosts) {
-      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
-      boostMap.set(key, boost.weight);
     }
 
     for (const { endorser, endorsee } of endorsements) {
@@ -254,21 +233,7 @@ export class EgoScorer {
         endorserDist <= this.config.maxDistance &&
         endorseeDist <= this.config.maxDistance
       ) {
-        let capacity = this.calculateCapacity(endorseeDist);
-        
-        // Apply KUDOS boost if exists
-        const boostKey = `${endorser.toLowerCase()}->${endorsee.toLowerCase()}`;
-        const kudosWeight = boostMap.get(boostKey) || 0;
-        
-        if (kudosWeight > 0) {
-          const threshold = this.config.kudosBoostThreshold || 100;
-          const maxBoost = this.config.kudosMaxBoost || 2.0;
-          
-          // Boost multiplier: 1 + min(maxBoost - 1, kudosWeight / threshold)
-          const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
-          capacity *= boostMultiplier;
-        }
-        
+        const capacity = this.calculateCapacity(endorseeDist);
         graph.addEdge(endorser, endorsee, capacity);
       }
     }
@@ -360,36 +325,16 @@ export class EgoScorer {
   private calculateMaxInboundCapacity(
     targetNode: Address,
     endorsements: EgoEndorsement[],
-    distances: Map<Address, number>,
-    kudosBoosts: KudosBoost[] = []
+    distances: Map<Address, number>
   ): number {
     let maxInbound = 0;
     const targetDist = distances.get(targetNode) ?? Infinity;
-
-    // Build KUDOS boost map
-    const boostMap = new Map<string, number>();
-    for (const boost of kudosBoosts) {
-      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
-      boostMap.set(key, boost.weight);
-    }
 
     for (const { endorser, endorsee } of endorsements) {
       if (endorsee === targetNode) {
         const endorserDist = distances.get(endorser) ?? Infinity;
         if (endorserDist <= this.config.maxDistance && targetDist <= this.config.maxDistance) {
-          let capacity = this.calculateCapacity(targetDist);
-          
-          // Apply KUDOS boost if exists (matching buildNodeGraph logic)
-          const boostKey = `${endorser.toLowerCase()}->${endorsee.toLowerCase()}`;
-          const kudosWeight = boostMap.get(boostKey) || 0;
-          
-          if (kudosWeight > 0) {
-            const threshold = this.config.kudosBoostThreshold || 100;
-            const maxBoost = this.config.kudosMaxBoost || 2.0;
-            const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
-            capacity *= boostMultiplier;
-          }
-          
+          const capacity = this.calculateCapacity(targetDist);
           maxInbound += capacity;
         }
       }
@@ -410,8 +355,7 @@ export class EgoScorer {
    */
   private computePureOption2Score(
     ownerAddress: Address,
-    globalVouches: EgoEndorsement[],
-    kudosBoosts: KudosBoost[] = []
+    globalVouches: EgoEndorsement[]
   ): EgoScoreResult {
     // Find everyone who vouched for the owner (direct vouchers)
     const directVouchers = globalVouches
@@ -444,13 +388,6 @@ export class EgoScorer {
     // Remove owner from ego subgraph (owner shouldn't count toward depth/connectivity metrics)
     egoSubgraph.delete(ownerAddress.toLowerCase());
 
-    // Build KUDOS boost map for edge capacity boosting
-    const boostMap = new Map<string, number>();
-    for (const boost of kudosBoosts) {
-      const key = `${boost.fromAddress.toLowerCase()}->${boost.toAddress.toLowerCase()}`;
-      boostMap.set(key, boost.weight);
-    }
-
     // Step 2: Compute direct flow (SOURCE → vouchers → owner) for flow component
     const SOURCE = "SOURCE";
     const directGraph = new FlowGraph(SOURCE, ownerAddress);
@@ -460,22 +397,10 @@ export class EgoScorer {
       directGraph.addEdge(SOURCE, voucher, 1.0);
     }
 
-    // Add direct voucher → owner edges with KUDOS boosts
+    // Add direct voucher → owner edges (unit capacity, no boosting)
     let maxInboundCapacity = 0;
     for (const voucher of directVouchers) {
-      let capacity = 1.0;
-      
-      // Apply KUDOS boost if exists
-      const boostKey = `${voucher.toLowerCase()}->${ownerAddress.toLowerCase()}`;
-      const kudosWeight = boostMap.get(boostKey) || 0;
-      
-      if (kudosWeight > 0) {
-        const threshold = this.config.kudosBoostThreshold || 100;
-        const maxBoost = this.config.kudosMaxBoost || 2.0;
-        const boostMultiplier = 1 + Math.min(maxBoost - 1, kudosWeight / threshold);
-        capacity *= boostMultiplier;
-      }
-      
+      const capacity = 1.0;
       directGraph.addEdge(voucher, ownerAddress, capacity);
       maxInboundCapacity += capacity;
     }
