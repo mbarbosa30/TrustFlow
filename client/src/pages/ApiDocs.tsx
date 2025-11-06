@@ -155,6 +155,12 @@ export default function ApiDocs() {
                   </p>
                 </div>
               </div>
+              <div>
+                <h3 className="font-semibold mb-2">CORS</h3>
+                <p className="text-sm text-muted-foreground">
+                  CORS is enabled for all origins. External applications can call MaxFlow API endpoints directly from the browser without CORS errors.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
