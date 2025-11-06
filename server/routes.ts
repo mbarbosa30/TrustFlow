@@ -107,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = req.body;
 
       // Validate required fields exist
-      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce || !body.timestamp || !body.sig) {
+      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce || !body.sig) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
@@ -144,7 +144,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           endorsee: body.endorsee as Address,
           epoch: BigInt(body.epoch),
           nonce: BigInt(body.nonce),
-          timestamp: BigInt(body.timestamp),
           sig: body.sig as Hex,
           chainId: body.chainId ? Number(body.chainId) : undefined,
         };
@@ -2591,7 +2590,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...endorsement,
         epoch: BigInt(endorsement.epoch),
         nonce: BigInt(endorsement.nonce),
-        timestamp: BigInt(endorsement.timestamp),
       };
       
       // Validate signature and fields

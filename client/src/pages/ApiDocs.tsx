@@ -291,7 +291,6 @@ print(f"LocalHealth Score: {data['localHealth']}/100")`}
     "endorsee": "0x1234567...",
     "epoch": "1",
     "nonce": "1",
-    "timestamp": "1699564800",
     "sig": "0xabcd...",
     "chainId": 42220,
     "note": "Optional message"
@@ -331,7 +330,6 @@ async function createVouch(endorseeAddress) {
       { name: 'endorsee', type: 'address' },
       { name: 'epoch', type: 'uint64' },
       { name: 'nonce', type: 'uint64' },
-      { name: 'timestamp', type: 'uint64' },
     ],
   };
   
@@ -340,7 +338,6 @@ async function createVouch(endorseeAddress) {
     endorsee: endorseeAddress,
     epoch: BigInt(epochId),
     nonce: BigInt(nextNonce),
-    timestamp: BigInt(Math.floor(Date.now() / 1000)),
   };
   
   // 4. Sign
@@ -356,7 +353,6 @@ async function createVouch(endorseeAddress) {
         endorsee: message.endorsee,
         epoch: message.epoch.toString(),
         nonce: message.nonce.toString(),
-        timestamp: message.timestamp.toString(),
         sig: signature,
         chainId: 42220,
       },
@@ -754,7 +750,6 @@ print(data['accepted'])  # True or False`}
   "endorser": "0x742d35Cc...",
   "endorsee": "0x1234567...",
   "sig": "0xabcd...",
-  "ts": "1699564800",
   "chainId": 42220
 }`}
                     </pre>
@@ -791,17 +786,14 @@ async function submitVouch(endorseeAddress) {
       { name: 'endorsee', type: 'address' },
       { name: 'epoch', type: 'uint64' },
       { name: 'nonce', type: 'uint64' },
-      { name: 'timestamp', type: 'uint64' },
     ],
   };
   
-  const timestamp = Math.floor(Date.now() / 1000);
   const message = {
     endorser: endorserAddress,
     endorsee: endorseeAddress,
     epoch: BigInt(epochId),
     nonce: BigInt(nextNonce),
-    timestamp: BigInt(timestamp),
   };
   
   // Sign
@@ -820,7 +812,6 @@ async function submitVouch(endorseeAddress) {
         endorser: message.endorser,
         endorsee: message.endorsee,
         sig: signature,
-        ts: timestamp.toString(),
         chainId: 42220,
       }),
     }
