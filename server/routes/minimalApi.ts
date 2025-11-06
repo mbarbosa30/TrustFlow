@@ -177,59 +177,21 @@ export function registerMinimalApiRoutes(app: Express) {
         const allScores = await storage.getAllScoresForUser(address);
         const scores = allScores.filter(s => s.communityId === communityId);
         
-        // Compute LocalHealth score (personal network score)
+        // Get cached LocalHealth score (personal network score)
         let localHealth = 0;
         try {
-          const egoContext = await storage.getOrCreateEgoContext(address);
-          const coSeeds = await storage.getCoSeeds(egoContext.id);
-          const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase() as Address);
+          const { localHealthService } = await import("../services/localHealthService");
+          const cachedScore = await localHealthService.getCachedLocalHealth(address);
           
-          // Get global vouches (all vouches not tied to a community)
-          const globalEndorsements = await storage.getEndorsements({
-            communityId: 0,
-            limit: 100000
-          });
-          const globalVouches: EgoEndorsement[] = globalEndorsements.map((e: any) => ({
-            endorser: e.endorser.toLowerCase() as Address,
-            endorsee: e.endorsee.toLowerCase() as Address,
-          }));
-          
-          // Calculate KUDOS boosts for all edges in a single batch query
-          const kudosService = await import("../kudos/kudosService").then(m => m.kudosService);
-          const uniqueEdges = Array.from(
-            new Set(globalVouches.map(e => `${e.endorser}->${e.endorsee}`))
-          ).map(edgeKey => {
-            const [from, to] = edgeKey.split('->');
-            return { fromAddress: from, toAddress: to };
-          });
-
-          const edgeWeights = await kudosService.calculateBatchEdgeWeights(uniqueEdges);
-          
-          const kudosBoosts: KudosBoost[] = [];
-          for (const [edgeKey, weight] of Array.from(edgeWeights.entries())) {
-            if (weight > 0) {
-              const [from, to] = edgeKey.split('->');
-              kudosBoosts.push({ 
-                fromAddress: from as Address, 
-                toAddress: to as Address, 
-                weight 
-              });
-            }
+          if (cachedScore !== null) {
+            localHealth = cachedScore;
+          } else {
+            // No cached score - trigger recalculation
+            localHealth = await localHealthService.recalculateLocalHealth(address);
           }
-          
-          // Compute LocalHealth score
-          const egoScorer = new EgoScorer();
-          const result = egoScorer.computeLocalHealth(
-            address as Address,
-            seedAddresses,
-            globalVouches,
-            kudosBoosts
-          );
-          
-          localHealth = Math.round(result.localHealth);
         } catch (egoError) {
-          console.error('Error computing LocalHealth for API:', egoError);
-          // Continue with localHealth = 0 if computation fails
+          console.error('Error getting LocalHealth for API:', egoError);
+          // Continue with localHealth = 0 if retrieval fails
         }
         
         if (!scores || scores.length === 0) {
