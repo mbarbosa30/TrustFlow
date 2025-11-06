@@ -16,13 +16,15 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
 
 ### Feature Specifications
 *   **KUDOS Token Economy (Off-Chain MVP)**: 
+    *   Pure rewards layer - earned based on LocalHealth but does NOT influence scoring
     *   Off-chain reputation tokens earned through LocalHealth scores
     *   Weekly claiming: amount = (LocalHealth² / 100), capped at 1000 KUDOS/day
     *   1% transfer fee: 0.5% burned (deflationary), 0.5% pooled for future claims
     *   7-day cooldown between claims
-    *   KUDOS transfers boost edge capacities (exponential decay, 180-day halflife)
+    *   One-way relationship: LocalHealth → KUDOS (scores determine rewards, but rewards don't affect scores)
     *   Server-side LocalHealth computation prevents score manipulation
     *   **Known MVP Limitations**: Signature replay protection not yet implemented (acceptable for off-chain testing, required for production)
+    *   **Architecture Decision (Nov 2025)**: KUDOS decoupled from scoring to preserve LocalHealth as pure graph-based signal and maintain MaxFlow's identity as neutral infrastructure
 *   **Monorepo Structure**: Organized into `client/`, `server/`, and `shared/` for code reuse.
 *   **Privacy by Default**: Aggregated scores and opted-in reveals are public; the endorsement graph remains opaque.
 *   **Binary Vouch Model**: Simplified endorsement for transparency.
@@ -50,17 +52,17 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
     *   **Outgoing Vouch Adjustment**: Adds accountability for who you vouch for. Cut component is multiplied by a vouch quality factor:
         *   Dilution penalty: 10% per vouch beyond 10 vouches (prevents vouch spam)
         *   Caps at 50% reduction, ~10-20% typical impact
-    *   **KUDOS Integration**: Edge capacities boosted by KUDOS transfers (exponential decay, 180-day halflife). Boost multiplier: `1 + min(1, kudosWeight/500)`, max 2x. Higher threshold (500 vs previous 100) makes KUDOS a subtle nudge rather than a scoring lever.
+    *   **Pure Graph-Based Scoring**: LocalHealth derived entirely from endorsement network structure. No economic factors (KUDOS, tokens, payments) influence scores. This ensures signal integrity, auditability, and alignment with MaxFlow's identity as neutral infrastructure.
     *   **Global Trust (Planned)**: Cross-network reputation score combining Local Health and Incoming Flow.
 *   **LocalHealth Score Caching**: Event-driven caching system for LocalHealth scores to optimize API performance:
     *   Cached scores stored in `contexts` table with `localHealth` (0-100) and `localHealthUpdatedAt` timestamp
     *   Automatic recalculation triggered when:
         *   User receives a vouch (affects incoming flow)
         *   User gives a vouch (affects outgoing vouch quality factor)
-        *   KUDOS is transferred to/from the user (affects edge weights)
     *   API endpoints use cached scores by default, falling back to fresh computation if missing
     *   Detailed ego score endpoint (`/api/ego/:address/score`) still computes on-demand for full metrics
     *   Asynchronous recalculation prevents blocking requests
+    *   KUDOS transfers do NOT trigger recalculation (KUDOS is rewards-only, doesn't influence scores)
 *   **Network Recalculation**: Admin tool for batch computing all LocalHealth scores across the entire network. Verification-only feature that computes scores using current algorithm parameters without persisting to database (scores are computed on-the-fly via `/api/ego/:address/score`). Includes zero-vouch safety guard to prevent empty-graph runs and provides detailed per-user results with timing metrics.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
 
