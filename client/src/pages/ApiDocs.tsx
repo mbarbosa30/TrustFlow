@@ -329,9 +329,9 @@ async function createVouch(endorseeAddress) {
     Endorsement: [
       { name: 'endorser', type: 'address' },
       { name: 'endorsee', type: 'address' },
-      { name: 'epoch', type: 'uint256' },
-      { name: 'nonce', type: 'uint256' },
-      { name: 'timestamp', type: 'uint256' },
+      { name: 'epoch', type: 'uint64' },
+      { name: 'nonce', type: 'uint64' },
+      { name: 'timestamp', type: 'uint64' },
     ],
   };
   
@@ -789,9 +789,9 @@ async function submitVouch(endorseeAddress) {
     Endorsement: [
       { name: 'endorser', type: 'address' },
       { name: 'endorsee', type: 'address' },
-      { name: 'epoch', type: 'uint256' },
-      { name: 'nonce', type: 'uint256' },
-      { name: 'timestamp', type: 'uint256' },
+      { name: 'epoch', type: 'uint64' },
+      { name: 'nonce', type: 'uint64' },
+      { name: 'timestamp', type: 'uint64' },
     ],
   };
   
