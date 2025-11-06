@@ -1,0 +1,99 @@
+Here's the detailed vouching flow we're implementing:
+
+Vouching Process Overview
+1. User initiates vouch
+
+User enters an Ethereum address they want to vouch for
+We validate both addresses using getAddress() from viem, then lowercase them
+2. Fetch current epoch
+
+GET /api/maxflow/epoch/current
+→ proxies to https://maxflow.one/api/epoch/current
+← Expect: { id: number, status: string, createdAt: string, closedAt: string | null }
+3. Fetch nonce (This is where it's failing)
+
+GET /api/maxflow/nonce/{endorser_address}/{epoch_id}
+→ proxies to https://maxflow.one/api/nonce/{endorser_address}/{epoch_id}
+← Expect: { nextNonce: number }
+Example:
+GET /api/maxflow/nonce/0xabc.../42
+The address is lowercased before calling
+The epoch ID comes from step 2
+4. Create endorsement object
+
+{
+  endorser: "0xabc..." (lowercased),
+  endorsed: "0xdef..." (lowercased),
+  epoch: 42,         // from step 2
+  nonce: 1,          // from step 3
+  timestamp: 1699123456 // current Unix timestamp in seconds
+}
+5. EIP-712 typed data signing
+
+const domain = {
+  name: 'MaxFlow',
+  version: '1',
+  chainId: 8453 // or 42220 based on user's network preference
+};
+const types = {
+  Endorsement: [
+    { name: 'endorser', type: 'address' },
+    { name: 'endorsed', type: 'address' },
+    { name: 'epoch', type: 'uint64' },
+    { name: 'nonce', type: 'uint64' },
+    { name: 'timestamp', type: 'uint64' }
+  ]
+};
+const message = {
+  endorser: "0xabc...",
+  endorsed: "0xdef...",
+  epoch: BigInt(42),
+  nonce: BigInt(1),
+  timestamp: BigInt(1699123456)
+};
+We sign this using the user's private key via account.signTypedData().
+
+6. Submit vouch
+
+POST /api/maxflow/vouch
+Content-Type: application/json
+Body:
+{
+  "endorsement": {
+    "endorser": "0xabc...",
+    "endorsed": "0xdef...",
+    "epoch": 42,
+    "nonce": 1,
+    "timestamp": 1699123456
+  },
+  "signature": "0x123...",
+  "chainId": 8453
+}
+Expected response:
+
+{
+  "success": true,
+  "endorsement": {
+    "id": number,
+    "communityId": number,
+    "scope": string,
+    "endorser": string,
+    "endorsee": string,
+    "leafHash": string,
+    "createdAt": string
+  },
+  "message": string
+}
+The Issue
+The failure is at step 3 - fetching the nonce. When we call:
+
+GET https://maxflow.one/api/nonce/{lowercased_address}/{epoch_id}
+We're getting an error instead of { nextNonce: number }.
+
+Questions for the MaxFlow team:
+
+Is the nonce endpoint structure correct: /api/nonce/{address}/{epoch}?
+Should the address be checksummed or lowercased?
+What error responses can this endpoint return and why?
+Are there any authentication requirements we're missing?
+Is there rate limiting that could cause intermittent failures?
