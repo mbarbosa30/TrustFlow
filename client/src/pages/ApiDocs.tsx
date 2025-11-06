@@ -182,7 +182,7 @@ export default function ApiDocs() {
                 Get LocalHealth Score
               </CardTitle>
               <CardDescription>
-                Get network quality score (0-100) for any wallet address. No authentication required.
+                Get network quality score (0-100) for any wallet address. Pure graph-based signal derived from endorsement network structure only—no economic factors. No authentication required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
