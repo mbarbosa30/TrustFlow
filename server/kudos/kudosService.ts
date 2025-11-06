@@ -150,6 +150,13 @@ export class KudosService {
     } catch (error) {
       console.error("KUDOS transfer error:", error);
       return { success: false, error: "Transfer failed" };
+    } finally {
+      // Trigger LocalHealth recalculation for both addresses after transfer
+      // KUDOS transfers affect edge weights, which impacts flow calculations
+      const { localHealthService } = await import('../services/localHealthService');
+      localHealthService.recalculateMultipleLocalHealth([from, to]).catch(err => {
+        console.error('Failed to recalculate LocalHealth after KUDOS transfer:', err);
+      });
     }
   }
 
