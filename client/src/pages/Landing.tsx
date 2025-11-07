@@ -125,15 +125,35 @@ export default function Landing() {
             <Card data-testid="card-feature-accountability">
               <CardHeader>
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>Recursive Trust Weighting</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-3">
+                  <strong>LocalHealth uses iterative scoring:</strong> Your vouches are weighted by YOUR network strength. 
+                  A vouch from someone with LocalHealth 80 carries more weight than someone with 20. 
+                  This creates recursive trust propagation—scores depend on vouchers' scores, which depend on their vouchers' scores.
+                </p>
+                <p className="text-muted-foreground text-sm">
+                  Scores converge over multiple rounds (max 10 iterations) using max-flow with dynamic edge capacities: 
+                  <span className="font-mono text-xs"> capacity = voucherScore / 100</span>
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-vouch-accountability">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Endorsement Accountability</CardTitle>
+                <CardTitle>Vouch Accountability</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Your LocalHealth score is influenced by who YOU vouch for. Vouching for {'>'}10 people applies a dilution 
+                  Your score is influenced by who YOU vouch for. Vouching for {'>'}10 people applies a dilution 
                   penalty to your redundancy component (40% of LocalHealth), creating economic cost to vouch spam. 
-                  Typical impact: ~10-15% total score reduction, up to ~20% for high-redundancy networks.
+                  Typical impact: ~10-15% total score reduction.
                 </p>
                 <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
                   40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)

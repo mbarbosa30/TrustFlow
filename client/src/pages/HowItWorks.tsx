@@ -134,17 +134,17 @@ export default function HowItWorks() {
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge>Default</Badge>
-                  <span className="font-semibold">Pure Option 2: Incoming Trust</span>
+                  <span className="font-semibold">Pure Option 2: Recursive Trust Weighting</span>
                 </div>
                 <p className="text-sm mb-2">
-                  <strong>No co-seeds required.</strong> Your score is based purely on vouches you receive from others using quadratic exponential scaling (2.0 exponent).
+                  <strong>No co-seeds required.</strong> Uses <strong>iterative PageRank-style algorithm</strong> where vouches are weighted by voucher's LocalHealth score. Your score depends on the strength of who vouches for you.
                 </p>
                 <ul className="text-sm space-y-1 pl-4">
-                  <li>Flow sources: Everyone who vouched for you</li>
-                  <li>Target: YOU</li>
-                  <li>Measures: "How saturated am I with incoming trust?"</li>
-                  <li>Quadratic scaling: 1 vouch ~2-3pts, 3 vouches ~18pts, 5 vouches ~61pts, 10 vouches ~74pts</li>
-                  <li>Score range: 0-100, with stricter distribution for wider discrimination</li>
+                  <li><strong>Iterative computation:</strong> Scores calculated in rounds until convergence (max 10 iterations, threshold 0.5)</li>
+                  <li><strong>Weighted vouches:</strong> Each vouch capacity = voucherScore / 100 (0-1 range)</li>
+                  <li><strong>Recursive trust:</strong> Your vouchers' scores depend on their vouchers, creating trust propagation</li>
+                  <li><strong>Average voucher strength:</strong> ResidualFlow = directFlow / voucherCount captures voucher quality</li>
+                  <li><strong>Score distribution:</strong> Depends on both vouch COUNT and voucher QUALITY (strong vouchers {'>'}  weak vouchers)</li>
                 </ul>
               </div>
 
@@ -178,9 +178,9 @@ export default function HowItWorks() {
               <div>
                 <p className="font-semibold mb-1">Flow Component (60%):</p>
                 <p className="text-sm text-muted-foreground">
-                  Measures incoming trust saturation normalized by healthy baseline (5 vouches), with quadratic scaling.
-                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = min(1.0, directFlow / HEALTHY_VOUCH_COUNT).
-                  Higher saturation = more trust flowing to you.
+                  Measures <strong>weighted incoming trust</strong> from vouchers. Each vouch capacity weighted by voucher's LocalHealth (0-100 normalized to 0-1).
+                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = directFlow / HEALTHY_VOUCH_COUNT (5 vouches).
+                  directFlow = sum of voucher strengths. ResidualFlow = directFlow / voucherCount captures average voucher quality.
                 </p>
               </div>
 

@@ -212,16 +212,27 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              LocalHealth (0-100) is a neutral graph signal measuring your network quality using max-flow/min-cut with quadratic exponential scaling (exponent 2.0):
+              LocalHealth (0-100) uses an <strong>iterative PageRank-style algorithm</strong> where vouches are weighted by voucher's network strength. Your score depends on the quality of who vouches for you:
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
               LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
             </div>
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 my-3">
+              <p className="text-sm font-semibold text-primary mb-2">
+                Recursive Trust Weighting (Nov 2025):
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 pl-4">
+                <li><strong>Iterative computation:</strong> Scores calculated in rounds until convergence (max 10 iterations)</li>
+                <li><strong>Weighted vouches:</strong> Each vouch capacity = voucherScore / 100 (0-1 range)</li>
+                <li><strong>Recursive trust:</strong> Your vouchers' scores depend on their vouchers, creating trust propagation</li>
+                <li><strong>Average voucher strength:</strong> ResidualFlow = directFlow / voucherCount captures voucher quality</li>
+              </ul>
+            </div>
             <p className="text-sm mb-2">
-              <strong>Flow Component (60%):</strong> Measures incoming flow saturation from vouchers.
+              <strong>Flow Component (60%):</strong> Measures weighted incoming trust from vouchers. Strong vouchers (high LocalHealth) contribute more than weak vouchers.
             </p>
             <p className="text-sm mb-2">
-              <strong>Cut Component (40%):</strong> Network redundancy - independent paths connecting you to the network.
+              <strong>Redundancy Component (40%):</strong> Network redundancy (vouch count + upstream depth + connectivity) - independent paths connecting you to the network.
             </p>
             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 my-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
@@ -295,14 +306,17 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              With quadratic scaling, LocalHealth scores have wider distribution for better discrimination. These are neutral graph signals—applications interpret them based on context:
+              LocalHealth scores depend on both <strong>vouch COUNT and voucher QUALITY</strong>. These ranges assume vouchers with average LocalHealth (~50):
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm">
-              <li><strong>2-3 points (1 vouch):</strong> Minimal connectivity - need to build more network depth</li>
-              <li><strong>~18 points (3 vouches):</strong> Basic connectivity - getting started</li>
-              <li><strong>~61 points (5 vouches):</strong> Solid network - good depth and redundancy</li>
-              <li><strong>~74 points (10 vouches):</strong> Strong network - rich multi-hop connections</li>
+              <li><strong>Low scores (0-20):</strong> Few vouches OR vouchers with weak networks</li>
+              <li><strong>Mid scores (20-50):</strong> Several vouches with average strength OR few vouches with strong networks</li>
+              <li><strong>High scores (50-75):</strong> Many vouches with good strength AND network redundancy</li>
+              <li><strong>Top scores (75-100):</strong> Many vouches from highly-trusted users with strong networks</li>
             </ul>
+            <p className="text-xs text-muted-foreground mt-2">
+              <strong>Note:</strong> With recursive trust weighting, a single vouch from someone with LocalHealth 100 is worth more than three vouches from people with LocalHealth 20.
+            </p>
             <p className="text-sm mt-2">
               The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring genuine network building for higher scores. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
             </p>

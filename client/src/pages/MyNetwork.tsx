@@ -403,8 +403,8 @@ export default function MyNetwork() {
           <div>
             <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 LocalHealth Signal</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-score">
-              Your network quality is measured by average flow and median min-cut. Higher scores indicate stronger,
-              more Sybil-resistant graph structure.
+              Your network quality (0-100) is computed using an iterative algorithm where vouches are weighted by voucher strength.
+              Strong vouchers contribute more than weak ones. Formula: 60% flow + 40% redundancy, with dilution penalty for vouching {'>'}10 people.
             </p>
           </div>
           <div>

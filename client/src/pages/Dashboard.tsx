@@ -247,9 +247,12 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-sm font-bold">
-                    Quadratic Scaling
+                    Recursive Trust
                   </div>
                   <p className="text-xs text-muted-foreground">
+                    Iterative, vouches weighted by voucher score
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     60% flow / 40% redundancy, 2.0 exponent
                   </p>
                 </CardContent>
