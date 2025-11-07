@@ -40,20 +40,81 @@ export class LocalHealthService {
     }
   }
 
-  async recalculateMultipleLocalHealth(addresses: string[]): Promise<Map<string, number>> {
+  /**
+   * Recalculate LocalHealth for multiple users using iterative algorithm
+   * This properly weights vouches by voucher strength through iterative convergence
+   * 
+   * @param addresses - Array of addresses to recalculate scores for
+   * @param useIterative - Whether to use iterative algorithm (default true for accuracy)
+   * @returns Map of address to LocalHealth score
+   */
+  async recalculateMultipleLocalHealth(
+    addresses: string[], 
+    useIterative: boolean = true
+  ): Promise<Map<string, number>> {
     const results = new Map<string, number>();
     
-    for (const address of addresses) {
-      try {
-        const localHealth = await this.recalculateLocalHealth(address);
-        results.set(address.toLowerCase(), localHealth);
-      } catch (error) {
-        console.error(`Failed to recalculate LocalHealth for ${address}:`, error);
-        results.set(address.toLowerCase(), 0);
+    if (!useIterative) {
+      // Legacy single-pass calculation
+      for (const address of addresses) {
+        try {
+          const localHealth = await this.recalculateLocalHealth(address);
+          results.set(address.toLowerCase(), localHealth);
+        } catch (error) {
+          console.error(`Failed to recalculate LocalHealth for ${address}:`, error);
+          results.set(address.toLowerCase(), 0);
+        }
       }
+      return results;
     }
-    
-    return results;
+
+    // Iterative calculation: compute all scores together with proper weighting
+    try {
+      const normalizedAddresses = addresses.map(a => a.toLowerCase() as Address);
+      
+      const globalEndorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 100000
+      });
+      
+      const globalVouches: EgoEndorsement[] = globalEndorsements.map((e: any) => ({
+        endorser: e.endorser.toLowerCase() as Address,
+        endorsee: e.endorsee.toLowerCase() as Address,
+      }));
+      
+      const egoScorer = new EgoScorer();
+      const scoreResults = egoScorer.computeLocalHealthIterative(
+        normalizedAddresses,
+        globalVouches
+      );
+      
+      // Update database and build results map
+      for (const address of normalizedAddresses) {
+        const scoreResult = scoreResults.get(address.toLowerCase());
+        if (scoreResult) {
+          const localHealth = Math.round(scoreResult.localHealth);
+          await storage.updateLocalHealth(address, localHealth);
+          results.set(address, localHealth);
+        } else {
+          results.set(address, 0);
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Failed to recalculate LocalHealth iteratively:', error);
+      // Fallback to single-pass for each address
+      for (const address of addresses) {
+        try {
+          const localHealth = await this.recalculateLocalHealth(address);
+          results.set(address.toLowerCase(), localHealth);
+        } catch (err) {
+          console.error(`Failed to recalculate LocalHealth for ${address}:`, err);
+          results.set(address.toLowerCase(), 0);
+        }
+      }
+      return results;
+    }
   }
 
   async getCachedLocalHealth(address: string): Promise<number | null> {

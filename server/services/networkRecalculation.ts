@@ -25,6 +25,7 @@ export class NetworkRecalculationService {
 
   /**
    * Recalculate all LocalHealth scores across the entire network
+   * Uses iterative algorithm to properly weight vouches by voucher strength
    * This recomputes scores using the current algorithm parameters
    */
   async recalculateAllScores(): Promise<RecalculationResult> {
@@ -59,49 +60,56 @@ export class NetworkRecalculationService {
 
       console.log(`Found ${allGlobalVouches.length} global vouches`);
 
-      // Safety check: refuse to persist if no vouches found (prevents data corruption)
+      // Safety check: refuse to recalculate if no vouches found (prevents data corruption)
       if (allGlobalVouches.length === 0) {
         throw new Error("No global vouches found - refusing to recalculate to prevent data corruption");
       }
 
-      // Process each ego context
+      // Convert to EgoEndorsement format
+      const globalVouches: EgoEndorsement[] = allGlobalVouches.map(v => ({
+        endorser: v.endorser.toLowerCase() as Address,
+        endorsee: v.endorsee.toLowerCase() as Address,
+      }));
+
+      // Get all user addresses
+      const addresses = egoContexts.map(ctx => ctx.ownerAddress!.toLowerCase() as Address);
+
+      console.log(`Starting iterative LocalHealth calculation for ${addresses.length} users...`);
+
+      // Compute all scores iteratively (this properly weights vouches by voucher strength)
+      const scoreResults = this.egoScorer.computeLocalHealthIterative(
+        addresses,
+        globalVouches,
+        10, // maxIterations
+        0.5 // convergenceThreshold
+      );
+
+      // Process results
       for (const context of egoContexts) {
         result.totalProcessed++;
-        const ownerAddress = context.ownerAddress!.toLowerCase() as Address;
+        const ownerAddress = context.ownerAddress!.toLowerCase();
 
         try {
-          // Get co-seeds for this context
-          const userCoSeeds = await db
-            .select()
-            .from(coSeeds)
-            .where(eq(coSeeds.contextId, context.id));
+          const scoreResult = scoreResults.get(ownerAddress);
+          
+          if (scoreResult) {
+            result.scoresUpdated++;
+            result.details.push({
+              address: ownerAddress,
+              localHealth: scoreResult.localHealth,
+            });
 
-          const seedAddresses = userCoSeeds.map(cs => cs.address.toLowerCase() as Address);
-
-          // Convert to EgoEndorsement format
-          const globalVouches: EgoEndorsement[] = allGlobalVouches.map(v => ({
-            endorser: v.endorser.toLowerCase() as Address,
-            endorsee: v.endorsee.toLowerCase() as Address,
-          }));
-
-          // Compute LocalHealth score with current algorithm (pure graph-based)
-          // Note: LocalHealth scores are computed on-the-fly via /api/ego/:address/score
-          // This recalculation is for verification/dashboard purposes only
-          const scoreResult = this.egoScorer.computeLocalHealth(
-            ownerAddress,
-            seedAddresses,
-            globalVouches
-          );
-
-          result.scoresUpdated++;
-          result.details.push({
-            address: ownerAddress,
-            localHealth: scoreResult.localHealth,
-          });
-
-          console.log(
-            `Recalculated ${ownerAddress}: LocalHealth = ${scoreResult.localHealth.toFixed(2)}`
-          );
+            console.log(
+              `Recalculated ${ownerAddress}: LocalHealth = ${scoreResult.localHealth.toFixed(2)}`
+            );
+          } else {
+            result.errors++;
+            result.details.push({
+              address: ownerAddress,
+              localHealth: 0,
+              error: 'Score not computed in iterative algorithm',
+            });
+          }
         } catch (error) {
           result.errors++;
           result.details.push({
