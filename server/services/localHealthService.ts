@@ -23,11 +23,17 @@ export class LocalHealthService {
       }));
       
       const egoScorer = new EgoScorer();
-      const result = egoScorer.computeLocalHealth(
-        normalizedAddress as Address,
-        seedAddresses,
+      
+      // Use iterative algorithm for recursive trust weighting (co-seeds not used for LocalHealth)
+      const results = egoScorer.computeLocalHealthIterative(
+        [normalizedAddress as Address],
         globalVouches
       );
+      
+      const result = results.get(normalizedAddress);
+      if (!result) {
+        throw new Error(`Failed to compute LocalHealth for ${normalizedAddress}`);
+      }
       
       const localHealth = Math.round(result.localHealth);
       

@@ -544,24 +544,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Compute LocalHealth for each ego context
+      // Compute LocalHealth for all users at once using iterative algorithm
+      const allAddresses = allContexts
+        .map(c => c.ownerAddress?.toLowerCase())
+        .filter((addr): addr is string => !!addr) as `0x${string}`[];
+      
+      const results = scorer.computeLocalHealthIterative(allAddresses, formattedVouches);
+      
+      // Extract scores from results
       const scores: number[] = [];
-      for (const context of allContexts) {
-        try {
-          const ownerAddress = context.ownerAddress?.toLowerCase();
-          if (!ownerAddress) continue;
-
-          const seedAddresses = (coSeedsByContext.get(context.id) || []) as `0x${string}`[];
-
-          const result = scorer.computeLocalHealth(
-            ownerAddress as `0x${string}`,
-            seedAddresses,
-            formattedVouches
-          );
-
+      for (const addr of allAddresses) {
+        const result = results.get(addr);
+        if (result) {
           scores.push(result.localHealth);
-        } catch (error) {
-          console.error(`Error computing LocalHealth for ${context.ownerAddress}:`, error);
         }
       }
 
@@ -2563,11 +2558,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { EgoScorer } = await import("./algorithm/egoScoring");
       const scorer = new EgoScorer();
       
-      const result = scorer.computeLocalHealth(
-        ownerAddress as `0x${string}`,
-        seedAddresses as `0x${string}`[],
+      // Use iterative algorithm for recursive trust weighting (co-seeds not used for LocalHealth)
+      const results = scorer.computeLocalHealthIterative(
+        [ownerAddress as `0x${string}`],
         formattedVouches
       );
+      
+      const result = results.get(ownerAddress);
+      if (!result) {
+        return res.status(500).json({ error: "Failed to compute score" });
+      }
       
       res.json(result);
     } catch (error) {

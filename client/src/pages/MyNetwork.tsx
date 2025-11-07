@@ -271,109 +271,7 @@ export default function MyNetwork() {
             <Alert className="mt-6" data-testid="alert-scoring-info">
               <Info className="h-4 w-4" />
               <AlertDescription data-testid="text-scoring-info-message">
-                Your score starts at 0. Receive endorsements from others to increase your LocalHealth signal. Optional: Add co-seeds for enhanced Sybil resistance.
-              </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Co-Seeds Management Card */}
-      <Card className="mb-6" data-testid="card-co-seeds">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            <span data-testid="text-co-seeds-title">Anchor Co-Seeds ({coSeedCount}/{maxCoSeeds})</span>
-          </CardTitle>
-          <CardDescription data-testid="text-co-seeds-description">
-            Optional: Add up to 3 anchor points for your network graph to enhance Sybil resistance
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Add Co-Seed Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAddCoSeed)} className="space-y-4 mb-6">
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel data-testid="label-co-seed-address">Co-seed Address</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          data-testid="input-co-seed-address"
-                          placeholder="0x... wallet address"
-                          disabled={coSeedCount >= maxCoSeeds || addCoSeedMutation.isPending}
-                        />
-                      </FormControl>
-                      <Button
-                        type="submit"
-                        data-testid="button-add-co-seed"
-                        disabled={coSeedCount >= maxCoSeeds || addCoSeedMutation.isPending}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Co-Seed
-                      </Button>
-                    </div>
-                    <FormDescription data-testid="text-form-description">
-                      Enter a valid Ethereum address (0x...)
-                    </FormDescription>
-                    <FormMessage data-testid="text-form-error" />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-            
-          {coSeedCount >= maxCoSeeds && (
-            <Alert data-testid="alert-max-co-seeds" className="mb-4">
-              <Info className="h-4 w-4" />
-              <AlertDescription data-testid="text-max-co-seeds-message">
-                You've reached the maximum of {maxCoSeeds} co-seeds. Remove one to add another.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Co-Seeds List */}
-          {coSeedCount > 0 ? (
-            <div className="space-y-2">
-              <p className="text-sm font-medium mb-3" data-testid="text-co-seeds-list-label">Your Co-Seeds:</p>
-              {egoData?.coSeeds.map((coSeed) => (
-                <div
-                  key={coSeed.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  data-testid={`co-seed-${coSeed.address}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-mono text-sm" data-testid={`text-co-seed-address-${coSeed.address}`}>
-                        {coSeed.address.slice(0, 6)}...{coSeed.address.slice(-4)}
-                      </p>
-                      <p className="text-xs text-muted-foreground" data-testid={`text-co-seed-date-${coSeed.address}`}>
-                        Added {new Date(coSeed.addedAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    data-testid={`button-remove-co-seed-${coSeed.address}`}
-                    onClick={() => handleRemoveCoSeed(coSeed.address)}
-                    disabled={removeCoSeedMutation.isPending}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Alert data-testid="alert-no-co-seeds">
-              <Info className="h-4 w-4" />
-              <AlertDescription data-testid="text-no-co-seeds-message">
-                No co-seeds yet. Add anchor wallets to strengthen your network graph's Sybil resistance.
+                Your score starts at 0. Receive endorsements from others to increase your LocalHealth signal through the recursive trust algorithm.
               </AlertDescription>
             </Alert>
           )}
@@ -389,8 +287,8 @@ export default function MyNetwork() {
           <div>
             <h4 className="font-semibold mb-2" data-testid="text-section-title-ego">🌐 Ego-Centric Graph</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-ego">
-              Your network is centered on you and your chosen co-seeds. Unlike community networks with fixed criteria,
-              your personal network reflects the endorsement edges you create.
+              Your network is centered on incoming vouches that are weighted by voucher strength. The iterative algorithm
+              computes your score based on both the quantity and quality of endorsements.
             </p>
           </div>
           <div>
@@ -408,10 +306,10 @@ export default function MyNetwork() {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-capacity">🎯 Distance-Based Capacity</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-capacity">🔄 Recursive Weighting</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-capacity">
-              Nodes closer to you and your co-seeds have higher capacity in the graph. This prevents
-              distant collusion attacks.
+              Vouches are weighted by the voucher's LocalHealth score (capacity = voucherScore / 100).
+              Scores converge through iteration, creating true recursive trust propagation.
             </p>
           </div>
         </CardContent>

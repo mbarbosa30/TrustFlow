@@ -18,7 +18,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> for personal graph signals with user-controlled co-seeds, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. Personal networks use fixed acceptance criteria (flow ≥ 0.5, min-cut ≥ 2) for Sybil resistance. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms with recursive trust weighting. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> computed from incoming vouches weighted by voucher strength using an iterative algorithm, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. LocalHealth uses recursive weighting where vouch capacity = voucherScore / 100, creating trust propagation through the network. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
             <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
               <p className="text-sm mb-0">
@@ -34,11 +34,11 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              Each vouch is a simple binary endorsement. There are no weighted levels—just vouch for people in your network. The max-flow/min-cut algorithm determines network quality scores based on graph topology (path redundancy, distance from seeds) rather than explicit edge weights.
+              Each vouch is a simple binary endorsement from your perspective—you either vouch for someone or you don't. No complicated trust levels. However, the iterative algorithm automatically weights these vouches based on the voucher's network strength (capacity = voucherScore / 100), creating recursive trust propagation.
             </p>
             <div className="mt-3 p-3 rounded-lg bg-muted/30">
               <p className="text-sm mb-0">
-                <strong>Why binary vouches?</strong> Transparent weighted levels (e.g., "Known" vs. "Trusted") can create social friction when visible to others. A single vouch level keeps it simple while letting graph structure do the work.
+                <strong>Binary input, recursive weighting:</strong> You give a simple yes/no vouch, but the algorithm weights it by your LocalHealth score during computation. This keeps the user experience simple while achieving sophisticated Sybil resistance through recursive trust. Scores converge iteratively (max 10 rounds, threshold 0.5).
               </p>
             </div>
           </CardContent>
@@ -150,18 +150,15 @@ export default function HowItWorks() {
 
               <div className="p-4 rounded-lg bg-muted/30">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline">Optional</Badge>
-                  <span className="font-semibold">Hybrid Mode: Enhanced Sybil Resistance</span>
+                  <Badge variant="outline">Reserved</Badge>
+                  <span className="font-semibold">Co-Seeds (Future Features)</span>
                 </div>
                 <p className="text-sm mb-2">
-                  <strong>Add 1-3 co-seeds</strong> (people you trust) to anchor your network.
+                  <strong>Co-seeds are not used for LocalHealth scoring.</strong> They're reserved for future community-specific features where seed sets define trusted anchors.
                 </p>
-                <ul className="text-sm space-y-1 pl-4">
-                  <li>Flow sources: Your co-seeds</li>
-                  <li>Target: YOU</li>
-                  <li>Measures: "How well-connected am I within my trusted circle?"</li>
-                  <li>Benefit: Attackers can't fake connections to YOUR specific trusted people</li>
-                </ul>
+                <p className="text-xs text-muted-foreground">
+                  LocalHealth is computed entirely from incoming vouches weighted by voucher strength through the iterative algorithm.
+                </p>
               </div>
             </div>
 
@@ -427,14 +424,14 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              MaxFlow supports <strong>personal networks</strong> alongside traditional community-based scoring. Every user can run their own seeded network, choosing co-seeds and building a network through global vouches.
+              MaxFlow supports <strong>personal networks</strong> alongside traditional community-based scoring. Every user has a LocalHealth score computed from incoming vouches weighted by voucher strength using the iterative algorithm.
             </p>
 
             <div className="mt-4">
               <h4 className="font-semibold text-base mb-2">Hybrid Architecture</h4>
               <ul className="space-y-2">
                 <li>
-                  <strong>Personal Networks:</strong> You're automatically a seed for your own network. Add up to 3 trusted co-seeds to strengthen Sybil resistance. Global vouches (no community restriction) flow across all personal networks.
+                  <strong>Personal Networks:</strong> LocalHealth computed from incoming vouches weighted by voucher strength. No co-seeds required. Global vouches (no community restriction) contribute to LocalHealth scores across the network through recursive trust weighting.
                 </li>
                 <li>
                   <strong>Community Networks:</strong> Participate in lending, hiring, or governance communities with community-managed seeds and context-specific vouches (with prompts).
@@ -509,7 +506,7 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-4 text-sm text-muted-foreground">
-              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to manage your co-seeds and see placeholder Ego Score metrics.
+              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to view your LocalHealth score computed using the iterative recursive trust algorithm.
             </div>
           </CardContent>
         </Card>

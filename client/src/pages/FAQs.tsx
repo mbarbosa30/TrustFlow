@@ -34,10 +34,10 @@ export default function FAQs() {
               MaxFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
             </p>
             <p className="mb-2">
-              <strong>Why no levels?</strong> The max-flow/min-cut algorithm determines network quality scores based on network topology (path redundancy, distance from seeds, node capacity budgets) rather than explicit edge weights. This keeps it simple and avoids social friction from visible trust rankings.
+              <strong>Why no levels?</strong> Vouches are binary (yes/no) to keep the user action simple and avoid social friction from visible trust rankings. However, the algorithm weights these vouches by the voucher's LocalHealth score during computation.
             </p>
             <p>
-              Each vouch carries the same weight, but the graph structure does the heavy lifting to prevent Sybil attacks.
+              You give a simple binary vouch, but the iterative algorithm automatically weights it by your network strength (capacity = yourLocalHealth / 100). This recursive weighting is what prevents Sybil attacks.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -167,7 +167,7 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Personal Network (LocalHealth 0-100):</strong> A neutral graph signal measuring your network quality based on incoming vouches. No co-seeds required by default. Optionally add up to 3 co-seeds for hybrid mode with enhanced Sybil resistance. Your LocalHealth uses max-flow/min-cut with 60% weight on flow, 40% on network redundancy.
+              <strong>Personal Network (LocalHealth 0-100):</strong> A neutral graph signal measuring your network quality based on incoming vouches weighted by voucher strength using an iterative algorithm. Uses max-flow/min-cut with 60% weight on flow, 40% on network redundancy. Co-seeds not used for LocalHealth.
             </p>
             <p>
               <strong>Community Network (STS 0-100):</strong> Join context-specific communities (lending, hiring, governance) with community-managed seeds. Community vouches are isolated and tied to specific criteria via prompts. Each community computes your STS separately using a 5-component weighted formula. Applications interpret these neutral signals based on their specific needs.
@@ -181,13 +181,10 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              <strong>Co-seeds are optional.</strong> By default, your Ego Score is based purely on incoming vouches (Pure Option 2 mode) - no co-seeds required. You'll get a non-zero score as soon as someone vouches for you.
+              <strong>Co-seeds are not used for LocalHealth scoring.</strong> Your LocalHealth score is computed entirely from incoming vouches weighted by voucher strength through the iterative algorithm.
             </p>
             <p className="mb-2">
-              <strong>Why add co-seeds?</strong> Optionally add 1-3 trusted people to enable "hybrid mode" for enhanced Sybil resistance. The algorithm then measures flow from your co-seeds through the network to you, making it harder for attackers to fake connections to YOUR specific trusted people.
-            </p>
-            <p className="text-sm">
-              <strong>Tip:</strong> Start without co-seeds. Add them later if you want the extra security layer. You can manage co-seeds on your My Network page.
+              Co-seeds are available for future features like community-specific scoring (STS) where seed sets define trusted anchors, but they don't affect your personal LocalHealth score.
             </p>
           </AccordionContent>
         </AccordionItem>
