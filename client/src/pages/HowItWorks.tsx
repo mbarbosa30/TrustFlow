@@ -147,19 +147,6 @@ export default function HowItWorks() {
                   <li><strong>Score distribution:</strong> Depends on both vouch COUNT and voucher QUALITY (strong vouchers {'>'}  weak vouchers)</li>
                 </ul>
               </div>
-
-              <div className="p-4 rounded-lg bg-muted/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline">Reserved</Badge>
-                  <span className="font-semibold">Co-Seeds (Future Features)</span>
-                </div>
-                <p className="text-sm mb-2">
-                  <strong>Co-seeds are not used for LocalHealth scoring.</strong> They're reserved for future community-specific features where seed sets define trusted anchors.
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  LocalHealth is computed entirely from incoming vouches weighted by voucher strength through the iterative algorithm.
-                </p>
-              </div>
             </div>
 
             <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">

@@ -1,20 +1,10 @@
 import { useAccount } from "wagmi";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Users, Heart, Shield, Plus, X, Info, Network } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Info, Network } from "lucide-react";
 
 interface EgoContext {
   id: number;
@@ -25,16 +15,9 @@ interface EgoContext {
   createdAt: string;
 }
 
-interface CoSeed {
-  id: number;
-  contextId: number;
-  address: string;
-  addedAt: string;
-}
-
 interface EgoContextResponse {
   context: EgoContext;
-  coSeeds: CoSeed[];
+  coSeeds: any[];
   seedAddresses: string[];
 }
 
@@ -59,27 +42,9 @@ interface EgoScoreResponse {
   }>;
 }
 
-// Zod schema for co-seed address validation
-const coSeedSchema = z.object({
-  address: z.string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Must be a valid Ethereum address (0x...)")
-    .transform(val => val.toLowerCase()),
-});
-
-type CoSeedFormData = z.infer<typeof coSeedSchema>;
-
 export default function MyNetwork() {
   const { address } = useAccount();
   const { t } = useLanguage();
-  const { toast } = useToast();
-
-  // Form for adding co-seeds
-  const form = useForm<CoSeedFormData>({
-    resolver: zodResolver(coSeedSchema),
-    defaultValues: {
-      address: "",
-    },
-  });
 
   // Fetch ego context
   const { data: egoData, isLoading } = useQuery<EgoContextResponse>({
@@ -93,59 +58,6 @@ export default function MyNetwork() {
     enabled: !!address,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
-
-  // Add co-seed mutation
-  const addCoSeedMutation = useMutation({
-    mutationFn: async (coSeedAddress: string) => {
-      return await apiRequest('POST', `/api/ego/${address?.toLowerCase()}/co-seeds`, { coSeedAddress });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'context'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'score'] });
-      toast({
-        title: "Co-seed added",
-        description: "Your trusted co-seed has been added successfully.",
-      });
-      form.reset();
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add co-seed",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Remove co-seed mutation
-  const removeCoSeedMutation = useMutation({
-    mutationFn: async (coSeedAddress: string) => {
-      return await apiRequest('DELETE', `/api/ego/${address?.toLowerCase()}/co-seeds/${coSeedAddress}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'context'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/ego', address?.toLowerCase(), 'score'] });
-      toast({
-        title: "Co-seed removed",
-        description: "Co-seed has been removed from your network.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove co-seed",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleAddCoSeed = (data: CoSeedFormData) => {
-    addCoSeedMutation.mutate(data.address);
-  };
-
-  const handleRemoveCoSeed = (coSeedAddress: string) => {
-    removeCoSeedMutation.mutate(coSeedAddress);
-  };
 
   if (!address) {
     return (
@@ -171,9 +83,6 @@ export default function MyNetwork() {
       </div>
     );
   }
-
-  const coSeedCount = egoData?.coSeeds.length || 0;
-  const maxCoSeeds = 3;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">

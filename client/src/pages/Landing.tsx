@@ -95,11 +95,11 @@ export default function Landing() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Uses Dinic's algorithm to compute network flow from anchor seeds through the endorsement graph. 
-                  Your score (55% weight) is based on how much flow reaches you—not just who endorsed you.
+                  LocalHealth: Weighted flow from vouchers (capacity = voucherScore / 100) via iterative algorithm, 60% of score. Community STS: Flow from anchor seeds using Dinic's algorithm, 55% of score.
                 </p>
-                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
-                  Flow Component = 55% of STS
+                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg space-y-1">
+                  <div>LocalHealth Flow = 60%</div>
+                  <div>Community STS Flow = 55%</div>
                 </div>
               </CardContent>
             </Card>
@@ -320,8 +320,7 @@ export default function Landing() {
               <div className="flex-1">
                 <h3 className="text-xl font-semibold mb-2">System Runs Flow Algorithms</h3>
                 <p className="text-muted-foreground">
-                  Each epoch, we construct an Advogato-style graph and run max-flow/min-cut computation 
-                  (Dinic/preflow-push). Your score combines Flow (55%), Cut (25%), Stability (5%), Depth (10%), and PageRank (5%).
+                  Each epoch, we run max-flow/min-cut computation. LocalHealth (personal) uses iterative weighting: Flow (60%) + Redundancy (40%). Community STS combines Flow (55%), Cut (25%), Stability (5%), Depth (10%), PageRank (5%).
                 </p>
               </div>
             </div>

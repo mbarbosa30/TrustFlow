@@ -61,11 +61,24 @@ export default function FAQs() {
             How is my score computed?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            <p className="mb-2">We build a flow network from the seed set to all users. Your flow and min-cut (redundancy) are normalized into a Standardized Network Score (STS) from 0–100. This is a neutral graph signal—applications interpret it based on their context.</p>
-            <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              STS = 100 × (0.55F + 0.25C + 0.05S + 0.10D + 0.05P)
+            <p className="mb-2"><strong>Two scoring models:</strong></p>
+            <div className="space-y-3 mb-2">
+              <div>
+                <p className="font-semibold text-sm mb-1">LocalHealth (Personal Networks):</p>
+                <div className="font-mono text-sm bg-muted/50 p-2 rounded-md">
+                  LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
+                </div>
+                <p className="text-xs mt-1">Iterative algorithm with weighted vouches (capacity = voucherScore / 100). ResidualFlow = directFlow / voucherCount captures average voucher strength.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-sm mb-1">Community STS (Seed-Based):</p>
+                <div className="font-mono text-sm bg-muted/50 p-2 rounded-md">
+                  STS = 100 × (0.55F + 0.25C + 0.05S + 0.10D + 0.05P)
+                </div>
+                <p className="text-xs mt-1">Flow from community seeds using Dinic's algorithm.</p>
+              </div>
             </div>
-            <p>See "How it Works" for detailed formulas.</p>
+            <p className="text-sm">See "How it Works" for detailed formulas.</p>
           </AccordionContent>
         </AccordionItem>
 
