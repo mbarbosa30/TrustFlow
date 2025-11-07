@@ -31,7 +31,6 @@ const ENDORSEMENT_TYPES = {
     { name: "endorsee", type: "address" },
     { name: "epoch", type: "uint64" },
     { name: "nonce", type: "uint64" },
-    { name: "timestamp", type: "uint64" },
   ],
 } as const;
 
@@ -141,15 +140,11 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
       const nonceData = await nonceResponse.json();
       const nonce = BigInt(nonceData.nextNonce);
 
-      // Include client timestamp in signature for tamper-evidence
-      const timestamp = BigInt(Date.now());
-
       const message = {
         endorser: address,
         endorsee: endorseeAddress,
         epoch,
         nonce,
-        timestamp,
       };
 
       // Sign with wagmi using user's current chain
@@ -167,7 +162,6 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
           endorsee: endorseeAddress,
           epoch,
           nonce,
-          timestamp,
         },
       });
 
@@ -183,7 +177,6 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
             endorsee: endorseeAddress,
             epoch: epoch.toString(),
             nonce: nonce.toString(),
-            timestamp: timestamp.toString(),
             sig: signature,
             chainId: chainId, // Include chainId for EIP-712 signature verification
           }
@@ -202,7 +195,6 @@ export function EndorseForm({ onEndorse, initialAddress }: EndorseFormProps) {
           endorsee: endorseeAddress,
           epoch: epoch.toString(),
           nonce: nonce.toString(),
-          timestamp: timestamp.toString(),
           sig: signature,
           chainId: chainId,
           communityId: parseInt(selectedCommunityId, 10),

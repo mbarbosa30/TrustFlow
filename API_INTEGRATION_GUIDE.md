@@ -135,7 +135,6 @@ Creates a global vouch (endorsement) that works across all communities. Requires
     "endorsee": "0x5678...",
     "epoch": "1",
     "nonce": "1",
-    "timestamp": "1699564800",
     "sig": "0xabcd...",
     "chainId": 42220,
     "note": "Optional message about this vouch"
@@ -157,16 +156,14 @@ Creates a global vouch (endorsement) that works across all communities. Requires
       { name: "endorser", type: "address" },
       { name: "endorsee", type: "address" },
       { name: "epoch", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "timestamp", type: "uint256" }
+      { name: "nonce", type: "uint256" }
     ]
   },
   message: {
     endorser: "0x1234...",
     endorsee: "0x5678...",
     epoch: 1n,
-    nonce: 1n,
-    timestamp: 1699564800n
+    nonce: 1n
   }
 }
 ```
@@ -221,7 +218,6 @@ Creates a community-specific endorsement with a prompt hash for context-aware tr
   "endorsee": "0x5678...",
   "epoch": "1",
   "nonce": "1",
-  "timestamp": "1699564800",
   "sig": "0xabcd...",
   "chainId": 42220,
   "communityId": 1,
@@ -237,7 +233,6 @@ Creates a community-specific endorsement with a prompt hash for context-aware tr
 | `endorsee` | address | Yes | Wallet being endorsed |
 | `epoch` | string | Yes | Current epoch number |
 | `nonce` | string | Yes | Unique nonce for this endorser+epoch |
-| `timestamp` | string | Yes | Unix timestamp (seconds) |
 | `sig` | hex | Yes | EIP-712 signature |
 | `chainId` | number | No | Chain ID (e.g., 42220 for Celo) |
 | `communityId` | number | Yes | Community ID (0 = global) |
@@ -318,7 +313,6 @@ async function createGlobalVouch(endorseeAddress) {
       { name: 'endorsee', type: 'address' },
       { name: 'epoch', type: 'uint256' },
       { name: 'nonce', type: 'uint256' },
-      { name: 'timestamp', type: 'uint256' },
     ],
   };
   
@@ -327,7 +321,6 @@ async function createGlobalVouch(endorseeAddress) {
     endorsee: endorseeAddress,
     epoch: BigInt(epoch.id),
     nonce: BigInt(nextNonce),
-    timestamp: BigInt(Math.floor(Date.now() / 1000)),
   };
   
   // 4. Sign the message
@@ -343,7 +336,6 @@ async function createGlobalVouch(endorseeAddress) {
         endorsee: message.endorsee,
         epoch: message.epoch.toString(),
         nonce: message.nonce.toString(),
-        timestamp: message.timestamp.toString(),
         sig: signature,
         chainId: 42220,
       },
@@ -404,7 +396,6 @@ async function createGlobalVouchViem(endorseeAddress) {
         { name: 'endorsee', type: 'address' },
         { name: 'epoch', type: 'uint256' },
         { name: 'nonce', type: 'uint256' },
-        { name: 'timestamp', type: 'uint256' },
       ],
     },
     message: {
@@ -412,7 +403,6 @@ async function createGlobalVouchViem(endorseeAddress) {
       endorsee: endorseeAddress,
       epoch: BigInt(epoch.id),
       nonce: BigInt(nextNonce),
-      timestamp: BigInt(Math.floor(Date.now() / 1000)),
     },
     primaryType: 'Endorsement',
   });
@@ -427,7 +417,6 @@ async function createGlobalVouchViem(endorseeAddress) {
         endorsee: endorseeAddress,
         epoch: epoch.id.toString(),
         nonce: nextNonce.toString(),
-        timestamp: Math.floor(Date.now() / 1000).toString(),
         sig: signature,
         chainId: 42220,
       },
