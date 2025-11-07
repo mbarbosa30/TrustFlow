@@ -27,6 +27,78 @@ export class EgoScorer {
     this.config = { ...DEFAULT_EGO_CONFIG, ...config };
   }
 
+  /**
+   * Compute LocalHealth iteratively for all users to properly weight vouches by voucher strength
+   * Uses iterative algorithm similar to PageRank where scores converge over multiple rounds
+   * 
+   * @param addresses - All user addresses to compute scores for
+   * @param globalVouches - All endorsements in the network
+   * @param maxIterations - Maximum number of iterations (default 10)
+   * @param convergenceThreshold - Stop when max score change < this value (default 0.5)
+   * @returns Map of address to EgoScoreResult
+   */
+  computeLocalHealthIterative(
+    addresses: Address[],
+    globalVouches: EgoEndorsement[],
+    maxIterations: number = 10,
+    convergenceThreshold: number = 0.5
+  ): Map<string, EgoScoreResult> {
+    // Step 1: Initialize scores based on incoming vouch count (simple baseline)
+    const currentScores = new Map<string, number>();
+    for (const addr of addresses) {
+      const addrLower = addr.toLowerCase();
+      const incomingCount = globalVouches.filter(
+        v => v.endorsee.toLowerCase() === addrLower
+      ).length;
+      // Initial score: scaled by vouch count with reasonable baseline
+      // 0 vouches = 0, 1 vouch = 10, 5 vouches = 50, 10+ vouches = 100
+      const initialScore = Math.min(100, Math.sqrt(incomingCount) * 20);
+      currentScores.set(addrLower, initialScore);
+    }
+
+    // Step 2: Iterate until convergence
+    let iteration = 0;
+    for (; iteration < maxIterations; iteration++) {
+      const newScores = new Map<string, number>();
+      let maxChange = 0;
+
+      // Recalculate everyone's score based on current voucher scores
+      for (const addr of addresses) {
+        const result = this.computePureOption2Score(addr, globalVouches, currentScores);
+        const addrLower = addr.toLowerCase();
+        newScores.set(addrLower, result.localHealth);
+        
+        const oldScore = currentScores.get(addrLower) || 0;
+        const change = Math.abs(result.localHealth - oldScore);
+        maxChange = Math.max(maxChange, change);
+      }
+
+      // Update scores for next iteration
+      for (const [addr, score] of Array.from(newScores.entries())) {
+        currentScores.set(addr, score);
+      }
+
+      // Check convergence
+      if (maxChange < convergenceThreshold) {
+        console.log(`LocalHealth converged after ${iteration + 1} iterations (max change: ${maxChange.toFixed(2)})`);
+        break;
+      }
+    }
+
+    if (iteration === maxIterations) {
+      console.log(`LocalHealth reached max iterations (${maxIterations}), final max change may be > ${convergenceThreshold}`);
+    }
+
+    // Step 3: Final pass to get complete results with final scores
+    const results = new Map<string, EgoScoreResult>();
+    for (const addr of addresses) {
+      const result = this.computePureOption2Score(addr, globalVouches, currentScores);
+      results.set(addr.toLowerCase(), result);
+    }
+
+    return results;
+  }
+
   computeLocalHealth(
     ownerAddress: Address,
     seedAddresses: Address[],
@@ -350,12 +422,15 @@ export class EgoScorer {
    * Measures: "How much does the network trust me?"
    * 
    * Scoring Formula:
-   * - Flow component (60%): Incoming trust saturation
+   * - Flow component (60%): Incoming trust saturation (weighted by voucher strength)
    * - Cut component (40%): Effective redundancy (multi-hop path diversity)
+   * 
+   * @param voucherScores - Optional map of current LocalHealth scores for weighting vouches
    */
   private computePureOption2Score(
     ownerAddress: Address,
-    globalVouches: EgoEndorsement[]
+    globalVouches: EgoEndorsement[],
+    voucherScores?: Map<string, number>
   ): EgoScoreResult {
     // Find everyone who vouched for the owner (direct vouchers)
     const directVouchers = globalVouches
@@ -397,10 +472,16 @@ export class EgoScorer {
       directGraph.addEdge(SOURCE, voucher, 1.0);
     }
 
-    // Add direct voucher → owner edges (unit capacity, no boosting)
+    // Add direct voucher → owner edges weighted by voucher strength
+    // If voucherScores provided, weight by voucher's LocalHealth (normalized to 0-1)
+    // Otherwise use unit capacity for initial/single-pass calculation
     let maxInboundCapacity = 0;
     for (const voucher of directVouchers) {
-      const capacity = 1.0;
+      let capacity = 1.0;
+      if (voucherScores) {
+        const voucherScore = voucherScores.get(voucher.toLowerCase()) ?? 50; // Default to mid-range
+        capacity = voucherScore / 100; // Normalize 0-100 score to 0-1 capacity
+      }
       directGraph.addEdge(voucher, ownerAddress, capacity);
       maxInboundCapacity += capacity;
     }
