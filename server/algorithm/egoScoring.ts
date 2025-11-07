@@ -475,7 +475,6 @@ export class EgoScorer {
     // Add direct voucher → owner edges weighted by voucher strength
     // If voucherScores provided, weight by voucher's LocalHealth (normalized to 0-1)
     // Otherwise use unit capacity for initial/single-pass calculation
-    let maxInboundCapacity = 0;
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       if (voucherScores) {
@@ -483,15 +482,17 @@ export class EgoScorer {
         capacity = voucherScore / 100; // Normalize 0-100 score to 0-1 capacity
       }
       directGraph.addEdge(voucher, ownerAddress, capacity);
-      maxInboundCapacity += capacity;
     }
 
     const directFlowSolver = new DinicMaxFlow(directGraph);
     const directFlow = directFlowSolver.computeMaxFlow();
 
-    // Calculate residual flow (saturation of incoming capacity)
-    const residualFlow = maxInboundCapacity > 0 
-      ? Math.min(1.0, directFlow / maxInboundCapacity)
+    // Calculate residual flow as AVERAGE VOUCHER STRENGTH
+    // Normalize by unweighted maximum (number of vouchers) to capture voucher quality
+    // directFlow = sum of voucher strengths (weighted)
+    // residualFlow = average voucher strength (directFlow / number of vouchers)
+    const residualFlow = directVouchers.length > 0
+      ? Math.min(1.0, directFlow / directVouchers.length)
       : 0;
 
     // Step 3: Compute effective redundancy using network metrics (simpler & more accurate)
@@ -569,7 +570,7 @@ export class EgoScorer {
         acceptedUsers: directVouchers.length,
         avgResidualFlow: Math.round(residualFlow * 1000) / 1000,
         medianMinCut: Math.round(effectiveRedundancy * 100) / 100,
-        maxPossibleFlow: maxInboundCapacity,
+        maxPossibleFlow: directFlow, // Weighted max flow (sum of voucher strengths)
       },
       nodeDetails: directVouchers.map(voucher => ({
         address: voucher,
