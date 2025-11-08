@@ -1,5 +1,5 @@
 import { useRef, useCallback, useMemo, useState, useEffect } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import ForceGraph3D from "react-force-graph-3d";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -122,18 +122,17 @@ export function LocalHealthGraph({
     }
   }, [themeColors, scoreRange]);
 
-  // Node size based on LocalHealth score (auto-scaled to actual data range)
+  // Node size based on LocalHealth score (auto-scaled for 3D, smaller overall)
   const getNodeSize = useCallback((node: GraphNode) => {
-    const baseSize = 4;
-    const maxSize = 14;
+    const baseSize = 1;
+    const maxSize = 6;
     const { min, max } = scoreRange;
     
     // Normalize score to 0-1 based on actual data range
     const normalizedScore = (node.localHealth - min) / (max - min);
     
-    // Use square root for more dramatic visual difference
-    const scoreMultiplier = Math.sqrt(normalizedScore);
-    return baseSize + (scoreMultiplier * (maxSize - baseSize));
+    // Use linear scaling for more dramatic visual difference in 3D
+    return baseSize + (normalizedScore * (maxSize - baseSize));
   }, [scoreRange]);
 
   // Create a map of node IDs to LocalHealth scores for edge strength calculation
@@ -275,7 +274,7 @@ export function LocalHealthGraph({
         </CardHeader>
         <CardContent className="p-0">
           <div className="relative" style={{ height: `${height}px` }}>
-            <ForceGraph2D
+            <ForceGraph3D
               ref={graphRef}
               graphData={graphData}
               nodeId="id"
@@ -287,7 +286,7 @@ export function LocalHealthGraph({
               nodeVal={getNodeSize}
               linkColor={getLinkColor}
               linkWidth={getLinkWidth}
-              linkDirectionalArrowLength={6}
+              linkDirectionalArrowLength={3.5}
               linkDirectionalArrowRelPos={0.9}
               linkDirectionalArrowColor={getLinkColor}
               onNodeClick={handleNodeClick}
@@ -298,7 +297,8 @@ export function LocalHealthGraph({
               d3VelocityDecay={0.3}
               width={undefined}
               height={height}
-              backgroundColor="transparent"
+              backgroundColor="rgba(0,0,0,0)"
+              showNavInfo={false}
             />
           </div>
         </CardContent>
