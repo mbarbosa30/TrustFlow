@@ -12,6 +12,7 @@ import { NetworkDensityChart } from "@/components/NetworkDensityChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
 import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
 import { PageRankMetrics } from "@/components/PageRankMetrics";
+import { LocalHealthGraph } from "@/components/graph/LocalHealthGraph";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Heart, TrendingUp } from "lucide-react";
@@ -272,6 +273,8 @@ export default function Dashboard() {
               isLoading={isLoadingLocalHealth}
             />
           )}
+
+          <LocalHealthGraph limit={50} communityId={0} height={500} />
         </div>
 
         <Separator className="my-8" />

@@ -588,6 +588,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Graph data endpoint for LocalHealth network visualization
+  app.get("/api/graph/local-health", async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const communityId = parseInt(req.query.communityId as string) || 0;
+
+      // Get endorsements for the network
+      const endorsements = await storage.getEndorsements({
+        communityId,
+        limit: limit * 10 // Get more edges to ensure connected graph
+      });
+
+      if (endorsements.length === 0) {
+        return res.status(200).json({
+          nodes: [],
+          links: []
+        });
+      }
+
+      // Collect unique addresses from endorsements
+      const addressSet = new Set<string>();
+      endorsements.forEach(e => {
+        addressSet.add(e.endorser.toLowerCase());
+        addressSet.add(e.endorsee.toLowerCase());
+      });
+
+      const addresses = Array.from(addressSet).slice(0, limit) as `0x${string}`[];
+
+      // Compute LocalHealth scores for all nodes
+      const formattedVouches = endorsements.map(e => ({
+        endorser: e.endorser.toLowerCase() as `0x${string}`,
+        endorsee: e.endorsee.toLowerCase() as `0x${string}`,
+      }));
+
+      const { EgoScorer } = await import("./algorithm/egoScoring");
+      const scorer = new EgoScorer();
+      const results = scorer.computeLocalHealthIterative(addresses, formattedVouches);
+
+      // Build nodes array with LocalHealth scores and degree
+      const nodes = addresses.map(address => {
+        const result = results.get(address);
+        const degree = formattedVouches.filter(
+          v => v.endorser === address || v.endorsee === address
+        ).length;
+
+        return {
+          id: address,
+          address,
+          localHealth: result?.localHealth || 0,
+          degree,
+          flowScore: result?.flowScore || 0,
+          redundancyScore: result?.redundancyScore || 0
+        };
+      });
+
+      // Build links array (filter to only include nodes we're showing)
+      const nodeIds = new Set(addresses);
+      const links = endorsements
+        .filter(e => 
+          nodeIds.has(e.endorser.toLowerCase() as `0x${string}`) && 
+          nodeIds.has(e.endorsee.toLowerCase() as `0x${string}`)
+        )
+        .map(e => ({
+          source: e.endorser.toLowerCase(),
+          target: e.endorsee.toLowerCase()
+        }));
+
+      return res.status(200).json({
+        nodes,
+        links
+      });
+    } catch (error) {
+      console.error("Error fetching graph data:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/stats", async (req, res) => {
     try {
       // Platform-wide aggregates
