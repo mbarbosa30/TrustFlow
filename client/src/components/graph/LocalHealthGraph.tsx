@@ -106,20 +106,48 @@ export function LocalHealthGraph({
     }
   }, [themeColors]);
 
-  // Node size based on LocalHealth score
+  // Node size based on LocalHealth score (enhanced variation)
   const getNodeSize = useCallback((node: GraphNode) => {
-    const baseSize = 3;
+    const baseSize = 4;
+    const maxSize = 12;
+    // Use square root for more dramatic visual difference
     const scoreMultiplier = Math.sqrt(node.localHealth / 100);
-    return baseSize + (scoreMultiplier * 5);
+    return baseSize + (scoreMultiplier * (maxSize - baseSize));
   }, []);
 
-  // Link color (memoized)
-  const linkColor = useMemo(() => {
-    const hsl = themeColors.border;
-    return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]} / 0.3)`;
-  }, [themeColors]);
+  // Create a map of node IDs to LocalHealth scores for edge strength calculation
+  const nodeScoreMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (data?.nodes) {
+      data.nodes.forEach(node => {
+        map.set(node.id, node.localHealth);
+      });
+    }
+    return map;
+  }, [data?.nodes]);
 
-  const getLinkColor = useCallback(() => linkColor, [linkColor]);
+  // Link width based on source node's LocalHealth (voucher strength)
+  const getLinkWidth = useCallback((link: any) => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const sourceScore = nodeScoreMap.get(sourceId) || 0;
+    // Map score (0-100) to width (0.5-3)
+    const minWidth = 0.5;
+    const maxWidth = 3;
+    return minWidth + (sourceScore / 100) * (maxWidth - minWidth);
+  }, [nodeScoreMap]);
+
+  // Link color with opacity based on source node's LocalHealth
+  const getLinkColor = useCallback((link: any) => {
+    const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+    const sourceScore = nodeScoreMap.get(sourceId) || 0;
+    // Map score (0-100) to opacity (0.2-0.8)
+    const minOpacity = 0.2;
+    const maxOpacity = 0.8;
+    const opacity = minOpacity + (sourceScore / 100) * (maxOpacity - minOpacity);
+    
+    const hsl = themeColors.border;
+    return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]} / ${opacity})`;
+  }, [themeColors, nodeScoreMap]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
@@ -227,9 +255,10 @@ export function LocalHealthGraph({
               nodeColor={getNodeColor}
               nodeVal={getNodeSize}
               linkColor={getLinkColor}
-              linkWidth={1}
-              linkDirectionalArrowLength={3}
-              linkDirectionalArrowRelPos={1}
+              linkWidth={getLinkWidth}
+              linkDirectionalArrowLength={6}
+              linkDirectionalArrowRelPos={0.9}
+              linkDirectionalArrowColor={getLinkColor}
               onNodeClick={handleNodeClick}
               onNodeHover={handleNodeHover}
               enableNodeDrag={true}
