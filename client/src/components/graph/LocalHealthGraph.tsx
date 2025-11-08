@@ -84,36 +84,57 @@ export function LocalHealthGraph({
     };
   }, [themeVersion]);
 
-  // Color scale based on LocalHealth score (0-100)
+  // Calculate actual score range from data for auto-scaling
+  const scoreRange = useMemo(() => {
+    if (!data || data.nodes.length === 0) {
+      return { min: 0, max: 100 };
+    }
+    const scores = data.nodes.map(n => n.localHealth);
+    const min = Math.min(...scores);
+    const max = Math.max(...scores);
+    // Ensure we have some range to work with
+    return { min, max: max > min ? max : min + 1 };
+  }, [data]);
+
+  // Color scale based on LocalHealth score (auto-scaled to actual data range)
   const getNodeColor = useCallback((node: GraphNode) => {
     const score = node.localHealth;
+    const { min, max } = scoreRange;
     
-    if (score >= 80) {
+    // Normalize score to 0-100 range based on actual data
+    const normalizedScore = ((score - min) / (max - min)) * 100;
+    
+    if (normalizedScore >= 80) {
       const hsl = themeColors.primary;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
-    } else if (score >= 60) {
+    } else if (normalizedScore >= 60) {
       const hsl = themeColors.primary;
       return `hsl(${hsl[0]} ${hsl[1]} ${Math.min(100, parseInt(hsl[2]) + 20)}%)`;
-    } else if (score >= 40) {
+    } else if (normalizedScore >= 40) {
       const hsl = themeColors.accent;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
-    } else if (score >= 20) {
+    } else if (normalizedScore >= 20) {
       const hsl = themeColors.muted;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
     } else {
       const hsl = themeColors.destructive;
       return `hsl(${hsl[0]} ${hsl[1]} ${Math.min(100, parseInt(hsl[2]) + 30)}%)`;
     }
-  }, [themeColors]);
+  }, [themeColors, scoreRange]);
 
-  // Node size based on LocalHealth score (enhanced variation)
+  // Node size based on LocalHealth score (auto-scaled to actual data range)
   const getNodeSize = useCallback((node: GraphNode) => {
     const baseSize = 4;
-    const maxSize = 12;
+    const maxSize = 14;
+    const { min, max } = scoreRange;
+    
+    // Normalize score to 0-1 based on actual data range
+    const normalizedScore = (node.localHealth - min) / (max - min);
+    
     // Use square root for more dramatic visual difference
-    const scoreMultiplier = Math.sqrt(node.localHealth / 100);
+    const scoreMultiplier = Math.sqrt(normalizedScore);
     return baseSize + (scoreMultiplier * (maxSize - baseSize));
-  }, []);
+  }, [scoreRange]);
 
   // Create a map of node IDs to LocalHealth scores for edge strength calculation
   const nodeScoreMap = useMemo(() => {
@@ -126,28 +147,38 @@ export function LocalHealthGraph({
     return map;
   }, [data?.nodes]);
 
-  // Link width based on source node's LocalHealth (voucher strength)
+  // Link width based on source node's LocalHealth (voucher strength, auto-scaled)
   const getLinkWidth = useCallback((link: any) => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-    const sourceScore = nodeScoreMap.get(sourceId) || 0;
-    // Map score (0-100) to width (0.5-3)
+    const sourceScore = nodeScoreMap.get(sourceId) || scoreRange.min;
+    const { min, max } = scoreRange;
+    
+    // Normalize to 0-1 based on actual data range
+    const normalizedScore = (sourceScore - min) / (max - min);
+    
+    // Map normalized score to width (0.5-3)
     const minWidth = 0.5;
     const maxWidth = 3;
-    return minWidth + (sourceScore / 100) * (maxWidth - minWidth);
-  }, [nodeScoreMap]);
+    return minWidth + normalizedScore * (maxWidth - minWidth);
+  }, [nodeScoreMap, scoreRange]);
 
-  // Link color with opacity based on source node's LocalHealth
+  // Link color with opacity based on source node's LocalHealth (auto-scaled)
   const getLinkColor = useCallback((link: any) => {
     const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-    const sourceScore = nodeScoreMap.get(sourceId) || 0;
-    // Map score (0-100) to opacity (0.2-0.8)
+    const sourceScore = nodeScoreMap.get(sourceId) || scoreRange.min;
+    const { min, max } = scoreRange;
+    
+    // Normalize to 0-1 based on actual data range
+    const normalizedScore = (sourceScore - min) / (max - min);
+    
+    // Map normalized score to opacity (0.2-0.8)
     const minOpacity = 0.2;
     const maxOpacity = 0.8;
-    const opacity = minOpacity + (sourceScore / 100) * (maxOpacity - minOpacity);
+    const opacity = minOpacity + normalizedScore * (maxOpacity - minOpacity);
     
     const hsl = themeColors.border;
     return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]} / ${opacity})`;
-  }, [themeColors, nodeScoreMap]);
+  }, [themeColors, nodeScoreMap, scoreRange]);
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
