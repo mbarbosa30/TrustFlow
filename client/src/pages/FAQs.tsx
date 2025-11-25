@@ -237,6 +237,9 @@ export default function FAQs() {
                 <li><strong>Recursive trust:</strong> Your vouchers' scores depend on their vouchers, creating trust propagation</li>
                 <li><strong>Average voucher strength:</strong> ResidualFlow = directFlow / voucherCount captures voucher quality</li>
               </ul>
+              <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-primary/20">
+                <strong>API fields:</strong> Graph shows <span className="font-mono">voucherCount</span> and <span className="font-mono">avgVoucherStrength</span> (%) which map to the formula's flowScore.
+              </p>
             </div>
             <p className="text-sm mb-2">
               <strong>Flow Component (60%):</strong> Measures weighted incoming trust from vouchers. Strong vouchers (high LocalHealth) contribute more than weak vouchers.
@@ -338,18 +341,23 @@ export default function FAQs() {
             What is KUDOS and how does it work?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
+            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 mb-3">
+              <p className="text-sm font-semibold text-primary mb-1">
+                Pure Rewards Layer (Nov 2025)
+              </p>
+              <p className="text-xs">
+                <strong>KUDOS does NOT influence LocalHealth scores.</strong> It's a one-way relationship: LocalHealth determines KUDOS rewards, but KUDOS never affects scoring. This preserves LocalHealth as a pure graph-based signal.
+              </p>
+            </div>
             <p className="mb-2">
               KUDOS is an off-chain reputation token that you earn based on your LocalHealth score:
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm mb-2">
-              <li><strong>Daily Claims:</strong> Claim amount = (LocalHealth² / 100), capped at 1000 KUDOS/day</li>
-              <li><strong>24-Hour Cooldown:</strong> Must wait 24 hours between claims</li>
+              <li><strong>Weekly Claims:</strong> Claim amount = (LocalHealth² / 100), capped at 1000 KUDOS/day</li>
+              <li><strong>7-Day Cooldown:</strong> Must wait 7 days between claims</li>
               <li><strong>1% Transfer Fee:</strong> 0.5% burned (deflationary), 0.5% pooled for future claims</li>
-              <li><strong>Edge Capacity Boost:</strong> Transfer KUDOS to boost trust edge capacities (180-day exponential decay)</li>
+              <li><strong>Transferable:</strong> Send KUDOS to others as reputation gifts</li>
             </ul>
-            <p className="text-sm mb-2">
-              <strong>Boost Formula:</strong> Threshold of 500 KUDOS for 1x boost, max 2x boost with exponential decay. Edge capacities use simple distance decay (1.0 / 2^distance). Higher threshold makes KUDOS a subtle nudge rather than a scoring lever.
-            </p>
             <p className="text-sm">
               View KUDOS economics and supply metrics on the KUDOS Economics page.
             </p>
