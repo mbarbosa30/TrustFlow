@@ -3,7 +3,7 @@ import { useWallet } from '@/hooks/useWallet';
 import { ComponentsBreakdown } from "@/components/ComponentsBreakdown";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
-import { Info, Network, Shield, GitBranch } from "lucide-react";
+import { Info, Network, Shield, GitBranch, Leaf, TreePine, Waves } from "lucide-react";
 
 export default function WhyScore() {
   const { isConnected, address } = useWallet();
@@ -65,15 +65,27 @@ export default function WhyScore() {
 
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div className="p-3 rounded bg-muted/30">
-                  <div className="text-sm font-semibold">Flow Component (60%)</div>
+                  <div className="text-sm font-semibold flex items-center gap-1">
+                    <Waves className="w-3 h-3 text-blue-500" />
+                    Flow Component (60%)
+                  </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     Direct flow from vouchers to you, normalized by healthy baseline (5 vouches)
                   </div>
+                  <div className="text-[0.65rem] text-primary/70 mt-1 italic">
+                    Like rivers finding paths to the sea through network topology
+                  </div>
                 </div>
                 <div className="p-3 rounded bg-muted/30">
-                  <div className="text-sm font-semibold">Redundancy Component (40%)</div>
+                  <div className="text-sm font-semibold flex items-center gap-1">
+                    <GitBranch className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    Redundancy Component (40%)
+                  </div>
                   <div className="text-xs text-muted-foreground mt-1">
                     Network depth and connectivity: vouch count + upstream supporters + edge density
+                  </div>
+                  <div className="text-[0.65rem] text-primary/70 mt-1 italic">
+                    Like forest mycorrhizal networks—multiple paths = resilience
                   </div>
                 </div>
               </div>
@@ -106,11 +118,15 @@ export default function WhyScore() {
                   Why Endorsements Stay Meaningful: Built-In Accountability
                 </h3>
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
-                  <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
+                  <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
+                    <Leaf className="w-4 h-4" />
                     Your score is influenced by who YOU vouch for
                   </p>
-                  <p className="text-xs text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mb-1">
                     This two-way accountability is the core anti-Sybil mechanism. Vouching for {'>'}10 people applies a penalty to your redundancy component (40% of total score), creating economic cost to spam.
+                  </p>
+                  <p className="text-[0.65rem] text-amber-700/70 dark:text-amber-300/70 mb-3 italic">
+                    Like ecosystems: organisms that take without contributing get naturally pruned from symbiotic networks.
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
@@ -144,10 +160,16 @@ export default function WhyScore() {
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <h4 className="font-semibold text-xs mb-1">Recursive Weighting</h4>
+                    <h4 className="font-semibold text-xs mb-1 flex items-center gap-1">
+                      <TreePine className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      Recursive Weighting
+                    </h4>
                     <p className="text-xs text-muted-foreground">
                       Vouches are weighted by voucher's LocalHealth score. A vouch from someone with a high score carries more weight 
                       than one from someone with a low score—making score bootstrapping computationally expensive.
+                    </p>
+                    <p className="text-[0.65rem] text-primary/70 mt-1 italic">
+                      Like root systems: stronger roots get more nutrients, enabling more growth
                     </p>
                   </div>
                 </div>

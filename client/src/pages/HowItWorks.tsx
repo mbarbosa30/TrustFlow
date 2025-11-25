@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Leaf, Waves, TreePine, GitBranch } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -23,6 +24,16 @@ export default function HowItWorks() {
             <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
               <p className="text-sm mb-0">
                 <strong>These scores are neutral signals</strong>—MaxFlow computes verifiable graph metrics (flow, redundancy, connectivity). Your application chooses their meaning: creditworthiness, governance weight, access control, grant allocation, etc.
+              </p>
+            </div>
+
+            <div className="mt-4 p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <p className="text-sm flex items-center gap-2 mb-2">
+                <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <strong>Nature Already Solved This</strong>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Rivers find paths to the sea through topology alone. Root systems grow stronger by feeding from healthy neighbors. Mycorrhizal networks isolate freeloading organisms. MaxFlow makes these patterns computable for social graphs—we discovered the math, not invented it.
               </p>
             </div>
           </CardContent>
@@ -78,6 +89,12 @@ export default function HowItWorks() {
                   <li><strong>Graph quality:</strong> When endorsements are selective, the resulting graph signals (flow, redundancy) are reliable</li>
                   <li><strong>Neutral enforcement:</strong> The system penalizes graph spam; applications interpret the cleaned signal</li>
                 </ul>
+                <div className="mt-3 pt-3 border-t border-primary/10">
+                  <p className="text-xs text-primary/70 italic flex items-start gap-2">
+                    <Leaf className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span>Like ecosystems: organisms that over-extend get naturally pruned. Species that take without contributing eventually get excluded from symbiotic networks.</span>
+                  </p>
+                </div>
               </div>
             </div>
 

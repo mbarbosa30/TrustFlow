@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   FileText, BookOpen, Shield, Cpu, FlaskConical, Lightbulb, 
   AlertTriangle, BarChart3, Zap, Target, Scale, GitBranch,
-  CheckCircle2, XCircle, ArrowRight, TrendingUp
+  CheckCircle2, XCircle, ArrowRight, TrendingUp, Leaf, TreePine, Waves
 } from "lucide-react";
 import { BlockFormula, InlineFormula } from "@/components/Math";
 
@@ -279,6 +279,82 @@ export default function Whitepaper() {
                   <div><strong>Separation</strong> — Economic rewards never influence graph-based scoring</div>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
+              Nature-Inspired Design
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm sm:text-base">
+            <p className="leading-relaxed">
+              MaxFlow's algorithms aren't invented—they're <strong>discovered</strong>. The same optimization problems 
+              we solve have been solved by natural systems over billions of years of evolution. Our mathematics 
+              formalizes patterns that nature already computes:
+            </p>
+            
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Waves className="w-4 h-4 text-blue-500" />
+                  <span className="font-semibold text-sm">River Networks</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Rivers find optimal paths to the sea through topology alone—no central planner. Our max-flow 
+                  algorithm computes the same: how much "trust" can flow from sources to sinks through the network.
+                </p>
+                <p className="text-xs font-mono text-primary/70">Graph property: Max-flow capacity</p>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <TreePine className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <span className="font-semibold text-sm">Root Systems</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Stronger roots get more nutrients, enabling more growth—a recursive feedback loop. Our 
+                  iterative algorithm works identically: vouches from high-score users carry more weight.
+                </p>
+                <p className="text-xs font-mono text-primary/70">Graph property: Recursive trust weighting</p>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <GitBranch className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span className="font-semibold text-sm">Mycorrhizal Networks</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Forest "wood-wide webs" distribute nutrients through redundant paths—no single tree failure 
+                  collapses the network. Our redundancy component rewards exactly this: multiple independent 
+                  connection paths.
+                </p>
+                <p className="text-xs font-mono text-primary/70">Graph property: Path redundancy</p>
+              </div>
+              
+              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Leaf className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span className="font-semibold text-sm">Ecosystem Pruning</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Species that take without contributing eventually get excluded from symbiotic networks. Our 
+                  dilution penalty works the same way: over-vouching dilutes your score, creating natural 
+                  accountability.
+                </p>
+                <p className="text-xs font-mono text-primary/70">Graph property: Outgoing vouch penalty</p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-green-500/50 mt-4">
+              <p className="text-sm italic">
+                "Nature spent billions of years optimizing flow networks, redundancy, and parasite resistance. 
+                MaxFlow makes these patterns computable for social graphs—we didn't invent the math, 
+                we discovered it was already there."
+              </p>
             </div>
           </CardContent>
         </Card>

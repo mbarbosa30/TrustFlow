@@ -91,6 +91,26 @@ export default function FAQs() {
           </AccordionContent>
         </AccordionItem>
 
+        <AccordionItem value="why-works" data-testid="faq-why-works">
+          <AccordionTrigger className="text-left">
+            Why does this approach work? How do we know it's sound?
+          </AccordionTrigger>
+          <AccordionContent className="text-muted-foreground">
+            <p className="mb-3">
+              <strong>Nature already solved this problem.</strong> The same optimization challenges MaxFlow addresses—finding efficient paths, building redundancy, pruning freeloaders—have been solved by natural systems over billions of years of evolution:
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-sm mb-3">
+              <li><strong>Rivers and watersheds:</strong> Water finds optimal paths to the sea through network topology alone—no central planner. Our max-flow algorithm computes the same: how much "trust" can flow through the network.</li>
+              <li><strong>Root systems:</strong> Plants grow stronger roots by feeding from healthy neighbors. Similarly, our recursive trust weighting means vouches from high-score users carry more weight—a self-reinforcing quality signal.</li>
+              <li><strong>Forest mycorrhizal networks:</strong> The "wood-wide web" distributes nutrients through redundant fungal pathways. When one tree fails, others continue. Our redundancy component rewards exactly this: multiple independent connection paths.</li>
+              <li><strong>Ecosystem pruning:</strong> Species that take without contributing eventually get excluded from symbiotic networks. Our dilution penalty works the same way: over-vouching reduces your score, creating natural accountability.</li>
+            </ul>
+            <p className="text-sm italic text-muted-foreground/80">
+              MaxFlow didn't invent these principles—we discovered that the mathematics of graph flow, recursion, and network resilience mirrors patterns nature has been computing for eons. The math works because it describes how robust networks actually form.
+            </p>
+          </AccordionContent>
+        </AccordionItem>
+
         <AccordionItem value="updates" data-testid="faq-updates">
           <AccordionTrigger className="text-left">
             How often do scores update?
