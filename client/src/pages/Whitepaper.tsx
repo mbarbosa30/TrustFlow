@@ -89,7 +89,7 @@ export default function Whitepaper() {
             <div className="grid gap-2 text-sm">
               <div className="flex gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
-                <div><strong>Accountability</strong> — Outgoing vouches incur dilution penalties, creating real cost for endorsement spam</div>
+                <div><strong>Accountability</strong> — Outgoing vouches incur dilution penalties, creating economic cost for endorsement spam</div>
               </div>
               <div className="flex gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
@@ -165,7 +165,7 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-destructive/10 flex gap-3">
                 <XCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <strong>Airdrops & incentives</strong> — Token distributions intended for real users get captured by farmers
+                  <strong>Airdrops & incentives</strong> — Token distributions intended for unique participants get captured by farmers
                 </div>
               </div>
             </div>
@@ -226,14 +226,14 @@ export default function Whitepaper() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm sm:text-base">
             <p className="leading-relaxed">
-              MaxFlow takes a different path: instead of trying to determine who is "real" through external attestations, 
-              we measure <strong>how deeply integrated someone is in a network of mutual accountability</strong>. The 
-              insight is that Sybil accounts are fundamentally different from real users in their graph structure:
+              MaxFlow takes a different path: instead of trying to verify identity through external attestations, 
+              we measure <strong>graph topology and network structure</strong>. The algorithm doesn't care about 
+              sincerity—it just makes gaming computationally and economically expensive through network properties:
             </p>
             
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/5">
-                <div className="font-semibold text-sm mb-2 text-green-700 dark:text-green-400">Real Users</div>
+                <div className="font-semibold text-sm mb-2 text-green-700 dark:text-green-400">Well-Connected Accounts</div>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Multiple independent endorsers</li>
                   <li>• Deep upstream support chains</li>
@@ -244,7 +244,7 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/5">
                 <div className="font-semibold text-sm mb-2 text-red-700 dark:text-red-400">Sybil Accounts</div>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Few or no legitimate endorsers</li>
+                  <li>• Few or no high-score endorsers</li>
                   <li>• Shallow endorsement chains</li>
                   <li>• Endorsers are also low-quality Sybils</li>
                   <li>• Single point of failure (controller)</li>
@@ -255,8 +255,8 @@ export default function Whitepaper() {
             <p className="leading-relaxed">
               By weighting vouches recursively—your score depends on the scores of those who vouch for you—we create 
               a system where Sybil accounts cannot bootstrap themselves. A cluster of fake accounts vouching for each 
-              other gets low scores because none of them have high-quality endorsers. Meanwhile, real users embedded 
-              in legitimate networks accumulate trust through multiple independent paths.
+              other gets low scores because none of them have high-quality endorsers. Well-connected accounts embedded 
+              in dense networks accumulate higher scores through multiple independent paths.
             </p>
 
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -306,7 +306,7 @@ export default function Whitepaper() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Raph Levien's pioneering work used max-flow from trusted seeds to bound the influence of attackers. 
-                  The key insight: an attacker can only gain as much trust as they can "flow" through legitimate 
+                  The key insight: an attacker can only gain as much trust as they can "flow" through existing 
                   endorsements, naturally limiting Sybil influence.
                 </p>
                 <div className="text-sm">
@@ -983,7 +983,7 @@ export default function Whitepaper() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Adversary creates N fake accounts that vouch for each other in a dense cluster, attempting to 
-                  bootstrap high scores without legitimate connections.
+                  bootstrap high scores without external network connections.
                 </p>
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                   <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
@@ -1017,8 +1017,8 @@ export default function Whitepaper() {
                   <span className="text-destructive">Attack 3:</span> Bridge Hub
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  A legitimate high-score user is bribed or tricked into vouching for Sybil accounts, acting 
-                  as a "bridge" between the legitimate network and the attack cluster.
+                  A high-score user is bribed or tricked into vouching for Sybil accounts, acting 
+                  as a "bridge" between the established network and the attack cluster.
                 </p>
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                   <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
@@ -1117,7 +1117,7 @@ export default function Whitepaper() {
                 <div className="font-semibold text-sm mb-1">Sybil Resistance Bound</div>
                 <p className="text-sm text-muted-foreground">
                   The max-flow/min-cut theorem guarantees that an attacker's aggregate trust is bounded by the 
-                  capacity of edges connecting their cluster to the legitimate network. Isolated Sybil clusters 
+                  capacity of edges connecting their cluster to the established network. Isolated Sybil clusters 
                   receive zero flow; clusters with <InlineFormula>{"k"}</InlineFormula> bridges can gain at 
                   most <InlineFormula>{"k"}</InlineFormula> units of trust.
                 </p>
@@ -1165,7 +1165,7 @@ export default function Whitepaper() {
                 <span className="font-mono text-primary shrink-0">B.</span>
                 <div>
                   <strong className="text-sm">Bridge Attack</strong>
-                  <p className="text-sm text-muted-foreground">Sybil cluster with k bridges to legitimate users. Expected: scores bounded by bridge capacity.</p>
+                  <p className="text-sm text-muted-foreground">Sybil cluster with k bridges to established users. Expected: scores bounded by bridge capacity.</p>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
@@ -1179,7 +1179,7 @@ export default function Whitepaper() {
                 <span className="font-mono text-primary shrink-0">D.</span>
                 <div>
                   <strong className="text-sm">Vouch Merchant</strong>
-                  <p className="text-sm text-muted-foreground">Legitimate user sells vouches to many buyers. Expected: dilution penalty reduces their score and vouch value.</p>
+                  <p className="text-sm text-muted-foreground">High-score user sells vouches to many buyers. Expected: dilution penalty reduces their score and vouch value.</p>
                 </div>
               </div>
             </div>
@@ -1187,7 +1187,7 @@ export default function Whitepaper() {
             <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20">
               <p className="font-semibold text-sm mb-2">Metrics to Track</p>
               <p className="text-sm text-muted-foreground">
-                For each scenario, measure: (1) AUC for distinguishing Sybils from legitimate users by score, 
+                For each scenario, measure: (1) AUC for distinguishing Sybils from established users by score, 
                 (2) false negative rate at various thresholds, (3) score distribution before/after attack.
               </p>
             </div>
@@ -1254,7 +1254,7 @@ export default function Whitepaper() {
                 <p className="text-sm text-muted-foreground">
                   New users with no vouches have zero score. Unlike attestation-based systems, there's no way 
                   to bootstrap without network connections. This is a feature (Sybil resistance) but creates 
-                  friction for legitimate newcomers.
+                  friction for newcomers.
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   <strong>Mitigation:</strong> Communities can provide onboarding paths where established 

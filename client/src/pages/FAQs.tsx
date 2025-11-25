@@ -108,7 +108,7 @@ export default function FAQs() {
             <ul className="list-disc list-inside space-y-2">
               <li>Get vouches from people already well-connected in the network</li>
               <li>Diversify paths (get vouches from independent regions or communities)</li>
-              <li>Build genuine relationships over time</li>
+              <li>Expand your network connections over time</li>
               <li>Focus on quality connections with established members</li>
             </ul>
           </AccordionContent>
@@ -306,7 +306,7 @@ export default function FAQs() {
             <ul className="list-disc list-inside space-y-1 text-sm mb-3">
               <li><strong>Attack scenario:</strong> Creating fake network of 50 Sybil accounts requires vouching for all 50</li>
               <li><strong>Your penalty:</strong> 40 excess vouches → 50% redundancy penalty → significant score reduction</li>
-              <li><strong>Sybils' scores:</strong> Still low (no real incoming vouches from legitimate users)</li>
+              <li><strong>Sybils' scores:</strong> Still low (no incoming vouches from established users)</li>
               <li><strong>Result:</strong> You hurt your redundancy score to create weak fake accounts → not economically viable</li>
             </ul>
 
@@ -334,7 +334,7 @@ export default function FAQs() {
               <strong>Note:</strong> With recursive trust weighting, a single vouch from someone with LocalHealth 100 is worth more than three vouches from people with LocalHealth 20.
             </p>
             <p className="text-sm mt-2">
-              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring genuine network building for higher scores. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
+              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring dense network topology for higher scores. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
             </p>
           </AccordionContent>
         </AccordionItem>

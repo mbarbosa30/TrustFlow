@@ -137,17 +137,17 @@ export default function WhyScore() {
                 <h3 className="font-semibold mb-2 text-sm">Additional Anti-Gaming Mechanisms</h3>
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <h4 className="font-semibold text-xs mb-1">KUDOS Integration</h4>
+                    <h4 className="font-semibold text-xs mb-1">Quadratic Scaling</h4>
                     <p className="text-xs text-muted-foreground">
-                      KUDOS transfers boost edge capacities with exponential decay (180-day halflife). 
-                      Threshold: 500 KUDOS for 1x boost, max 2x. Makes KUDOS a subtle nudge, not a scoring lever.
+                      Exponential scaling (2.0) creates wider score discrimination: single vouches yield low scores (~2 pts), 
+                      while high scores require dense multi-hop network topology (~74 pts).
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <h4 className="font-semibold text-xs mb-1">Quadratic Scaling</h4>
+                    <h4 className="font-semibold text-xs mb-1">Recursive Weighting</h4>
                     <p className="text-xs text-muted-foreground">
-                      Exponential scaling (2.0) creates wider discrimination: single vouches signal "build more network connectivity" (~2 pts), 
-                      while top scores require genuine multi-hop network depth (~74 pts).
+                      Vouches are weighted by voucher's LocalHealth score. A vouch from someone with a high score carries more weight 
+                      than one from someone with a low score—making score bootstrapping computationally expensive.
                     </p>
                   </div>
                 </div>

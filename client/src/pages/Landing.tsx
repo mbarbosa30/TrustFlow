@@ -35,8 +35,7 @@ export default function Landing() {
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            MaxFlow turns "who vouches for you" into verifiable scores. 
-            Use them for governance, lending, grants, or access control—you decide what they mean.
+            Sybil-resistant scoring computed from network structure—not followers, not likes, not vanity metrics. Good luck gaming it.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
@@ -140,7 +139,7 @@ export default function Landing() {
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
                   Run quadratic funding with Sybil-resistant weights. 
-                  Ensure grants go to real contributors.
+                  Prevent fake accounts from diluting allocation.
                 </p>
                 <Link href="/use-cases">
                   <Button variant="ghost" size="sm" className="w-full" data-testid="button-learn-grants">
@@ -191,7 +190,7 @@ export default function Landing() {
               </div>
               <h3 className="text-xl font-semibold mb-2">1. Vouch for People</h3>
               <p className="text-muted-foreground text-sm">
-                Endorse people you trust. Each vouch is public and permanent—creating real accountability.
+                Endorse people in your network. Each vouch is public and permanent—vouching has a cost.
               </p>
             </div>
 

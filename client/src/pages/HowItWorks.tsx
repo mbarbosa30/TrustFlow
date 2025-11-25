@@ -74,7 +74,7 @@ export default function HowItWorks() {
                 <p className="font-semibold mb-2">Game Theory: Why This Works</p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li><strong>Attack cost:</strong> Creating fake networks requires vouching for many Sybil accounts → dilution penalty reduces attacker's own score</li>
-                  <li><strong>Selectivity incentive:</strong> To maintain your redundancy score, vouch selectively for genuinely connected people</li>
+                  <li><strong>Selectivity incentive:</strong> To maintain your redundancy score, vouch selectively for well-connected people</li>
                   <li><strong>Graph quality:</strong> When endorsements are selective, the resulting graph signals (flow, redundancy) are reliable</li>
                   <li><strong>Neutral enforcement:</strong> The system penalizes graph spam; applications interpret the cleaned signal</li>
                 </ul>
@@ -284,7 +284,7 @@ export default function HowItWorks() {
                   <span className="font-semibold text-sm">Dilution: 10% per excess vouch, min 50%</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Prevents vouch spam while allowing legitimate bridging nodes. 10 vouches = no penalty; 15 = 50% cap hit.
+                  Prevents vouch spam while allowing bridging nodes. 10 vouches = no penalty; 15 = 50% cap hit.
                   Linear curve chosen over exponential to avoid punishing connectors too harshly.
                   <span className="text-muted-foreground/70 italic"> Planned: piecewise curve + retroactive relief for vouchees who later reach acceptance threshold.</span>
                 </p>

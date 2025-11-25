@@ -50,7 +50,7 @@ export default function Admin() {
             Network Recalculation
           </CardTitle>
           <CardDescription>
-            Recalculate all LocalHealth scores using the current algorithm parameters (quadratic scaling with 2.0 exponent, 60/40 flow/redundancy split, 500 KUDOS threshold, 10% dilution penalty)
+            Recalculate all LocalHealth scores using the current algorithm parameters (quadratic scaling with 2.0 exponent, 60/40 flow/redundancy split, 10% dilution penalty per excess vouch)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

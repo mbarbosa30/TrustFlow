@@ -132,7 +132,7 @@ export default function Simulation() {
     } else if (scenario.includes("whale")) {
       scenarioInsight = "Whale attacks test how algorithms handle a compromised high-trust seed funding Sybil accounts.";
     } else if (scenario.includes("honest")) {
-      scenarioInsight = "Honest networks validate that algorithms don't create false positives in legitimate communities.";
+      scenarioInsight = "Honest networks validate that algorithms don't create false positives in well-connected communities.";
     } else if (scenario.includes("sparse")) {
       scenarioInsight = "Sparse networks test scalability and performance on large, loosely connected graphs.";
     }
