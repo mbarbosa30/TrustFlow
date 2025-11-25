@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, BookOpen, Shield, Cpu, FlaskConical, Lightbulb } from "lucide-react";
+import { Math, BlockFormula, InlineFormula } from "@/components/Math";
 
 export default function Whitepaper() {
   return (
@@ -192,10 +193,10 @@ export default function Whitepaper() {
             <CardTitle className="text-lg">3.1 Graph Model</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <p>Directed graph G = (V, E):</p>
+            <p>Directed graph <InlineFormula>{"G = (V, E)"}</InlineFormula>:</p>
             <ul>
               <li><strong>Nodes</strong>: User accounts (addresses)</li>
-              <li><strong>Edges</strong>: Binary endorsements e = (u → v) with (epoch, community)</li>
+              <li><strong>Edges</strong>: Binary endorsements <InlineFormula>{"e = (u \\to v)"}</InlineFormula> with (epoch, community)</li>
               <li>All endorsements are public and logged in a per-epoch Merkle tree</li>
             </ul>
           </CardContent>
@@ -218,13 +219,13 @@ export default function Whitepaper() {
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="py-2 pr-4 font-mono">LocalHealth</td>
+                    <td className="py-2 pr-4">LocalHealth</td>
                     <td className="py-2 pr-4">0-100</td>
                     <td className="py-2 pr-4">Personal network</td>
                     <td className="py-2">Iterative recursive trust weighting</td>
                   </tr>
                   <tr>
-                    <td className="py-2 pr-4 font-mono">STS</td>
+                    <td className="py-2 pr-4">STS</td>
                     <td className="py-2 pr-4">0-100</td>
                     <td className="py-2 pr-4">Community</td>
                     <td className="py-2">Advogato-style max-flow from seeds</td>
@@ -262,50 +263,40 @@ export default function Whitepaper() {
             <CardTitle className="text-lg">4.1 Notation</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">For user i:</p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 pr-4 font-semibold">Symbol</th>
-                    <th className="text-left py-2 font-semibold">Definition</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono text-xs">
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">V_i</td>
-                    <td className="py-2 font-sans text-sm">Set of vouchers (incoming endorsers)</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">s_j</td>
-                    <td className="py-2 font-sans text-sm">LocalHealth of voucher j in [0, 100]</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">F_i</td>
-                    <td className="py-2 font-sans text-sm">directFlow = sum(s_j / 100) for j in V_i</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">phi_i</td>
-                    <td className="py-2 font-sans text-sm">flowScore = min(1, F_i / F_0), baseline F_0 = 5</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">R_i</td>
-                    <td className="py-2 font-sans text-sm">ResidualQuality = clip[0,1](F_i / max(1, |V_i|))</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">rho_i</td>
-                    <td className="py-2 font-sans text-sm">effectiveRedundancy from ego upstream</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4">d_i</td>
-                    <td className="py-2 font-sans text-sm">redundancy = min(1, rho_i / R_0), baseline R_0 = 20</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 pr-4">D_i</td>
-                    <td className="py-2 font-sans text-sm">DilutionFactor = max(0.5, 1 - 0.1 x max(0, outVouches - 10))</td>
-                  </tr>
-                </tbody>
-              </table>
+            <p className="text-sm text-muted-foreground mb-4">For user <InlineFormula>{"i"}</InlineFormula>:</p>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"\\mathcal{V}_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">Set of vouchers (incoming endorsers)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"s_j \\in [0,100]"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">LocalHealth of voucher <InlineFormula>{"j"}</InlineFormula></div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"F_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">directFlow <InlineFormula>{"= \\sum_{j \\in \\mathcal{V}_i} (s_j / 100)"}</InlineFormula></div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"\\phi_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">flowScore <InlineFormula>{"= \\min\\!\\big(1, F_i / F_0\\big)"}</InlineFormula>, baseline <InlineFormula>{"F_0"}</InlineFormula> (default 5)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"R_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">ResidualQuality <InlineFormula>{"= \\text{clip}_{[0,1]}\\!\\left( \\frac{F_i}{\\max(1,|\\mathcal{V}_i|)} \\right)"}</InlineFormula></div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"\\rho_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">effectiveRedundancy from ego upstream (defined below)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"d_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">redundancy <InlineFormula>{"= \\min\\!\\big(1, \\rho_i / R_0\\big)"}</InlineFormula>, baseline <InlineFormula>{"R_0"}</InlineFormula> (default 20)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[120px]"><InlineFormula>{"D_i"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">DilutionFactor <InlineFormula>{"= \\max\\!\\big(0.5,\\ 1 - 0.1 \\cdot \\max(0, \\text{outVouches}_i - 10)\\big)"}</InlineFormula></div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -318,8 +309,10 @@ export default function Whitepaper() {
             <p className="text-sm text-muted-foreground mb-4">
               We separate average voucher quality from accountability and apply the penalty only to the structural term:
             </p>
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 font-mono text-center text-lg mb-4">
-              LocalHealth_i = 60 x phi_i^2 + 40 x (d_i^2 x R_i x D_i)
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 mb-4">
+              <BlockFormula data-testid="formula-localhealth">
+                {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i^2 \\;+\\; 40 \\cdot \\big(d_i^2 \\cdot R_i \\cdot D_i\\big) }"}
+              </BlockFormula>
             </div>
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-3 rounded-lg bg-muted/30">
@@ -327,7 +320,7 @@ export default function Whitepaper() {
                 <p className="text-xs text-muted-foreground">Who vouches for you, recursively weighted</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
-                <div className="font-semibold text-sm mb-1">40% Structure x Quality x Accountability</div>
+                <div className="font-semibold text-sm mb-1">40% Structure × Quality × Accountability</div>
                 <p className="text-xs text-muted-foreground">Path diversity (redundancy), average voucher strength (ResidualQuality), and dilution penalty (DilutionFactor)</p>
               </div>
             </div>
@@ -340,43 +333,37 @@ export default function Whitepaper() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-              Build an upstream ego subgraph from V_i by BFS on incoming edges (who vouches for my vouchers, etc.), excluding i. Let:
+              Build an upstream ego subgraph from <InlineFormula>{"\\mathcal{V}_i"}</InlineFormula> by BFS on incoming edges (who vouches for my vouchers, etc.), excluding <InlineFormula>{"i"}</InlineFormula>. Let:
             </p>
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 pr-4 font-semibold">Variable</th>
-                    <th className="text-left py-2 font-semibold">Definition</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4 font-mono">k</td>
-                    <td className="py-2">|V_i| (direct voucher count)</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4 font-mono">u</td>
-                    <td className="py-2">max(0, |U_i| - k) (additional upstream supporters)</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4 font-mono">m</td>
-                    <td className="py-2">Internal edges in ego subgraph</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 pr-4 font-mono">n</td>
-                    <td className="py-2">|U_i| nodes in ego subgraph</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 pr-4 font-mono">delta</td>
-                    <td className="py-2">Edge density = m / max(1, n(n-1))</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="space-y-2 mb-4">
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[80px]"><InlineFormula>{"k"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground"><InlineFormula>{"|\\mathcal{V}_i|"}</InlineFormula> (direct voucher count)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[80px]"><InlineFormula>{"u"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground"><InlineFormula>{"\\max(0, |U_i| - k)"}</InlineFormula> (additional upstream supporters)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[80px]"><InlineFormula>{"m"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">Internal edges in ego subgraph</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[80px]"><InlineFormula>{"n"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground"><InlineFormula>{"|U_i|"}</InlineFormula> nodes in ego subgraph</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30 flex items-start gap-4">
+                <div className="min-w-[80px]"><InlineFormula>{"\\delta"}</InlineFormula></div>
+                <div className="text-sm text-muted-foreground">Edge density <InlineFormula>{"= \\frac{m}{\\max(1, n(n-1))}"}</InlineFormula></div>
+              </div>
             </div>
-            <div className="p-4 rounded-lg bg-muted/50 font-mono text-sm">
-              <div className="mb-2">rho_i = k + lambda_depth x u + lambda_conn x (delta x n)</div>
-              <div className="text-muted-foreground">lambda_depth = 0.2, lambda_conn = 1.0 (defaults)</div>
+            <div className="p-4 rounded-lg bg-muted/50 mb-4">
+              <BlockFormula data-testid="formula-redundancy">
+                {"\\rho_i = k + \\lambda_{\\text{depth}} \\cdot u + \\lambda_{\\text{conn}} \\cdot (\\delta \\cdot n)"}
+              </BlockFormula>
+              <p className="text-sm text-muted-foreground text-center mt-2">
+                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.2"}</InlineFormula>, <InlineFormula>{"\\lambda_{\\text{conn}} = 1.0"}</InlineFormula> (defaults)
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -386,20 +373,25 @@ export default function Whitepaper() {
             <CardTitle className="text-lg">4.4 Iterative Computation (Damped)</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
-            <p>Initialize s_i^(0) from |V_i| (e.g., min(100, 20 x sqrt(|V_i|))). At each round:</p>
+            <p>
+              Initialize <InlineFormula>{"s_i^{(0)}"}</InlineFormula> from <InlineFormula>{"|\\mathcal{V}_i|"}</InlineFormula> (e.g., <InlineFormula>{"\\min(100, 20\\sqrt{|\\mathcal{V}_i|})"}</InlineFormula>). At each round:
+            </p>
             <ol>
-              <li>Compute s_hat_i^(t+1) via the formula above using s^(t) for vouchers</li>
+              <li>Compute <InlineFormula>{"\\widehat{s}_i^{(t+1)}"}</InlineFormula> via the formula above using <InlineFormula>{"s^{(t)}"}</InlineFormula> for vouchers</li>
               <li>Apply damped update:</li>
             </ol>
-            <div className="p-4 rounded-lg bg-muted/50 font-mono text-sm my-4">
-              <div className="mb-2">s_i^(t+1) = (1 - alpha) x s_i^(t) + alpha x s_hat_i^(t+1)</div>
-              <div className="text-muted-foreground">alpha = 0.85 (default damping factor)</div>
+            <div className="p-4 rounded-lg bg-muted/50 my-4">
+              <BlockFormula data-testid="formula-damped-update">
+                {"s_i^{(t+1)} = (1 - \\alpha) \\cdot s_i^{(t)} + \\alpha \\cdot \\widehat{s}_i^{(t+1)}, \\quad \\alpha \\in (0,1) \\ \\ (\\text{default } 0.85)"}
+              </BlockFormula>
             </div>
-            <p><strong>Stopping criteria:</strong> max|s_i^(t+1) - s_i^(t)| {'<'} epsilon (default 0.5) or at 10 rounds.</p>
+            <p>
+              <strong>Stopping criteria:</strong> <InlineFormula>{"\\max_i |s_i^{(t+1)} - s_i^{(t)}| < \\varepsilon"}</InlineFormula> (default 0.5) or at 10 rounds.
+            </p>
             <div className="p-3 rounded-lg bg-muted/30 mt-4">
               <p className="text-sm mb-0">
                 <strong>Convergence note:</strong> With damping, the update is a convex combination of the previous state and a 1-Lipschitz transform. 
-                Choosing alpha {'<'} 1 yields a contraction in practice; empirically {'<='} 8 rounds for avg degree {'<'} 10.
+                Choosing <InlineFormula>{"\\alpha < 1"}</InlineFormula> yields a contraction in practice; empirically ≤8 rounds for <InlineFormula>{"d_{\\text{avg}} < 10"}</InlineFormula>.
               </p>
             </div>
           </CardContent>
@@ -419,8 +411,8 @@ export default function Whitepaper() {
                       <tr className="border-b bg-muted/30">
                         <th className="text-left py-2 px-3 font-semibold">Vouchers</th>
                         <th className="text-left py-2 px-3 font-semibold">Avg Strength</th>
-                        <th className="text-left py-2 px-3 font-semibold">directFlow (F)</th>
-                        <th className="text-left py-2 px-3 font-semibold">flowScore (phi)</th>
+                        <th className="text-left py-2 px-3 font-semibold"><InlineFormula>{"F_i"}</InlineFormula></th>
+                        <th className="text-left py-2 px-3 font-semibold"><InlineFormula>{"\\phi_i"}</InlineFormula></th>
                         <th className="text-left py-2 px-3 font-semibold">Flow Pts</th>
                       </tr>
                     </thead>
@@ -428,30 +420,30 @@ export default function Whitepaper() {
                       <tr className="border-b">
                         <td className="py-2 px-3">1</td>
                         <td className="py-2 px-3">50%</td>
-                        <td className="py-2 px-3 font-mono">0.5</td>
-                        <td className="py-2 px-3 font-mono">0.10</td>
-                        <td className="py-2 px-3 font-mono">0.6</td>
+                        <td className="py-2 px-3">0.5</td>
+                        <td className="py-2 px-3">0.10</td>
+                        <td className="py-2 px-3">0.6</td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 px-3">3</td>
                         <td className="py-2 px-3">70%</td>
-                        <td className="py-2 px-3 font-mono">2.1</td>
-                        <td className="py-2 px-3 font-mono">0.42</td>
-                        <td className="py-2 px-3 font-mono">10.6</td>
+                        <td className="py-2 px-3">2.1</td>
+                        <td className="py-2 px-3">0.42</td>
+                        <td className="py-2 px-3">10.6</td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 px-3">5</td>
                         <td className="py-2 px-3">80%</td>
-                        <td className="py-2 px-3 font-mono">4.0</td>
-                        <td className="py-2 px-3 font-mono">0.80</td>
-                        <td className="py-2 px-3 font-mono">38.4</td>
+                        <td className="py-2 px-3">4.0</td>
+                        <td className="py-2 px-3">0.80</td>
+                        <td className="py-2 px-3">38.4</td>
                       </tr>
                       <tr>
                         <td className="py-2 px-3">8</td>
                         <td className="py-2 px-3">90%</td>
-                        <td className="py-2 px-3 font-mono">7.2</td>
-                        <td className="py-2 px-3 font-mono">1.00</td>
-                        <td className="py-2 px-3 font-mono">60.0</td>
+                        <td className="py-2 px-3">7.2</td>
+                        <td className="py-2 px-3">1.00</td>
+                        <td className="py-2 px-3">60.0</td>
                       </tr>
                     </tbody>
                   </table>
@@ -467,38 +459,38 @@ export default function Whitepaper() {
                         <th className="text-left py-2 px-3 font-semibold">Outgoing Vouches</th>
                         <th className="text-left py-2 px-3 font-semibold">Excess</th>
                         <th className="text-left py-2 px-3 font-semibold">Penalty</th>
-                        <th className="text-left py-2 px-3 font-semibold">D Factor</th>
+                        <th className="text-left py-2 px-3 font-semibold"><InlineFormula>{"D_i"}</InlineFormula></th>
                         <th className="text-left py-2 px-3 font-semibold">Impact</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b">
-                        <td className="py-2 px-3">{'<='} 10</td>
+                        <td className="py-2 px-3">≤ 10</td>
                         <td className="py-2 px-3">0</td>
                         <td className="py-2 px-3">0%</td>
-                        <td className="py-2 px-3 font-mono">1.00</td>
-                        <td className="py-2 px-3 text-green-600">None</td>
+                        <td className="py-2 px-3">1.00</td>
+                        <td className="py-2 px-3 text-green-600 dark:text-green-400">None</td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 px-3">12</td>
                         <td className="py-2 px-3">2</td>
                         <td className="py-2 px-3">20%</td>
-                        <td className="py-2 px-3 font-mono">0.80</td>
-                        <td className="py-2 px-3 text-amber-600">-8 pts max</td>
+                        <td className="py-2 px-3">0.80</td>
+                        <td className="py-2 px-3 text-amber-600 dark:text-amber-400">-8 pts max</td>
                       </tr>
                       <tr className="border-b">
                         <td className="py-2 px-3">15</td>
                         <td className="py-2 px-3">5</td>
                         <td className="py-2 px-3">50%</td>
-                        <td className="py-2 px-3 font-mono">0.50</td>
-                        <td className="py-2 px-3 text-red-600">-20 pts max</td>
+                        <td className="py-2 px-3">0.50</td>
+                        <td className="py-2 px-3 text-red-600 dark:text-red-400">-20 pts max</td>
                       </tr>
                       <tr>
                         <td className="py-2 px-3">20+</td>
                         <td className="py-2 px-3">10+</td>
                         <td className="py-2 px-3">50% (cap)</td>
-                        <td className="py-2 px-3 font-mono">0.50</td>
-                        <td className="py-2 px-3 text-red-600">-20 pts max</td>
+                        <td className="py-2 px-3">0.50</td>
+                        <td className="py-2 px-3 text-red-600 dark:text-red-400">-20 pts max</td>
                       </tr>
                     </tbody>
                   </table>
@@ -522,60 +514,79 @@ export default function Whitepaper() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <ul>
-              <li>Split each user u into (u-, u+) with internal capacity c(d) based on prev-epoch hop-distance d from any seed</li>
-              <li>Add u- → SINK with cap = 1</li>
-              <li>For each vouch a → b: add a+ → b- with cap = 1</li>
-              <li>SOURCE → seed- capacity = BASE x (0.7 + 0.6 x S_s) where S_s in [0,1] is the SeedScore</li>
+              <li>Split each user <InlineFormula>{"u"}</InlineFormula> into <InlineFormula>{"(u^-, u^+)"}</InlineFormula> with internal capacity <InlineFormula>{"c(d)"}</InlineFormula> based on prev-epoch hop-distance <InlineFormula>{"d"}</InlineFormula> from any seed</li>
+              <li>Add <InlineFormula>{"u^- \\to \\text{SINK}"}</InlineFormula> with cap = 1</li>
+              <li>For each vouch <InlineFormula>{"a \\to b"}</InlineFormula>: add <InlineFormula>{"a^+ \\to b^-"}</InlineFormula> with cap = 1</li>
+              <li>SOURCE → seed<sup>-</sup> capacity = BASE × <InlineFormula>{"(0.7 + 0.6 \\cdot S_s)"}</InlineFormula> where <InlineFormula>{"S_s \\in [0,1]"}</InlineFormula> is the SeedScore</li>
             </ul>
             
             <h4 className="font-semibold mt-4 mb-2">Default Capacity Schedule:</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 pr-4">Distance d</th>
-                    <th className="text-left py-2">Capacity c(d)</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono">
-                  <tr className="border-b"><td className="py-2 pr-4">0 (seed)</td><td className="py-2">800</td></tr>
-                  <tr className="border-b"><td className="py-2 pr-4">1</td><td className="py-2">240</td></tr>
-                  <tr className="border-b"><td className="py-2 pr-4">2</td><td className="py-2">96</td></tr>
-                  <tr className="border-b"><td className="py-2 pr-4">3</td><td className="py-2">48</td></tr>
-                  <tr><td className="py-2 pr-4">{'>='} 4</td><td className="py-2">24</td></tr>
-                </tbody>
-              </table>
+            <div className="p-4 rounded-lg bg-muted/50 my-4">
+              <BlockFormula data-testid="formula-capacity">
+                {"c(0)=800,\\; c(1)=240,\\; c(2)=96,\\; c(3)=48,\\; c(\\geq 4)=24"}
+              </BlockFormula>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">5.2 Score Formula</CardTitle>
+            <CardTitle className="text-lg">5.2 Components & Normalization</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 font-mono text-center mb-4">
-              STS_i = 100 x (0.55 x F + 0.25 x C + 0.05 x S + 0.10 x D + 0.05 x PR)
+            <p className="text-sm text-muted-foreground mb-4">
+              For user <InlineFormula>{"i"}</InlineFormula> in the accepted set:
+            </p>
+            <div className="grid md:grid-cols-2 gap-2 mb-4 text-sm">
+              <div className="p-2 rounded bg-muted/30"><InlineFormula>{"f_i"}</InlineFormula>: Flow (max-flow from SOURCE)</div>
+              <div className="p-2 rounded bg-muted/30"><InlineFormula>{"c_i"}</InlineFormula>: Min-cut capacity</div>
+              <div className="p-2 rounded bg-muted/30"><InlineFormula>{"d_i"}</InlineFormula>: Depth (prev-epoch distance)</div>
+              <div className="p-2 rounded bg-muted/30"><InlineFormula>{"S_i"}</InlineFormula>: Stability score</div>
+              <div className="p-2 rounded bg-muted/30"><InlineFormula>{"pr_i"}</InlineFormula>: Seed-personalized PageRank</div>
             </div>
-            <div className="grid md:grid-cols-3 gap-2 text-sm">
-              <div className="p-2 rounded bg-muted/30"><strong>F</strong>: Log-normalized max-flow</div>
-              <div className="p-2 rounded bg-muted/30"><strong>C</strong>: Min-cut capacity</div>
-              <div className="p-2 rounded bg-muted/30"><strong>S</strong>: Stability score</div>
-              <div className="p-2 rounded bg-muted/30"><strong>D</strong>: Depth decay</div>
-              <div className="p-2 rounded bg-muted/30"><strong>PR</strong>: Seed-personalized PageRank</div>
+            
+            <div className="p-4 rounded-lg bg-muted/50 my-4">
+              <BlockFormula data-testid="formula-normalization">
+                {`\\begin{aligned}
+F_i &= \\min\\!\\left(1,\\ \\frac{\\log(1+f_i)}{\\log(1+\\max(F_{95},\\tilde{F}_{95}))}\\right) \\\\
+C_i &= \\min\\!\\left(1,\\ \\frac{c_i}{\\max(3,\\max(C_{95},\\tilde{C}_{95}))}\\right) \\\\
+D_i &= e^{-\\lambda d_i} \\ (\\lambda \\approx 0.35) \\\\
+PR_i &= \\frac{\\log(1+pr_i)}{\\log(1+\\max pr)}
+\\end{aligned}`}
+              </BlockFormula>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">5.3 Acceptance & Tiers</CardTitle>
+            <CardTitle className="text-lg">5.3 STS Formula</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 mb-4">
+              <BlockFormula data-testid="formula-sts">
+                {"\\boxed{\\mathrm{STS}_i = 100 \\cdot \\big(0.55F_i + 0.25C_i + 0.05S_i + 0.10D_i + 0.05PR_i\\big)}"}
+              </BlockFormula>
+            </div>
+            <div className="grid md:grid-cols-5 gap-2 text-sm">
+              <div className="p-2 rounded bg-muted/30 text-center"><strong>55%</strong><br/>Flow</div>
+              <div className="p-2 rounded bg-muted/30 text-center"><strong>25%</strong><br/>Min-cut</div>
+              <div className="p-2 rounded bg-muted/30 text-center"><strong>5%</strong><br/>Stability</div>
+              <div className="p-2 rounded bg-muted/30 text-center"><strong>10%</strong><br/>Depth</div>
+              <div className="p-2 rounded bg-muted/30 text-center"><strong>5%</strong><br/>PageRank</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">5.4 Acceptance & Tiers</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-2">Acceptance (neutral defaults):</div>
-                <code className="text-sm">flow {'>='} 0.5 AND min-cut {'>='} 2</code>
+                <p className="text-sm"><InlineFormula>{"\\text{flow} \\geq 0.5 \\text{ AND min-cut} \\geq 2"}</InlineFormula></p>
               </div>
               
               <div>
@@ -583,15 +594,15 @@ export default function Whitepaper() {
                 <div className="space-y-2">
                   <div className="flex justify-between p-2 rounded bg-muted/30 text-sm">
                     <span>Connected</span>
-                    <span className="font-mono">STS {'>='} 40</span>
+                    <span><InlineFormula>{"\\text{STS} \\geq 40"}</InlineFormula></span>
                   </div>
                   <div className="flex justify-between p-2 rounded bg-muted/30 text-sm">
                     <span>Verified</span>
-                    <span className="font-mono">STS {'>='} 60 AND min-cut {'>='} 2</span>
+                    <span><InlineFormula>{"\\text{STS} \\geq 60 \\text{ AND min-cut} \\geq 2"}</InlineFormula></span>
                   </div>
                   <div className="flex justify-between p-2 rounded bg-muted/30 text-sm">
                     <span>Trusted</span>
-                    <span className="font-mono">STS {'>='} 80 AND min-cut {'>='} 3 AND Stability {'>='} 0.8</span>
+                    <span><InlineFormula>{"\\text{STS} \\geq 80 \\text{ AND min-cut} \\geq 3 \\text{ AND Stability} \\geq 0.8"}</InlineFormula></span>
                   </div>
                 </div>
               </div>
@@ -628,10 +639,10 @@ export default function Whitepaper() {
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 pr-4">Min-cut floors</td>
-                    <td className="py-2 text-muted-foreground">Require {'>='} 2 edge-disjoint paths</td>
+                    <td className="py-2 text-muted-foreground">Require ≥ 2 edge-disjoint paths</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">Seed coverage {'>='} 2</td>
+                    <td className="py-2 pr-4">Seed coverage ≥ 2</td>
                     <td className="py-2 text-muted-foreground">Dust-flow mitigated via floors</td>
                   </tr>
                   <tr className="border-b">
@@ -655,7 +666,7 @@ export default function Whitepaper() {
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <ul>
               <li><strong>Vertex-disjoint paths</strong>: Not just edge-disjoint for true independence</li>
-              <li><strong>Per-seed flow floors</strong>: Require {'>='} 30% flow from each of {'>='} 2 seeds to avoid dust-coverage</li>
+              <li><strong>Per-seed flow floors</strong>: Require ≥30% flow from each of ≥2 seeds to avoid dust-coverage</li>
               <li><strong>Seed saturation throttles</strong>: Monitor and damp seeds exceeding 40-50% of total outflow</li>
               <li><strong>Cut witnesses</strong>: Publish minimal vertex-cut witness sets with Merkle proofs</li>
               <li><strong>SeedScore smoothing</strong>: EMA across epochs to avoid oscillations</li>
@@ -668,7 +679,7 @@ export default function Whitepaper() {
             <CardTitle className="text-lg">6.3 Seed Quality Scoring</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Seed s gets S_s in [0,1] from:</p>
+            <p className="text-sm text-muted-foreground mb-4">Seed <InlineFormula>{"s"}</InlineFormula> gets <InlineFormula>{"S_s \\in [0,1]"}</InlineFormula> from:</p>
             <div className="overflow-x-auto mb-4">
               <table className="w-full text-sm">
                 <thead>
@@ -703,9 +714,9 @@ export default function Whitepaper() {
               </table>
             </div>
             <div className="p-3 rounded-lg bg-muted/30 text-sm">
-              <strong>SOURCE capacity multiplier:</strong> 0.7 + 0.6 x S_s in [0.7, 1.3]
+              <strong>SOURCE capacity multiplier:</strong> <InlineFormula>{"0.7 + 0.6 \\cdot S_s \\in [0.7, 1.3]"}</InlineFormula>
               <br />
-              Only seeds with S_s {'>='} 0.6 count toward "{'>='} 2 seeds" requirement.
+              Only seeds with <InlineFormula>{"S_s \\geq 0.6"}</InlineFormula> count toward "≥2 seeds" requirement.
             </div>
           </CardContent>
         </Card>
@@ -733,41 +744,41 @@ export default function Whitepaper() {
                     <th className="text-left py-2 font-semibold">Purpose</th>
                   </tr>
                 </thead>
-                <tbody className="font-mono">
+                <tbody>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">F_0</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"F_0"}</InlineFormula></td>
                     <td className="py-2 pr-4">5</td>
-                    <td className="py-2 font-sans text-muted-foreground">Healthy vouch count baseline</td>
+                    <td className="py-2 text-muted-foreground">Healthy vouch count baseline</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">R_0</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"R_0"}</InlineFormula></td>
                     <td className="py-2 pr-4">20</td>
-                    <td className="py-2 font-sans text-muted-foreground">Healthy redundancy baseline</td>
+                    <td className="py-2 text-muted-foreground">Healthy redundancy baseline</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">lambda_depth</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"\\lambda_{\\text{depth}}"}</InlineFormula></td>
                     <td className="py-2 pr-4">0.2</td>
-                    <td className="py-2 font-sans text-muted-foreground">Depth bonus weight</td>
+                    <td className="py-2 text-muted-foreground">Depth bonus weight</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">lambda_conn</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"\\lambda_{\\text{conn}}"}</InlineFormula></td>
                     <td className="py-2 pr-4">1.0</td>
-                    <td className="py-2 font-sans text-muted-foreground">Connectivity bonus weight</td>
+                    <td className="py-2 text-muted-foreground">Connectivity bonus weight</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">alpha</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"\\alpha"}</InlineFormula></td>
                     <td className="py-2 pr-4">0.85</td>
-                    <td className="py-2 font-sans text-muted-foreground">Iteration damping factor</td>
+                    <td className="py-2 text-muted-foreground">Iteration damping factor</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="py-2 pr-4">epsilon</td>
+                    <td className="py-2 pr-4"><InlineFormula>{"\\varepsilon"}</InlineFormula></td>
                     <td className="py-2 pr-4">0.5</td>
-                    <td className="py-2 font-sans text-muted-foreground">Convergence threshold</td>
+                    <td className="py-2 text-muted-foreground">Convergence threshold</td>
                   </tr>
                   <tr>
                     <td className="py-2 pr-4">max_iter</td>
                     <td className="py-2 pr-4">10</td>
-                    <td className="py-2 font-sans text-muted-foreground">Maximum iterations</td>
+                    <td className="py-2 text-muted-foreground">Maximum iterations</td>
                   </tr>
                 </tbody>
               </table>
@@ -803,24 +814,24 @@ export default function Whitepaper() {
           <CardContent>
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <h4 className="font-semibold text-sm mb-2">F_0 Changes:</h4>
+                <h4 className="font-semibold text-sm mb-2"><InlineFormula>{"F_0"}</InlineFormula> Changes:</h4>
                 <div className="space-y-2 text-sm">
                   <div className="p-2 rounded bg-muted/30">
-                    <span className="font-mono">5 → 3</span>: +15-25% for users with 3-4 vouchers
+                    <InlineFormula>{"5 \\to 3"}</InlineFormula>: +15-25% for users with 3-4 vouchers
                   </div>
                   <div className="p-2 rounded bg-muted/30">
-                    <span className="font-mono">5 → 7</span>: -10-15% for users with 5-6 vouchers
+                    <InlineFormula>{"5 \\to 7"}</InlineFormula>: -10-15% for users with 5-6 vouchers
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="font-semibold text-sm mb-2">R_0 Changes:</h4>
+                <h4 className="font-semibold text-sm mb-2"><InlineFormula>{"R_0"}</InlineFormula> Changes:</h4>
                 <div className="space-y-2 text-sm">
                   <div className="p-2 rounded bg-muted/30">
-                    <span className="font-mono">20 → 15</span>: +8-12% for sparse networks
+                    <InlineFormula>{"20 \\to 15"}</InlineFormula>: +8-12% for sparse networks
                   </div>
                   <div className="p-2 rounded bg-muted/30">
-                    <span className="font-mono">20 → 25</span>: -5-10% for most users
+                    <InlineFormula>{"20 \\to 25"}</InlineFormula>: -5-10% for most users
                   </div>
                 </div>
               </div>
@@ -864,7 +875,20 @@ export default function Whitepaper() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">8.2 API Reference</CardTitle>
+            <CardTitle className="text-lg">8.2 Performance</CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <ul>
+              <li><strong>LocalHealth</strong>: Per-round update is <InlineFormula>{"O(|E|)"}</InlineFormula>; ≤10 rounds with damping; trivially parallel per node</li>
+              <li><strong>STS</strong>: Reusable residual graphs; Push-Relabel with global relabeling works well when computing many max-flows per epoch</li>
+              <li><strong>Caching</strong>: Cache LocalHealth with timestamps; recompute on vouch events or on demand with freshness hints</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">8.3 API Reference</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3 font-mono text-sm">
@@ -912,19 +936,19 @@ export default function Whitepaper() {
                 <tbody>
                   <tr className="border-b">
                     <td className="py-2 pr-4">LocalHealth range</td>
-                    <td className="py-2 font-mono">~21 - 100</td>
+                    <td className="py-2">~21 - 100</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 pr-4">Median LocalHealth</td>
-                    <td className="py-2 font-mono">~55</td>
+                    <td className="py-2">~55</td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 pr-4">Typical convergence</td>
-                    <td className="py-2 font-mono">4-6 iterations</td>
+                    <td className="py-2">4-6 iterations</td>
                   </tr>
                   <tr>
                     <td className="py-2 pr-4">Users with dilution penalty</td>
-                    <td className="py-2 font-mono">{'<'}5%</td>
+                    <td className="py-2">{'<'}5%</td>
                   </tr>
                 </tbody>
               </table>
@@ -961,7 +985,7 @@ export default function Whitepaper() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <ul className="space-y-1">
-                <li>Adaptive baselines</li>
+                <li>Adaptive baselines (<InlineFormula>{"F_0"}</InlineFormula>, <InlineFormula>{"R_0"}</InlineFormula>)</li>
                 <li>Percentile-based tiers</li>
                 <li>Piecewise dilution curve</li>
               </ul>
@@ -975,7 +999,7 @@ export default function Whitepaper() {
             <CardContent className="text-sm text-muted-foreground">
               <ul className="space-y-1">
                 <li>Vouch revocation/expiry</li>
-                <li>Typed vouches</li>
+                <li>Typed vouches (skill/credit)</li>
                 <li>Cross-community portability</li>
               </ul>
             </CardContent>

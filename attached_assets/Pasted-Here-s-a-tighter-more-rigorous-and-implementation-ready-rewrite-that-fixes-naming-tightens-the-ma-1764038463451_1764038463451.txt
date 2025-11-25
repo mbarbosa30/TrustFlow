@@ -1,0 +1,356 @@
+Here’s a tighter, more rigorous, and implementation-ready rewrite that fixes naming, tightens the math, and clarifies acceptance/security. I’ve kept your spirit (“neutral, verifiable signal”) while removing ambiguity and aligning terms with the “How It Works” spec you shared.
+
+⸻
+
+MaxFlow: Sybil-Resistant Graph Signal Infrastructure via Recursive Trust Weighting
+
+Version 1.1 — November 2025
+
+Abstract
+
+MaxFlow is neutral reputation infrastructure that converts public binary endorsements (“vouches”) into verifiable graph signals using max-flow/min-cut and recursive trust weighting. Two complementary score families are produced per epoch: LocalHealth (0-100), a personal network quality score computed by an iterative algorithm that weights each incoming vouch by the voucher’s score; and STS (Standardized Trust Score, 0-100), a community score built on Advogato-style max-flow/min-cut with seed governance and robust normalization. Endorsements are public and logged in a Merkle transparency tree; each epoch ships signed attestations for byte-exact re-computation.
+
+Core properties: (1) Accountability—outgoing vouches incur a dilution penalty, creating real cost for endorsement spam; (2) Epoch-lagged capacities—distance-based node capacities use the previous accepted graph to prevent distance inflation; (3) Separation of concerns—reward layers (e.g., KUDOS) consume scores but never influence them; (4) Verifiability—parameters, roots, and signed outputs are published per epoch.
+
+⸻
+
+1. Introduction
+
+1.1 Problem
+
+Sybil attacks—mass creation of fake identities—distort decentralized decision-making, grants, and access control. Attestation-heavy approaches centralize trust; purely economic ones exclude users without capital. Graph-based approaches are promising but historically vulnerable to seed capture, bridge hubs, and endorsement spam.
+
+1.2 Design Principles
+	1.	Neutrality: Scores are signals; applications decide what they mean (credit, governance, access, allocation).
+	2.	Verifiability: Public endorsements + epoch-pinned, deterministic computation + signed attestations.
+	3.	Accountability: Endorsing has costs; spamming or endorsing low-quality nodes reduces your own score.
+	4.	Separation: Rewards never influence scoring.
+
+1.3 Contributions
+	•	Recursive trust weighting (personal networks) with bounded, damped iteration.
+	•	Effective redundancy metric (count + depth + connectivity) with explicit formula & bounds.
+	•	Dilution penalty that specifically hits the redundancy term (structural resilience), capped to protect legitimate connectors.
+	•	Advogato-style STS with epoch-lagged capacities, robust normalization, and seed quality scoring.
+	•	Attestations: per-epoch params, Merkle roots, signed scores.
+
+⸻
+
+2. Related Work
+	•	Advogato (Levien ’98): Max-flow trust bounded by disjoint paths from seeds. MaxFlow extends it with epoch-lagged capacities, seed quality scoring, and robust STS normalization.
+	•	EigenTrust / PageRank: Iterative trust propagation; prone to convergence quirks & pre-trusted capture. MaxFlow uses bounded, damped iteration plus an explicit accountability penalty.
+	•	Web3 identity stacks (Gitcoin Passport, BrightID, PoH): Useful attestations but centralized or in-person; MaxFlow remains permissionless and can consume such signals without depending on them.
+
+⸻
+
+3. System Overview
+
+3.1 Graph Model
+
+Directed graph G=(V,E).
+	•	Nodes: user accounts (addresses).
+	•	Edges: binary endorsements e=(u\to v) with (epoch, community).
+	•	All endorsements are public and logged in a per-epoch Merkle tree.
+
+3.2 Dual Scores (per epoch)
+	•	LocalHealth (0-100): personal network quality via recursive trust weighting of incoming vouches; no seeds required.
+	•	STS (0-100): community score via Advogato-style max-flow/min-cut anchored to community-managed seeds.
+
+3.3 Epochs & Attestations
+
+Discrete epochs ensure determinism, anti-gaming via lagged capacities, and verifiability:
+	•	Publish params.json, seed_root, graph_root, scores.jsonl (+ signature).
+	•	Anyone can recompute and verify hash-exact outputs.
+
+⸻
+
+4. LocalHealth (Personal Networks)
+
+4.1 Notation
+
+For user i:
+	•	\mathcal{V}_i: set of vouchers (incoming endorsers).
+	•	s_j \in [0,100]: LocalHealth of voucher j.
+	•	directFlow F_i = \sum_{j\in \mathcal{V}_i} (s_j / 100).
+	•	flowScore \phi_i = \min\!\big(1, F_i / F_0\big), baseline F_0 (default 5, or dynamic—§7).
+	•	ResidualQuality R_i = \mathrm{clip}_{[0,1]}\!\left( \frac{F_i}{\max(1,|\mathcal{V}_i|)} \right).
+	•	effectiveRedundancy \rho_i from the ego upstream (defined below).
+	•	redundancy score d_i = \min\!\big(1, \rho_i / R_0\big), baseline R_0 (default 20, or dynamic—§7).
+	•	DilutionFactor D_i = \max\!\big(0.5,\ 1 - 0.1 \cdot \max(0, \text{outVouches}_i - 10)\big).
+
+4.2 Score
+
+We separate average voucher quality from accountability and apply the penalty only to the structural term:
+\boxed{ \mathrm{LocalHealth}_i \;=\; 60\cdot \phi_i^2 \;+\; 40\cdot \big(d_i^2 \cdot R_i \cdot D_i\big) }
+	•	60% Flow: who vouches for you, recursively weighted.
+	•	40% Structure × Quality × Accountability: path diversity (redundancy), average voucher strength (ResidualQuality), and dilution penalty (DilutionFactor).
+
+4.3 Effective Redundancy (explicit)
+
+Build an upstream ego subgraph from \mathcal{V}_i by BFS on incoming edges (who vouches for my vouchers, etc.), excluding i. Let:
+	•	k = |\mathcal{V}_i| (direct vouchers).
+	•	u = \max(0,\ |U_i|-k) (additional upstream supporters).
+	•	m: internal edges in the ego subgraph; n = |U_i| nodes.
+	•	Edge density \delta = \frac{m}{\max(1, n(n-1))}.
+
+Define:
+\rho_i = k + \lambda_{\text{depth}}\cdot u + \lambda_{\text{conn}}\cdot (\delta \cdot n),\quad
+\lambda_{\text{depth}} = 0.2,\ \lambda_{\text{conn}} = 1.0
+(Values are defaults; can be learned/tuned—§7.)
+
+4.4 Iterative Computation (damped)
+
+Initialize s_i^{(0)} from |\mathcal{V}_i| (e.g., \min(100,\ 20\sqrt{|\mathcal{V}_i|})). At each round:
+	1.	Compute \widehat{s}_i^{(t+1)} via the formula above using s^{(t)} for vouchers.
+	2.	Apply damped update:
+s_i^{(t+1)} \;=\; (1-\alpha)\cdot s_i^{(t)} \;+\; \alpha \cdot \widehat{s}_i^{(t+1)}, \qquad \alpha \in (0,1) \ \ (\text{default } 0.85)
+Stop when \max_i |s_i^{(t+1)} - s_i^{(t)}| < \varepsilon (default 0.5) or at 10 rounds.
+
+Convergence note. With damping, the update is a convex combination of the previous state and a 1-Lipschitz transform of it (each voucher’s contribution is clipped to [0,1] and total flow/clipping normalizes scale). Choosing \alpha<1 yields a contraction in practice; empirically ≤8 rounds for d_{\text{avg}}<10.
+
+⸻
+
+5. STS (Community Score)
+
+5.1 Graph Construction (Advogato-style with lagged capacities)
+	•	Split each user u into (u^-, u^+) with internal capacity c(d) based on prev-epoch hop-distance d from any seed in the accepted subgraph.
+	•	Add u^- \to \text{SINK} with cap=1.
+	•	For each vouch a\to b: add a^+ \to b^- with cap=1.
+	•	SOURCE \to seed^- capacity = BASE × (0.7 + 0.6\cdot S_s) where S_s\in[0,1] is the SeedScore (§6.3).
+
+Default capacity schedule (can be replaced with geometric c_0\rho^d if desired):
+c(0)=800,\; c(1)=240,\; c(2)=96,\; c(3)=48,\; c(\ge4)=24
+
+5.2 Components
+
+For user i (in the accepted set of the epoch):
+	•	Flow f_i (max-flow from SOURCE);
+	•	Min-cut c_i;
+	•	Depth d_i (prev-epoch distance);
+	•	Stability S_i = 1 - \min(1,\Delta_i) where \Delta_i is worst single-edge relative drop (approximated via local residual recomputes);
+	•	Seed-personalized PageRank pr_i.
+
+Anchors (95th-pct robust): F_{95}, C_{95} (with prev-epoch fallbacks \tilde F_{95}, \tilde C_{95} for small cohorts).
+
+Normalize:
+\begin{aligned}
+F_i &= \min\!\left(1,\ \frac{\log(1+f_i)}{\log(1+\max(F_{95},\tilde F_{95}))}\right), \\
+C_i &= \min\!\left(1,\ \frac{c_i}{\max(3,\max(C_{95},\tilde C_{95}))}\right), \\
+D_i &= e^{-\lambda d_i} \ (\lambda\approx 0.35), \\
+PR_i&= \frac{\log(1+pr_i)}{\log(1+\max pr)}.
+\end{aligned}
+
+Score:
+\boxed{\mathrm{STS}_i = 100\cdot \big(0.55F_i + 0.25C_i + 0.05S_i + 0.10D_i + 0.05PR_i\big)}
+(Weights are defaults; can be learned—§7.)
+
+5.3 Acceptance & Tiers
+	•	Acceptance (personal networks, neutral defaults): flow ≥ 0.5 AND min-cut ≥ 2.
+	•	STS tiers (defaults, interpretive):
+Connected ≥ 40; Verified ≥ 60 & min-cut ≥ 2; Trusted ≥ 80 & min-cut ≥ 3 & Stability ≥ 0.8.
+	•	Percentile option: In small/volatile graphs, define tiers by percentiles for stability.
+
+⸻
+
+6. Security Model
+
+6.1 Current Defenses
+	•	Epoch-lagged capacities (prev-epoch distances) to prevent distance inflation.
+	•	Min-cut floors and seed coverage ≥2 (dust-flow mitigated via floors—§6.2).
+	•	Public vouches in a Merkle log; suspicious motifs become community-auditable.
+	•	Outgoing-vouch dilution to price spam.
+
+6.2 Planned/Shipping Enhancements
+	•	Vertex-disjoint paths (not just edge-disjoint) for independence.
+	•	Per-seed flow floors: require ≥30% flow from each of ≥2 seeds to avoid dust-coverage.
+	•	Seed saturation throttles: monitor and damp seeds exceeding 40-50% of total outflow.
+	•	Cut witnesses: publish minimal vertex-cut witness sets with Merkle proofs.
+	•	SeedScore smoothing: EMA across epochs to avoid oscillations.
+
+6.3 Seed Quality Scoring
+
+Seed s gets S_s\in[0,1] from:
+	•	Predictive validity (35%)—influence persists without the seed’s edges.
+	•	Downstream quality (30%)—STS of influenced users.
+	•	Diversity lift (20%)—distinct neighborhoods reached.
+	•	Centralization penalty (15%)—damp if seed carries >50% of outflow.
+SOURCE capacity multiplier: 0.7 + 0.6 S_s \in [0.7,1.3]. Only seeds with S_s\ge 0.6 count toward “≥2 seeds.”
+
+⸻
+
+7. Parameterization & Learning
+	•	Defaults (e.g., F_0=5,\ R_0=20,\ \lambda_{\text{depth}}=0.2) are practical starting points.
+	•	Data-driven refinement: learn component weights and baselines from simulated and labeled graphs using constrained (monotone) models. Targets: high Sybil AUC, low FN on under-connected legit users, stability across epochs.
+	•	Sensitivity: include a small table of how scores shift with F_0, R_0, and dilution threshold to document behavior.
+	•	Publishing: include learned weights in params.json as “advisory defaults”; core remains neutral.
+
+⸻
+
+8. Implementation
+
+8.1 Stack
+	•	Backend: Node/TypeScript (Express).
+	•	DB: PostgreSQL (Drizzle ORM).
+	•	Frontend: React/Vite/Tailwind.
+	•	Auth: multi-chain wallets; endorsements via EIP-712 signatures.
+
+8.2 Performance
+	•	LocalHealth: per-round update is O(|E|); ≤10 rounds with damping; trivially parallel per node.
+	•	STS: reusable residual graphs; Push-Relabel with global relabeling works well when computing many max-flows per epoch.
+	•	Caching: cache LocalHealth with timestamps; recompute on vouch events or on demand with freshness hints.
+
+8.3 API (minimal)
+
+GET  /api/ego/:addr/score         -> { localHealth, voucherCount, residualQuality, redundancy, dilution, components }
+GET  /api/ego/:addr/explain       -> { minCut, seedPaths, componentBreakdown }
+
+POST /api/vouch                   -> { endorsee, signature }  // triggers recomputes
+
+GET  /api/community/:id/sts/:addr -> { sts, F,C,S,D,PR, minCut, depth }
+
+GET  /api/epoch/:id/attestation   -> { params.json, seed_root, graph_root, scores.jsonl, signature }
+
+
+⸻
+
+9. Evaluation
+
+9.1 Simulation Harness (planned/ongoing)
+
+Scenarios: planted communities, Sybil subgraphs of varying density, seed capture, bridge hubs, reciprocal spam, path failures.
+Metrics: Sybil AUC, FN on legit users, epoch stability, convergence rounds, seed saturation.
+
+9.2 Deployment Snapshot (example)
+	•	Range of LocalHealth: ~21–100; median ~55; typical convergence: 4–6 iterations.
+	•	Dilution: most users <10 outgoing vouches; penalties primarily affect spammers and “over-social” connectors.
+
+⸻
+
+10. Future Work
+	•	Ship vertex-disjoint checks & per-seed flow floors.
+	•	Publish cut witnesses and add verification endpoints.
+	•	Adaptive baselines (percentile-based F_0, R_0).
+	•	Optional percentile-based tiers.
+	•	Revocation/expiry for endorsements; typed vouches (skill/credit).
+	•	Cross-community portability (federated aggregates).
+
+⸻
+
+11. Conclusion
+
+MaxFlow computes neutral, verifiable graph signals by pairing recursive trust with structural resilience and explicit accountability. Public vouches, epoch-lagged capacities, and signed attestations yield an auditable, Sybil-resistant foundation. Applications consume these signals to allocate capital, weight governance, gate access, and route grants—without inheriting centralized choke points.
+
+⸻
+
+References
+	1.	Levien, R. “Attack-Resistant Trust Metrics for Public Key Certification.” USENIX (1998).
+	2.	Kamvar, Schlosser, Garcia-Molina. “The EigenTrust Algorithm…” WWW (2003).
+	3.	Douceur, J. “The Sybil Attack.” IPTPS (2002).
+	4.	Ford, Fulkerson. “Maximal Flow through a Network.” Can. J. Math. (1956).
+	5.	Dinic, E. “Algorithm for Maximum Flow…” (1970).
+
+⸻
+
+Appendix A: Pseudocode (LocalHealth)
+
+def local_health_epoch(addresses, endorsements, F0=5, R0=20,
+                       alpha=0.85, eps=0.5, max_iter=10):
+    # Pre-index incoming/outgoing
+    incoming = {a: [] for a in addresses}
+    outgoing = {a: [] for a in addresses}
+    for (u, v) in endorsements:
+        outgoing[u].append(v)
+        incoming[v].append(u)
+
+    # Init scores from sqrt(in-degree)
+    s = {a: min(100.0, 20.0 * (len(incoming[a]) ** 0.5)) for a in addresses}
+
+    for _ in range(max_iter):
+        s_hat = {}
+        max_delta = 0.0
+
+        for i in addresses:
+            vouchers = incoming[i]
+            # Flow
+            F = sum(s[j] / 100.0 for j in vouchers)
+            phi = min(1.0, F / max(1.0, F0))
+            flow_pts = 60.0 * (phi ** 2)
+
+            # ResidualQuality
+            residual = 0.0 if len(vouchers) == 0 else min(1.0, F / len(vouchers))
+
+            # EffectiveRedundancy
+            U_nodes, U_edges = build_upstream_ego(vouchers, incoming)  # upstream BFS
+            n = max(1, len(U_nodes))
+            k = len(vouchers)
+            u = max(0, n - k)
+            density = U_edges / max(1, n * (n - 1))
+            rho = k + 0.2 * u + 1.0 * (density * n)
+            d = min(1.0, rho / max(1.0, R0))
+
+            # DilutionFactor
+            excess = max(0, len(outgoing[i]) - 10)
+            dilution = max(0.5, 1.0 - 0.1 * excess)
+
+            struct_pts = 40.0 * (d ** 2) * residual * dilution
+            s_hat[i] = max(0.0, min(100.0, flow_pts + struct_pts))
+
+        # Damped update
+        for i in addresses:
+            new_val = (1 - alpha) * s[i] + alpha * s_hat[i]
+            max_delta = max(max_delta, abs(new_val - s[i]))
+            s[i] = new_val
+
+        if max_delta < eps:
+            break
+
+    return s
+
+
+⸻
+
+Appendix B: Pseudocode (STS skeleton)
+
+def sts_epoch(graph, seeds, seed_scores, prev_distances, params):
+    # Build split graph with lagged capacities
+    G = SplitGraph()
+    for u in graph.nodes():
+        d = prev_distances.get(u, 4)
+        cap = schedule_by_distance(d)          # 800,240,96,48,24 or geometric
+        G.add_edge(u_in(u), u_out(u), cap)
+        G.add_edge(u_in(u), SINK, 1.0)
+
+    for (a, b) in graph.endorsements():
+        G.add_edge(u_out(a), u_in(b), 1.0)
+
+    for s in seeds:
+        mult = 0.7 + 0.6 * seed_scores[s]     # smoothed across epochs
+        G.add_edge(SOURCE, u_in(s), BASE * mult)
+
+    # Compute per-user metrics
+    results = {}
+    for i in graph.nodes():
+        fi  = maxflow(G, SOURCE, u_in(i))
+        ci  = mincut_value(G, SOURCE, u_in(i))
+        di  = prev_distances.get(i, 4)
+        Si  = stability_drop(G, i)            # approx local recompute
+        pri = personalized_pagerank(graph, seeds, i)
+
+        # normalize via 95th pct anchors (with fallbacks)
+        Fi, Ci, Di, PRi = normalize(fi, ci, di, pri, anchors=params.anchors)
+        sts = 100 * (0.55*Fi + 0.25*Ci + 0.05*Si + 0.10*Di + 0.05*PRi)
+        results[i] = (sts, fi, ci, Si, Di, PRi)
+
+    return results
+
+
+⸻
+
+What changed vs your original
+	•	Fixed naming: separated ResidualQuality (average voucher strength) from DilutionFactor (accountability).
+	•	Made redundancy explicit (formula + weights).
+	•	Damped iteration with \alpha for robust convergence.
+	•	STS anchors & small-graph fallbacks are spelled out.
+	•	SeedScore smoothing and vertex-disjoint / per-seed floors elevated to near-term shipping.
+	•	APIs & attestations clarified for integrators.
+
+If you want, I can produce a 2-page PDF “whitepaper lite” for investors and a separate “spec appendix” for engineers.
