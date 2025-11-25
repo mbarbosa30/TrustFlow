@@ -158,6 +158,12 @@ export default function HowItWorks() {
               </p>
             </div>
 
+            <div className="my-4 p-3 rounded-lg bg-muted/30 border">
+              <p className="text-xs text-muted-foreground">
+                <strong>API vs Formula:</strong> The graph visualization displays <span className="font-mono">voucherCount</span> (number of people vouching for you) and <span className="font-mono">avgVoucherStrength</span> (average quality of vouches, shown as %). These map to the formula's <span className="font-mono">flowScore</span> = weighted incoming flow normalized by healthy baseline.
+              </p>
+            </div>
+
             <div className="space-y-3">
               <div>
                 <p className="font-semibold mb-1">Flow Component (60%):</p>
@@ -191,12 +197,17 @@ export default function HowItWorks() {
               </div>
 
               <div>
-                <p className="font-semibold mb-1">Distance Decay & KUDOS Boosts:</p>
+                <p className="font-semibold mb-1">Distance Decay:</p>
                 <p className="text-sm text-muted-foreground">
                   Edge capacities use simple distance decay: <span className="font-mono">1.0 / 2<sup>distance</sup></span>. 
-                  KUDOS transfers boost edge capacity with exponential decay (180-day halflife): 
-                  <span className="font-mono"> boostMultiplier = 1 + min(1, kudosWeight/500)</span>, max 2x.
-                  Higher threshold (500 vs 100) makes KUDOS a subtle nudge, not a scoring lever.
+                  This ensures closer connections (fewer hops) have stronger influence on your score.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30 border">
+                <p className="font-semibold mb-1">KUDOS: Pure Rewards Layer</p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>KUDOS does NOT influence LocalHealth scores.</strong> It's a one-way relationship: your LocalHealth determines KUDOS rewards, but KUDOS never affects scoring. This preserves LocalHealth as a pure graph-based signal and maintains MaxFlow's identity as neutral infrastructure.
                 </p>
               </div>
             </div>
