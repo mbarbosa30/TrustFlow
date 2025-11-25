@@ -644,8 +644,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      // Build links array (filter to only include nodes we're showing)
+      // Build links array (filter to only include nodes we're showing, deduplicate)
       const nodeIds = new Set(addresses);
+      const seenLinks = new Set<string>();
       const links = endorsements
         .filter(e => 
           nodeIds.has(e.endorser.toLowerCase() as `0x${string}`) && 
@@ -654,7 +655,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(e => ({
           source: e.endorser.toLowerCase(),
           target: e.endorsee.toLowerCase()
-        }));
+        }))
+        .filter(link => {
+          const key = `${link.source}->${link.target}`;
+          if (seenLinks.has(key)) return false;
+          seenLinks.add(key);
+          return true;
+        });
 
       return res.status(200).json({
         nodes,
