@@ -117,7 +117,7 @@ export default function Whitepaper() {
           <a href="#localhealth" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-localhealth">4. LocalHealth Algorithm</a>
           <a href="#sts" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-sts">5. STS Algorithm</a>
           <a href="#threat-model" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-threat-model">6. Threat Model & Security</a>
-          <a href="#evaluation" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-evaluation">7. Evaluation & Benchmarks</a>
+          <a href="#evaluation" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-evaluation">7. Evaluation Methodology</a>
           <a href="#discussion" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-discussion">8. Discussion & Limitations</a>
           <a href="#implementation" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-implementation">9. Implementation</a>
           <a href="#future-work" className="text-muted-foreground hover:text-foreground transition-colors py-1" data-testid="link-toc-future-work">10. Future Work</a>
@@ -1100,97 +1100,95 @@ export default function Whitepaper() {
       <section id="evaluation" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <BarChart3 className="w-6 h-6 text-primary" />
-          <span className="text-primary">7.</span> Evaluation & Benchmarks
+          <span className="text-primary">7.</span> Evaluation Methodology
         </h2>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Simulation Results</CardTitle>
+            <CardTitle className="text-lg">Theoretical Properties</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm sm:text-base leading-relaxed">
-              We evaluated MaxFlow on synthetic graphs with planted Sybil clusters of varying sizes and 
-              connection patterns:
+              MaxFlow's security properties derive from fundamental graph-theoretic guarantees:
             </p>
 
-            <ResponsiveTable>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="text-left py-2 px-3 font-semibold">Scenario</th>
-                    <th className="text-left py-2 px-3 font-semibold">Sybil Detection AUC</th>
-                    <th className="text-left py-2 px-3 font-semibold">FN Rate (legit)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">Isolated Sybil cluster (n=50)</td>
-                    <td className="py-2 px-3 text-green-600 dark:text-green-400">0.98</td>
-                    <td className="py-2 px-3">2.1%</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">Sybil + 1 bridge to legitimate</td>
-                    <td className="py-2 px-3 text-green-600 dark:text-green-400">0.94</td>
-                    <td className="py-2 px-3">3.5%</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">Sybil + 3 bridges to legitimate</td>
-                    <td className="py-2 px-3 text-amber-600 dark:text-amber-400">0.87</td>
-                    <td className="py-2 px-3">5.2%</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3">Seed capture (1 of 5 seeds)</td>
-                    <td className="py-2 px-3 text-green-600 dark:text-green-400">0.91</td>
-                    <td className="py-2 px-3">4.0%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </ResponsiveTable>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm mb-1">Sybil Resistance Bound</div>
+                <p className="text-sm text-muted-foreground">
+                  The max-flow/min-cut theorem guarantees that an attacker's aggregate trust is bounded by the 
+                  capacity of edges connecting their cluster to the legitimate network. Isolated Sybil clusters 
+                  receive zero flow; clusters with <InlineFormula>{"k"}</InlineFormula> bridges can gain at 
+                  most <InlineFormula>{"k"}</InlineFormula> units of trust.
+                </p>
+              </div>
 
-            <div className="p-3 sm:p-4 rounded-lg bg-muted/30">
-              <p className="text-sm text-muted-foreground">
-                <strong>Key finding:</strong> Even with 3 compromised bridges, MaxFlow maintains 87% AUC for 
-                Sybil detection. The recursive weighting ensures Sybils remain low-scoring even with some 
-                legitimate connections.
-              </p>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm mb-1">Recursive Dampening</div>
+                <p className="text-sm text-muted-foreground">
+                  Because vouch weights depend on voucher scores, Sybil clusters face a bootstrapping problem: 
+                  low-quality vouchers contribute low-weight vouches, preventing score inflation even with 
+                  dense internal connections.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm mb-1">Convergence Guarantee</div>
+                <p className="text-sm text-muted-foreground">
+                  With damping factor <InlineFormula>{"\\alpha < 1"}</InlineFormula>, the iterative update 
+                  is a contraction mapping. Scores converge to a unique fixed point regardless of initialization, 
+                  with error decreasing geometrically at rate <InlineFormula>{"(1-\\alpha)"}</InlineFormula> per iteration.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Production Metrics</CardTitle>
+            <CardTitle className="text-lg">Evaluation Framework</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm sm:text-base leading-relaxed">
-              From deployment with ~200 active users:
+              To assess MaxFlow's effectiveness, we recommend evaluating against these attack scenarios:
             </p>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="p-4 rounded-lg bg-muted/30 text-center">
-                <div className="text-2xl font-bold text-primary">21-100</div>
-                <div className="text-sm text-muted-foreground">LocalHealth range</div>
+            <div className="space-y-2">
+              <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
+                <span className="font-mono text-primary shrink-0">A.</span>
+                <div>
+                  <strong className="text-sm">Isolated Sybil Cluster</strong>
+                  <p className="text-sm text-muted-foreground">N fake accounts vouching only for each other. Expected: all scores near zero.</p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-muted/30 text-center">
-                <div className="text-2xl font-bold text-primary">~55</div>
-                <div className="text-sm text-muted-foreground">Median LocalHealth</div>
+              <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
+                <span className="font-mono text-primary shrink-0">B.</span>
+                <div>
+                  <strong className="text-sm">Bridge Attack</strong>
+                  <p className="text-sm text-muted-foreground">Sybil cluster with k bridges to legitimate users. Expected: scores bounded by bridge capacity.</p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-muted/30 text-center">
-                <div className="text-2xl font-bold text-primary">4-6</div>
-                <div className="text-sm text-muted-foreground">Iterations to converge</div>
+              <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
+                <span className="font-mono text-primary shrink-0">C.</span>
+                <div>
+                  <strong className="text-sm">Seed Capture</strong>
+                  <p className="text-sm text-muted-foreground">One seed compromised, vouching for Sybils. Expected: seed quality score degrades, limiting damage.</p>
+                </div>
               </div>
-              <div className="p-4 rounded-lg bg-muted/30 text-center">
-                <div className="text-2xl font-bold text-primary">{'<'}5%</div>
-                <div className="text-sm text-muted-foreground">Users with dilution penalty</div>
+              <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
+                <span className="font-mono text-primary shrink-0">D.</span>
+                <div>
+                  <strong className="text-sm">Vouch Merchant</strong>
+                  <p className="text-sm text-muted-foreground">Legitimate user sells vouches to many buyers. Expected: dilution penalty reduces their score and vouch value.</p>
+                </div>
               </div>
             </div>
 
             <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="font-semibold text-sm mb-2">Score Distribution Insight</p>
+              <p className="font-semibold text-sm mb-2">Metrics to Track</p>
               <p className="text-sm text-muted-foreground">
-                The lower bound of ~21 (rather than 0) reflects that even new users with minimal connections 
-                get some baseline score from the initialization heuristic. Truly isolated accounts with zero 
-                vouches would score 0, but such accounts are rare in practice.
+                For each scenario, measure: (1) AUC for distinguishing Sybils from legitimate users by score, 
+                (2) false negative rate at various thresholds, (3) score distribution before/after attack.
               </p>
             </div>
           </CardContent>
@@ -1198,56 +1196,41 @@ export default function Whitepaper() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Convergence Analysis</CardTitle>
+            <CardTitle className="text-lg">Algorithmic Complexity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm sm:text-base leading-relaxed">
-              The damped iteration converges quickly for typical social graphs:
+              Computational costs scale predictably with graph size:
             </p>
 
-            <ResponsiveTable>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/30">
-                    <th className="text-left py-2 px-3 font-semibold">Iteration</th>
-                    <th className="text-left py-2 px-3 font-semibold">Max <InlineFormula>{"\\Delta"}</InlineFormula></th>
-                    <th className="text-left py-2 px-3 font-semibold">Avg <InlineFormula>{"\\Delta"}</InlineFormula></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">1</td>
-                    <td className="py-2 px-3">15.2</td>
-                    <td className="py-2 px-3">8.4</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">2</td>
-                    <td className="py-2 px-3">6.8</td>
-                    <td className="py-2 px-3">3.1</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">3</td>
-                    <td className="py-2 px-3">2.9</td>
-                    <td className="py-2 px-3">1.2</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2 px-3">4</td>
-                    <td className="py-2 px-3">1.1</td>
-                    <td className="py-2 px-3">0.5</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3">5</td>
-                    <td className="py-2 px-3 text-green-600 dark:text-green-400">0.4</td>
-                    <td className="py-2 px-3 text-green-600 dark:text-green-400">0.2</td>
-                  </tr>
-                </tbody>
-              </table>
-            </ResponsiveTable>
-
-            <p className="text-sm text-muted-foreground">
-              With <InlineFormula>{"\\alpha = 0.85"}</InlineFormula> and convergence threshold 
-              <InlineFormula>{"\\varepsilon = 0.5"}</InlineFormula>, typical networks converge in 4-6 iterations.
-            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm">LocalHealth (per user)</div>
+                <p className="text-sm text-muted-foreground">
+                  <InlineFormula>{"O(k \\cdot |E_{ego}|)"}</InlineFormula> where <InlineFormula>{"k"}</InlineFormula> is 
+                  iteration count (≤10) and <InlineFormula>{"E_{ego}"}</InlineFormula> is ego subgraph edges
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm">STS (per community)</div>
+                <p className="text-sm text-muted-foreground">
+                  <InlineFormula>{"O(|V|^2 \\cdot |E|)"}</InlineFormula> for Dinic's algorithm on the flow network
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm">Iteration Bound</div>
+                <p className="text-sm text-muted-foreground">
+                  Convergence threshold <InlineFormula>{"\\varepsilon = 0.5"}</InlineFormula> with 
+                  max 10 iterations ensures bounded compute time
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm">Parallelization</div>
+                <p className="text-sm text-muted-foreground">
+                  Per-user LocalHealth is embarrassingly parallel; batch computation scales linearly with cores
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </section>
