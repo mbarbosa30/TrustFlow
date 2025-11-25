@@ -4,14 +4,21 @@ MaxFlow is a Sybil-resistant graph signal infrastructure that computes verifiabl
 
 ### Nature-Inspired Narrative Framework (Nov 2025)
 MaxFlow uses a **math-first, nature-supportive** narrative framing across all pages:
-*   **Core Metaphor**: "Nature spent billions of years optimizing flow networks, redundancy, and parasite resistance. MaxFlow makes these patterns computable for social graphs—we discovered the math, not invented it."
+*   **Hero Messaging (Finalized)**: 
+    *   Headline: **"Trust, Computed Naturally"**
+    *   Subtitle: *"Sybil-resistant graph algorithms measuring flow, redundancy, and resilience — the same patterns that make ecosystems ungameable."*
+    *   Badge: "Graph Signal Infrastructure"
+*   **Core Positioning**: The nature parallel is a **power feature** — deliberate engineering leveraging patterns with billions of years of optimization. Confident, impressive, intentional. Not accidental.
 *   **Key Analogies** (each paired with precise graph property):
     *   **Rivers/Watersheds** → Max-flow capacity (water finds optimal paths through topology)
     *   **Root Systems** → Recursive trust weighting (stronger roots get more nutrients)
     *   **Mycorrhizal Networks** → Path redundancy (forest resilience through multiple paths)
     *   **Ecosystem Pruning** → Dilution penalty (freeloaders get naturally isolated)
 *   **Implementation**: Nature metaphors appear as supportive callouts (italic text) below technical explanations, never replacing the mathematical framing
-*   **Guidelines**: Lead with math, add "Nature already does this" as supporting evidence; maintain neutral infrastructure positioning in all CTAs
+*   **Tone Guidelines**: Confident, impressive, intentional. No "We" language — keep impersonal/product-focused. Tech is primary; nature validates robustness.
+*   **Section Taglines**:
+    *   How It Works: "Three steps. Graph math. Natural resilience."
+    *   Why MaxFlow: "Proven algorithms. Natural resilience. Ungameable by design."
 
 ## User Preferences
 

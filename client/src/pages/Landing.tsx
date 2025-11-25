@@ -26,20 +26,16 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
             <Leaf className="w-3 h-3 mr-1" />
-            Nature-Inspired Infrastructure
+            Graph Signal Infrastructure
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
-            Trust Flows Like{" "}
-            <span className="text-primary">Water Through Networks</span>
+            Trust,{" "}
+            <span className="text-primary">Computed Naturally</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-4" data-testid="text-hero-subheadline">
-            Rivers find paths to the sea. Root systems feed what grows. Nature spent billions of years optimizing these patterns—MaxFlow makes them computable.
-          </p>
-          
-          <p className="text-sm text-muted-foreground/80 max-w-2xl mx-auto mb-10">
-            Sybil-resistant scoring from network structure. No followers, no likes, no vanity metrics. Good luck gaming it.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8" data-testid="text-hero-subheadline">
+            Sybil-resistant graph algorithms measuring flow, redundancy, and resilience — the same patterns that make ecosystems ungameable.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
@@ -183,7 +179,7 @@ export default function Landing() {
               How It Works
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Like water finding its path, trust flows through the network—naturally, inevitably
+              Three steps. Graph math. Natural resilience.
             </p>
           </div>
 
@@ -192,19 +188,25 @@ export default function Landing() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">1. Grow Connections</h3>
+              <h3 className="text-xl font-semibold mb-2">1. Build Connections</h3>
               <p className="text-muted-foreground text-sm">
-                Like roots extending through soil, you vouch for people in your network. Each connection is public—growth has a cost.
+                Vouch for people you trust. Each endorsement is public and on-chain. Your reputation is at stake.
+              </p>
+              <p className="text-xs text-primary/70 italic mt-2">
+                Like roots extending through soil — growth has a cost.
               </p>
             </div>
 
             <div className="text-center" data-testid="step-compute">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <TreePine className="w-8 h-8 text-primary" />
+                <Network className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">2. Trust Flows</h3>
+              <h3 className="text-xl font-semibold mb-2">2. Flow Computes</h3>
               <p className="text-muted-foreground text-sm">
-                Like nutrients flowing through root networks, your score depends on the strength of your connections—and their connections. Recursive, emergent.
+                Max-flow algorithms score your network. Your score depends on the strength of your connections — and theirs. Recursive. Recursive. Recursive.
+              </p>
+              <p className="text-xs text-primary/70 italic mt-2">
+                Like rivers finding paths — flow optimizes naturally.
               </p>
             </div>
 
@@ -212,9 +214,12 @@ export default function Landing() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">3. Bear Fruit</h3>
+              <h3 className="text-xl font-semibold mb-2">3. Signal Ships</h3>
               <p className="text-muted-foreground text-sm">
-                Export verifiable credentials. Apps interpret your score for voting, lending, access—whatever the ecosystem needs.
+                Export verifiable credentials. Apps interpret your score for governance, lending, access — whatever they need.
+              </p>
+              <p className="text-xs text-primary/70 italic mt-2">
+                Like ecosystems bearing fruit — signals become value.
               </p>
             </div>
           </div>
@@ -228,7 +233,7 @@ export default function Landing() {
               Why MaxFlow?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Nature solved this problem billions of years ago. We just made it computable.
+              Proven algorithms. Natural resilience. Ungameable by design.
             </p>
           </div>
 
