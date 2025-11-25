@@ -12,8 +12,8 @@ interface GraphNode {
   address: string;
   localHealth: number;
   degree: number;
-  flowScore: number;
-  redundancyScore: number;
+  voucherCount: number;
+  avgVoucherStrength: number;
   x?: number;
   y?: number;
   vx?: number;
@@ -343,16 +343,16 @@ export function LocalHealthGraph({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Flow Score</div>
-                      <div className="text-sm" data-testid="text-flow-score">
-                        {node.flowScore.toFixed(1)}
+                      <div className="text-xs text-muted-foreground mb-1">Vouchers</div>
+                      <div className="text-sm" data-testid="text-voucher-count">
+                        {node.voucherCount}
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-xs text-muted-foreground mb-1">Redundancy</div>
-                      <div className="text-sm" data-testid="text-redundancy-score">
-                        {node.redundancyScore.toFixed(1)}
+                      <div className="text-xs text-muted-foreground mb-1">Avg Strength</div>
+                      <div className="text-sm" data-testid="text-avg-strength">
+                        {(node.avgVoucherStrength * 100).toFixed(1)}%
                       </div>
                     </div>
                   </div>
