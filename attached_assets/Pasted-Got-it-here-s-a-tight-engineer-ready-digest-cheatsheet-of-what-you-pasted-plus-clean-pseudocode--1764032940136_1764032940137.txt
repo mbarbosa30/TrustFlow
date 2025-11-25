@@ -1,0 +1,129 @@
+Got it—here’s a tight, engineer-ready digest + cheatsheet of what you pasted, plus clean pseudocode and a few places that could use naming/clarity tweaks.
+
+TL;DR
+	•	Two score families
+	•	Personal networks: (a) LocalHealth (0–100) via iterative, recursive weighting of incoming vouches (capacity = voucherScore/100); (b) a planned Ego Score variant using ego-subgraph max-flow/min-cut with distance-based node capacities.
+	•	Community networks: STS (0–100) via Advogato-style split nodes, seed distances, max-flow/min-cut, percentile-normalized.
+	•	Sybil resistance from: recursive weighting, min-cut thresholds, redundancy, epoch-lagged distances/capacities, public vouches, and an outgoing-vouch dilution penalty.
+	•	KUDOS is a reward layer only; it never changes scores.
+	•	Attestations per epoch (params, Merkle roots, signed scores) make results recomputable and auditable.
+
+⸻
+
+Key formulas & knobs
+
+LocalHealth (iterative, recursive trust)
+	•	Each incoming vouch from user j is weighted by w_j = \mathrm{LocalHealth}_j/100 \in [0,1].
+	•	directFlow = \sum_{j \in \text{vouchers}(i)} w_j
+	•	flowScore = directFlow / HEALTHY_VOUCH_COUNT (default 5)
+	•	ResidualFlow = directFlow / voucherCount  (captures average voucher quality)
+	•	redundancy = \min\!\big(1,\ \mathrm{effectiveRedundancy}/\mathrm{HEALTHY\_REDUNDANCY}\big) (healthy baseline ~20 pts)
+	•	Dilution (outgoing vouches > 10)
+\text{dilutionFactor} = \max\!\big(0.5,\ 1 - 0.1 \times \text{excessVouches}\big)
+	•	Score
+\boxed{\mathrm{LocalHealth}_i = 60\cdot(\mathrm{flowScore})^2 \;+\; 40\cdot(\mathrm{redundancy})^2 \cdot \text{(vouchQuality)}}
+with vouchQuality ≈ ResidualFlow (as implied by the text).
+	•	Iterate ≤10 rounds or until Δ<0.5.
+
+Community STS (standardized, 0–100)
+	•	Graph construction (Advogato-style)
+Split u \to (u^-, u^+); add u^- \to \text{SINK} cap=1; vouch a\to b becomes a^+ \to b^- cap=1.
+Node capacity by distance d from seeds (from prev epoch’s accepted graph):
+	•	c(0)=800,\ c(1)=240,\ c(2)=96,\ c(3)=48,\ c(\ge4)=24.
+	•	SOURCE → seeds: large cap (scaled by SeedScore below).
+	•	Compute per user: flow f_i, min-cut c_i, stability S_i (edge-influence), depth D_i=e^{-\lambda d_i} (λ≈0.35), personalized PageRank PR_i.
+	•	Robust normalization (95th-pct anchors):
+\begin{aligned}
+F_i &= \min\!\left(1,\ \frac{\log(1+f_i)}{\log(1+\max(F_{95},\tilde F_{95}))}\right)\\
+C_i &= \min\!\left(1,\ \frac{c_i}{\max(3,\max(C_{95},\tilde C_{95}))}\right)\\
+S_i &= 1-\min(1,\Delta_i), \quad PR_i=\frac{\log(1+pr_i)}{\log(1+\max pr)}
+\end{aligned}
+	•	STS
+\boxed{\mathrm{STS}_i = 100\cdot\big(0.55F_i + 0.25C_i + 0.05S_i + 0.10D_i + 0.05PR_i\big)}
+
+Acceptance / tiers
+	•	Personal networks (current): accept if flow ≥ 0.5 AND min-cut ≥ 2.
+	•	STS tiers (interpretive defaults): Connected ≥40; Verified ≥60 & min-cut≥2; Trusted ≥80 & min-cut≥3 & Stability ≥0.8.
+
+Seed quality (affects SOURCE→seed capacity)
+	•	Seed score S_s \in [0,1] from:
+	•	Predictive validity 35%
+	•	Downstream quality 30%
+	•	Diversity lift 20%
+	•	Centralization penalty 15%
+	•	Capacity multiplier: 0.7 + 0.6 S_s \in [0.7\!,\,1.3].
+	•	Only seeds with S_s \ge 0.6 count toward “≥2 seeds” rule.
+
+⸻
+
+Pseudocode (ready to implement)
+
+A) LocalHealth (iterative recursive trust)
+
+const HEALTHY_VOUCH_COUNT = 5
+const HEALTHY_REDUNDANCY  = 20
+max_iters = 10; eps = 0.5
+
+init LocalHealth[i] = clamp0_100(initial_guess or 50)
+
+for t in 1..max_iters:
+  prev = LocalHealth.copy()
+  for i in users:
+    vouchers = incoming_vouchers(i)
+    directFlow = sum(prev[j]/100 for j in vouchers)
+    flowScore  = directFlow / HEALTHY_VOUCH_COUNT
+    vouchQuality = (vouchers.size>0) ? directFlow / vouchers.size : 0
+    effectiveRedundancy = compute_effective_redundancy(i)  // count + upstream depth + density
+    redundancy = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY)
+
+    // outgoing accountability
+    excess = max(0, outgoing_vouches(i) - 10)
+    dilutionFactor = max(0.5, 1 - 0.1*excess)
+
+    score = 60*(flowScore^2) + 40*(redundancy^2)*vouchQuality
+    LocalHealth[i] = clamp0_100(score * dilutionFactor)
+  if L1_norm(LocalHealth - prev) < eps: break
+
+B) Community STS (per epoch)
+
+// distances from seeds are taken from previous epoch's accepted graph
+dist = bfs_distances_from_seeds(prev_epoch_accepted_graph)
+
+build split-graph:
+  for each user u:
+    cap(u_in->u_out) = schedule_by_distance(dist[u])  // 800,240,96,48,24
+    add u_in -> SINK (cap=1)
+  for each vouch a->b: add a_out -> b_in (cap=1)
+  for each seed s: add SOURCE -> s_in (cap = big * seed_capacity_multiplier(s))
+
+for each user i (non-seed):
+  fi  = maxflow(SOURCE, i_in)         // or SOURCE->SINK via i? implementation detail
+  ci  = mincut_value(SOURCE, i_in)
+  di  = dist[i]
+  Δi  = worst_single_edge_influence(i) // local recompute on residual graph
+  pri = personalized_pagerank(i)       // seed-personalized
+
+normalize F_i, C_i, D_i, S_i, PR_i using epoch anchors
+STS_i = 100*(0.55F_i + 0.25C_i + 0.05S_i + 0.10D_i + 0.05PR_i)
+emit signed attestation + Merkle roots
+
+
+⸻
+
+Security posture (now vs planned)
+
+Now: epoch-lagged capacities; min-cut floors; ≥2-seed coverage; edge-disjoint paths; public vouches.
+Planned: vertex-disjoint checks; per-seed flow-share floors (e.g., ≥30% from each of ≥2 seeds); seed saturation throttles; publish cut witnesses for lightweight verification.
+
+⸻
+
+Notes / suggested clarifications
+	1.	Personal model naming: The doc uses LocalHealth (Ego Score) (iterative) and later an Ego Score (max-flow on ego subgraph). Consider renaming:
+	•	LocalHealth = iterative recursive-trust score (current, shipped)
+	•	EgoScore = max-flow/min-cut ego-subgraph score (planned)
+	2.	vouchQuality in LocalHealth: make explicit that it equals ResidualFlow and specify any clamp/normalization.
+	3.	effectiveRedundancy: define its exact computation (count/depth/density weights).
+	4.	Anchors F95/C95: confirm tie-breaking with fallback \tilde F_{95}, \tilde C_{95} and any minimum sample size rules.
+	5.	Acceptance policy scope: clarify when the Personal acceptance (flow≥0.5 & min-cut≥2) is enforced (display gating? rewards?) vs STS tiers.
+
+If you want, I can turn this into a 1-page PDF cheatsheet or code the scoring as a reference module (TypeScript or Python) you can drop into the service.
