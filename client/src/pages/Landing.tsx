@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Network, Shield, GitBranch, CheckCircle2, Users, ArrowRight, 
-  Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock
+  Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock, Leaf, TreePine
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -25,17 +25,21 @@ export default function Landing() {
       <section className="relative py-20 md:py-32 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
-            <Shield className="w-3 h-3 mr-1" />
-            Reputation Infrastructure
+            <Leaf className="w-3 h-3 mr-1" />
+            Nature-Inspired Infrastructure
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
-            Trust Scores That{" "}
-            <span className="text-primary">Can't Be Gamed</span>
+            Trust Flows Like{" "}
+            <span className="text-primary">Water Through Networks</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Sybil-resistant scoring computed from network structure—not followers, not likes, not vanity metrics. Good luck gaming it.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-4" data-testid="text-hero-subheadline">
+            Rivers find paths to the sea. Root systems feed what grows. Nature spent billions of years optimizing these patterns—MaxFlow makes them computable.
+          </p>
+          
+          <p className="text-sm text-muted-foreground/80 max-w-2xl mx-auto mb-10">
+            Sybil-resistant scoring from network structure. No followers, no likes, no vanity metrics. Good luck gaming it.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
@@ -179,7 +183,7 @@ export default function Landing() {
               How It Works
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Simple endorsements become powerful, Sybil-resistant signals
+              Like water finding its path, trust flows through the network—naturally, inevitably
             </p>
           </div>
 
@@ -188,19 +192,19 @@ export default function Landing() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">1. Vouch for People</h3>
+              <h3 className="text-xl font-semibold mb-2">1. Grow Connections</h3>
               <p className="text-muted-foreground text-sm">
-                Endorse people in your network. Each vouch is public and permanent—vouching has a cost.
+                Like roots extending through soil, you vouch for people in your network. Each connection is public—growth has a cost.
               </p>
             </div>
 
             <div className="text-center" data-testid="step-compute">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <GitBranch className="w-8 h-8 text-primary" />
+                <TreePine className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">2. Scores Are Computed</h3>
+              <h3 className="text-xl font-semibold mb-2">2. Trust Flows</h3>
               <p className="text-muted-foreground text-sm">
-                Your score depends on who vouches for you—and their scores depend on who vouches for them. Recursive trust.
+                Like nutrients flowing through root networks, your score depends on the strength of your connections—and their connections. Recursive, emergent.
               </p>
             </div>
 
@@ -208,9 +212,9 @@ export default function Landing() {
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">3. Use Your Score</h3>
+              <h3 className="text-xl font-semibold mb-2">3. Bear Fruit</h3>
               <p className="text-muted-foreground text-sm">
-                Export verifiable credentials. Apps use your score for voting, lending, access—whatever they need.
+                Export verifiable credentials. Apps interpret your score for voting, lending, access—whatever the ecosystem needs.
               </p>
             </div>
           </div>
@@ -224,7 +228,7 @@ export default function Landing() {
               Why MaxFlow?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Fake accounts vouching for each other can't bootstrap high scores
+              Nature solved this problem billions of years ago. We just made it computable.
             </p>
           </div>
 
@@ -232,14 +236,16 @@ export default function Landing() {
             <Card data-testid="card-feature-recursive">
               <CardHeader className="pb-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Network className="w-5 h-5 text-primary" />
+                  <TreePine className="w-5 h-5 text-primary" />
                 </div>
                 <CardTitle className="text-base">Recursive Trust</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  A vouch from a high-score user matters more than one from a low-score user. 
-                  Sybil clusters can't bootstrap themselves.
+                <p className="text-sm text-muted-foreground mb-2">
+                  A vouch from a high-score user matters more. Sybil clusters can't bootstrap themselves.
+                </p>
+                <p className="text-xs text-primary/70 italic">
+                  Like root systems: stronger roots get more nutrients, enabling more growth.
                 </p>
               </CardContent>
             </Card>
@@ -247,13 +253,16 @@ export default function Landing() {
             <Card data-testid="card-feature-redundancy">
               <CardHeader className="pb-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Shield className="w-5 h-5 text-primary" />
+                  <Network className="w-5 h-5 text-primary" />
                 </div>
                 <CardTitle className="text-base">Path Redundancy</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-2">
                   One endorser isn't enough. We measure how many independent paths connect you to trusted seeds.
+                </p>
+                <p className="text-xs text-primary/70 italic">
+                  Like mycorrhizal networks: forests survive because multiple paths carry nutrients.
                 </p>
               </CardContent>
             </Card>
@@ -261,13 +270,16 @@ export default function Landing() {
             <Card data-testid="card-feature-accountability">
               <CardHeader className="pb-3">
                 <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                  <Leaf className="w-5 h-5 text-primary" />
                 </div>
-                <CardTitle className="text-base">Vouch Accountability</CardTitle>
+                <CardTitle className="text-base">Natural Pruning</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-2">
                   Vouching for too many people dilutes your own score. No free lunch for "vouch merchants."
+                </p>
+                <p className="text-xs text-primary/70 italic">
+                  Like ecosystems: organisms that over-extend get pruned by the network itself.
                 </p>
               </CardContent>
             </Card>
