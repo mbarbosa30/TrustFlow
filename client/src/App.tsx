@@ -32,6 +32,7 @@ import Simulation from "@/pages/Simulation";
 import Kudos from "@/pages/Kudos";
 import KudosEconomics from "@/pages/KudosEconomics";
 import Admin from "@/pages/Admin";
+import Whitepaper from "@/pages/Whitepaper";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/kudos" component={Kudos} />
       <Route path="/kudos-economics" component={KudosEconomics} />
       <Route path="/admin" component={Admin} />
+      <Route path="/whitepaper" component={Whitepaper} />
       <Route component={NotFound} />
     </Switch>
   );

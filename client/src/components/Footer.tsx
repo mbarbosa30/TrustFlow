@@ -34,6 +34,11 @@ export function Footer() {
                   Use Cases
                 </Link>
               </li>
+              <li>
+                <Link href="/whitepaper" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-whitepaper">
+                  Whitepaper
+                </Link>
+              </li>
             </ul>
           </div>
 
