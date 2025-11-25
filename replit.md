@@ -2,6 +2,17 @@
 
 MaxFlow is a Sybil-resistant graph signal infrastructure that computes verifiable network quality scores from endorsement graphs using max-flow/min-cut algorithms. It provides neutral, mathematically-derived signals (LocalHealth 0-100 for personal networks, STS 0-100 for communities) that applications interpret based on their needs: creditworthiness for lending, governance weight for DAOs, access control for communities, or allocation efficiency for grants. The system supports dual-layer scoring: Personal Networks (LocalHealth) for user-seeded graphs and Community Reputation (STS) for context-specific scoring with community-managed seeds. All vouches are publicly visible and stored on-chain in a Merkle transparency log. MaxFlow is infrastructure, not a trust dictator—it computes flow, redundancy, and dilution penalties; communities choose what these signals mean.
 
+### Nature-Inspired Narrative Framework (Nov 2025)
+MaxFlow uses a **math-first, nature-supportive** narrative framing across all pages:
+*   **Core Metaphor**: "Nature spent billions of years optimizing flow networks, redundancy, and parasite resistance. MaxFlow makes these patterns computable for social graphs—we discovered the math, not invented it."
+*   **Key Analogies** (each paired with precise graph property):
+    *   **Rivers/Watersheds** → Max-flow capacity (water finds optimal paths through topology)
+    *   **Root Systems** → Recursive trust weighting (stronger roots get more nutrients)
+    *   **Mycorrhizal Networks** → Path redundancy (forest resilience through multiple paths)
+    *   **Ecosystem Pruning** → Dilution penalty (freeloaders get naturally isolated)
+*   **Implementation**: Nature metaphors appear as supportive callouts (italic text) below technical explanations, never replacing the mathematical framing
+*   **Guidelines**: Lead with math, add "Nature already does this" as supporting evidence; maintain neutral infrastructure positioning in all CTAs
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
