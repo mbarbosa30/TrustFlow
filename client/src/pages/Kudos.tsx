@@ -283,7 +283,7 @@ export default function Kudos() {
           <CardHeader>
             <CardTitle>Send KUDOS</CardTitle>
             <CardDescription>
-              Transfer KUDOS to boost edge capacity (1% fee: 0.5% burned, 0.5% pooled)
+              Share KUDOS with others (1% fee: 0.5% burned, 0.5% pooled)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -436,19 +436,19 @@ export default function Kudos() {
           <div>
             <h3 className="font-semibold mb-2">What are KUDOS?</h3>
             <p className="text-sm text-muted-foreground">
-              KUDOS are off-chain incentive tokens built on neutral graph signals. They interpret LocalHealth scores 
-              as contribution quality for rewards. Sending tokens boosts edge capacity in the network graph, 
-              improving LocalHealth scores for recipients.
+              KUDOS are off-chain reputation tokens earned based on your LocalHealth score. 
+              They're a pure rewards layer—your LocalHealth determines how many KUDOS you can claim, 
+              but KUDOS never influences your score. Share them as reputation gifts.
             </p>
           </div>
           <div>
             <h3 className="font-semibold mb-2">Economics</h3>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Daily claiming based on LocalHealth score (score² / 100)</li>
+              <li>• Claim amount = (LocalHealth² / 100), capped at daily availability</li>
               <li>• 1000 KUDOS daily cap across all users</li>
               <li>• 1% transfer fee: 0.5% burned (deflationary), 0.5% pooled</li>
               <li>• 24-hour cooldown between claims</li>
-              <li>• Edge boosts decay exponentially (180-day halflife)</li>
+              <li>• Pure rewards: KUDOS never affects your LocalHealth score</li>
             </ul>
           </div>
         </CardContent>

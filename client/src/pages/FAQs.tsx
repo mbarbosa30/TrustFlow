@@ -346,7 +346,7 @@ export default function FAQs() {
           <AccordionContent className="text-muted-foreground">
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 mb-3">
               <p className="text-sm font-semibold text-primary mb-1">
-                Pure Rewards Layer (Nov 2025)
+                Pure Rewards Layer
               </p>
               <p className="text-xs">
                 <strong>KUDOS does NOT influence LocalHealth scores.</strong> It's a one-way relationship: LocalHealth determines KUDOS rewards, but KUDOS never affects scoring. This preserves LocalHealth as a pure graph-based signal.
@@ -356,8 +356,8 @@ export default function FAQs() {
               KUDOS is an off-chain reputation token that you earn based on your LocalHealth score:
             </p>
             <ul className="list-disc list-inside space-y-1 text-sm mb-2">
-              <li><strong>Weekly Claims:</strong> Claim amount = (LocalHealth² / 100), capped at 1000 KUDOS/day</li>
-              <li><strong>7-Day Cooldown:</strong> Must wait 7 days between claims</li>
+              <li><strong>Daily Claims:</strong> Claim amount = (LocalHealth² / 100), capped at daily availability</li>
+              <li><strong>24-Hour Cooldown:</strong> Must wait 24 hours between claims</li>
               <li><strong>1% Transfer Fee:</strong> 0.5% burned (deflationary), 0.5% pooled for future claims</li>
               <li><strong>Transferable:</strong> Send KUDOS to others as reputation gifts</li>
             </ul>

@@ -275,8 +275,8 @@ export default function KudosEconomics() {
               <li>• Global daily cap: 1000 KUDOS across all users</li>
               <li>• Transfer fee: 1% (0.5% burned, 0.5% pooled)</li>
               <li>• Claim cooldown: 24 hours</li>
-              <li>• Edge boost halflife: 180 days</li>
-              <li className="pt-2 border-t italic">• Built on neutral graph signals interpreted as contribution quality</li>
+              <li>• Pure rewards layer: KUDOS never affects LocalHealth scores</li>
+              <li className="pt-2 border-t italic">• One-way: LocalHealth determines rewards, rewards don't affect scores</li>
             </ul>
           </div>
         </CardContent>

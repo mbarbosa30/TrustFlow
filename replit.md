@@ -18,9 +18,9 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
 *   **KUDOS Token Economy (Off-Chain MVP)**: 
     *   Pure rewards layer - earned based on LocalHealth but does NOT influence scoring
     *   Off-chain reputation tokens earned through LocalHealth scores
-    *   Weekly claiming: amount = (LocalHealth² / 100), capped at 1000 KUDOS/day
+    *   Daily claiming: amount = (LocalHealth² / 100), capped at 1000 KUDOS/day
     *   1% transfer fee: 0.5% burned (deflationary), 0.5% pooled for future claims
-    *   7-day cooldown between claims
+    *   24-hour cooldown between claims
     *   One-way relationship: LocalHealth → KUDOS (scores determine rewards, but rewards don't affect scores)
     *   Server-side LocalHealth computation prevents score manipulation
     *   **Known MVP Limitations**: Signature replay protection not yet implemented (acceptable for off-chain testing, required for production)
