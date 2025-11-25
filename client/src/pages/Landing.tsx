@@ -2,7 +2,10 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Network, Shield, GitBranch, CheckCircle2, TrendingUp, Users, ArrowRight, UserCircle, Building2 } from "lucide-react";
+import { 
+  Network, Shield, GitBranch, CheckCircle2, Users, ArrowRight, 
+  Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Landing() {
@@ -22,173 +25,148 @@ export default function Landing() {
       <section className="relative py-20 md:py-32 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
-            <Network className="w-3 h-3 mr-1" />
-            Sybil-Resistant Graph Signals
+            <Shield className="w-3 h-3 mr-1" />
+            Reputation Infrastructure
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
-            Verifiable Graph Signals Using{" "}
-            <span className="text-primary">Max-Flow/Min-Cut Algorithms</span>
+            Trust Scores That{" "}
+            <span className="text-primary">Can't Be Gamed</span>
           </h1>
           
-          <p className="text-lg md:text-xl text-muted-foreground max-w-4xl mx-auto mb-10" data-testid="text-hero-subheadline">
-            Convert endorsement graphs into neutral, Sybil-resistant scores (0-100). 
-            You decide what they mean: creditworthiness, governance weight, access control, or grant allocation.
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10" data-testid="text-hero-subheadline">
+            MaxFlow turns "who vouches for you" into verifiable scores. 
+            Use them for governance, lending, grants, or access control—you decide what they mean.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/overview">
-              <Button size="lg" className="w-full sm:w-auto" data-testid="button-get-started">
-                Get Started
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
+            <Link href="/simulation">
+              <Button size="lg" className="w-full sm:w-auto" data-testid="button-try-demo">
+                Try the Demo
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/how-it-works">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-learn-more">
-                How It Works
+            <Link href="/whitepaper">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-read-whitepaper">
+                Read the Whitepaper
               </Button>
             </Link>
           </div>
 
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-            <div className="text-center" data-testid="stat-users">
-              <div className="text-3xl md:text-4xl font-bold">
-                {stats?.totalUsers.toLocaleString() || "—"}
+          {stats && stats.totalUsers > 0 && (
+            <div className="mt-12 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+              <div className="text-center" data-testid="stat-users">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {stats.totalUsers.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Users</div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">Network Users</div>
-            </div>
-            <div className="text-center" data-testid="stat-endorsements">
-              <div className="text-3xl md:text-4xl font-bold">
-                {stats?.totalEndorsements.toLocaleString() || "—"}
+              <div className="text-center" data-testid="stat-endorsements">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {stats.totalEndorsements.toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Vouches</div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">Total Vouches</div>
-            </div>
-            <div className="text-center" data-testid="stat-avg-score">
-              <div className="text-3xl md:text-4xl font-bold">
-                {stats?.avgSTS ? Math.round(stats.avgSTS) : "—"}
+              <div className="text-center" data-testid="stat-avg-score">
+                <div className="text-2xl md:text-3xl font-bold">
+                  {Math.round(stats.avgSTS)}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Avg Score</div>
               </div>
-              <div className="text-sm text-muted-foreground mt-1">Average STS</div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3" data-testid="text-features-heading">
-              Why Max-Flow/Min-Cut?
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-use-cases-heading">
+              What Can You Build?
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Traditional systems count votes. MaxFlow computes flow and redundancy from graph structure—making 
-              Sybil attacks exponentially harder. The scores are neutral signals; your application chooses their meaning.
+              MaxFlow provides the signal. Your application decides what it means.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card data-testid="card-feature-max-flow">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <GitBranch className="w-6 h-6 text-primary" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="hover-elevate" data-testid="card-usecase-governance">
+              <CardHeader className="pb-3">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Vote className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Max-Flow Scoring</CardTitle>
+                <CardTitle className="text-lg">DAO Governance</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  LocalHealth: Weighted flow from vouchers (capacity = voucherScore / 100) via iterative algorithm, 60% of score. Community STS: Flow from anchor seeds using Dinic's algorithm, 55% of score.
+                <p className="text-sm text-muted-foreground mb-4">
+                  Weight votes by network trust instead of token holdings. 
+                  Reduce plutocracy and Sybil attacks on proposals.
                 </p>
-                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg space-y-1">
-                  <div>LocalHealth Flow = 60%</div>
-                  <div>Community STS Flow = 55%</div>
-                </div>
+                <Link href="/use-cases">
+                  <Button variant="ghost" size="sm" className="w-full" data-testid="button-learn-governance">
+                    Learn More <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-min-cut">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-primary" />
+            <Card className="hover-elevate" data-testid="card-usecase-lending">
+              <CardHeader className="pb-3">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Banknote className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Min-Cut Redundancy</CardTitle>
+                <CardTitle className="text-lg">Microlending</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Measures path redundancy—how many independent paths connect you to seeds. 
-                  A single endorsement isn't enough; you need multiple disjoint routes (25% weight).
+                <p className="text-sm text-muted-foreground mb-4">
+                  Assess creditworthiness through social collateral. 
+                  Lend to people your network trusts.
                 </p>
-                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
-                  Cut Component = 25% of STS
-                </div>
+                <Link href="/credit">
+                  <Button variant="ghost" size="sm" className="w-full" data-testid="button-learn-lending">
+                    Learn More <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-accountability">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-primary" />
+            <Card className="hover-elevate" data-testid="card-usecase-grants">
+              <CardHeader className="pb-3">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Gift className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Recursive Trust Weighting</CardTitle>
+                <CardTitle className="text-lg">Grant Allocation</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-3">
-                  <strong>LocalHealth uses iterative scoring:</strong> Your vouches are weighted by YOUR network strength. 
-                  A vouch from someone with LocalHealth 80 carries more weight than someone with 20. 
-                  This creates recursive trust propagation—scores depend on vouchers' scores, which depend on their vouchers' scores.
+                <p className="text-sm text-muted-foreground mb-4">
+                  Run quadratic funding with Sybil-resistant weights. 
+                  Ensure grants go to real contributors.
                 </p>
-                <p className="text-muted-foreground text-sm">
-                  Scores converge over multiple rounds (max 10 iterations) using max-flow with dynamic edge capacities: 
-                  <span className="font-mono text-xs"> capacity = voucherScore / 100</span>
-                </p>
+                <Link href="/use-cases">
+                  <Button variant="ghost" size="sm" className="w-full" data-testid="button-learn-grants">
+                    Learn More <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            <Card data-testid="card-feature-vouch-accountability">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-primary" />
+            <Card className="hover-elevate" data-testid="card-usecase-access">
+              <CardHeader className="pb-3">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Lock className="w-6 h-6 text-primary" />
                 </div>
-                <CardTitle>Vouch Accountability</CardTitle>
+                <CardTitle className="text-lg">Access Control</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Your score is influenced by who YOU vouch for. Vouching for {'>'}10 people applies a dilution 
-                  penalty to your redundancy component (40% of LocalHealth), creating economic cost to vouch spam. 
-                  Typical impact: ~10-15% total score reduction.
+                <p className="text-sm text-muted-foreground mb-4">
+                  Gate communities, features, or airdrops by trust score. 
+                  Keep out bots and bad actors.
                 </p>
-                <div className="mt-4 text-sm font-mono bg-muted/50 p-3 rounded-lg">
-                  40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card data-testid="card-feature-transparency">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>Fully Transparent</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  All vouches are publicly visible and stored on-chain in a Merkle transparency log. 
-                  This enables complete auditability and independent verification of scores. 
-                  Verifiable through transparency, not obscurity.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card data-testid="card-feature-verifiable">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>Verifiable & Reproducible</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Every epoch publishes Merkle roots for seeds and graph state, plus scoring parameters. 
-                  Anyone can recompute and verify byte-exact results. Verifiable through mathematics.
-                </p>
+                <Link href="/communities">
+                  <Button variant="ghost" size="sm" className="w-full" data-testid="button-learn-access">
+                    Learn More <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
@@ -198,181 +176,244 @@ export default function Landing() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-3" data-testid="text-scoring-types-heading">
-              Two Scoring Layers
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              MaxFlow supports both personal networks (LocalHealth) and community scoring (STS)—giving you control 
-              over your own graph while participating in shared communities. Same algorithm, different contexts.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card data-testid="card-personal-network">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <UserCircle className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>Personal Network (Ego Score)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Run your own seeded network. You're automatically a "seed" (starting point for graph computation). 
-                  Add up to 3 trusted "co-seeds" (trusted people who help anchor your network) and build your personal 
-                  graph through global vouches. Your Ego Score (0-100) measures the quality of your curated network.
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">You control your own seeds</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Global vouches flow across all networks</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Distance-based capacity decay</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Link href="/network">
-                    <Button variant="outline" size="sm" className="w-full" data-testid="button-my-network">
-                      Manage My Network
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card data-testid="card-community-reputation">
-              <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <Building2 className="w-6 h-6 text-primary" />
-                </div>
-                <CardTitle>Community Reputation (STS)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  Participate in context-specific communities for lending, hiring, or governance. 
-                  Each community has its own seeds and criteria. Your STS (Standardized Network Score) 
-                  is computed per community.
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Community-managed seeds</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Context-specific vouches (with prompts)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Isolated scoring per community</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Link href="/communities">
-                    <Button variant="outline" size="sm" className="w-full" data-testid="button-browse-communities">
-                      Browse Communities
-                      <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3" data-testid="text-how-heading">
               How It Works
             </h2>
-            <p className="text-muted-foreground">
-              Four simple steps to build portable trust credentials
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Simple endorsements become powerful, Sybil-resistant signals
             </p>
           </div>
 
-          <div className="grid gap-6">
-            <div className="flex gap-6 items-start" data-testid="step-endorse">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                1
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center" data-testid="step-vouch">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-primary" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Vouch for People in Your Network</h3>
-                <p className="text-muted-foreground">
-                  Create global vouches for your personal network or community-specific vouches for lending, 
-                  hiring, or governance. All vouches are public and permanently recorded on-chain in the 
-                  Merkle transparency log for complete auditability.
-                </p>
-              </div>
+              <h3 className="text-xl font-semibold mb-2">1. Vouch for People</h3>
+              <p className="text-muted-foreground text-sm">
+                Endorse people you trust. Each vouch is public and permanent—creating real accountability.
+              </p>
             </div>
 
-            <div className="flex gap-6 items-start" data-testid="step-compute">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                2
+            <div className="text-center" data-testid="step-compute">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <GitBranch className="w-8 h-8 text-primary" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">System Runs Flow Algorithms</h3>
-                <p className="text-muted-foreground">
-                  Each epoch, we run max-flow/min-cut computation. LocalHealth (personal) uses iterative weighting: Flow (60%) + Redundancy (40%). Community STS combines Flow (55%), Cut (25%), Stability (5%), Depth (10%), PageRank (5%).
-                </p>
-              </div>
+              <h3 className="text-xl font-semibold mb-2">2. Scores Are Computed</h3>
+              <p className="text-muted-foreground text-sm">
+                Your score depends on who vouches for you—and their scores depend on who vouches for them. Recursive trust.
+              </p>
             </div>
 
-            <div className="flex gap-6 items-start" data-testid="step-receive">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                3
+            <div className="text-center" data-testid="step-use">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-primary" />
               </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Receive Your Standardized Network Score</h3>
-                <p className="text-muted-foreground">
-                  Get an STS (0-100) and tier badge (Connected, Verified, Trusted). 
-                  See detailed breakdowns, graph paths, and stability metrics.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-6 items-start" data-testid="step-export">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                4
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold mb-2">Export Portable Credentials</h3>
-                <p className="text-muted-foreground">
-                  Download signed attestations (JWT/VC format) to prove your network quality score to third-party apps. 
-                  Verifiable anywhere, anytime.
-                </p>
-              </div>
+              <h3 className="text-xl font-semibold mb-2">3. Use Your Score</h3>
+              <p className="text-muted-foreground text-sm">
+                Export verifiable credentials. Apps use your score for voting, lending, access—whatever they need.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       <section className="py-16 px-4 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-why-heading">
+              Why MaxFlow?
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Fake accounts vouching for each other can't bootstrap high scores
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card data-testid="card-feature-recursive">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Network className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Recursive Trust</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  A vouch from a high-score user matters more than one from a low-score user. 
+                  Sybil clusters can't bootstrap themselves.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-redundancy">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Shield className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Path Redundancy</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  One endorser isn't enough. We measure how many independent paths connect you to trusted seeds.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-accountability">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Vouch Accountability</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Vouching for too many people dilutes your own score. No free lunch for "vouch merchants."
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-transparent">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Eye className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Fully Transparent</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  All vouches are public. Anyone can audit the graph and verify scores independently.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-neutral">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <GitBranch className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Neutral Infrastructure</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  We compute signals. You interpret them. MaxFlow doesn't decide who's "good"—your app does.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="card-feature-verifiable">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Code className="w-5 h-5 text-primary" />
+                </div>
+                <CardTitle className="text-base">Verifiable</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Deterministic computation from public data. Recompute any score yourself.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-audiences-heading">
+              Get Started
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Whether you're building an app or just exploring, there's a path for you
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-primary/30" data-testid="card-audience-builder">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Code className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>I'm a Builder</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Integrate MaxFlow scores into your app via our REST API. 
+                  Get trust signals for users without building your own reputation system.
+                </p>
+                <Link href="/api-docs">
+                  <Button className="w-full" data-testid="button-cta-api">
+                    View API Docs
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/30" data-testid="card-audience-community">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Building2 className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>I Run a Community</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Create a community with your own seeds and policies. 
+                  Use scores for access control, lending, or governance.
+                </p>
+                <Link href="/communities">
+                  <Button className="w-full" data-testid="button-cta-community">
+                    Create Community
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/30" data-testid="card-audience-curious">
+              <CardHeader>
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                  <Eye className="w-6 h-6 text-primary" />
+                </div>
+                <CardTitle>I'm Curious</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Explore the algorithm with our interactive simulation. 
+                  See how Sybil attacks fail against max-flow scoring.
+                </p>
+                <Link href="/simulation">
+                  <Button className="w-full" data-testid="button-cta-simulation">
+                    Try Simulation
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 bg-primary/5">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6" data-testid="text-cta-heading">
-            Ready to Build Your Network Score?
+            Ready to Build Sybil-Resistant Reputation?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join the transparent network and start earning verifiable credentials based on 
-            graph algorithms, not popularity contests.
+            Connect your wallet to get started. Build your network, earn your score, and export verifiable credentials.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/overview">
               <Button size="lg" className="w-full sm:w-auto" data-testid="button-cta-primary">
-                Connect Wallet & Start
+                Connect Wallet
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/use-cases">
+            <Link href="/how-it-works">
               <Button size="lg" variant="outline" className="w-full sm:w-auto" data-testid="button-cta-secondary">
-                View Use Cases
+                Learn More
               </Button>
             </Link>
           </div>
