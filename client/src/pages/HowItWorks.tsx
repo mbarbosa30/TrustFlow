@@ -167,20 +167,31 @@ export default function HowItWorks() {
             <div className="space-y-3">
               <div>
                 <p className="font-semibold mb-1">Flow Component (60%):</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground mb-2">
                   Measures <strong>weighted incoming trust</strong> from vouchers. Each vouch capacity weighted by voucher's LocalHealth (0-100 normalized to 0-1).
-                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = directFlow / HEALTHY_VOUCH_COUNT (5 vouches).
-                  directFlow = sum of voucher strengths. ResidualFlow = directFlow / voucherCount captures average voucher quality.
+                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = directFlow / HEALTHY_VOUCH_COUNT.
                 </p>
+                <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
+                  <p><strong>directFlow</strong> = Σ(voucherScore<sub>j</sub> / 100) for each voucher j</p>
+                  <p><strong>flowScore</strong> = directFlow / 5 (HEALTHY_VOUCH_COUNT), capped at 1.0</p>
+                  <p><strong>vouchQuality</strong> = directFlow / voucherCount (ResidualFlow = avg voucher strength)</p>
+                </div>
               </div>
 
               <div>
                 <p className="font-semibold mb-1">Redundancy Component (40%):</p>
-                <p className="text-sm text-muted-foreground">
-                  Measures effective redundancy (vouch count + upstream depth + edge density) normalized by healthy baseline (20 points), with quadratic scaling.
+                <p className="text-sm text-muted-foreground mb-2">
+                  Measures effective redundancy normalized by healthy baseline (20 points), with quadratic scaling.
                   Formula: <span className="font-mono">40 × (redundancy)²</span> where redundancy = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
                   Higher redundancy = more multi-hop support, harder to isolate you.
                 </p>
+                <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
+                  <p className="font-semibold text-foreground">effectiveRedundancy computation:</p>
+                  <p>• <strong>Base count:</strong> Number of direct vouchers (each vouch = 1 point)</p>
+                  <p>• <strong>Depth bonus:</strong> upstream_supporter_count × 0.2 (rewards multi-hop chains)</p>
+                  <p>• <strong>Connectivity bonus:</strong> (edge_count / potential_edges) × ego_size (rewards network density)</p>
+                  <p className="pt-1 border-t border-muted">effectiveRedundancy = base + depthBonus + connectivityBonus</p>
+                </div>
               </div>
 
               <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
@@ -208,6 +219,85 @@ export default function HowItWorks() {
                 <p className="font-semibold mb-1">KUDOS: Pure Rewards Layer</p>
                 <p className="text-sm text-muted-foreground">
                   <strong>KUDOS does NOT influence LocalHealth scores.</strong> It's a one-way relationship: your LocalHealth determines KUDOS rewards, but KUDOS never affects scoring. This preserves LocalHealth as a pure graph-based signal and maintains MaxFlow's identity as neutral infrastructure.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Parameters & Rationale</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Design rationale for key algorithm parameters. These values are calibrated for dense endorsement networks and may be tuned per-community.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Weight Split: 60% Flow / 40% Redundancy</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Flow measures <em>quality</em> of incoming trust (who vouches for you); redundancy measures <em>structural resilience</em> (how hard to isolate you). 
+                  60/40 prioritizes quality while ensuring Sybil resistance through min-cut requirements. 
+                  <span className="text-muted-foreground/70 italic"> Future: weights may be learned from labeled Sybil detection data.</span>
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">HEALTHY_VOUCH_COUNT = 5</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Baseline for "healthy" incoming flow. Users with 5 strong vouchers (avg strength 80%+) achieve flowScore ≈ 0.8 → 38 pts from flow component.
+                  Set to 5 based on power-law distribution of endorsements in social graphs (median active users have 3-7 vouchers).
+                  <span className="text-muted-foreground/70 italic"> Could become global_avg_vouches for adaptive scaling.</span>
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">HEALTHY_REDUNDANCY = 20</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Baseline for "healthy" redundancy score (5 vouchers + 10 depth bonus + 5 connectivity). 
+                  Users at this level have multiple independent paths, making single-edge attacks ineffective.
+                  Calibrated for dense networks where upstream supporters multiply quickly.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Quadratic Scaling (exponent = 2.0)</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Both flow and redundancy use x² scaling to spread the 0-100 range across active users.
+                  Without quadratic: scores cluster near extremes (very low or maxed).
+                  With quadratic: mid-range users (flowScore 0.5-0.8) get meaningful differentiation (15-40 pts from flow).
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Dilution: 10% per excess vouch, min 50%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Prevents vouch spam while allowing legitimate bridging nodes. 10 vouches = no penalty; 15 = 50% cap hit.
+                  Linear curve chosen over exponential to avoid punishing connectors too harshly.
+                  <span className="text-muted-foreground/70 italic"> Planned: piecewise curve + retroactive relief for vouchees who later reach acceptance threshold.</span>
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Convergence: max 10 iterations, Δ threshold 0.5</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Iterative algorithm typically converges in 3-5 rounds for sparse graphs, 6-8 for dense.
+                  Threshold 0.5 ensures stability without over-computing.
+                  <span className="text-muted-foreground/70 italic"> Bounds proven for contractive map (spectral radius &lt; 1 via recursive weight damping).</span>
                 </p>
               </div>
             </div>

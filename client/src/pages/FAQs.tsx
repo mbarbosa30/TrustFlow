@@ -242,10 +242,13 @@ export default function FAQs() {
               </p>
             </div>
             <p className="text-sm mb-2">
-              <strong>Flow Component (60%):</strong> Measures weighted incoming trust from vouchers. Strong vouchers (high LocalHealth) contribute more than weak vouchers.
+              <strong>Flow Component (60%):</strong> Measures weighted incoming trust. directFlow = Σ(voucherScore/100), normalized by HEALTHY_VOUCH_COUNT (5). Strong vouchers contribute more.
             </p>
             <p className="text-sm mb-2">
-              <strong>Redundancy Component (40%):</strong> Network redundancy (vouch count + upstream depth + connectivity) - independent paths connecting you to the network.
+              <strong>Redundancy Component (40%):</strong> effectiveRedundancy = base count + (upstream supporters × 0.2) + connectivity bonus. Normalized by HEALTHY_REDUNDANCY (20 pts).
+            </p>
+            <p className="text-sm mb-2 text-muted-foreground/80">
+              <strong>vouchQuality</strong> = directFlow / voucherCount (avg voucher strength, also called ResidualFlow)
             </p>
             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 my-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
