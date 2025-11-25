@@ -292,9 +292,9 @@ export default function Whitepaper() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm sm:text-base">
             <p className="leading-relaxed">
-              MaxFlow's algorithms aren't invented—they're <strong>discovered</strong>. The same optimization problems 
-              we solve have been solved by natural systems over billions of years of evolution. Our mathematics 
-              formalizes patterns that nature already computes:
+              MaxFlow deliberately leverages <strong>network dynamics with billions of years of optimization</strong> behind them. 
+              Rivers, roots, and ecosystems solve the same problems: maximize flow, build redundancy, prune freeloaders. 
+              This isn't coincidence—it's a power feature:
             </p>
             
             <div className="grid gap-3 sm:grid-cols-2">
@@ -351,9 +351,9 @@ export default function Whitepaper() {
 
             <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-green-500/50 mt-4">
               <p className="text-sm italic">
-                "Nature spent billions of years optimizing flow networks, redundancy, and parasite resistance. 
-                MaxFlow makes these patterns computable for social graphs—we didn't invent the math, 
-                we discovered it was already there."
+                "Trust, computed naturally. Graph algorithms engineered to leverage the same network dynamics 
+                that make rivers find paths, roots grow strong, and ecosystems self-regulate. Proven patterns. 
+                Ungameable by design."
               </p>
             </div>
           </CardContent>

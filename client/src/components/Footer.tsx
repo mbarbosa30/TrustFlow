@@ -12,7 +12,7 @@ export function Footer() {
               <span>MaxFlow</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Graph signal infrastructure using max-flow computation to issue verifiable network quality attestations.
+              Trust, computed naturally. Graph algorithms with the resilience of ecosystems.
             </p>
           </div>
 
