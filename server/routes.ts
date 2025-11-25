@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { randomUUID } from "crypto";
 import { storage } from "./storage";
 import type { IStorage } from "./storage";
 import { db } from "./db";
@@ -638,8 +639,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address,
           localHealth: result?.localHealth || 0,
           degree,
-          flowScore: result?.flowScore || 0,
-          redundancyScore: result?.redundancyScore || 0
+          voucherCount: result?.metrics?.acceptedUsers || 0,
+          avgVoucherStrength: result?.metrics?.avgResidualFlow || 0
         };
       });
 
@@ -1688,9 +1689,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Helper to paginate through all results
-      async function fetchAllPages<T>(
+      const fetchAllPages = async <T>(
         fetchFn: (cursor?: string) => Promise<{ data: { follows?: T[]; followers?: T[]; cursor?: string } }>
-      ): Promise<T[]> {
+      ): Promise<T[]> => {
         const results: T[] = [];
         let cursor: string | undefined;
         let pageCount = 0;
@@ -1710,7 +1711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } while (cursor && pageCount < maxPages);
         
         return results;
-      }
+      };
 
       // Fetch ALL followers using pagination (1st hop from seed)
       // Focus on followers only = who trusts you (more meaningful for trust measurement)
@@ -1731,7 +1732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Add bidirectional edges connecting seed to ALL 1st-hop peers
       // This ensures flow can reach everyone regardless of follow direction
-      for (const peerDid of firstHopPeers) {
+      for (const peerDid of Array.from(firstHopPeers)) {
         const peerDidLower = peerDid.toLowerCase();
         const seedDidLower = did.toLowerCase();
         
@@ -1751,7 +1752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let processedPeers = 0;
-      for (const peerDid of firstHopPeers) {
+      for (const peerDid of Array.from(firstHopPeers)) {
         try {
           const peerDidLower = peerDid.toLowerCase();
           
