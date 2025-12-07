@@ -1,7 +1,6 @@
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { useAccount } from "wagmi";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
@@ -18,40 +17,21 @@ import UseCases from "@/pages/UseCases";
 import Status from "@/pages/Status";
 import Seeds from "@/pages/Seeds";
 import TermsPrivacy from "@/pages/TermsPrivacy";
-import BlueskyExplorer from "@/pages/BlueskyExplorer";
 import Communities from "@/pages/Communities";
 import CreateCommunity from "@/pages/CreateCommunity";
 import CommunityDetail from "@/pages/CommunityDetail";
-import Credit from "@/pages/Credit";
-import CreditRouter from "@/pages/CreditRouter";
-import LendingDashboard from "@/pages/LendingDashboard";
-import LendingAdmin from "@/pages/LendingAdmin";
 import ApiDocs from "@/pages/ApiDocs";
 import MyNetwork from "@/pages/MyNetwork";
-import Simulation from "@/pages/Simulation";
-import Kudos from "@/pages/Kudos";
-import KudosEconomics from "@/pages/KudosEconomics";
 import Admin from "@/pages/Admin";
 import Whitepaper from "@/pages/Whitepaper";
 import { Footer } from "@/components/Footer";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 
-// Dynamic app nav items - will be filtered based on user's community access or active loans
-const getAppNavItems = (hasMicrocreditAccess: boolean, hasActiveLoans: boolean) => {
-  const items = [
-    { path: "/overview", label: "nav.overview" },
-    { path: "/network", label: "My Network" },
-    { path: "/kudos", label: "KUDOS" },
-    { path: "/communities", label: "nav.communities" },
-  ];
-  
-  // Show Credit if user has access to microcredit communities OR has active loans
-  if (hasMicrocreditAccess || hasActiveLoans) {
-    items.splice(3, 0, { path: "/credit", label: "nav.credit" });
-  }
-  
-  return items;
-};
+const appNavItems = [
+  { path: "/overview", label: "nav.overview" },
+  { path: "/network", label: "My Network" },
+  { path: "/communities", label: "nav.communities" },
+];
 
 function Router() {
   return (
@@ -60,9 +40,6 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/overview" component={Overview} />
       <Route path="/network" component={MyNetwork} />
-      <Route path="/credit/:id" component={Credit} />
-      <Route path="/credit" component={CreditRouter} />
-      <Route path="/bluesky" component={BlueskyExplorer} />
       <Route path="/why" component={WhyScore} />
       <Route path="/verify" component={Verify} />
       <Route path="/seeds" component={Seeds} />
@@ -74,12 +51,7 @@ function Router() {
       <Route path="/communities" component={Communities} />
       <Route path="/communities/create" component={CreateCommunity} />
       <Route path="/communities/:id" component={CommunityDetail} />
-      <Route path="/lending/:communityId" component={LendingDashboard} />
-      <Route path="/admin/lending/:communityId" component={LendingAdmin} />
       <Route path="/api-docs" component={ApiDocs} />
-      <Route path="/simulation" component={Simulation} />
-      <Route path="/kudos" component={Kudos} />
-      <Route path="/kudos-economics" component={KudosEconomics} />
       <Route path="/admin" component={Admin} />
       <Route path="/whitepaper" component={Whitepaper} />
       <Route component={NotFound} />
@@ -96,29 +68,6 @@ const landingNavItems = [
 function App() {
   const [location] = useLocation();
   const isLandingPage = location === "/";
-  
-  // Import necessary hooks for checking community access
-  const { address } = useAccount();
-  
-  // Check if user has access to any communities with microcredit enabled
-  const { data: communitiesResponse } = useQuery<{ communities: any[] }>({
-    queryKey: ['/api/communities'],
-    enabled: !!address,
-  });
-
-  const hasMicrocreditAccess = (communitiesResponse?.communities || []).some(
-    (c: any) => c.lendingPolicyJson?.enabled === true
-  );
-  
-  // Check if user has any active loans
-  const { data: activeLoansData } = useQuery<{ hasActiveLoans: boolean; activeLoans: any[] }>({
-    queryKey: [`/api/loans/user/${address}/active`],
-    enabled: !!address,
-  });
-
-  const hasActiveLoans = activeLoansData?.hasActiveLoans || false;
-  
-  const appNavItems = getAppNavItems(hasMicrocreditAccess, hasActiveLoans);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -134,7 +83,7 @@ function App() {
               <Router />
             </main>
             <Footer />
-            {!isLandingPage && <MobileBottomNav hasMicrocreditAccess={hasMicrocreditAccess} hasActiveLoans={hasActiveLoans} />}
+            {!isLandingPage && <MobileBottomNav />}
           </div>
           <Toaster />
         </TooltipProvider>

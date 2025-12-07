@@ -1,15 +1,10 @@
-import { Home, CreditCard, Users, Coins } from "lucide-react";
+import { Home, Users, Network } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { Community } from "@shared/schema";
 import { useAccount } from "wagmi";
 
-interface MobileBottomNavProps {
-  hasMicrocreditAccess?: boolean;
-  hasActiveLoans?: boolean;
-}
-
-export function MobileBottomNav({ hasMicrocreditAccess = false, hasActiveLoans = false }: MobileBottomNavProps) {
+export function MobileBottomNav() {
   const [location] = useLocation();
   const { address } = useAccount();
 
@@ -49,38 +44,25 @@ export function MobileBottomNav({ hasMicrocreditAccess = false, hasActiveLoans =
         </Link>
 
         <Link
-          href="/kudos"
-          data-testid="nav-kudos"
+          href="/network"
+          data-testid="nav-network"
           className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/kudos') ? 'text-primary' : 'text-muted-foreground'
+            isActive('/network') ? 'text-primary' : 'text-muted-foreground'
           }`}
         >
-          <Coins className="w-6 h-6" />
-          <span className="text-xs mt-1">KUDOS</span>
+          <Network className="w-6 h-6" />
+          <span className="text-xs mt-1">Network</span>
         </Link>
-
-        {(hasMicrocreditAccess || hasActiveLoans) && (
-          <Link
-            href="/credit"
-            data-testid="nav-credit"
-            className={`flex flex-col items-center justify-center flex-1 h-full ${
-              isActive('/credit') ? 'text-primary' : 'text-muted-foreground'
-            }`}
-          >
-            <CreditCard className="w-6 h-6" />
-            <span className="text-xs mt-1">Credit</span>
-          </Link>
-        )}
 
         <Link
           href={communityPath}
-          data-testid="nav-community"
+          data-testid="nav-communities"
           className={`flex flex-col items-center justify-center flex-1 h-full ${
             isActive(communityPath) ? 'text-primary' : 'text-muted-foreground'
           }`}
         >
           <Users className="w-6 h-6" />
-          <span className="text-xs mt-1">Community</span>
+          <span className="text-xs mt-1">Communities</span>
         </Link>
       </div>
     </nav>
