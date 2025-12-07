@@ -60,13 +60,13 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
     *   **Local Health (Ego Score)**: Personal network quality score (0-100) using max-flow/min-cut algorithms with **recursive trust weighting**. Supports two modes:
         *   **Pure Option 2 (Default)**: No co-seeds required. Measures "how much the network trusts me" by computing flow from direct vouchers to the owner. **Uses iterative PageRank-style algorithm where vouches are weighted by voucher's LocalHealth score**, creating recursive trust propagation:
             *   **Iterative Computation (Nov 2025)**: Scores computed in rounds until convergence (max 10 iterations, threshold 0.5). Each round recalculates scores using current voucher scores as edge weights (capacity = voucherScore / 100). This implements true recursive trust: your score depends on the strength of who vouches for you, and their strength depends on their vouchers.
-            *   **Flow Component (60%)**: Weighted flow from vouchers to owner. Each vouch weighted by voucher's LocalHealth (0-100 normalized to 0-1). ResidualFlow = directFlow / voucherCount captures average voucher strength. Normalized by healthy baseline (5 vouches) with quadratic exponential scaling (2.0 exponent). Measures incoming trust quality, not just quantity.
+            *   **Flow Component (60%)**: Weighted flow from vouchers to owner. Each vouch weighted by voucher's LocalHealth (0-100 normalized to 0-1). ResidualFlow = directFlow / voucherCount captures average voucher strength. Normalized by healthy baseline (8 vouches) with quadratic exponential scaling (2.0 exponent). Measures incoming trust quality, not just quantity.
             *   **Redundancy Component (40%)**: Effective redundancy metric with quadratic exponential scaling, combining:
                 *   Base: Number of direct vouchers (each vouch = 1 point)
                 *   Depth bonus: Upstream supporter count × 0.2 (rewards multi-hop endorsement chains)
                 *   Connectivity bonus: (edge_count / potential_edges) × ego_size (rewards network density)
             *   **Ego Subgraph**: Built via upstream-only BFS from vouchers (finds people who vouch for vouchers), excluding owner to prevent inflation
-            *   **Healthy Baseline**: 5 vouchers + 20 redundancy points (calibrated for dense networks)
+            *   **Healthy Baseline (Dec 2025 Calibration)**: 8 vouchers + 35 redundancy points. Raised from 5/20 to prevent score saturation. Score ceiling of 99 (epsilon = 1.0) ensures 100 is mathematically rare.
             *   **Score Distribution**: Depends on both vouch count AND voucher quality. Strong vouchers (high LocalHealth) provide more value than weak vouchers.
         *   **Hybrid Mode (Optional)**: When co-seeds are selected, measures "connection quality within my trusted circle" for enhanced Sybil resistance. Flow computed from co-seeds through network to owner.
     *   **Outgoing Vouch Adjustment**: Adds accountability for who you vouch for. Cut component is multiplied by a vouch quality factor:
