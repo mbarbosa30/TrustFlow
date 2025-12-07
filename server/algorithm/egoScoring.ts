@@ -523,24 +523,28 @@ export class EgoScorer {
     
     const effectiveRedundancy = baseRedundancy + depthBonus + connectivityBonus;
 
-    // Step 4: Calculate scoring with fixed healthy baseline
-    // Fixed baseline: ~5 vouches with rich depth/connectivity = "healthy" network
-    const HEALTHY_VOUCH_COUNT = 5.0;
-    // Calibrated for dense networks: accounts for random endorsements creating rich connectivity
-    const HEALTHY_REDUNDANCY = 20.0; // Baseline for healthy network in dense graph
+    // Step 4: Calculate scoring with calibrated healthy baseline
+    // CALIBRATION NOTE (Dec 2025): Raised baselines to prevent score saturation
+    // A score of 100 should be mathematically rare, requiring exceptional network quality
+    // Fixed baseline: ~8 quality vouches with rich depth/connectivity = "healthy" network
+    const HEALTHY_VOUCH_COUNT = 8.0;
+    // Calibrated for dense networks: requires substantial network depth and connectivity
+    const HEALTHY_REDUNDANCY = 35.0; // Raised from 20 to prevent easy saturation
+    // Score ceiling: subtract epsilon so 100 is mathematically rare
+    const SCORE_CEILING_EPSILON = 1.0;
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
-    // directFlow equals number of vouchers in simple case
+    // directFlow = sum of voucher strengths (weighted by voucher LocalHealth)
     // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
-    // 1 vouch → (1/5)^2.0 = 0.04 = 2.4 pts, 3 vouches → 0.36 = 21.6 pts, 5+ vouches → 1.0 = 60 pts
+    // 1 vouch → (1/8)^2.0 = 0.016 = 0.9 pts, 4 vouches → 0.25 = 15 pts, 8+ vouches → 1.0 = 60 pts
     const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
     const flowComponent = 60 * Math.pow(flowScore, 2.0);
 
     // Redundancy score: normalized by healthy redundancy baseline
     // Measures network depth (ego size) and connectivity (edge density)
-    // 1 vouch, no depth → ~1 redundancy / 10 = 10% = 4 pts
-    // 3 vouches, some depth → ~5 redundancy / 10 = 50% = 20 pts
-    // 5+ vouches, good depth → ~10 redundancy / 10 = 100% = 40 pts
+    // 1 vouch, no depth → ~1 redundancy / 35 ≈ 3% = 1.2 pts
+    // 4 vouches, some depth → ~8 redundancy / 35 ≈ 23% = 9 pts
+    // 8+ vouches, excellent depth → ~35 redundancy / 35 = 100% = 40 pts
     const redundancy = Math.min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY);
 
     // Apply dilution penalty for outgoing vouches
@@ -559,7 +563,10 @@ export class EgoScorer {
     // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
     const cutComponent = 40 * Math.pow(redundancy, 2.0) * vouchQualityFactor;
     
-    const localHealth = Math.min(100, Math.max(0, flowComponent + cutComponent));
+    // Apply score ceiling: subtract epsilon so 100 is mathematically rare
+    // Only exceptional networks with >8 quality vouchers AND >35 redundancy points approach 99
+    const rawScore = flowComponent + cutComponent;
+    const localHealth = Math.min(100 - SCORE_CEILING_EPSILON, Math.max(0, rawScore));
 
     return {
       ownerAddress,
