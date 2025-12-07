@@ -83,7 +83,7 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
     *   Detailed ego score endpoint (`/api/ego/:address/score`) still computes on-demand for full metrics
     *   Asynchronous recalculation prevents blocking requests
     *   KUDOS transfers do NOT trigger recalculation (KUDOS is rewards-only, doesn't influence scores)
-*   **Network Recalculation**: Admin tool for batch computing all LocalHealth scores across the entire network. Verification-only feature that computes scores using current algorithm parameters without persisting to database (scores are computed on-the-fly via `/api/ego/:address/score`). Includes zero-vouch safety guard to prevent empty-graph runs and provides detailed per-user results with timing metrics.
+*   **Network Recalculation**: Admin tool for batch computing and persisting all LocalHealth scores across the entire network. Computes scores using current algorithm parameters and saves them to the database `contexts.local_health` column. Includes zero-vouch safety guard to prevent empty-graph runs and provides detailed per-user results with timing metrics. Accessible via `/api/admin/recalculate-network` or the Admin panel button.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
 
 ### System Design Choices

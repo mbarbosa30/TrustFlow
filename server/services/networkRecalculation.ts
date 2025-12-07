@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { contexts, publicEndorsements, coSeeds } from "@shared/schema";
-import { eq, isNull, or } from "drizzle-orm";
+import { eq, isNull, or, and } from "drizzle-orm";
 import { EgoScorer, type EgoEndorsement } from "../algorithm/egoScoring";
 import type { Address } from "viem";
 
@@ -93,14 +93,30 @@ export class NetworkRecalculationService {
           const scoreResult = scoreResults.get(ownerAddress);
           
           if (scoreResult) {
+            const roundedScore = Math.round(scoreResult.localHealth);
+            
+            // Persist the score to the database
+            await db
+              .update(contexts)
+              .set({ 
+                localHealth: roundedScore,
+                localHealthUpdatedAt: new Date()
+              })
+              .where(
+                and(
+                  eq(contexts.ownerAddress, ownerAddress),
+                  eq(contexts.type, 'ego')
+                )
+              );
+            
             result.scoresUpdated++;
             result.details.push({
               address: ownerAddress,
-              localHealth: scoreResult.localHealth,
+              localHealth: roundedScore,
             });
 
             console.log(
-              `Recalculated ${ownerAddress}: LocalHealth = ${scoreResult.localHealth.toFixed(2)}`
+              `Recalculated and saved ${ownerAddress}: LocalHealth = ${roundedScore}`
             );
           } else {
             result.errors++;
