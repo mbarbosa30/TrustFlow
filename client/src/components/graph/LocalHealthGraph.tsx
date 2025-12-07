@@ -1,5 +1,5 @@
 import { useRef, useCallback, useMemo, useState, useEffect } from "react";
-import ForceGraph2D from "react-force-graph-2d";
+import { ForceGraph3DWrapper } from "./ForceGraph3DWrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -274,8 +274,8 @@ export function LocalHealthGraph({
         </CardHeader>
         <CardContent className="p-0">
           <div className="relative" style={{ height: `${height}px` }}>
-            <ForceGraph2D
-              ref={graphRef}
+            <ForceGraph3DWrapper
+              graphRef={graphRef}
               graphData={graphData}
               nodeId="id"
               nodeLabel={(node: any) => {
