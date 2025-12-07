@@ -755,54 +755,13 @@ export class MemStorage implements IStorage {
     return dbLoan;
   }
 
-  async createLoanWithInstallments(params: {
+  async createLoanWithInstallments(_params: {
     loanData: InsertLoan;
     principalUsdc: number;
     aprNominal: number;
     tenorMonths: number;
   }): Promise<{ loan: Loan; installments: Installment[] }> {
-    const { loanData, principalUsdc, aprNominal, tenorMonths } = params;
-    
-    // Import dynamically to avoid circular dependencies
-    const { generateInstallmentSchedule } = await import("./lending/loan");
-    
-    // Execute in transaction to ensure atomicity
-    return await db.transaction(async (tx) => {
-      // 1. Create loan
-      const normalized = {
-        ...loanData,
-        borrowerAddress: loanData.borrowerAddress.toLowerCase(),
-      };
-      
-      const [newLoan] = await tx
-        .insert(loan)
-        .values(normalized)
-        .returning();
-      
-      // 2. Generate installment schedule
-      const schedule = generateInstallmentSchedule(principalUsdc, aprNominal, tenorMonths);
-      
-      // 3. Create installments
-      const installmentsData: InsertInstallment[] = schedule.map((item) => ({
-        loanId: newLoan.id,
-        idx: item.idx,
-        dueDate: item.dueDate,
-        principalDue: item.principalDue,
-        interestDue: item.interestDue,
-        totalDue: item.totalDue,
-        status: 'PENDING',
-      }));
-      
-      const installments = await tx
-        .insert(installment)
-        .values(installmentsData)
-        .returning();
-      
-      return {
-        loan: newLoan,
-        installments,
-      };
-    });
+    throw new Error("Lending feature has been removed");
   }
 
   async getLoan(id: number): Promise<Loan | undefined> {
@@ -1357,12 +1316,12 @@ export class MemStorage implements IStorage {
       };
     }
 
-    const rawPolicy = community.lendingPolicyJson;
+    const rawPolicy = community.lendingPolicyJson as any;
     
     // Convert old backend format to frontend format
     // Backend format: loanButtonsUsdc (array), tenorsMonths (array), aprNominal
     // Frontend format: loanAmounts { min, max, step }, tenorMonths { min, max, step }, annualInterestRate
-    if (rawPolicy.loanButtonsUsdc && Array.isArray(rawPolicy.loanButtonsUsdc)) {
+    if (rawPolicy?.loanButtonsUsdc && Array.isArray(rawPolicy.loanButtonsUsdc)) {
       const loanButtons = rawPolicy.loanButtonsUsdc.sort((a: number, b: number) => a - b);
       const tenors = rawPolicy.tenorsMonths?.sort((a: number, b: number) => a - b) || [6, 9, 12];
       
