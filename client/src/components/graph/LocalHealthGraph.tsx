@@ -37,7 +37,7 @@ interface LocalHealthGraphProps {
 }
 
 export function LocalHealthGraph({ 
-  limit = 100, 
+  limit = 200, 
   communityId = 0,
   height = 600 
 }: LocalHealthGraphProps) {
