@@ -286,8 +286,9 @@ export function LocalHealthGraph({
               nodeVal={getNodeSize}
               linkColor={getLinkColor}
               linkWidth={getLinkWidth}
-              linkDirectionalArrowLength={6}
+              linkDirectionalArrowLength={3.5}
               linkDirectionalArrowRelPos={0.9}
+              linkDirectionalArrowColor={getLinkColor}
               onNodeClick={handleNodeClick}
               onNodeHover={handleNodeHover}
               enableNodeDrag={true}
@@ -297,6 +298,7 @@ export function LocalHealthGraph({
               width={undefined}
               height={height}
               backgroundColor="rgba(0,0,0,0)"
+              showNavInfo={false}
             />
           </div>
         </CardContent>
