@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { QrCode, Download, Share2, CreditCard, Settings, Coins, ChevronRight } from "lucide-react";
+import { QrCode, Download, Share2, CreditCard, Settings, Coins, ChevronRight, RefreshCw } from "lucide-react";
 import { useWallet } from '@/hooks/useWallet';
 import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '@/lib/queryClient';
 import { useState, useEffect, useRef } from "react";
 import { QRCodeDialog } from "@/components/QRCodeDialog";
 import { QRCodeSVG } from "qrcode.react";
@@ -24,6 +25,7 @@ export default function Overview() {
   const [location] = useLocation();
   const endorseFormRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [isRefreshingScore, setIsRefreshingScore] = useState(false);
   
   const urlParams = new URLSearchParams(window.location.search);
   const vouchAddress = urlParams.get('vouch');
@@ -154,8 +156,33 @@ export default function Overview() {
   };
 
   const handleRevoke = (id: string) => {
-    // TODO: remove mock functionality
     console.log('Revoking endorsement:', id);
+  };
+
+  const handleRefreshScore = async () => {
+    if (!address || isRefreshingScore) return;
+    
+    setIsRefreshingScore(true);
+    try {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/ego', address.toLowerCase(), 'score'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['/api/ego', address.toLowerCase(), 'score'] 
+      });
+      toast({
+        title: "Score refreshed",
+        description: "Your LocalHealth score has been recalculated",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh your score. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingScore(false);
+    }
   };
 
   useEffect(() => {
@@ -245,15 +272,27 @@ export default function Overview() {
                       Neutral graph signal - interpretable by applications/communities
                     </p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleExport}
-                    data-testid="button-export"
-                    title="Export attestation"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleRefreshScore}
+                      disabled={isRefreshingScore}
+                      data-testid="button-refresh-score"
+                      title="Refresh score"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isRefreshingScore ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleExport}
+                      data-testid="button-export"
+                      title="Export attestation"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-3">

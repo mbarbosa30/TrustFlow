@@ -1,12 +1,16 @@
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Info, Network, Heart } from "lucide-react";
+import { Info, Network, Heart, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EgoContext {
   id: number;
@@ -47,6 +51,8 @@ interface EgoScoreResponse {
 export default function MyNetwork() {
   const { address } = useAccount();
   const { t } = useLanguage();
+  const { toast } = useToast();
+  const [isRefreshingScore, setIsRefreshingScore] = useState(false);
 
   // Fetch ego context
   const { data: egoData, isLoading } = useQuery<EgoContextResponse>({
@@ -60,6 +66,32 @@ export default function MyNetwork() {
     enabled: !!address,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  const handleRefreshScore = async () => {
+    if (!address || isRefreshingScore) return;
+    
+    setIsRefreshingScore(true);
+    try {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['/api/ego', address.toLowerCase(), 'score'] 
+      });
+      await queryClient.refetchQueries({ 
+        queryKey: ['/api/ego', address.toLowerCase(), 'score'] 
+      });
+      toast({
+        title: "Score refreshed",
+        description: "Your LocalHealth score has been recalculated",
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh your score. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingScore(false);
+    }
+  };
 
   if (!address) {
     return (
@@ -101,10 +133,22 @@ export default function MyNetwork() {
       {/* Personal Health Card */}
       <Card className="mb-6" data-testid="card-personal-health">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Heart className="w-5 h-5" />
-            <span data-testid="text-card-title-health">Personal Network Quality</span>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5" />
+              <span data-testid="text-card-title-health">Personal Network Quality</span>
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefreshScore}
+              disabled={isRefreshingScore || isLoadingScore}
+              data-testid="button-refresh-score"
+              title="Refresh score"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshingScore ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
           <CardDescription data-testid="text-card-description-health">
             Your LocalHealth signal computed from incoming endorsement edges
           </CardDescription>
