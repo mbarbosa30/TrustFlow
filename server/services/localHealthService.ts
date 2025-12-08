@@ -245,48 +245,38 @@ export class LocalHealthService {
   /**
    * Get extended score metrics for an address
    * @param address - The address to get metrics for
-   * @param forceRefresh - If true, bypasses cache and recomputes score from scratch
+   * @param forceRefresh - If true, triggers network-wide recalculation for all users
+   *                       (single-user recalculation gives incorrect results due to 
+   *                       iterative algorithm requiring all users computed together)
    */
   async getExtendedScoreMetrics(address: string, forceRefresh: boolean = false): Promise<ExtendedScoreMetrics> {
     const normalizedAddress = address.toLowerCase();
     
-    const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
+    let egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
     
     let localHealth = 0;
-    let cached = false;
-    let cachedAt: string | null = null;
+    let cached = true;
+    let cachedAt: string | null = egoContext.updatedAt?.toISOString() || null;
     
-    // Check cache validity (5 minute TTL) unless force refresh requested
-    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-    const now = new Date();
-    const cacheAge = egoContext.updatedAt 
-      ? now.getTime() - egoContext.updatedAt.getTime() 
-      : Infinity;
-    const cacheValid = !forceRefresh && cacheAge < CACHE_TTL_MS;
-    
-    if (cacheValid && egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
-      localHealth = Math.round(egoContext.localHealth);
-      cached = true;
-      cachedAt = egoContext.updatedAt?.toISOString() || null;
-    } else {
-      // Force recalculation - compute fresh score with fallback to stale cache
-      console.log(`${forceRefresh ? 'Force refreshing' : 'Cache expired - recalculating'} LocalHealth for ${normalizedAddress}`);
+    // Force refresh triggers network-wide recalculation (single-user gives wrong results)
+    if (forceRefresh) {
+      console.log(`Force refresh requested - running network-wide recalculation for accurate scores`);
       try {
-        localHealth = await this.recalculateLocalHealth(normalizedAddress);
+        const { NetworkRecalculationService } = await import('./networkRecalculation');
+        const recalcService = new NetworkRecalculationService();
+        await recalcService.recalculateAllScores();
+        
+        // Reload the context with fresh score
+        egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
         cached = false;
         cachedAt = new Date().toISOString();
-      } catch (computeError) {
-        console.error(`Recomputation failed for ${normalizedAddress}, falling back to cached value:`, computeError);
-        // Fall back to stale cached value if available
-        if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
-          localHealth = Math.round(egoContext.localHealth);
-          cached = true;
-          cachedAt = egoContext.updatedAt?.toISOString() || null;
-        } else {
-          throw computeError;
-        }
+      } catch (recalcError) {
+        console.error(`Network recalculation failed, using cached value:`, recalcError);
       }
     }
+    
+    // Always use cached score (computed network-wide for accuracy)
+    localHealth = Math.round(egoContext.localHealth ?? 0);
     
     const [incomingTotal, outgoingTotal, incomingEndorsements, algorithmBreakdown] = await Promise.all([
       storage.countEndorsements({ endorsee: normalizedAddress, communityId: 0 }),
