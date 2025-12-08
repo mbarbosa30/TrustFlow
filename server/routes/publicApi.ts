@@ -1,0 +1,416 @@
+import type { Express } from 'express';
+import { storage } from '../storage';
+import { verifyEndorsementSignature, validateEndorsementFields, DOMAIN_BASE } from '../crypto/eip712';
+import { computeLeafHash } from '../crypto/merkle';
+import { type Address, verifyTypedData, type Hex } from 'viem';
+import { rateLimit } from '../middleware/rateLimit';
+
+const REVOCATION_TYPES = {
+  Revocation: [
+    { name: "endorser", type: "address" },
+    { name: "endorsee", type: "address" },
+    { name: "endorsementId", type: "uint256" },
+  ],
+} as const;
+
+async function verifyRevocationSignature(
+  endorser: Address,
+  endorsee: Address,
+  endorsementId: number,
+  sig: Hex,
+  chainId: number = 1
+): Promise<boolean> {
+  try {
+    const domain = { ...DOMAIN_BASE, chainId };
+    const message = { endorser, endorsee, endorsementId: BigInt(endorsementId) };
+    
+    return await verifyTypedData({
+      address: endorser,
+      domain,
+      types: REVOCATION_TYPES,
+      primaryType: "Revocation",
+      message,
+      signature: sig,
+    });
+  } catch (error) {
+    console.error("Revocation signature verification failed:", error);
+    return false;
+  }
+}
+
+const publicRateLimit = rateLimit({
+  windowMs: 60000,
+  max: 200,
+  keyGenerator: (req) => req.ip || 'unknown'
+});
+
+export function registerPublicApiRoutes(app: Express) {
+  
+  app.get("/api/v1/score/:address", publicRateLimit, async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: "Invalid address format" });
+      }
+      
+      const { localHealthService } = await import('../services/localHealthService');
+      
+      let localHealth = 0;
+      const cachedScore = await localHealthService.getCachedLocalHealth(address);
+      
+      if (cachedScore !== null) {
+        localHealth = cachedScore;
+      } else {
+        localHealth = await localHealthService.recalculateLocalHealth(address);
+      }
+      
+      res.json({ local_health: localHealth });
+    } catch (error) {
+      console.error('Error getting score:', error);
+      res.status(500).json({ error: "Failed to get score" });
+    }
+  });
+
+  app.get("/api/v1/vouch/nonce/:address", publicRateLimit, async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: "Invalid address format" });
+      }
+      
+      let currentEpoch = await storage.getCurrentEpoch(0);
+      if (!currentEpoch) {
+        currentEpoch = await storage.createEpoch({
+          id: 0,
+          communityId: 0,
+          status: "active",
+          graphRoot: null,
+          seedRoot: null,
+          paramsHash: null,
+          scoresHash: null,
+          signature: null,
+          closedAt: null,
+        });
+      }
+      
+      const epoch = Number(currentEpoch.id);
+      const maxNonce = await storage.getMaxNonce(address, epoch, 0);
+      const nextNonce = maxNonce + 1;
+      
+      res.json({ epoch, nonce: nextNonce });
+    } catch (error) {
+      console.error('Error getting nonce:', error);
+      res.status(500).json({ error: "Failed to get nonce" });
+    }
+  });
+
+  app.post("/api/v1/vouch", publicRateLimit, async (req, res) => {
+    try {
+      const { endorser, endorsee, sig, epoch, nonce, chainId } = req.body;
+      
+      if (!endorser || !endorsee || !sig || epoch === undefined || nonce === undefined) {
+        return res.status(400).json({ 
+          error: "Missing required fields: endorser, endorsee, sig, epoch, nonce" 
+        });
+      }
+      
+      const normalizedEndorser = endorser.toLowerCase();
+      const normalizedEndorsee = endorsee.toLowerCase();
+      
+      if (!normalizedEndorser.startsWith('0x') || normalizedEndorser.length !== 42) {
+        return res.status(400).json({ error: "Invalid endorser address" });
+      }
+      if (!normalizedEndorsee.startsWith('0x') || normalizedEndorsee.length !== 42) {
+        return res.status(400).json({ error: "Invalid endorsee address" });
+      }
+      
+      const epochBigInt = BigInt(epoch);
+      const nonceBigInt = BigInt(nonce);
+      
+      let currentEpoch = await storage.getCurrentEpoch(0);
+      if (!currentEpoch) {
+        currentEpoch = await storage.createEpoch({
+          id: 0,
+          communityId: 0,
+          status: "active",
+          graphRoot: null,
+          seedRoot: null,
+          paramsHash: null,
+          scoresHash: null,
+          signature: null,
+          closedAt: null,
+        });
+      }
+      
+      if (Number(epochBigInt) !== currentEpoch.id) {
+        return res.status(400).json({ error: "Invalid epoch - use /api/v1/vouch/nonce/:address to get current epoch" });
+      }
+      
+      const maxNonce = await storage.getMaxNonce(normalizedEndorser, Number(epochBigInt), 0);
+      const expectedNonce = maxNonce + 1;
+      
+      if (Number(nonceBigInt) !== expectedNonce) {
+        return res.status(400).json({ 
+          error: `Invalid nonce - expected ${expectedNonce}, got ${nonce}. Use /api/v1/vouch/nonce/:address to get current nonce.`
+        });
+      }
+      
+      const existingVouch = await storage.getEndorsements({
+        endorser: normalizedEndorser,
+        endorsee: normalizedEndorsee,
+        limit: 1
+      });
+      
+      if (existingVouch.length > 0) {
+        return res.status(400).json({ error: "Vouch already exists for this endorser->endorsee pair" });
+      }
+      
+      const fieldValidation = validateEndorsementFields({
+        endorser: normalizedEndorser as Address,
+        endorsee: normalizedEndorsee as Address,
+        epoch: epochBigInt,
+        nonce: nonceBigInt,
+      });
+      
+      if (!fieldValidation.valid) {
+        return res.status(400).json({ error: fieldValidation.error });
+      }
+      
+      const signedEndorsement = {
+        endorser: normalizedEndorser as Address,
+        endorsee: normalizedEndorsee as Address,
+        epoch: epochBigInt,
+        nonce: nonceBigInt,
+        sig,
+        chainId: chainId || 1,
+      };
+      
+      const isValid = await verifyEndorsementSignature(signedEndorsement);
+      
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid signature - signature must be from endorser wallet" });
+      }
+      
+      const leafHash = computeLeafHash({
+        endorser: normalizedEndorser,
+        endorsee: normalizedEndorsee,
+        epoch: epochBigInt,
+        nonce: nonceBigInt,
+        sig
+      });
+      
+      try {
+        await storage.createEndorsement({
+          communityId: 0,
+          endorser: normalizedEndorser,
+          endorsee: normalizedEndorsee,
+          epoch: Number(epochBigInt),
+          nonce: Number(nonceBigInt),
+          sig,
+          leafHash,
+          promptHash: null,
+        });
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message.includes('duplicate key')) {
+          return res.status(409).json({ error: "Nonce already used - please get a new nonce" });
+        }
+        throw err;
+      }
+      
+      await storage.getOrCreateEgoContext(normalizedEndorser);
+      await storage.updateLastSignalActivity(normalizedEndorser);
+      
+      const { localHealthService } = await import('../services/localHealthService');
+      localHealthService.recalculateMultipleLocalHealth([
+        normalizedEndorser,
+        normalizedEndorsee
+      ]).catch(err => {
+        console.error('Failed to recalculate LocalHealth after vouch:', err);
+      });
+      
+      res.status(202).json({ ok: true });
+    } catch (error) {
+      console.error('Error submitting vouch:', error);
+      res.status(500).json({ error: "Failed to submit vouch" });
+    }
+  });
+
+  app.get("/api/v1/vouch-status", publicRateLimit, async (req, res) => {
+    try {
+      const { endorser, endorsee } = req.query;
+      
+      if (!endorser || !endorsee) {
+        return res.status(400).json({ 
+          error: "Missing required query params: endorser, endorsee" 
+        });
+      }
+      
+      const normalizedEndorser = (endorser as string).toLowerCase();
+      const normalizedEndorsee = (endorsee as string).toLowerCase();
+      
+      const endorsements = await storage.getEndorsements({
+        endorser: normalizedEndorser,
+        endorsee: normalizedEndorsee,
+        limit: 1
+      });
+      
+      if (endorsements.length === 0) {
+        return res.json({ 
+          exists: false,
+          status: null,
+          days_remaining: null
+        });
+      }
+      
+      const endorsement = endorsements[0];
+      
+      const isRevoked = await storage.isEndorsementRevoked(endorsement.id);
+      if (isRevoked) {
+        return res.json({
+          exists: true,
+          status: "revoked",
+          days_remaining: null,
+          created_at: endorsement.createdAt
+        });
+      }
+      
+      const endorseeContext = await storage.getOrCreateEgoContext(normalizedEndorsee);
+      const EXPIRATION_DAYS = 90;
+      const now = new Date();
+      const vouchCreatedAt = endorsement.createdAt;
+      const lastActivity = endorseeContext.lastSignalActivityAt;
+      
+      const daysSinceVouch = Math.floor((now.getTime() - vouchCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
+      const daysSinceActivity = lastActivity 
+        ? Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24))
+        : Infinity;
+      
+      const isExpired = daysSinceVouch >= EXPIRATION_DAYS && daysSinceActivity >= EXPIRATION_DAYS;
+      const daysRemaining = isExpired ? 0 : Math.max(0, EXPIRATION_DAYS - Math.min(daysSinceVouch, daysSinceActivity));
+      
+      let statusLabel: string;
+      if (isExpired) {
+        statusLabel = "expired";
+      } else if (daysRemaining <= 30) {
+        statusLabel = "expiring_soon";
+      } else {
+        statusLabel = "active";
+      }
+      
+      res.json({
+        exists: true,
+        status: statusLabel,
+        days_remaining: daysRemaining,
+        created_at: endorsement.createdAt
+      });
+    } catch (error) {
+      console.error('Error checking vouch status:', error);
+      res.status(500).json({ error: "Failed to check vouch status" });
+    }
+  });
+
+  app.get("/api/v1/revoke/info", publicRateLimit, async (req, res) => {
+    try {
+      const { endorser, endorsee } = req.query;
+      
+      if (!endorser || !endorsee) {
+        return res.status(400).json({ 
+          error: "Missing required query params: endorser, endorsee" 
+        });
+      }
+      
+      const normalizedEndorser = (endorser as string).toLowerCase();
+      const normalizedEndorsee = (endorsee as string).toLowerCase();
+      
+      const endorsements = await storage.getEndorsements({
+        endorser: normalizedEndorser,
+        endorsee: normalizedEndorsee,
+        limit: 1
+      });
+      
+      if (endorsements.length === 0) {
+        return res.json({ exists: false, endorsement_id: null });
+      }
+      
+      const endorsement = endorsements[0];
+      const isRevoked = await storage.isEndorsementRevoked(endorsement.id);
+      
+      res.json({ 
+        exists: true, 
+        endorsement_id: endorsement.id,
+        already_revoked: isRevoked
+      });
+    } catch (error) {
+      console.error('Error getting revoke info:', error);
+      res.status(500).json({ error: "Failed to get revoke info" });
+    }
+  });
+
+  app.post("/api/v1/revoke", publicRateLimit, async (req, res) => {
+    try {
+      const { endorser, endorsee, endorsementId, sig, chainId } = req.body;
+      
+      if (!endorser || !endorsee || !endorsementId || !sig) {
+        return res.status(400).json({ 
+          error: "Missing required fields: endorser, endorsee, endorsementId, sig" 
+        });
+      }
+      
+      const normalizedEndorser = endorser.toLowerCase() as Address;
+      const normalizedEndorsee = endorsee.toLowerCase() as Address;
+      const endorsementIdNum = Number(endorsementId);
+      
+      const endorsements = await storage.getEndorsements({
+        endorser: normalizedEndorser,
+        endorsee: normalizedEndorsee,
+        limit: 1
+      });
+      
+      if (endorsements.length === 0) {
+        return res.status(404).json({ error: "Vouch not found" });
+      }
+      
+      const endorsement = endorsements[0];
+      
+      if (endorsement.id !== endorsementIdNum) {
+        return res.status(400).json({ error: "endorsementId does not match vouch" });
+      }
+      
+      const isAlreadyRevoked = await storage.isEndorsementRevoked(endorsement.id);
+      if (isAlreadyRevoked) {
+        return res.status(400).json({ error: "Vouch already revoked" });
+      }
+      
+      const isValidSig = await verifyRevocationSignature(
+        normalizedEndorser,
+        normalizedEndorsee,
+        endorsementIdNum,
+        sig as Hex,
+        chainId || 1
+      );
+      
+      if (!isValidSig) {
+        return res.status(400).json({ error: "Invalid signature - must be signed by endorser" });
+      }
+      
+      await storage.createEndorsementTombstone({
+        endorsementId: endorsement.id,
+        reason: "Revoked by endorser via API",
+      });
+      
+      const { localHealthService } = await import('../services/localHealthService');
+      localHealthService.recalculateMultipleLocalHealth([
+        normalizedEndorsee
+      ]).catch(err => {
+        console.error('Failed to recalculate LocalHealth after revocation:', err);
+      });
+      
+      res.json({ ok: true, revoked: true });
+    } catch (error) {
+      console.error('Error revoking vouch:', error);
+      res.status(500).json({ error: "Failed to revoke vouch" });
+    }
+  });
+}

@@ -3682,6 +3682,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { registerMinimalApiRoutes } = await import("./routes/minimalApi");
   registerMinimalApiRoutes(app);
 
+  // Public API routes (v1) - no auth required
+  const { registerPublicApiRoutes } = await import("./routes/publicApi");
+  registerPublicApiRoutes(app);
+
   const httpServer = createServer(app);
 
   return httpServer;
