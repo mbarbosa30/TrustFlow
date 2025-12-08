@@ -91,11 +91,11 @@ export default function Landing() {
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Scored Users</div>
               </div>
-              <div className="text-center" data-testid="stat-avg-health">
+              <div className="text-center" data-testid="stat-avg-signal">
                 <div className="text-2xl md:text-3xl font-bold text-primary">
                   {traction.avgLocalHealth}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Avg LocalHealth</div>
+                <div className="text-xs text-muted-foreground mt-1">Avg Signal</div>
               </div>
             </div>
           )}
@@ -429,13 +429,13 @@ export default function Landing() {
             <div className="text-center mb-12">
               <Badge variant="outline" className="mb-4">
                 <Activity className="w-3 h-3 mr-1" />
-                Live LocalHealth Stats
+                Live Signal Stats
               </Badge>
               <h2 className="text-3xl font-bold mb-3" data-testid="text-traction-heading">
                 Network Traction
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Real-time computed LocalHealth indicators showing graph health and evolution
+                Real-time computed signal indicators showing graph health and evolution
               </p>
             </div>
 
@@ -489,7 +489,7 @@ export default function Landing() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-primary" />
-                  LocalHealth Distribution
+                  Signal Distribution
                 </CardTitle>
               </CardHeader>
               <CardContent>

@@ -50,7 +50,7 @@ export default function Admin() {
             Network Recalculation
           </CardTitle>
           <CardDescription>
-            Recalculate all LocalHealth scores using the current algorithm: iterative PageRank-style computation with adaptive baselines (75th percentile), piecewise dilution curves (smooth 4-zone decay), vertex-disjoint path bonuses, and quadratic scaling. Max score capped at 99.
+            Recalculate all signal scores using the current algorithm: iterative PageRank-style computation with adaptive baselines (75th percentile), piecewise dilution curves (smooth 4-zone decay), vertex-disjoint path bonuses, and quadratic scaling. Max score capped at 99.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -141,7 +141,7 @@ export default function Admin() {
                           <thead className="border-b">
                             <tr>
                               <th className="text-left py-2">Address</th>
-                              <th className="text-right py-2">LocalHealth</th>
+                              <th className="text-right py-2">Signal</th>
                               <th className="text-left py-2">Status</th>
                             </tr>
                           </thead>

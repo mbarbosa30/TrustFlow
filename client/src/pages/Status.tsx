@@ -66,7 +66,7 @@ export default function Status() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Network Status</h1>
         <p className="text-muted-foreground">
-          Real-time LocalHealth metrics for the MaxFlow graph signal infrastructure
+          Real-time signal metrics for the MaxFlow graph signal infrastructure
         </p>
       </div>
 
@@ -75,19 +75,19 @@ export default function Status() {
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
               <Activity className="w-6 h-6" />
-              LocalHealth Network Overview
+              Network Signal Overview
             </CardTitle>
             <CardDescription>
-              Aggregate scoring metrics across all users with computed LocalHealth scores
+              Aggregate scoring metrics across all users with computed signal scores
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
-                <div className="text-6xl font-bold text-primary mb-2" data-testid="text-avg-localhealth">
+                <div className="text-6xl font-bold text-primary mb-2" data-testid="text-avg-signal">
                   {traction.avgLocalHealth}
                 </div>
-                <div className="text-lg text-muted-foreground mb-4">Average LocalHealth</div>
+                <div className="text-lg text-muted-foreground mb-4">Average Signal</div>
                 <Badge className={`${status.color} text-white`} data-testid="badge-network-status">
                   {status.label}
                 </Badge>
@@ -130,10 +130,10 @@ export default function Status() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
-                LocalHealth Distribution
+                Signal Distribution
               </CardTitle>
               <CardDescription>
-                Score breakdown across all users with computed LocalHealth
+                Score breakdown across all users with computed signal
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -353,7 +353,7 @@ export default function Status() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Info className="w-5 h-5" />
-              Understanding LocalHealth
+              Understanding the Signal
             </CardTitle>
             <CardDescription>
               How the scoring algorithm works and what the metrics mean
@@ -368,7 +368,7 @@ export default function Status() {
                     Flow Component (60%)
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Measures trust flow from your vouchers to you, weighted by each voucher's own LocalHealth. 
+                    Measures trust flow from your vouchers to you, weighted by each voucher's own signal strength. 
                     Stronger vouchers contribute more to your score.
                   </p>
                 </div>
@@ -414,7 +414,7 @@ export default function Status() {
                 <div>
                   <p className="text-sm font-medium mb-1">Nature-Inspired Resilience</p>
                   <p className="text-xs text-muted-foreground">
-                    LocalHealth scoring mirrors patterns found in natural systems: flow capacity like watersheds, 
+                    Signal scoring mirrors patterns found in natural systems: flow capacity like watersheds, 
                     recursive weighting like root nutrient distribution, path redundancy like mycorrhizal networks, 
                     and dilution penalties like ecosystem pruning. These aren't metaphors—they're the same 
                     mathematical patterns that make natural networks ungameable.
@@ -432,7 +432,7 @@ export default function Status() {
               Design Principles
             </CardTitle>
             <CardDescription>
-              Why MaxFlow computes LocalHealth this way
+              Why MaxFlow computes signals this way
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -443,7 +443,7 @@ export default function Status() {
                   Personal Network Focus
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  LocalHealth measures your personal network quality—who vouches for you and 
+                  Your signal measures your personal network quality—who vouches for you and 
                   how strong their own networks are. It's ego-centric by design.
                 </p>
               </div>
@@ -465,7 +465,7 @@ export default function Status() {
                   Pure Graph Signal
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  LocalHealth is computed entirely from the endorsement graph structure. 
+                  Your signal is computed entirely from the endorsement graph structure. 
                   No economic factors, no external data—just network topology.
                 </p>
               </div>

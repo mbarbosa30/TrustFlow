@@ -6,6 +6,11 @@ MaxFlow is a Sybil-resistant graph signal infrastructure that computes verifiabl
 
 Preferred communication style: Simple, everyday language.
 
+### Naming Convention (Dec 2025)
+*   **Internal Code**: Use `LocalHealth` for variable names, types, and function names (e.g., `avgLocalHealth`, `getLocalHealthScore`)
+*   **User-Facing Copy**: Use "Signal" in all UI text, headings, and descriptions (e.g., "Your Signal: 72", "Average Signal", "Signal Distribution")
+*   **Conceptual Framing**: The algorithm computes signal vs noise—genuine trust (signal) from Sybil attacks and fake accounts (noise)
+
 ## System Architecture
 
 ### UI/UX Decisions
@@ -37,7 +42,10 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
 *   **Network Recalculation**: Admin tool for batch computing and persisting all LocalHealth scores across the network.
 *   **Advanced Algorithm Analytics**: Mathematician-focused Dashboard with 8 analytics endpoints for convergence metrics, vouch timelines, flow/redundancy correlation, voucher strength distribution, flow saturation, dilution zones, network resilience, and adaptive baseline monitoring.
 *   **Network Traction API**: `/api/stats/network-traction` endpoint providing aggregated LocalHealth-focused metrics for network health, distribution, and dilution.
-*   **LocalHealth-Focused Pages**: Public-facing pages (Landing, Status, Admin) are centered on LocalHealth scoring and network metrics.
+*   **Signal-Focused Pages (Dec 2025)**: All public-facing pages use "Signal" in user-facing copy (internal code uses LocalHealth):
+    *   **Landing page**: Hero stats show Vouchers, Vouches, Scored Users, Avg Signal. Network Traction section shows graph density, vouches per user, quality voucher %, and Signal distribution.
+    *   **Status page**: Shows network signal metrics, aggregate Signal, score distribution, dilution zones, graph density, and algorithm explanations.
+    *   **Admin page**: Recalculation description updated to reflect current algorithm.
 
 ### System Design Choices
 *   **TypeScript Everywhere**: Enhances code quality and maintainability.
