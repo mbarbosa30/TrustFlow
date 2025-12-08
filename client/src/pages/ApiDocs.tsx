@@ -58,13 +58,33 @@ export default function ApiDocs() {
 
         <h4>Response Fields</h4>
         <ul>
+          <li><strong>address</strong>: Normalized wallet address (lowercase)</li>
           <li><strong>local_health</strong>: Signal score 0-100 (higher = more trusted). This is the authoritative trust signal computed by the max-flow algorithm.</li>
+          <li><strong>cached</strong>: Whether the score was retrieved from cache (true) or freshly computed (false)</li>
+          <li><strong>cached_at</strong>: Timestamp when the score was last computed (null if freshly calculated)</li>
           <li><strong>vouch_counts.incoming_total</strong>: Total vouches ever received (exact count)</li>
           <li><strong>vouch_counts.incoming_active</strong>: Non-expired/non-revoked vouches (from last 1,000 evaluated)</li>
           <li><strong>vouch_counts.outgoing_total</strong>: Total vouches ever given (exact count)</li>
           <li><strong>vouch_counts.unique_vouchers</strong>: Distinct active endorsers (from last 1,000 evaluated)</li>
-          <li><strong>activity.last_vouch_given_at</strong>: When this user last vouched for someone (null if never)</li>
+          <li><strong>activity.last_vouch_given_at</strong>: When this user last vouched for someone (null if never). Used for vouch expiration calculation.</li>
         </ul>
+
+        <h4>Ego Context (Scoring Model)</h4>
+        <p>
+          The ego context represents a wallet's personal trust network state. Each wallet has an isolated scoring context 
+          that tracks their position in the trust graph. The <code>local_health</code> score (displayed as "Signal" in the UI) 
+          measures how much the network trusts this wallet, computed using:
+        </p>
+        <ul>
+          <li><strong>Flow Component (60%)</strong>: Iterative PageRank-style algorithm where vouches are weighted by the voucher's own score (up to 10 iterations)</li>
+          <li><strong>Redundancy Component (40%)</strong>: Measures path diversity via direct vouches, depth bonus, connectivity, and vertex-disjoint paths for Sybil resistance</li>
+          <li><strong>Dilution Penalty</strong>: Excessive outgoing vouches reduce the weight of each vouch given, ensuring accountability</li>
+          <li><strong>Adaptive Baseline</strong>: Network-wide 75th percentile vouch count (clamped 4-15) sets healthy participation thresholds</li>
+        </ul>
+        <p>
+          Scores are cached and recalculated when a wallet gives or receives a vouch. The <code>cached</code> field indicates 
+          if the returned score is from cache; <code>cached_at</code> shows when it was last computed.
+        </p>
       </section>
 
       <section>
