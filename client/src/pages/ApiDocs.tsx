@@ -307,7 +307,7 @@ const message = {
     {
       "id": 42,
       "communityId": 0,
-      "scope": "community",
+      "scope": "global",
       "endorser": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
       "endorsee": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
       "epoch": 0,
@@ -326,6 +326,7 @@ const message = {
         <ul>
           <li><strong>id</strong>: Unique endorsement identifier</li>
           <li><strong>communityId</strong>: Community ID (0 = global graph)</li>
+          <li><strong>scope</strong>: Either "global" (community 0) or "community" (specific community)</li>
           <li><strong>endorser</strong>: Address that gave the vouch</li>
           <li><strong>endorsee</strong>: Address that received the vouch</li>
           <li><strong>epoch</strong>: Epoch when vouch was created</li>
@@ -357,7 +358,7 @@ const message = {
     {
       "id": 42,
       "communityId": 0,
-      "scope": "community",
+      "scope": "global",
       "endorser": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
       "endorsee": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
       "epoch": 0,
