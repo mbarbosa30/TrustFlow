@@ -56,16 +56,9 @@ export function registerPublicApiRoutes(app: Express) {
       
       const { localHealthService } = await import('../services/localHealthService');
       
-      let localHealth = 0;
-      const cachedScore = await localHealthService.getCachedLocalHealth(address);
+      const metrics = await localHealthService.getExtendedScoreMetrics(address);
       
-      if (cachedScore !== null) {
-        localHealth = cachedScore;
-      } else {
-        localHealth = await localHealthService.recalculateLocalHealth(address);
-      }
-      
-      res.json({ local_health: localHealth });
+      res.json(metrics);
     } catch (error) {
       console.error('Error getting score:', error);
       res.status(500).json({ error: "Failed to get score" });

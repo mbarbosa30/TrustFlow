@@ -246,9 +246,45 @@ print(f"Signal: {data['local_health']}/100")`}
                 <h4 className="font-semibold text-sm mb-2 mt-4">Response</h4>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
 {`{
-  "local_health": 72
+  "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+  "local_health": 72,
+  "cached": true,
+  "cached_at": "2025-01-15T12:30:45.123Z",
+  
+  "vouch_counts": {
+    "incoming_total": 8,
+    "incoming_active": 7,
+    "outgoing_total": 5,
+    "unique_vouchers": 7
+  },
+  
+  "activity": {
+    "last_vouch_given_at": "2025-01-10T08:15:00.000Z"
+  }
 }`}
                 </pre>
+                
+                <h4 className="font-semibold text-sm mb-2 mt-4">Response Fields</h4>
+                <div className="text-sm space-y-3 text-muted-foreground">
+                  <div>
+                    <strong className="text-foreground">local_health</strong>: Signal score 0-100 (higher = more trusted). This is the authoritative trust signal computed by the max-flow algorithm.
+                  </div>
+                  <div>
+                    <strong className="text-foreground">vouch_counts</strong>: 
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>• incoming_total: Total vouches ever received (exact count)</li>
+                      <li>• incoming_active: Non-expired/non-revoked vouches (from last 1,000 evaluated)</li>
+                      <li>• outgoing_total: Total vouches ever given (exact count)</li>
+                      <li>• unique_vouchers: Distinct active endorsers (from last 1,000 evaluated)</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <strong className="text-foreground">activity</strong>:
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>• last_vouch_given_at: When this user last vouched for someone (null if never)</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -524,15 +560,23 @@ const message = {
 {`const scoreCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-async function getCachedSignal(address) {
+async function getCachedMetrics(address) {
   const cached = scoreCache.get(address);
   if (cached && Date.now() - cached.time < CACHE_TTL) {
-    return cached.score;
+    return cached.data;
   }
   const res = await fetch('/api/v1/score/' + address);
-  const { local_health } = await res.json();
-  scoreCache.set(address, { score: local_health, time: Date.now() });
-  return local_health;
+  const data = await res.json();
+  scoreCache.set(address, { data, time: Date.now() });
+  return data;
+}
+
+// Example: Check if user is trusted
+async function isTrusted(address) {
+  const metrics = await getCachedMetrics(address);
+  // local_health is the authoritative trust signal
+  return metrics.local_health >= 50 && 
+         metrics.vouch_counts.incoming_active >= 3;
 }`}
                 </pre>
               </div>

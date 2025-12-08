@@ -46,6 +46,7 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<PublicEndorsement[]>;
+  countEndorsements(filters: { endorser?: string; endorsee?: string; communityId?: number }): Promise<number>;
   getMaxNonce(endorser: string, epoch: number, communityId?: number): Promise<number>;
   
   // Endorsement tombstone operations (vouch revocation)
@@ -269,8 +270,31 @@ export class MemStorage implements IStorage {
     const limit = filters?.limit !== undefined ? filters.limit : 1000;
     const offset = filters?.offset || 0;
     
-    const results = await query.limit(limit).offset(offset);
+    // Order by id DESC to get most recent endorsements first (id is auto-incrementing)
+    const results = await query.orderBy(desc(publicEndorsements.id)).limit(limit).offset(offset);
     return results;
+  }
+
+  async countEndorsements(filters: { endorser?: string; endorsee?: string; communityId?: number }): Promise<number> {
+    const conditions = [];
+    if (filters.endorser) {
+      conditions.push(eq(publicEndorsements.endorser, filters.endorser.toLowerCase()));
+    }
+    if (filters.endorsee) {
+      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee.toLowerCase()));
+    }
+    if (filters.communityId !== undefined) {
+      conditions.push(eq(publicEndorsements.communityId, filters.communityId));
+    }
+    
+    let query = db.select({ count: sql<number>`count(*)` }).from(publicEndorsements);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const [result] = await query;
+    return Number(result?.count || 0);
   }
 
   async getMaxNonce(endorser: string, epoch: number, communityId: number = 0): Promise<number> {

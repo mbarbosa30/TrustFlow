@@ -2,7 +2,25 @@ import type { Address } from "viem";
 import { storage } from "../storage";
 import { EgoScorer } from "../algorithm/egoScoring";
 import type { EgoEndorsement } from "../algorithm/egoScoring";
-import { filterValidEndorsements } from "./vouchExpiration";
+import { filterValidEndorsements, buildVouchFilter, isVouchValid } from "./vouchExpiration";
+
+export interface ExtendedScoreMetrics {
+  address: string;
+  local_health: number;
+  cached: boolean;
+  cached_at: string | null;
+  
+  vouch_counts: {
+    incoming_total: number;
+    incoming_active: number;
+    outgoing_total: number;
+    unique_vouchers: number;
+  };
+  
+  activity: {
+    last_vouch_given_at: string | null;
+  };
+}
 
 export class LocalHealthService {
   async recalculateLocalHealth(address: string): Promise<number> {
@@ -135,11 +153,64 @@ export class LocalHealthService {
     const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
     
     if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
-      // Always return rounded integer (guard against legacy float data)
       return Math.round(egoContext.localHealth);
     }
     
     return null;
+  }
+
+  async getExtendedScoreMetrics(address: string): Promise<ExtendedScoreMetrics> {
+    const normalizedAddress = address.toLowerCase();
+    
+    const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
+    
+    let localHealth = 0;
+    let cached = false;
+    let cachedAt: string | null = null;
+    
+    if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
+      localHealth = Math.round(egoContext.localHealth);
+      cached = true;
+      cachedAt = egoContext.updatedAt?.toISOString() || null;
+    } else {
+      localHealth = await this.recalculateLocalHealth(normalizedAddress);
+      cached = false;
+    }
+    
+    const [incomingTotal, outgoingTotal, incomingEndorsements] = await Promise.all([
+      storage.countEndorsements({ endorsee: normalizedAddress, communityId: 0 }),
+      storage.countEndorsements({ endorser: normalizedAddress, communityId: 0 }),
+      storage.getEndorsements({ endorsee: normalizedAddress, communityId: 0, limit: 1000 }),
+    ]);
+    
+    const filter = await buildVouchFilter();
+    const now = new Date();
+    
+    const incomingActive = incomingEndorsements.filter(e => isVouchValid(e, filter, now));
+    
+    const uniqueVouchers = new Set(
+      incomingActive.map(e => e.endorser.toLowerCase())
+    ).size;
+    
+    const lastVouchGivenAt = egoContext.lastSignalActivityAt?.toISOString() || null;
+    
+    return {
+      address: normalizedAddress,
+      local_health: localHealth,
+      cached,
+      cached_at: cachedAt,
+      
+      vouch_counts: {
+        incoming_total: incomingTotal,
+        incoming_active: incomingActive.length,
+        outgoing_total: outgoingTotal,
+        unique_vouchers: uniqueVouchers,
+      },
+      
+      activity: {
+        last_vouch_given_at: lastVouchGivenAt,
+      },
+    };
   }
 }
 
