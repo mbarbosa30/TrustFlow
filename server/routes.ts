@@ -1719,6 +1719,691 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // NEW LocalHealth-Focused Analytics Endpoints
+  // =====================================================
+
+  // 1. Growth Cohort Analysis - Track new user quality over time
+  app.get("/api/analytics/localhealth/growth-cohorts", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ cohorts: [], summary: { totalCohorts: 0, avgRetention: 0 } });
+      }
+
+      // Build first-seen date for each address
+      const firstSeen = new Map<string, Date>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        const date = new Date(v.createdAt);
+        if (!firstSeen.has(endorsee) || date < firstSeen.get(endorsee)!) {
+          firstSeen.set(endorsee, date);
+        }
+      });
+
+      // Build LocalHealth lookup
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // Group by week cohorts
+      const cohortMap = new Map<string, { users: string[]; scores: number[] }>();
+      
+      firstSeen.forEach((date, address) => {
+        const weekStart = new Date(date);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const cohortKey = weekStart.toISOString().split('T')[0];
+        
+        if (!cohortMap.has(cohortKey)) {
+          cohortMap.set(cohortKey, { users: [], scores: [] });
+        }
+        cohortMap.get(cohortKey)!.users.push(address);
+        cohortMap.get(cohortKey)!.scores.push(healthMap.get(address) || 0);
+      });
+
+      const cohorts = Array.from(cohortMap.entries())
+        .map(([week, data]) => ({
+          week,
+          newcomers: data.users.length,
+          avgLocalHealth: data.scores.length > 0 
+            ? Math.round((data.scores.reduce((s, v) => s + v, 0) / data.scores.length) * 10) / 10
+            : 0,
+          retained: data.scores.filter(s => s > 0).length,
+          retentionRate: data.scores.length > 0 
+            ? Math.round((data.scores.filter(s => s > 0).length / data.scores.length) * 100)
+            : 0
+        }))
+        .sort((a, b) => a.week.localeCompare(b.week));
+
+      const totalRetention = cohorts.length > 0
+        ? Math.round(cohorts.reduce((s, c) => s + c.retentionRate, 0) / cohorts.length)
+        : 0;
+
+      return res.status(200).json({
+        cohorts,
+        summary: {
+          totalCohorts: cohorts.length,
+          avgRetention: totalRetention,
+          totalNewcomers: cohorts.reduce((s, c) => s + c.newcomers, 0)
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching growth cohorts:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 2. Voucher Influence Distribution - Trust concentration from top endorsers
+  app.get("/api/analytics/localhealth/voucher-influence", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          influencers: [], 
+          giniCoefficient: 0,
+          concentrationMetrics: { top5Share: 0, top10Share: 0, top20Share: 0 }
+        });
+      }
+
+      // Build LocalHealth lookup
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // Calculate influence per endorser
+      const endorserInfluence = new Map<string, { vouchCount: number; totalInfluence: number; beneficiaries: string[] }>();
+      
+      vouches.forEach(v => {
+        const endorser = v.endorser.toLowerCase();
+        const endorsee = v.endorsee.toLowerCase();
+        const endorserHealth = healthMap.get(endorser) || 0;
+        
+        if (!endorserInfluence.has(endorser)) {
+          endorserInfluence.set(endorser, { vouchCount: 0, totalInfluence: 0, beneficiaries: [] });
+        }
+        
+        const data = endorserInfluence.get(endorser)!;
+        data.vouchCount++;
+        data.totalInfluence += endorserHealth / 100; // Normalized influence
+        data.beneficiaries.push(endorsee);
+      });
+
+      const totalInfluence = Array.from(endorserInfluence.values())
+        .reduce((s, d) => s + d.totalInfluence, 0);
+
+      const influencers = Array.from(endorserInfluence.entries())
+        .map(([address, data]) => ({
+          address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          fullAddress: address,
+          vouchCount: data.vouchCount,
+          localHealth: healthMap.get(address) || 0,
+          influenceShare: totalInfluence > 0 
+            ? Math.round((data.totalInfluence / totalInfluence) * 1000) / 10
+            : 0,
+          beneficiaryCount: new Set(data.beneficiaries).size
+        }))
+        .sort((a, b) => b.influenceShare - a.influenceShare);
+
+      // Calculate Gini coefficient
+      const shares = influencers.map(i => i.influenceShare).sort((a, b) => a - b);
+      let gini = 0;
+      if (shares.length > 1) {
+        const n = shares.length;
+        const sumOfDiffs = shares.reduce((sum, share, i) => 
+          sum + shares.slice(i + 1).reduce((s, other) => s + Math.abs(share - other), 0), 0);
+        const mean = shares.reduce((s, v) => s + v, 0) / n;
+        gini = mean > 0 ? Math.round((sumOfDiffs / (2 * n * n * mean)) * 1000) / 1000 : 0;
+      }
+
+      // Concentration metrics
+      const top5 = influencers.slice(0, 5).reduce((s, i) => s + i.influenceShare, 0);
+      const top10 = influencers.slice(0, 10).reduce((s, i) => s + i.influenceShare, 0);
+      const top20 = influencers.slice(0, 20).reduce((s, i) => s + i.influenceShare, 0);
+
+      return res.status(200).json({
+        influencers: influencers.slice(0, 50), // Top 50
+        giniCoefficient: gini,
+        concentrationMetrics: {
+          top5Share: Math.round(top5 * 10) / 10,
+          top10Share: Math.round(top10 * 10) / 10,
+          top20Share: Math.round(top20 * 10) / 10
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching voucher influence:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 3. Redundancy Depth Heatmap - Direct vs multi-hop support
+  app.get("/api/analytics/localhealth/redundancy-depth", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          heatmapData: [],
+          depthDistribution: { direct: 0, secondHop: 0, thirdHop: 0 },
+          avgDepth: 0
+        });
+      }
+
+      // Build adjacency list (who vouches for whom)
+      const vouchersOf = new Map<string, Set<string>>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        const endorser = v.endorser.toLowerCase();
+        if (!vouchersOf.has(endorsee)) {
+          vouchersOf.set(endorsee, new Set());
+        }
+        vouchersOf.get(endorsee)!.add(endorser);
+      });
+
+      // For each user, compute support at each depth level
+      const depthData: { address: string; direct: number; secondHop: number; thirdHop: number; localHealth: number }[] = [];
+      
+      allContexts.forEach(ctx => {
+        if (!ctx.ownerAddress) return;
+        const address = ctx.ownerAddress.toLowerCase();
+        
+        // Direct vouchers (depth 1)
+        const directVouchers = vouchersOf.get(address) || new Set();
+        const direct = directVouchers.size;
+        
+        // Second hop (depth 2) - people who vouch for my vouchers
+        const secondHopSet = new Set<string>();
+        directVouchers.forEach(voucher => {
+          const theirVouchers = vouchersOf.get(voucher) || new Set();
+          theirVouchers.forEach(v => {
+            if (v !== address && !directVouchers.has(v)) {
+              secondHopSet.add(v);
+            }
+          });
+        });
+        
+        // Third hop (depth 3)
+        const thirdHopSet = new Set<string>();
+        secondHopSet.forEach(sh => {
+          const theirVouchers = vouchersOf.get(sh) || new Set();
+          theirVouchers.forEach(v => {
+            if (v !== address && !directVouchers.has(v) && !secondHopSet.has(v)) {
+              thirdHopSet.add(v);
+            }
+          });
+        });
+        
+        depthData.push({
+          address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          direct,
+          secondHop: secondHopSet.size,
+          thirdHop: thirdHopSet.size,
+          localHealth: ctx.localHealth || 0
+        });
+      });
+
+      // Sort by LocalHealth descending
+      depthData.sort((a, b) => b.localHealth - a.localHealth);
+
+      // Aggregate distribution
+      const totalDirect = depthData.reduce((s, d) => s + d.direct, 0);
+      const totalSecond = depthData.reduce((s, d) => s + d.secondHop, 0);
+      const totalThird = depthData.reduce((s, d) => s + d.thirdHop, 0);
+      const totalSupport = totalDirect + totalSecond + totalThird;
+
+      return res.status(200).json({
+        heatmapData: depthData.slice(0, 30), // Top 30 users
+        depthDistribution: {
+          direct: totalSupport > 0 ? Math.round((totalDirect / totalSupport) * 100) : 0,
+          secondHop: totalSupport > 0 ? Math.round((totalSecond / totalSupport) * 100) : 0,
+          thirdHop: totalSupport > 0 ? Math.round((totalThird / totalSupport) * 100) : 0
+        },
+        avgDepth: depthData.length > 0 
+          ? Math.round((depthData.reduce((s, d) => s + d.direct + d.secondHop * 0.5 + d.thirdHop * 0.25, 0) / depthData.length) * 10) / 10
+          : 0
+      });
+    } catch (error) {
+      console.error("Error fetching redundancy depth:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 4. Edge Fragility Analyzer - Critical connections
+  app.get("/api/analytics/localhealth/edge-fragility", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          criticalEdges: [],
+          fragilitySummary: { highRisk: 0, mediumRisk: 0, lowRisk: 0 }
+        });
+      }
+
+      // Build health lookup
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // Count vouches per endorsee
+      const vouchCounts = new Map<string, number>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        vouchCounts.set(endorsee, (vouchCounts.get(endorsee) || 0) + 1);
+      });
+
+      // Calculate edge criticality - edges where endorsee has few vouchers and endorser is strong
+      const edgeCriticality: { 
+        endorser: string; 
+        endorsee: string; 
+        endorserHealth: number;
+        endorseeHealth: number;
+        endorseeVouchCount: number;
+        impactScore: number;
+        riskLevel: 'high' | 'medium' | 'low';
+      }[] = [];
+
+      vouches.forEach(v => {
+        const endorser = v.endorser.toLowerCase();
+        const endorsee = v.endorsee.toLowerCase();
+        const endorserHealth = healthMap.get(endorser) || 0;
+        const endorseeHealth = healthMap.get(endorsee) || 0;
+        const endorseeVouchCount = vouchCounts.get(endorsee) || 1;
+        
+        // Impact score: high endorser health + low endorsee vouch count = critical edge
+        // If this edge is removed, the endorsee loses a significant portion of their incoming flow
+        const flowContribution = endorserHealth / 100 / endorseeVouchCount;
+        const impactScore = Math.round(flowContribution * 60 * 10) / 10; // Estimated score drop
+        
+        let riskLevel: 'high' | 'medium' | 'low' = 'low';
+        if (endorseeVouchCount <= 2 && endorserHealth >= 30) riskLevel = 'high';
+        else if (endorseeVouchCount <= 4 && endorserHealth >= 20) riskLevel = 'medium';
+        
+        edgeCriticality.push({
+          endorser: `${endorser.slice(0, 6)}...${endorser.slice(-4)}`,
+          endorsee: `${endorsee.slice(0, 6)}...${endorsee.slice(-4)}`,
+          endorserHealth,
+          endorseeHealth,
+          endorseeVouchCount,
+          impactScore,
+          riskLevel
+        });
+      });
+
+      // Sort by impact score
+      edgeCriticality.sort((a, b) => b.impactScore - a.impactScore);
+
+      const highRisk = edgeCriticality.filter(e => e.riskLevel === 'high').length;
+      const mediumRisk = edgeCriticality.filter(e => e.riskLevel === 'medium').length;
+      const lowRisk = edgeCriticality.filter(e => e.riskLevel === 'low').length;
+
+      return res.status(200).json({
+        criticalEdges: edgeCriticality.slice(0, 20), // Top 20 most critical
+        fragilitySummary: { highRisk, mediumRisk, lowRisk }
+      });
+    } catch (error) {
+      console.error("Error fetching edge fragility:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 5. Dilution Pressure Dashboard - Over-extended endorsers
+  app.get("/api/analytics/localhealth/dilution-pressure", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          endorsers: [],
+          networkDilution: { avgPenalty: 0, affectedUsers: 0, totalPenaltyPoints: 0 }
+        });
+      }
+
+      // Build health lookup
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // Count outgoing vouches per endorser
+      const outgoingCounts = new Map<string, { count: number; beneficiaries: string[] }>();
+      vouches.forEach(v => {
+        const endorser = v.endorser.toLowerCase();
+        const endorsee = v.endorsee.toLowerCase();
+        if (!outgoingCounts.has(endorser)) {
+          outgoingCounts.set(endorser, { count: 0, beneficiaries: [] });
+        }
+        outgoingCounts.get(endorser)!.count++;
+        outgoingCounts.get(endorser)!.beneficiaries.push(endorsee);
+      });
+
+      const DILUTION_THRESHOLD = 10;
+      const DILUTION_RATE = 0.1; // 10% per vouch beyond threshold
+      const MAX_DILUTION = 0.5;
+
+      const endorserData = Array.from(outgoingCounts.entries())
+        .map(([address, data]) => {
+          const excessVouches = Math.max(0, data.count - DILUTION_THRESHOLD);
+          const dilutionPenalty = Math.min(MAX_DILUTION, excessVouches * DILUTION_RATE);
+          const avgBeneficiaryHealth = data.beneficiaries.length > 0
+            ? data.beneficiaries.reduce((s, b) => s + (healthMap.get(b) || 0), 0) / data.beneficiaries.length
+            : 0;
+          
+          return {
+            address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+            fullAddress: address,
+            localHealth: healthMap.get(address) || 0,
+            vouchesGiven: data.count,
+            excessVouches,
+            dilutionPenalty: Math.round(dilutionPenalty * 100),
+            avgBeneficiaryHealth: Math.round(avgBeneficiaryHealth * 10) / 10,
+            status: dilutionPenalty >= 0.3 ? 'critical' : dilutionPenalty > 0 ? 'warning' : 'healthy'
+          };
+        })
+        .sort((a, b) => b.dilutionPenalty - a.dilutionPenalty);
+
+      const affectedUsers = endorserData.filter(e => e.dilutionPenalty > 0).length;
+      const avgPenalty = affectedUsers > 0
+        ? Math.round(endorserData.filter(e => e.dilutionPenalty > 0).reduce((s, e) => s + e.dilutionPenalty, 0) / affectedUsers)
+        : 0;
+      const totalPenaltyPoints = endorserData.reduce((s, e) => s + e.dilutionPenalty, 0);
+
+      return res.status(200).json({
+        endorsers: endorserData.slice(0, 30),
+        networkDilution: { avgPenalty, affectedUsers, totalPenaltyPoints }
+      });
+    } catch (error) {
+      console.error("Error fetching dilution pressure:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 6. Sybil Risk Radar - Suspicious cluster detection
+  app.get("/api/analytics/localhealth/sybil-risk", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          riskIndicators: [],
+          overallRisk: 'low',
+          suspiciousClusters: []
+        });
+      }
+
+      // Build health lookup and first-seen dates
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // Detect reciprocal vouches
+      const vouchPairs = new Set<string>();
+      const reciprocalPairs = new Set<string>();
+      
+      vouches.forEach(v => {
+        const forward = `${v.endorser.toLowerCase()}-${v.endorsee.toLowerCase()}`;
+        const reverse = `${v.endorsee.toLowerCase()}-${v.endorser.toLowerCase()}`;
+        
+        if (vouchPairs.has(reverse)) {
+          reciprocalPairs.add(forward);
+          reciprocalPairs.add(reverse);
+        }
+        vouchPairs.add(forward);
+      });
+
+      // Calculate risk metrics per user
+      const userRisk = new Map<string, { 
+        reciprocalCount: number; 
+        totalVouches: number; 
+        lowStrengthVouchers: number;
+        isNew: boolean;
+      }>();
+
+      // First-seen tracking
+      const firstSeen = new Map<string, Date>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        const date = new Date(v.createdAt);
+        if (!firstSeen.has(endorsee) || date < firstSeen.get(endorsee)!) {
+          firstSeen.set(endorsee, date);
+        }
+      });
+
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        const endorser = v.endorser.toLowerCase();
+        const pairKey = `${endorser}-${endorsee}`;
+        
+        if (!userRisk.has(endorsee)) {
+          userRisk.set(endorsee, { 
+            reciprocalCount: 0, 
+            totalVouches: 0, 
+            lowStrengthVouchers: 0,
+            isNew: firstSeen.get(endorsee)! > oneWeekAgo
+          });
+        }
+        
+        const risk = userRisk.get(endorsee)!;
+        risk.totalVouches++;
+        
+        if (reciprocalPairs.has(pairKey)) {
+          risk.reciprocalCount++;
+        }
+        
+        if ((healthMap.get(endorser) || 0) < 20) {
+          risk.lowStrengthVouchers++;
+        }
+      });
+
+      // Calculate risk scores
+      const riskIndicators = Array.from(userRisk.entries())
+        .map(([address, risk]) => {
+          const reciprocityRate = risk.totalVouches > 0 
+            ? risk.reciprocalCount / risk.totalVouches 
+            : 0;
+          const lowStrengthRate = risk.totalVouches > 0 
+            ? risk.lowStrengthVouchers / risk.totalVouches 
+            : 0;
+          
+          // Composite risk score (0-100)
+          let riskScore = 0;
+          riskScore += reciprocityRate * 40; // High reciprocity is suspicious
+          riskScore += lowStrengthRate * 30; // Many low-strength vouchers is suspicious
+          riskScore += risk.isNew ? 20 : 0;  // New accounts get extra scrutiny
+          riskScore += (healthMap.get(address) || 0) < 15 ? 10 : 0; // Low personal score
+          
+          return {
+            address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+            fullAddress: address,
+            localHealth: healthMap.get(address) || 0,
+            reciprocityRate: Math.round(reciprocityRate * 100),
+            lowStrengthRate: Math.round(lowStrengthRate * 100),
+            isNew: risk.isNew,
+            riskScore: Math.round(Math.min(100, riskScore)),
+            riskLevel: riskScore >= 60 ? 'high' : riskScore >= 30 ? 'medium' : 'low'
+          };
+        })
+        .filter(r => r.riskScore > 20) // Only show users with some risk
+        .sort((a, b) => b.riskScore - a.riskScore);
+
+      // Overall network risk
+      const highRiskCount = riskIndicators.filter(r => r.riskLevel === 'high').length;
+      const mediumRiskCount = riskIndicators.filter(r => r.riskLevel === 'medium').length;
+      const overallRisk = highRiskCount > 5 ? 'high' : mediumRiskCount > 10 ? 'medium' : 'low';
+
+      return res.status(200).json({
+        riskIndicators: riskIndicators.slice(0, 20),
+        overallRisk,
+        riskMetrics: {
+          highRiskUsers: highRiskCount,
+          mediumRiskUsers: mediumRiskCount,
+          reciprocalVouchRate: Math.round((reciprocalPairs.size / 2 / vouches.length) * 100),
+          avgVoucherStrength: allContexts.length > 0
+            ? Math.round(allContexts.reduce((s, c) => s + (c.localHealth || 0), 0) / allContexts.length)
+            : 0
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching sybil risk:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 7. Convergence Sensitivity Breakdown - Component contribution per iteration
+  app.get("/api/analytics/localhealth/convergence-sensitivity", async (req, res) => {
+    try {
+      const { EgoScorer } = await import('./algorithm/egoScoring');
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      const addresses = allContexts.filter(c => c.ownerAddress).map(c => c.ownerAddress as `0x${string}`);
+      
+      if (addresses.length === 0 || vouches.length === 0) {
+        return res.status(200).json({
+          iterations: [],
+          componentBreakdown: { flowDominant: 0, redundancyDominant: 0, balanced: 0 },
+          stabilityScore: 100
+        });
+      }
+
+      const scorer = new EgoScorer();
+      const globalVouches = vouches.map(v => ({
+        endorser: v.endorser.toLowerCase() as `0x${string}`,
+        endorsee: v.endorsee.toLowerCase() as `0x${string}`
+      }));
+
+      // Track component contributions per iteration
+      const HEALTHY_VOUCH_COUNT = 8.0;
+      const HEALTHY_REDUNDANCY = 35.0;
+      const maxIterations = 10;
+      const convergenceThreshold = 0.5;
+      
+      const iterationData: {
+        iteration: number;
+        flowChange: number;
+        redundancyChange: number;
+        totalChange: number;
+        converged: boolean;
+      }[] = [];
+
+      // Build vouch count map
+      const incomingVouches = new Map<string, number>();
+      globalVouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        incomingVouches.set(endorsee, (incomingVouches.get(endorsee) || 0) + 1);
+      });
+
+      // Simulate iterations tracking flow vs redundancy changes
+      let prevFlowScores = new Map<string, number>();
+      let prevRedundancyScores = new Map<string, number>();
+      
+      // Initialize
+      addresses.forEach(addr => {
+        const addrLower = addr.toLowerCase();
+        const vouchCount = incomingVouches.get(addrLower) || 0;
+        const flowRatio = Math.min(1.0, vouchCount / HEALTHY_VOUCH_COUNT);
+        prevFlowScores.set(addrLower, 60 * Math.pow(flowRatio, 2.0));
+        prevRedundancyScores.set(addrLower, 0); // Start with 0 redundancy
+      });
+
+      let iteration = 0;
+      let totalChange = Infinity;
+
+      while (iteration < maxIterations && totalChange >= convergenceThreshold) {
+        iteration++;
+        let flowChangeSum = 0;
+        let redundancyChangeSum = 0;
+        let maxChange = 0;
+
+        const newFlowScores = new Map<string, number>();
+        const newRedundancyScores = new Map<string, number>();
+
+        for (const addr of addresses) {
+          const addrLower = addr.toLowerCase();
+          const result = scorer.computeLocalHealth(addr, [], globalVouches);
+          
+          // Estimate component breakdown from result
+          const vouchCount = incomingVouches.get(addrLower) || 0;
+          const flowRatio = Math.min(1.0, vouchCount / HEALTHY_VOUCH_COUNT);
+          const estimatedFlow = 60 * Math.pow(flowRatio, 2.0);
+          const estimatedRedundancy = Math.max(0, result.localHealth - estimatedFlow);
+          
+          newFlowScores.set(addrLower, estimatedFlow);
+          newRedundancyScores.set(addrLower, estimatedRedundancy);
+          
+          const flowChange = Math.abs(estimatedFlow - (prevFlowScores.get(addrLower) || 0));
+          const redChange = Math.abs(estimatedRedundancy - (prevRedundancyScores.get(addrLower) || 0));
+          
+          flowChangeSum += flowChange;
+          redundancyChangeSum += redChange;
+          maxChange = Math.max(maxChange, flowChange + redChange);
+        }
+
+        totalChange = maxChange;
+        
+        iterationData.push({
+          iteration,
+          flowChange: Math.round((flowChangeSum / addresses.length) * 100) / 100,
+          redundancyChange: Math.round((redundancyChangeSum / addresses.length) * 100) / 100,
+          totalChange: Math.round(totalChange * 100) / 100,
+          converged: totalChange < convergenceThreshold
+        });
+
+        prevFlowScores = newFlowScores;
+        prevRedundancyScores = newRedundancyScores;
+      }
+
+      // Analyze which component dominates changes
+      let flowDominant = 0;
+      let redundancyDominant = 0;
+      let balanced = 0;
+      
+      iterationData.forEach(d => {
+        if (d.flowChange > d.redundancyChange * 1.5) flowDominant++;
+        else if (d.redundancyChange > d.flowChange * 1.5) redundancyDominant++;
+        else balanced++;
+      });
+
+      // Stability score (100 = perfectly stable, lower = oscillating)
+      const stabilityScore = iterationData.length > 0
+        ? Math.max(0, 100 - (iterationData[iterationData.length - 1].totalChange * 10))
+        : 100;
+
+      return res.status(200).json({
+        iterations: iterationData,
+        componentBreakdown: { flowDominant, redundancyDominant, balanced },
+        stabilityScore: Math.round(stabilityScore)
+      });
+    } catch (error) {
+      console.error("Error fetching convergence sensitivity:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Test Data Management Endpoints
   app.post("/api/test-data/organic-growth", async (req, res) => {
     try {

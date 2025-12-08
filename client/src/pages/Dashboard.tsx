@@ -1,14 +1,6 @@
 import { GlobalStats } from "@/components/GlobalStats";
 import { RecentActivity } from "@/components/RecentActivity";
-import { GHIGauge } from "@/components/GHIGauge";
 import { LocalHealthHistogram } from "@/components/LocalHealthHistogram";
-import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
-import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
-import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
-import { NetworkDensityChart } from "@/components/NetworkDensityChart";
-import { PathDiversityChart } from "@/components/PathDiversityChart";
-import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
-import { PageRankMetrics } from "@/components/PageRankMetrics";
 import { LocalHealthGraph } from "@/components/graph/LocalHealthGraph";
 import { ConvergenceChart } from "@/components/analytics/ConvergenceChart";
 import { VouchTimelineChart } from "@/components/analytics/VouchTimelineChart";
@@ -19,40 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers, BarChart3 } from "lucide-react";
+import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers, BarChart3, AlertTriangle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Dashboard() {
-  const { data: epochData } = useQuery<{ epochId: number }>({
-    queryKey: ['/api/epoch/current'],
-  });
-
-  const currentEpochId = epochData?.epochId ?? 0;
-
   const { data: localHealthData, isLoading: isLoadingLocalHealth } = useQuery<{
     totalUsers: number;
     avgLocalHealth: number;
     distribution: { bin: string; count: number }[];
   }>({
     queryKey: ['/api/stats/local-health'],
-  });
-
-  const { data: healthData, isLoading: isLoadingHealth } = useQuery<{
-    epoch: number;
-    GHI: number;
-    metrics: {
-      sizeN: number;
-      cutN: number;
-      churnN: number;
-    };
-    raw: {
-      acceptedCount: number;
-      avgMinCut: number;
-      churnStability: number;
-    };
-  }>({
-    queryKey: [`/api/epoch/${currentEpochId}/health`],
-    enabled: currentEpochId !== undefined,
   });
 
   const { data: statsData, isLoading: isLoadingStats } = useQuery<{
@@ -76,73 +44,6 @@ export default function Dashboard() {
     queryKey: ['/api/endorsements?limit=10'],
   });
 
-  const { data: networkGrowthData, isLoading: isLoadingNetworkGrowth } = useQuery<{
-    data: Array<{ epoch: string; totalUsers: number; activeUsers: number }>;
-  }>({
-    queryKey: ['/api/analytics/network-growth'],
-  });
-
-  const { data: endorsementVelocityData, isLoading: isLoadingEndorsementVelocity } = useQuery<{
-    data: Array<{ epoch: string; newEndorsements: number; revokedEndorsements: number }>;
-  }>({
-    queryKey: ['/api/analytics/endorsement-velocity'],
-  });
-
-  const { data: scoreComponentsData, isLoading: isLoadingScoreComponents } = useQuery<{
-    data: Array<{ epoch: string; flow: number; cut: number; stability: number; depth: number; pageRank: number }>;
-  }>({
-    queryKey: ['/api/analytics/score-components'],
-  });
-
-  const { data: pageRankMetricsData, isLoading: isLoadingPageRankMetrics } = useQuery<{
-    prSkew: number;
-    seedConcentration: number;
-    maxScore: number;
-    p95Score: number;
-    iterations: number;
-    converged: boolean;
-  } | null>({
-    queryKey: [`/api/epoch/${currentEpochId}/pagerank-metrics`],
-    enabled: currentEpochId !== undefined,
-  });
-
-  const { data: networkDensityData, isLoading: isLoadingNetworkDensity } = useQuery<{
-    data: Array<{ epoch: string; endorsementsPerUser: number; avgPathLength: number }>;
-  }>({
-    queryKey: ['/api/analytics/network-density'],
-  });
-
-  const { data: pathDiversityData, isLoading: isLoadingPathDiversity } = useQuery<{
-    min: number;
-    p25: number;
-    median: number;
-    p75: number;
-    max: number;
-    count: number;
-  }>({
-    queryKey: ['/api/analytics/path-diversity'],
-  });
-
-  const { data: securityHealthData, isLoading: isLoadingSecurityHealth } = useQuery<{
-    seedSaturation: {
-      maxShare: number;
-      maxSeedAddress: string | null;
-      status: 'healthy' | 'caution' | 'warning';
-    } | null;
-    pathDiversity: {
-      average: number;
-      status: 'healthy' | 'moderate' | 'low';
-    };
-    avgMinCut: {
-      value: number;
-      status: 'strong' | 'adequate' | 'weak';
-    };
-    acceptedUsers: number;
-    epochId: number;
-  }>({
-    queryKey: ['/api/analytics/security-health'],
-  });
-
   const recentActivities = recentEndorsementsData?.endorsements.map(e => ({
     id: e.id.toString(),
     type: "endorsement" as const,
@@ -160,8 +61,7 @@ export default function Dashboard() {
   const flowRatio = Math.min(1.0, avgVouchers / HEALTHY_VOUCH_COUNT);
   const flowComponent = 60 * Math.pow(flowRatio, SCALING_EXPONENT);
   
-  const avgMinCut = healthData?.raw?.avgMinCut ?? 0;
-  const estimatedRedundancy = avgVouchers + (avgMinCut * 2);
+  const estimatedRedundancy = avgVouchers * 1.5;
   const redundancyRatio = Math.min(1.0, estimatedRedundancy / HEALTHY_REDUNDANCY);
   const redundancyComponent = 40 * Math.pow(redundancyRatio, SCALING_EXPONENT);
   
@@ -172,7 +72,7 @@ export default function Dashboard() {
       {/* Hero Section - LocalHealth Network Graph */}
       <div className="w-full bg-gradient-to-b from-muted/30 to-background">
         <div className="max-w-[1800px] mx-auto px-4 py-6">
-          {/* Header with Epoch and Key Metrics */}
+          {/* Header with Key Metrics */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-primary/10">
@@ -188,13 +88,6 @@ export default function Dashboard() {
             
             {/* Key Metrics Strip */}
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border">
-                <span className="text-sm text-muted-foreground">Epoch</span>
-                <span className="text-xl font-bold font-mono" data-testid="text-dashboard-epoch">
-                  {currentEpochId}
-                </span>
-              </div>
-              
               {localHealthData && (
                 <>
                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border">
@@ -218,7 +111,7 @@ export default function Dashboard() {
               {statsData && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border">
                   <Activity className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Endorsements</span>
+                  <span className="text-sm text-muted-foreground">Vouches</span>
                   <span className="text-xl font-bold" data-testid="text-total-endorsements">
                     {statsData.totalEndorsements}
                   </span>
@@ -236,7 +129,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="space-y-8">
           
-          {/* Flow Analytics Section - NEW */}
+          {/* Flow Analytics Section */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <Zap className="w-6 h-6 text-primary" />
@@ -248,7 +141,7 @@ export default function Dashboard() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Flow Saturation */}
-              <Card data-testid="card-flow-saturation">
+              <Card data-testid="card-flow-saturation-metric">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Gauge className="w-4 h-4 text-primary" />
@@ -266,21 +159,21 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              {/* Min-Cut Quality */}
-              <Card data-testid="card-mincut-quality">
+              {/* Vouch Density */}
+              <Card data-testid="card-vouch-density">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <GitBranch className="w-4 h-4 text-primary" />
-                    Min-Cut Quality
+                    Vouch Density
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-2" data-testid="text-mincut-quality">
-                    {avgMinCut.toFixed(1)}
+                  <div className="text-3xl font-bold mb-2" data-testid="text-vouch-density">
+                    {avgVouchers.toFixed(2)}
                   </div>
-                  <Progress value={Math.min(avgMinCut / 3, 1) * 100} className="h-2 mb-2" />
+                  <Progress value={Math.min(avgVouchers / 10, 1) * 100} className="h-2 mb-2" />
                   <p className="text-xs text-muted-foreground">
-                    Independent paths to seeds (target: 3.0)
+                    Average vouches per user
                   </p>
                 </CardContent>
               </Card>
@@ -295,30 +188,30 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold mb-2" data-testid="text-redundancy-index">
-                    {(redundancyComponent * 100).toFixed(0)}%
+                    {(redundancyRatio * 100).toFixed(0)}%
                   </div>
-                  <Progress value={redundancyComponent * 100} className="h-2 mb-2" />
+                  <Progress value={redundancyRatio * 100} className="h-2 mb-2" />
                   <p className="text-xs text-muted-foreground">
-                    Path redundancy contributing 40% to score
+                    Path redundancy (40% of score)
                   </p>
                 </CardContent>
               </Card>
 
-              {/* Churn Stability */}
-              <Card data-testid="card-churn-stability">
+              {/* Network Coverage */}
+              <Card data-testid="card-network-coverage">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <Shield className="w-4 h-4 text-primary" />
-                    Network Stability
+                    Network Coverage
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-2" data-testid="text-network-stability">
-                    {healthData ? (healthData.raw.churnStability * 100).toFixed(0) : 0}%
+                  <div className="text-3xl font-bold mb-2" data-testid="text-network-coverage">
+                    {statsData ? ((statsData.totalEndorsees / Math.max(statsData.totalUsers, 1)) * 100).toFixed(0) : 0}%
                   </div>
-                  <Progress value={healthData ? healthData.raw.churnStability * 100 : 0} className="h-2 mb-2" />
+                  <Progress value={statsData ? (statsData.totalEndorsees / Math.max(statsData.totalUsers, 1)) * 100 : 0} className="h-2 mb-2" />
                   <p className="text-xs text-muted-foreground">
-                    User retention between epochs
+                    Users with at least one vouch
                   </p>
                 </CardContent>
               </Card>
@@ -359,78 +252,25 @@ export default function Dashboard() {
                   <div className="space-y-1">
                     <div className="font-medium">Flow Component (60 pts max)</div>
                     <div className="text-muted-foreground">
-                      60 × (vouches / {HEALTHY_VOUCH_COUNT})² = 60 × ({avgVouchers.toFixed(1)} / {HEALTHY_VOUCH_COUNT})² = {flowComponent.toFixed(1)}
+                      60 × (vouches / {HEALTHY_VOUCH_COUNT})² = {flowComponent.toFixed(1)}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <div className="font-medium">Redundancy Component (40 pts max)</div>
                     <div className="text-muted-foreground">
-                      40 × (redundancy / {HEALTHY_REDUNDANCY})² = 40 × ({estimatedRedundancy.toFixed(1)} / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
+                      40 × (redundancy / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
                     </div>
                   </div>
                   <div className="space-y-1">
                     <div className="font-medium">Iterative Convergence</div>
                     <div className="text-muted-foreground">
-                      Vouches weighted by voucher LocalHealth, converging in ~{pageRankMetricsData?.iterations || 7} iterations (PageRank-style)
+                      PageRank-style with voucher weighting
                     </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* GHI and Network Health - Promoted from collapsed */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* GHI Gauge */}
-            <Card data-testid="card-ghi-main">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gauge className="w-5 h-5" />
-                  Global Health Index
-                </CardTitle>
-                <CardDescription>
-                  Overall network quality signal
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                {isLoadingHealth ? (
-                  <div className="text-muted-foreground py-8">Loading...</div>
-                ) : healthData ? (
-                  <>
-                    <GHIGauge ghi={healthData.GHI} size="lg" />
-                    <div className="grid grid-cols-3 gap-4 w-full mt-4 text-center">
-                      <div>
-                        <div className="text-lg font-bold">{healthData.metrics.sizeN}</div>
-                        <div className="text-xs text-muted-foreground">Size</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold">{healthData.metrics.cutN}</div>
-                        <div className="text-xs text-muted-foreground">Cut</div>
-                      </div>
-                      <div>
-                        <div className="text-lg font-bold">{healthData.metrics.churnN}</div>
-                        <div className="text-xs text-muted-foreground">Churn</div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-muted-foreground py-8">No data</div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Network Security Health */}
-            <NetworkSecurityHealth 
-              data={securityHealthData || null}
-              isLoading={isLoadingSecurityHealth}
-            />
-
-            {/* PageRank Convergence */}
-            <PageRankMetrics 
-              data={pageRankMetricsData || null}
-              isLoading={isLoadingPageRankMetrics}
-            />
-          </div>
 
           {/* LocalHealth Distribution & Algorithm Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -488,13 +328,13 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Advanced Algorithm Analytics */}
+          {/* Algorithm Analytics Section */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <BarChart3 className="w-6 h-6 text-primary" />
               <div>
                 <h2 className="text-2xl font-bold">Algorithm Analytics</h2>
-                <p className="text-sm text-muted-foreground">Convergence telemetry, flow dynamics, and vouch strength distributions for mathematicians</p>
+                <p className="text-sm text-muted-foreground">Convergence telemetry, flow dynamics, and vouch strength distributions</p>
               </div>
             </div>
             
@@ -509,62 +349,66 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Temporal Analytics - Timestamp Based */}
+          {/* Network Timeline */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-6 h-6 text-primary" />
               <div>
                 <h2 className="text-2xl font-bold">Network Timeline</h2>
-                <p className="text-sm text-muted-foreground">Vouch activity over real timestamps (not epochs)</p>
+                <p className="text-sm text-muted-foreground">Vouch activity over real timestamps</p>
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <VouchTimelineChart />
-              <PathDiversityChart 
-                data={pathDiversityData} 
-                isLoading={isLoadingPathDiversity}
-              />
-            </div>
+            <VouchTimelineChart />
           </div>
-          
-          {/* Score Components Over Time */}
+
+          {/* Network Health & Risk Section - Placeholder for new charts */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <Layers className="w-6 h-6 text-primary" />
+              <AlertTriangle className="w-6 h-6 text-primary" />
               <div>
-                <h2 className="text-2xl font-bold">Component Breakdown</h2>
-                <p className="text-sm text-muted-foreground">Score components and network evolution across epochs</p>
+                <h2 className="text-2xl font-bold">Network Health & Risks</h2>
+                <p className="text-sm text-muted-foreground">Vulnerability detection and resilience analysis (coming soon)</p>
               </div>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <ScoreComponentsChart 
-                data={scoreComponentsData?.data || []} 
-                isLoading={isLoadingScoreComponents}
-              />
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="border-dashed" data-testid="card-growth-cohort-placeholder">
+                <CardHeader>
+                  <CardTitle className="text-sm">Growth Cohort Analysis</CardTitle>
+                  <CardDescription>New user quality over time</CardDescription>
+                </CardHeader>
+                <CardContent className="h-32 flex items-center justify-center text-muted-foreground text-sm">
+                  Coming soon
+                </CardContent>
+              </Card>
+              
+              <Card className="border-dashed" data-testid="card-edge-fragility-placeholder">
+                <CardHeader>
+                  <CardTitle className="text-sm">Edge Fragility Analyzer</CardTitle>
+                  <CardDescription>Critical connection points</CardDescription>
+                </CardHeader>
+                <CardContent className="h-32 flex items-center justify-center text-muted-foreground text-sm">
+                  Coming soon
+                </CardContent>
+              </Card>
+              
+              <Card className="border-dashed" data-testid="card-sybil-radar-placeholder">
+                <CardHeader>
+                  <CardTitle className="text-sm">Sybil Risk Radar</CardTitle>
+                  <CardDescription>Suspicious cluster detection</CardDescription>
+                </CardHeader>
+                <CardContent className="h-32 flex items-center justify-center text-muted-foreground text-sm">
+                  Coming soon
+                </CardContent>
+              </Card>
             </div>
           </div>
 
-          {/* Network Growth & Density */}
-          <div className="grid md:grid-cols-2 gap-6">
-            <NetworkGrowthChart 
-              data={networkGrowthData?.data || []} 
-              isLoading={isLoadingNetworkGrowth}
-            />
-            <EndorsementVelocityChart 
-              data={endorsementVelocityData?.data || []} 
-              isLoading={isLoadingEndorsementVelocity}
-            />
-          </div>
+          <Separator className="my-4" />
 
+          {/* Global Stats & Recent Activity */}
           <div className="grid md:grid-cols-2 gap-6">
-            <NetworkDensityChart 
-              data={networkDensityData?.data || []} 
-              isLoading={isLoadingNetworkDensity}
-            />
-            
-            {/* Global Stats Summary */}
             {isLoadingStats ? (
               <Card>
                 <CardContent className="py-12">
@@ -581,12 +425,9 @@ export default function Dashboard() {
                 avgScore: statsData.avgScore,
               }} />
             ) : null}
+
+            <RecentActivity activities={recentActivities} />
           </div>
-
-          <Separator className="my-4" />
-
-          {/* Recent Activity */}
-          <RecentActivity activities={recentActivities} />
         </div>
       </div>
     </div>
