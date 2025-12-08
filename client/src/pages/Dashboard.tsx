@@ -1,13 +1,10 @@
 import { GlobalStats } from "@/components/GlobalStats";
 import { RecentActivity } from "@/components/RecentActivity";
 import { GHIGauge } from "@/components/GHIGauge";
-import { STSHistogram } from "@/components/STSHistogram";
 import { LocalHealthHistogram } from "@/components/LocalHealthHistogram";
-import { ScoreDistribution } from "@/components/TrustDistribution";
 import { NetworkGrowthChart } from "@/components/NetworkGrowthChart";
 import { EndorsementVelocityChart } from "@/components/EndorsementVelocityChart";
 import { ScoreComponentsChart } from "@/components/ScoreComponentsChart";
-import { AverageSTSChart } from "@/components/AverageSTSChart";
 import { NetworkDensityChart } from "@/components/NetworkDensityChart";
 import { PathDiversityChart } from "@/components/PathDiversityChart";
 import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
@@ -15,15 +12,12 @@ import { PageRankMetrics } from "@/components/PageRankMetrics";
 import { LocalHealthGraph } from "@/components/graph/LocalHealthGraph";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Heart, TrendingUp, Network, ChevronDown, Activity } from "lucide-react";
+import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
 
 export default function Dashboard() {
-  const [showCommunitySection, setShowCommunitySection] = useState(false);
-  
   const { data: epochData } = useQuery<{ epochId: number }>({
     queryKey: ['/api/epoch/current'],
   });
@@ -77,19 +71,6 @@ export default function Dashboard() {
     queryKey: ['/api/endorsements?limit=10'],
   });
 
-  const { data: stsDistData, isLoading: isLoadingSTSDist } = useQuery<{
-    distribution: { bin: string; count: number }[];
-    percentiles: { p25: number; p50: number; p75: number; p95: number };
-  }>({
-    queryKey: ['/api/analytics/sts-distribution'],
-  });
-
-  const { data: tierDistData, isLoading: isLoadingTierDist } = useQuery<{
-    distribution: Array<{ level: 'Connected' | 'Verified' | 'Trusted'; count: number; percentage: number }>;
-  }>({
-    queryKey: ['/api/analytics/tier-distribution'],
-  });
-
   const { data: networkGrowthData, isLoading: isLoadingNetworkGrowth } = useQuery<{
     data: Array<{ epoch: string; totalUsers: number; activeUsers: number }>;
   }>({
@@ -118,12 +99,6 @@ export default function Dashboard() {
   } | null>({
     queryKey: [`/api/epoch/${currentEpochId}/pagerank-metrics`],
     enabled: currentEpochId !== undefined,
-  });
-
-  const { data: averageSTSData, isLoading: isLoadingAverageSTS } = useQuery<{
-    data: Array<{ epoch: string; mean: number; median: number; p25: number; p75: number }>;
-  }>({
-    queryKey: ['/api/analytics/average-sts'],
   });
 
   const { data: networkDensityData, isLoading: isLoadingNetworkDensity } = useQuery<{
@@ -170,6 +145,22 @@ export default function Dashboard() {
     endorsee: `${e.endorsee.slice(0, 6)}...${e.endorsee.slice(-4)}`,
     timestamp: new Date(e.createdAt).toISOString(),
   })) || [];
+
+  const HEALTHY_VOUCH_COUNT = 8.0;
+  const HEALTHY_REDUNDANCY = 35.0;
+  const SCALING_EXPONENT = 2.0;
+  const SCORE_CEILING = 99;
+
+  const avgVouchers = statsData ? (statsData.totalEndorsements / Math.max(statsData.totalUsers, 1)) : 0;
+  const flowRatio = Math.min(1.0, avgVouchers / HEALTHY_VOUCH_COUNT);
+  const flowComponent = 60 * Math.pow(flowRatio, SCALING_EXPONENT);
+  
+  const avgMinCut = healthData?.raw?.avgMinCut ?? 0;
+  const estimatedRedundancy = avgVouchers + (avgMinCut * 2);
+  const redundancyRatio = Math.min(1.0, estimatedRedundancy / HEALTHY_REDUNDANCY);
+  const redundancyComponent = 40 * Math.pow(redundancyRatio, SCALING_EXPONENT);
+  
+  const expectedAvgLocalHealth = Math.min(SCORE_CEILING, flowComponent + redundancyComponent);
 
   return (
     <div className="w-full">
@@ -236,12 +227,208 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* LocalHealth Analytics Section */}
+      {/* Main Analytics Section */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="space-y-8">
+          
+          {/* Flow Analytics Section - NEW */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Zap className="w-6 h-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Flow Analytics</h2>
+                <p className="text-sm text-muted-foreground">Max-flow/min-cut metrics powering LocalHealth computation</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Flow Saturation */}
+              <Card data-testid="card-flow-saturation">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Gauge className="w-4 h-4 text-primary" />
+                    Flow Saturation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-2" data-testid="text-flow-saturation">
+                    {(flowRatio * 100).toFixed(0)}%
+                  </div>
+                  <Progress value={flowRatio * 100} className="h-2 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Avg {avgVouchers.toFixed(1)} vouches / {HEALTHY_VOUCH_COUNT} healthy target
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Min-Cut Quality */}
+              <Card data-testid="card-mincut-quality">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-primary" />
+                    Min-Cut Quality
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-2" data-testid="text-mincut-quality">
+                    {avgMinCut.toFixed(1)}
+                  </div>
+                  <Progress value={Math.min(avgMinCut / 3, 1) * 100} className="h-2 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Independent paths to seeds (target: 3.0)
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Redundancy Score */}
+              <Card data-testid="card-redundancy-score">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" />
+                    Redundancy Index
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-2" data-testid="text-redundancy-index">
+                    {(redundancyComponent * 100).toFixed(0)}%
+                  </div>
+                  <Progress value={redundancyComponent * 100} className="h-2 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    Path redundancy contributing 40% to score
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Churn Stability */}
+              <Card data-testid="card-churn-stability">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Network Stability
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-2" data-testid="text-network-stability">
+                    {healthData ? (healthData.raw.churnStability * 100).toFixed(0) : 0}%
+                  </div>
+                  <Progress value={healthData ? healthData.raw.churnStability * 100 : 0} className="h-2 mb-2" />
+                  <p className="text-xs text-muted-foreground">
+                    User retention between epochs
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Live Formula Display */}
+          <Card className="bg-muted/30" data-testid="card-live-formula">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                LocalHealth Formula (Live Computation)
+              </CardTitle>
+              <CardDescription>
+                Real-time calculation using current network averages
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="bg-background rounded-lg p-4 font-mono text-sm overflow-x-auto">
+                  <div className="text-muted-foreground mb-2">// LocalHealth = 60 × (flowRatio)² + 40 × (redundancyRatio)² × vouchQuality</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-primary font-bold">LocalHealth</span>
+                    <span>=</span>
+                    <span className="px-2 py-1 bg-blue-500/10 rounded" data-testid="text-flow-component">{flowComponent.toFixed(1)}</span>
+                    <span className="text-muted-foreground text-xs">(flow)</span>
+                    <span>+</span>
+                    <span className="px-2 py-1 bg-green-500/10 rounded" data-testid="text-redundancy-component">{redundancyComponent.toFixed(1)}</span>
+                    <span className="text-muted-foreground text-xs">(redundancy)</span>
+                    <span>=</span>
+                    <span className="px-3 py-1 bg-primary text-primary-foreground rounded font-bold" data-testid="text-expected-local-health">
+                      {expectedAvgLocalHealth.toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <div className="font-medium">Flow Component (60 pts max)</div>
+                    <div className="text-muted-foreground">
+                      60 × (vouches / {HEALTHY_VOUCH_COUNT})² = 60 × ({avgVouchers.toFixed(1)} / {HEALTHY_VOUCH_COUNT})² = {flowComponent.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-medium">Redundancy Component (40 pts max)</div>
+                    <div className="text-muted-foreground">
+                      40 × (redundancy / {HEALTHY_REDUNDANCY})² = 40 × ({estimatedRedundancy.toFixed(1)} / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-medium">Iterative Convergence</div>
+                    <div className="text-muted-foreground">
+                      Vouches weighted by voucher LocalHealth, converging in ~{pageRankMetricsData?.iterations || 7} iterations (PageRank-style)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* GHI and Network Health - Promoted from collapsed */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* GHI Gauge */}
+            <Card data-testid="card-ghi-main">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gauge className="w-5 h-5" />
+                  Global Health Index
+                </CardTitle>
+                <CardDescription>
+                  Overall network quality signal
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center">
+                {isLoadingHealth ? (
+                  <div className="text-muted-foreground py-8">Loading...</div>
+                ) : healthData ? (
+                  <>
+                    <GHIGauge ghi={healthData.GHI} size="lg" />
+                    <div className="grid grid-cols-3 gap-4 w-full mt-4 text-center">
+                      <div>
+                        <div className="text-lg font-bold">{healthData.metrics.sizeN}</div>
+                        <div className="text-xs text-muted-foreground">Size</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold">{healthData.metrics.cutN}</div>
+                        <div className="text-xs text-muted-foreground">Cut</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-bold">{healthData.metrics.churnN}</div>
+                        <div className="text-xs text-muted-foreground">Churn</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-muted-foreground py-8">No data</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Network Security Health */}
+            <NetworkSecurityHealth 
+              data={securityHealthData || null}
+              isLoading={isLoadingSecurityHealth}
+            />
+
+            {/* PageRank Convergence */}
+            <PageRankMetrics 
+              data={pageRankMetricsData || null}
+              isLoading={isLoadingPageRankMetrics}
+            />
+          </div>
+
           {/* LocalHealth Distribution & Algorithm Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Histogram - Takes 2 columns */}
             <div className="lg:col-span-2">
               {localHealthData && localHealthData.distribution.length > 0 && (
                 <LocalHealthHistogram
@@ -251,49 +438,74 @@ export default function Dashboard() {
               )}
             </div>
             
-            {/* Algorithm Info Card */}
             <Card data-testid="card-local-health-algorithm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Heart className="w-5 h-5 text-primary" />
-                  Recursive Trust Algorithm
+                  Algorithm Parameters
                 </CardTitle>
                 <CardDescription>
-                  How LocalHealth signals are computed
+                  Recursive trust computation settings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Flow Weight</span>
-                    <Badge variant="outline">60%</Badge>
+                    <Badge variant="outline">60 pts</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Redundancy Weight</span>
-                    <Badge variant="outline">40%</Badge>
+                    <Badge variant="outline">40 pts</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Scaling Exponent</span>
-                    <Badge variant="outline">2.0</Badge>
+                    <Badge variant="outline">{SCALING_EXPONENT}</Badge>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Healthy Vouchers</span>
-                    <Badge variant="secondary">8</Badge>
+                    <Badge variant="secondary">{HEALTHY_VOUCH_COUNT}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Healthy Redundancy</span>
-                    <Badge variant="secondary">35</Badge>
+                    <Badge variant="secondary">{HEALTHY_REDUNDANCY}</Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Score Ceiling</span>
+                    <Badge variant="secondary">99</Badge>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground italic pt-2">
-                  Iterative computation where each vouch is weighted by the voucher's LocalHealth score, creating true recursive trust propagation.
+                  Iterative PageRank-style computation where vouches are weighted by voucher strength.
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Network Growth Charts */}
+          {/* Score Components Over Time */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <TrendingUp className="w-6 h-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Temporal Analytics</h2>
+                <p className="text-sm text-muted-foreground">Score components and network evolution across epochs</p>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <ScoreComponentsChart 
+                data={scoreComponentsData?.data || []} 
+                isLoading={isLoadingScoreComponents}
+              />
+              <PathDiversityChart 
+                data={pathDiversityData} 
+                isLoading={isLoadingPathDiversity}
+              />
+            </div>
+          </div>
+
+          {/* Network Growth & Density */}
           <div className="grid md:grid-cols-2 gap-6">
             <NetworkGrowthChart 
               data={networkGrowthData?.data || []} 
@@ -305,164 +517,35 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Recent Activity */}
-          <RecentActivity activities={recentActivities} />
-
-          <Separator className="my-8" />
-
-          {/* Community Health Section - Collapsible */}
-          <Collapsible open={showCommunitySection} onOpenChange={setShowCommunitySection}>
-            <CollapsibleTrigger className="flex items-center gap-3 w-full group" data-testid="button-toggle-community-section">
-              <div className="flex items-center gap-3 flex-1">
-                <Users className="w-6 h-6 text-muted-foreground" />
-                <div className="text-left">
-                  <h2 className="text-xl font-bold" data-testid="heading-community-reputation">Community Health Analytics</h2>
-                  <p className="text-sm text-muted-foreground">
-                    STS signals, GHI metrics, and network security indicators
-                  </p>
-                </div>
-              </div>
-              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${showCommunitySection ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
+          <div className="grid md:grid-cols-2 gap-6">
+            <NetworkDensityChart 
+              data={networkDensityData?.data || []} 
+              isLoading={isLoadingNetworkDensity}
+            />
             
-            <CollapsibleContent className="pt-6 space-y-6">
-              {/* Global Stats */}
-              {isLoadingStats ? (
-                <Card>
-                  <CardContent className="py-12">
-                    <div className="text-center text-muted-foreground">Loading network statistics...</div>
-                  </CardContent>
-                </Card>
-              ) : statsData ? (
-                <GlobalStats stats={{
-                  totalUsers: statsData.totalUsers,
-                  totalEndorsements: statsData.totalEndorsements,
-                  totalEndorsers: statsData.totalEndorsers,
-                  totalEndorsees: statsData.totalEndorsees,
-                  trustedUsers: statsData.trustedUsers,
-                  avgScore: statsData.avgScore,
-                }} />
-              ) : null}
-
-              {/* GHI Card */}
-              <Card data-testid="card-ghi">
-                <CardHeader>
-                  <CardTitle>Global Health Index</CardTitle>
-                  <CardDescription>
-                    Overall network health computed from size, connectivity, and stability metrics
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoadingHealth ? (
-                    <div className="flex items-center justify-center py-12" data-testid="loading-ghi">
-                      <div className="text-muted-foreground">Loading health data...</div>
-                    </div>
-                  ) : healthData ? (
-                    <div className="grid md:grid-cols-4 gap-6">
-                      <div className="flex items-center justify-center">
-                        <GHIGauge ghi={healthData.GHI} size="md" />
-                      </div>
-                      <Card className="flex flex-col justify-center" data-testid="card-metric-size">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Size Metric
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold" data-testid="text-size-value">
-                            {healthData.metrics.sizeN}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {healthData.raw.acceptedCount} accepted users
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="flex flex-col justify-center" data-testid="card-metric-cut">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Cut Metric
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold" data-testid="text-cut-value">
-                            {healthData.metrics.cutN}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Avg min-cut: {healthData.raw.avgMinCut.toFixed(1)}
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card className="flex flex-col justify-center" data-testid="card-metric-churn">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-muted-foreground">
-                            Churn Metric
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold" data-testid="text-churn-value">
-                            {healthData.metrics.churnN}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {(healthData.raw.churnStability * 100).toFixed(0)}% stability
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center py-12" data-testid="text-no-health-data">
-                      <div className="text-muted-foreground">No health data available</div>
-                    </div>
-                  )}
+            {/* Global Stats Summary */}
+            {isLoadingStats ? (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center text-muted-foreground">Loading network statistics...</div>
                 </CardContent>
               </Card>
+            ) : statsData ? (
+              <GlobalStats stats={{
+                totalUsers: statsData.totalUsers,
+                totalEndorsements: statsData.totalEndorsements,
+                totalEndorsers: statsData.totalEndorsers,
+                totalEndorsees: statsData.totalEndorsees,
+                trustedUsers: statsData.trustedUsers,
+                avgScore: statsData.avgScore,
+              }} />
+            ) : null}
+          </div>
 
-              {/* STS Analytics */}
-              <div className="grid md:grid-cols-2 gap-6">
-                <STSHistogram 
-                  distribution={stsDistData?.distribution || []} 
-                  percentiles={stsDistData?.percentiles || { p25: 0, p50: 0, p75: 0, p95: 0 }} 
-                  isLoading={isLoadingSTSDist}
-                />
-                <ScoreDistribution 
-                  distribution={tierDistData?.distribution || []} 
-                  isLoading={isLoadingTierDist}
-                />
-              </div>
+          <Separator className="my-4" />
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <ScoreComponentsChart 
-                  data={scoreComponentsData?.data || []} 
-                  isLoading={isLoadingScoreComponents}
-                />
-                <AverageSTSChart 
-                  data={averageSTSData?.data || []} 
-                  isLoading={isLoadingAverageSTS}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <NetworkDensityChart 
-                  data={networkDensityData?.data || []} 
-                  isLoading={isLoadingNetworkDensity}
-                />
-                <PathDiversityChart 
-                  data={pathDiversityData} 
-                  isLoading={isLoadingPathDiversity}
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <NetworkSecurityHealth 
-                  data={securityHealthData || null}
-                  isLoading={isLoadingSecurityHealth}
-                />
-                <PageRankMetrics 
-                  data={pageRankMetricsData || null}
-                  isLoading={isLoadingPageRankMetrics}
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+          {/* Recent Activity */}
+          <RecentActivity activities={recentActivities} />
         </div>
       </div>
     </div>
