@@ -486,9 +486,10 @@ const message = {
         
         <h3>Security</h3>
         <ul>
-          <li>Store API keys in environment variables, never in code</li>
-          <li>Make API calls from your backend, not client-side JavaScript</li>
-          <li>Use HTTPS for all requests</li>
+          <li>All write operations require EIP-712 wallet signatures - no API keys needed</li>
+          <li>Read operations are fully public and can be called from client-side JavaScript</li>
+          <li>Use HTTPS in production for all requests</li>
+          <li>Verify signature addresses match expected wallets before trusting responses</li>
         </ul>
       </section>
     </article>
