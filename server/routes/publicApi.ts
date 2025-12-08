@@ -69,7 +69,7 @@ export function registerPublicApiRoutes(app: Express) {
 
   const refreshRateLimit = rateLimit({
     windowMs: 60000,
-    max: 10,
+    max: 3,
     keyGenerator: (req) => req.ip || 'unknown'
   });
 

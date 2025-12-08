@@ -36,8 +36,17 @@ export default function ApiDocs() {
         <h3>GET /api/v1/score/:address</h3>
         <p>Get network quality score (0-100) for any wallet address. No authentication required.</p>
         
-        <h4>Example Request</h4>
-        <pre><code>{`curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61`}</code></pre>
+        <h4>Query Parameters</h4>
+        <ul>
+          <li><strong>force_refresh</strong> (optional): Set to <code>true</code> to bypass cache and recompute the score. Default is <code>false</code>.</li>
+        </ul>
+        
+        <h4>Example Requests</h4>
+        <pre><code>{`# Get cached score (default)
+curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61
+
+# Force fresh computation
+curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_refresh=true`}</code></pre>
         
         <h4>Response</h4>
         <pre><code>{`{
@@ -110,9 +119,35 @@ export default function ApiDocs() {
           <li><strong>Adaptive Baseline</strong>: Network-wide 75th percentile vouch count (clamped 4-15) sets healthy participation thresholds</li>
         </ul>
         <p>
-          Scores are cached and recalculated when a wallet gives or receives a vouch. The <code>cached</code> field indicates 
+          Scores are cached for 5 minutes and recalculated when a wallet gives or receives a vouch. The <code>cached</code> field indicates 
           if the returned score is from cache; <code>cached_at</code> shows when it was last computed.
+          Use <code>force_refresh=true</code> or the POST refresh endpoint to bypass the cache.
         </p>
+      </section>
+
+      <section>
+        <h3>POST /api/v1/score/:address/refresh</h3>
+        <p>Force a fresh score recalculation for a wallet. Useful when you need the most up-to-date score immediately after a vouch action.</p>
+        
+        <h4>Rate Limiting</h4>
+        <p><strong>3 requests per minute per IP.</strong> Score recalculation is computationally expensive (runs max-flow algorithm iteratively across the network). Use sparingly - the GET endpoint with caching is preferred for most use cases. Scores are automatically refreshed when vouches are created or revoked.</p>
+        
+        <h4>Example Request</h4>
+        <pre><code>{`curl -X POST ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61/refresh`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+  "local_health": 72,
+  "cached": false,
+  "cached_at": "2025-01-15T12:30:45.123Z",
+  "vouch_counts": { ... },
+  "activity": { ... },
+  "algorithm_breakdown": { ... },
+  "refreshed": true,
+  "refreshed_at": "2025-01-15T12:30:45.123Z"
+}`}</code></pre>
+        <p>Returns the same fields as GET /api/v1/score/:address plus <code>refreshed: true</code> and <code>refreshed_at</code> timestamp.</p>
       </section>
 
       <section>

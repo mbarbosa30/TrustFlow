@@ -269,11 +269,23 @@ export class LocalHealthService {
       cached = true;
       cachedAt = egoContext.updatedAt?.toISOString() || null;
     } else {
-      // Force recalculation - compute fresh score
+      // Force recalculation - compute fresh score with fallback to stale cache
       console.log(`${forceRefresh ? 'Force refreshing' : 'Cache expired - recalculating'} LocalHealth for ${normalizedAddress}`);
-      localHealth = await this.recalculateLocalHealth(normalizedAddress);
-      cached = false;
-      cachedAt = new Date().toISOString();
+      try {
+        localHealth = await this.recalculateLocalHealth(normalizedAddress);
+        cached = false;
+        cachedAt = new Date().toISOString();
+      } catch (computeError) {
+        console.error(`Recomputation failed for ${normalizedAddress}, falling back to cached value:`, computeError);
+        // Fall back to stale cached value if available
+        if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
+          localHealth = Math.round(egoContext.localHealth);
+          cached = true;
+          cachedAt = egoContext.updatedAt?.toISOString() || null;
+        } else {
+          throw computeError;
+        }
+      }
     }
     
     const [incomingTotal, outgoingTotal, incomingEndorsements, algorithmBreakdown] = await Promise.all([
