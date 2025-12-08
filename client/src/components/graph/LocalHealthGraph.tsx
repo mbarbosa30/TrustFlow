@@ -167,9 +167,33 @@ export function LocalHealthGraph({
   const graphData = useMemo(() => data || { nodes: [], links: [] }, [data]);
 
   const heightValue = typeof height === 'string' ? height : `${height}px`;
-  const numericHeight = typeof height === 'number' ? height : undefined;
   const containerHeight = typeof height === 'string' ? height : undefined;
   const fallbackHeight = 600;
+  
+  const [computedNumericHeight, setComputedNumericHeight] = useState<number>(() => {
+    if (typeof height === 'number') return height;
+    if (typeof height === 'string' && height.endsWith('vh')) {
+      const vh = parseFloat(height);
+      return Math.floor((window.innerHeight * vh) / 100);
+    }
+    return fallbackHeight;
+  });
+
+  useEffect(() => {
+    if (typeof height === 'string' && height.endsWith('vh')) {
+      const updateHeight = () => {
+        const vh = parseFloat(height);
+        setComputedNumericHeight(Math.floor((window.innerHeight * vh) / 100));
+      };
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    } else if (typeof height === 'number') {
+      setComputedNumericHeight(height);
+    }
+  }, [height]);
+
+  const numericHeight = computedNumericHeight;
 
   const activeNode = hoveredNode || selectedNode;
 
@@ -206,8 +230,8 @@ export function LocalHealthGraph({
     }
 
     return (
-      <Card className="overflow-hidden relative" data-testid="container-graph">
-        <CardContent className="p-0">
+      <Card className="overflow-hidden" data-testid="container-graph">
+        <CardContent className="p-0 relative" style={{ height: heightValue }}>
           {/* Floating Controls - Top Right */}
           <div className="absolute top-4 right-4 z-10 flex gap-2 items-center">
             <div className="flex gap-1 bg-background/80 backdrop-blur-sm rounded-lg p-1 border">
@@ -472,6 +496,7 @@ export function LocalHealthGraph({
             width={undefined}
             height={numericHeight}
             containerHeight={containerHeight}
+            fallbackHeight={fallbackHeight}
             backgroundColor="rgba(0,0,0,0)"
             showNavInfo={false}
           />
