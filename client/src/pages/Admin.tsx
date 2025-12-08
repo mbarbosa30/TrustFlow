@@ -50,7 +50,7 @@ export default function Admin() {
             Network Recalculation
           </CardTitle>
           <CardDescription>
-            Recalculate all LocalHealth scores using the current algorithm parameters: 8 voucher baseline, 35 redundancy baseline, quadratic scaling (2.0 exponent), 60/40 flow/redundancy split, 10% dilution penalty per excess vouch, max score capped at 99.
+            Recalculate all LocalHealth scores using the current algorithm: iterative PageRank-style computation with adaptive baselines (75th percentile), piecewise dilution curves (smooth 4-zone decay), vertex-disjoint path bonuses, and quadratic scaling. Max score capped at 99.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

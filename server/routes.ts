@@ -717,42 +717,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Network Traction - aggregated metrics for landing page
   app.get("/api/stats/network-traction", async (req, res) => {
     try {
-      // Get basic stats
+      // Get basic vouch stats - LocalHealth focused only
       const totalEndorsements = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(publicEndorsements);
       
+      // Count unique vouchers (endorsers) and endorsees
+      const uniqueVouchersResult = await db
+        .select({ address: publicEndorsements.endorser })
+        .from(publicEndorsements)
+        .groupBy(publicEndorsements.endorser);
+      const totalVouchers = uniqueVouchersResult.length;
+      
+      const uniqueEndorseesResult = await db
+        .select({ address: publicEndorsements.endorsee })
+        .from(publicEndorsements)
+        .groupBy(publicEndorsements.endorsee);
+      const totalEndorsees = uniqueEndorseesResult.length;
+      
+      // All participants in the graph
       const allParticipantsResult = await db
         .select({ address: sql<string>`endorser` })
         .from(publicEndorsements)
         .union(
           db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)
         );
-      const totalUsers = new Set(allParticipantsResult.map(r => r.address.toLowerCase())).size;
+      const totalParticipants = new Set(allParticipantsResult.map(r => r.address.toLowerCase())).size;
       
-      // Get communities
-      const allCommunities = await storage.listCommunities();
-      
-      // Get LocalHealth stats
+      // Get LocalHealth stats from contexts
       const allContexts = await storage.getAllContexts();
       const contextsWithScores = allContexts.filter((c: Context) => c.localHealth !== null && c.localHealth > 0);
       const avgLocalHealth = contextsWithScores.length > 0
         ? contextsWithScores.reduce((sum: number, c: Context) => sum + (c.localHealth || 0), 0) / contextsWithScores.length
         : 0;
       
-      // LocalHealth distribution
+      // LocalHealth distribution with better buckets
       const healthDistribution = {
-        low: contextsWithScores.filter((c: Context) => (c.localHealth || 0) < 30).length,
-        medium: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 30 && (c.localHealth || 0) < 60).length,
-        high: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 60).length,
+        critical: contextsWithScores.filter((c: Context) => (c.localHealth || 0) < 40).length,
+        warning: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 40 && (c.localHealth || 0) < 60).length,
+        healthy: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 60 && (c.localHealth || 0) < 80).length,
+        quality: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 80).length,
       };
       
-      // Calculate graph density (edges / max possible edges)
-      const maxPossibleEdges = totalUsers * (totalUsers - 1);
+      // Calculate graph density (edges / max possible edges among scored users)
       const actualEdges = totalEndorsements[0]?.count || 0;
+      const maxPossibleEdges = totalParticipants * (totalParticipants - 1);
       const graphDensity = maxPossibleEdges > 0 ? (actualEdges / maxPossibleEdges) * 100 : 0;
       
-      // Get dilution zones from vouches given
+      // Get dilution zones from vouches given (outgoing vouch behavior)
       const endorserCounts = await db
         .select({
           endorser: publicEndorsements.endorser,
@@ -765,30 +777,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const warningZone = endorserCounts.filter(e => e.count > 10 && e.count <= 15).length;
       const penaltyZone = endorserCounts.filter(e => e.count > 15 && e.count <= 25).length;
       const criticalZone = endorserCounts.filter(e => e.count > 25).length;
-      const totalEndorsers = endorserCounts.length;
+      const totalEndorsersCount = endorserCounts.length;
       
-      const qualityPercent = totalEndorsers > 0 ? Math.round((qualityZone / totalEndorsers) * 100) : 0;
+      const qualityPercent = totalEndorsersCount > 0 ? Math.round((qualityZone / totalEndorsersCount) * 100) : 0;
       
-      // Get resilience stats (users with 4+ disjoint paths)
-      // This would require computing scores for everyone, so we'll estimate based on vouch counts
-      const avgVouchesReceived = totalUsers > 0 ? actualEdges / totalUsers : 0;
+      // Average vouches received per scored user
+      const avgVouchesReceived = contextsWithScores.length > 0 ? actualEdges / contextsWithScores.length : 0;
       
       return res.status(200).json({
-        // Core metrics
-        totalUsers,
+        // Core LocalHealth metrics
+        totalVouchers,
         totalVouches: actualEdges,
-        totalCommunities: allCommunities.length,
+        scoredUsers: contextsWithScores.length,
         avgLocalHealth: Math.round(avgLocalHealth * 10) / 10,
         
-        // Graph health
+        // Graph health indicators
         graphDensity: Math.round(graphDensity * 100) / 100,
         avgVouchesPerUser: Math.round(avgVouchesReceived * 10) / 10,
+        totalParticipants,
         
-        // Score distribution
+        // LocalHealth score distribution
         healthDistribution,
-        usersWithScores: contextsWithScores.length,
         
-        // Dilution zones
+        // Dilution zones (outgoing vouch behavior)
         dilutionZones: {
           quality: qualityZone,
           warning: warningZone,
@@ -796,13 +807,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           critical: criticalZone,
           qualityPercent,
         },
-        
-        // Network quality indicators
-        networkHealth: {
-          qualityVouchers: qualityPercent,
-          avgScore: Math.round(avgLocalHealth),
-          activeUsers: contextsWithScores.length,
-        }
       });
     } catch (error) {
       console.error("Error fetching network traction:", error);
