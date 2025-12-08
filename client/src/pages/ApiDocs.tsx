@@ -386,4 +386,3 @@ const message = {
     </article>
   );
 }
-</code></pre>
