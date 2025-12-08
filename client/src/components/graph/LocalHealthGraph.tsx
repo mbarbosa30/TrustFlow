@@ -38,7 +38,7 @@ interface LocalHealthGraphProps {
 }
 
 export function LocalHealthGraph({ 
-  limit = 200, 
+  limit = 500, 
   communityId = 0,
   height = 600,
   heroMode = false
@@ -66,7 +66,7 @@ export function LocalHealthGraph({
     return () => observer.disconnect();
   }, []);
 
-  const actualLimit = showFullNetwork ? 200 : limit;
+  const actualLimit = showFullNetwork ? 10000 : limit;
 
   const { data, isLoading } = useQuery<GraphData>({
     queryKey: [`/api/graph/local-health?limit=${actualLimit}&communityId=${communityId}`],
