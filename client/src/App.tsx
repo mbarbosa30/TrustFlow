@@ -25,7 +25,6 @@ import MyNetwork from "@/pages/MyNetwork";
 import Admin from "@/pages/Admin";
 import Whitepaper from "@/pages/Whitepaper";
 import { Footer } from "@/components/Footer";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const appNavItems = [
   { path: "/overview", label: "nav.overview" },
@@ -79,11 +78,10 @@ function App() {
               authenticatedNavItems={appNavItems}
               variant={isLandingPage ? "landing" : "app"} 
             />
-            <main className="flex-1 pb-16 md:pb-0">
+            <main className="flex-1">
               <Router />
             </main>
             <Footer />
-            {!isLandingPage && <MobileBottomNav />}
           </div>
           <Toaster />
         </TooltipProvider>
