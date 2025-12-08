@@ -10,11 +10,16 @@ import { PathDiversityChart } from "@/components/PathDiversityChart";
 import { NetworkSecurityHealth } from "@/components/NetworkSecurityHealth";
 import { PageRankMetrics } from "@/components/PageRankMetrics";
 import { LocalHealthGraph } from "@/components/graph/LocalHealthGraph";
+import { ConvergenceChart } from "@/components/analytics/ConvergenceChart";
+import { VouchTimelineChart } from "@/components/analytics/VouchTimelineChart";
+import { FlowRedundancyScatter } from "@/components/analytics/FlowRedundancyScatter";
+import { VoucherStrengthHistogram } from "@/components/analytics/VoucherStrengthHistogram";
+import { FlowSaturationCurve } from "@/components/analytics/FlowSaturationCurve";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
-import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers } from "lucide-react";
+import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers, BarChart3 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Dashboard() {
@@ -483,12 +488,52 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Score Components Over Time */}
+          {/* Advanced Algorithm Analytics */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <BarChart3 className="w-6 h-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Algorithm Analytics</h2>
+                <p className="text-sm text-muted-foreground">Convergence telemetry, flow dynamics, and vouch strength distributions for mathematicians</p>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <ConvergenceChart />
+              <FlowSaturationCurve />
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6 mt-6">
+              <FlowRedundancyScatter />
+              <VoucherStrengthHistogram />
+            </div>
+          </div>
+
+          {/* Temporal Analytics - Timestamp Based */}
           <div>
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-6 h-6 text-primary" />
               <div>
-                <h2 className="text-2xl font-bold">Temporal Analytics</h2>
+                <h2 className="text-2xl font-bold">Network Timeline</h2>
+                <p className="text-sm text-muted-foreground">Vouch activity over real timestamps (not epochs)</p>
+              </div>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <VouchTimelineChart />
+              <PathDiversityChart 
+                data={pathDiversityData} 
+                isLoading={isLoadingPathDiversity}
+              />
+            </div>
+          </div>
+          
+          {/* Score Components Over Time */}
+          <div>
+            <div className="flex items-center gap-3 mb-6">
+              <Layers className="w-6 h-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Component Breakdown</h2>
                 <p className="text-sm text-muted-foreground">Score components and network evolution across epochs</p>
               </div>
             </div>
@@ -497,10 +542,6 @@ export default function Dashboard() {
               <ScoreComponentsChart 
                 data={scoreComponentsData?.data || []} 
                 isLoading={isLoadingScoreComponents}
-              />
-              <PathDiversityChart 
-                data={pathDiversityData} 
-                isLoading={isLoadingPathDiversity}
               />
             </div>
           </div>
