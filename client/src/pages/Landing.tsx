@@ -39,9 +39,9 @@ export default function Landing() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-            <Link href="/simulation">
-              <Button size="lg" className="w-full sm:w-auto" data-testid="button-try-demo">
-                Try the Demo
+            <Link href="/dashboard">
+              <Button size="lg" className="w-full sm:w-auto" data-testid="button-dashboard">
+                Dashboard
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
