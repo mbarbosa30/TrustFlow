@@ -302,6 +302,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Scheduler status endpoint
+  app.get("/api/admin/scheduler-status", async (req, res) => {
+    try {
+      const { recalculationScheduler } = await import("./services/recalculationScheduler");
+      const status = recalculationScheduler.getStatus();
+      
+      return res.status(200).json(status);
+    } catch (error) {
+      console.error("Error getting scheduler status:", error);
+      return res.status(500).json({ error: "Failed to get scheduler status" });
+    }
+  });
+
+  // Trigger immediate recalculation via scheduler
+  app.post("/api/admin/scheduler-run-now", async (req, res) => {
+    try {
+      const { recalculationScheduler } = await import("./services/recalculationScheduler");
+      
+      // Run in background, return immediately
+      recalculationScheduler.runNow().catch(err => {
+        console.error("Scheduled recalculation failed:", err);
+      });
+      
+      return res.status(202).json({
+        message: "Recalculation triggered, running in background",
+      });
+    } catch (error) {
+      console.error("Error triggering recalculation:", error);
+      return res.status(500).json({ error: "Failed to trigger recalculation" });
+    }
+  });
+
   app.get("/api/epoch/:id/health", async (req, res) => {
     try {
       const epochId = parseInt(req.params.id);
