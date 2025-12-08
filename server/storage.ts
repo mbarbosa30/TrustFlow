@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment, type LoanDonation, type InsertLoanDonation, loanDonation, type Context, type InsertContext, contexts, type CoSeed, type InsertCoSeed, coSeeds } from "@shared/schema";
+import { type User, type InsertUser, type WalletProfile, type InsertWalletProfile, type UpdateWalletProfile, walletProfiles, type PublicEndorsement, type InsertPublicEndorsement, publicEndorsements, type EpochHealth, type InsertEpochHealth, epochHealth, type Seed, type InsertSeed, seeds, type Score, type InsertScore, scores, type Epoch, type InsertEpoch, epochs, type Community, type InsertCommunity, communities, type Auth3009, type InsertAuth3009, auth3009, type Loan, type InsertLoan, loan, type Installment, type InsertInstallment, installment, type SubsidyLedger, type InsertSubsidyLedger, subsidyLedger, type Assist, type InsertAssist, assist, type FXQuote, type InsertFXQuote, fxQuote, guarantee, trustEvent, type PendingPayment, type InsertPendingPayment, pendingPayment, type LoanDonation, type InsertLoanDonation, loanDonation, type Context, type InsertContext, contexts, type CoSeed, type InsertCoSeed, coSeeds, type EndorsementTombstone, type InsertEndorsementTombstone, endorsementTombstones } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { and, eq, desc, sql, isNull } from "drizzle-orm";
@@ -28,6 +28,7 @@ export interface IStorage {
   getAllContexts(): Promise<Context[]>;
   updateContext(id: number, updates: Partial<InsertContext>): Promise<void>;
   updateLocalHealth(ownerAddress: string, localHealth: number): Promise<void>;
+  updateLastSignalActivity(ownerAddress: string): Promise<void>;
   
   // Co-seed operations (additional seeds for ego contexts)
   addCoSeed(coSeed: InsertCoSeed): Promise<CoSeed>;
@@ -36,6 +37,7 @@ export interface IStorage {
   getCoSeedCount(contextId: number): Promise<number>;
   
   createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement>;
+  getEndorsement(id: number): Promise<PublicEndorsement | undefined>;
   getEndorsements(filters?: {
     endorser?: string;
     endorsee?: string;
@@ -45,6 +47,12 @@ export interface IStorage {
     offset?: number;
   }): Promise<PublicEndorsement[]>;
   getMaxNonce(endorser: string, epoch: number, communityId?: number): Promise<number>;
+  
+  // Endorsement tombstone operations (vouch revocation)
+  createEndorsementTombstone(tombstone: InsertEndorsementTombstone): Promise<EndorsementTombstone>;
+  getEndorsementTombstone(endorsementId: number): Promise<EndorsementTombstone | undefined>;
+  isEndorsementRevoked(endorsementId: number): Promise<boolean>;
+  getRevokedEndorsementIds(): Promise<number[]>;
   
   createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth>;
   getEpochHealth(epochId: number, communityId?: number): Promise<EpochHealth | undefined>;
@@ -285,6 +293,48 @@ export class MemStorage implements IStorage {
     }
 
     return Number(lastEndorsement[0].nonce);
+  }
+
+  async getEndorsement(id: number): Promise<PublicEndorsement | undefined> {
+    const results = await db
+      .select()
+      .from(publicEndorsements)
+      .where(eq(publicEndorsements.id, id))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async createEndorsementTombstone(tombstone: InsertEndorsementTombstone): Promise<EndorsementTombstone> {
+    const [dbTombstone] = await db
+      .insert(endorsementTombstones)
+      .values(tombstone)
+      .returning();
+    
+    return dbTombstone;
+  }
+
+  async getEndorsementTombstone(endorsementId: number): Promise<EndorsementTombstone | undefined> {
+    const results = await db
+      .select()
+      .from(endorsementTombstones)
+      .where(eq(endorsementTombstones.endorsementId, endorsementId))
+      .limit(1);
+    
+    return results[0];
+  }
+
+  async isEndorsementRevoked(endorsementId: number): Promise<boolean> {
+    const tombstone = await this.getEndorsementTombstone(endorsementId);
+    return !!tombstone;
+  }
+
+  async getRevokedEndorsementIds(): Promise<number[]> {
+    const tombstones = await db
+      .select({ endorsementId: endorsementTombstones.endorsementId })
+      .from(endorsementTombstones);
+    
+    return tombstones.map(t => t.endorsementId);
   }
 
   async createEpochHealth(health: InsertEpochHealth): Promise<EpochHealth> {
@@ -658,6 +708,21 @@ export class MemStorage implements IStorage {
       .set({ 
         localHealth,
         localHealthUpdatedAt: new Date()
+      })
+      .where(
+        and(
+          eq(contexts.ownerAddress, normalizedAddress),
+          eq(contexts.type, 'ego')
+        )
+      );
+  }
+
+  async updateLastSignalActivity(ownerAddress: string): Promise<void> {
+    const normalizedAddress = ownerAddress.toLowerCase();
+    await db
+      .update(contexts)
+      .set({ 
+        lastSignalActivityAt: new Date()
       })
       .where(
         and(

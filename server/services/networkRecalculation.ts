@@ -3,6 +3,7 @@ import { contexts, publicEndorsements, coSeeds } from "@shared/schema";
 import { eq, isNull, or, and } from "drizzle-orm";
 import { EgoScorer, type EgoEndorsement } from "../algorithm/egoScoring";
 import type { Address } from "viem";
+import { filterValidEndorsements } from "./vouchExpiration";
 
 export interface RecalculationResult {
   totalProcessed: number;
@@ -60,13 +61,17 @@ export class NetworkRecalculationService {
 
       console.log(`Found ${allGlobalVouches.length} global vouches`);
 
+      // Filter out revoked and expired vouches
+      const validVouches = await filterValidEndorsements(allGlobalVouches);
+      console.log(`After filtering: ${validVouches.length} valid vouches (${allGlobalVouches.length - validVouches.length} expired/revoked)`);
+
       // Safety check: refuse to recalculate if no vouches found (prevents data corruption)
-      if (allGlobalVouches.length === 0) {
-        throw new Error("No global vouches found - refusing to recalculate to prevent data corruption");
+      if (validVouches.length === 0) {
+        throw new Error("No valid vouches found - refusing to recalculate to prevent data corruption");
       }
 
       // Convert to EgoEndorsement format
-      const globalVouches: EgoEndorsement[] = allGlobalVouches.map(v => ({
+      const globalVouches: EgoEndorsement[] = validVouches.map(v => ({
         endorser: v.endorser.toLowerCase() as Address,
         endorsee: v.endorsee.toLowerCase() as Address,
       }));

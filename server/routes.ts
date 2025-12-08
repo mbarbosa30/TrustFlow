@@ -115,6 +115,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const created = await storage.createEndorsement(insertData);
+      
+      // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
+      await storage.getOrCreateEgoContext(endorsement.endorser.toLowerCase());
+      await storage.updateLastSignalActivity(endorsement.endorser.toLowerCase());
 
       return res.status(201).json({
         endorsement: created,
@@ -162,6 +166,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching endorsements:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get endorsements with expiration status
+  app.get("/api/endorsements/with-status", async (req, res) => {
+    try {
+      const { endorser, endorsee, limit } = req.query;
+      
+      const filters: { endorser?: string; endorsee?: string; limit?: number } = {};
+      
+      if (endorser && typeof endorser === "string") {
+        filters.endorser = endorser.toLowerCase();
+      }
+      if (endorsee && typeof endorsee === "string") {
+        filters.endorsee = endorsee.toLowerCase();
+      }
+      if (limit && typeof limit === "string") {
+        filters.limit = parseInt(limit);
+      }
+      
+      const endorsements = await storage.getEndorsements({ ...filters, communityId: 0 });
+      
+      // Build filter for expiration checks
+      const { buildVouchFilter, getVouchExpirationStatus } = await import('./services/vouchExpiration');
+      const filter = await buildVouchFilter();
+      const now = new Date();
+      
+      // Add expiration status to each endorsement
+      const endorsementsWithStatus = endorsements.map(e => {
+        const status = getVouchExpirationStatus(e, filter, now);
+        return {
+          ...e,
+          expirationStatus: status,
+        };
+      });
+      
+      return res.status(200).json({
+        endorsements: endorsementsWithStatus,
+        count: endorsementsWithStatus.length,
+      });
+    } catch (error) {
+      console.error("Error fetching endorsements with status:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -3530,6 +3577,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         note: endorsement.note || null,
       });
       
+      // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
+      await storage.getOrCreateEgoContext(endorsementWithBigInt.endorser.toLowerCase());
+      await storage.updateLastSignalActivity(endorsementWithBigInt.endorser.toLowerCase());
+      
       // Trigger LocalHealth recalculation for both endorser and endorsee
       const { localHealthService } = await import('./services/localHealthService');
       localHealthService.recalculateMultipleLocalHealth([
@@ -3547,6 +3598,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating global vouch:", error);
       res.status(500).json({ error: "Failed to create global vouch" });
+    }
+  });
+
+  // Revoke a vouch (create tombstone)
+  // Requires signature from the original endorser to prove ownership
+  app.delete("/api/vouch/:id", async (req, res) => {
+    try {
+      const endorsementId = parseInt(req.params.id);
+      const { sig, address, reason } = req.body;
+      
+      if (isNaN(endorsementId)) {
+        return res.status(400).json({ error: "Invalid endorsement ID" });
+      }
+      
+      if (!sig || !address) {
+        return res.status(400).json({ error: "Signature and address required" });
+      }
+      
+      // Get the endorsement to verify ownership
+      const endorsement = await storage.getEndorsement(endorsementId);
+      if (!endorsement) {
+        return res.status(404).json({ error: "Endorsement not found" });
+      }
+      
+      // Verify the caller is the original endorser
+      const normalizedAddress = address.toLowerCase();
+      if (endorsement.endorser.toLowerCase() !== normalizedAddress) {
+        return res.status(403).json({ error: "Only the original endorser can revoke this vouch" });
+      }
+      
+      // Check if already revoked
+      const isRevoked = await storage.isEndorsementRevoked(endorsementId);
+      if (isRevoked) {
+        return res.status(400).json({ error: "Endorsement already revoked" });
+      }
+      
+      // Verify the signature (simple message signing for revocation)
+      const { recoverAddress, hashMessage } = await import("viem");
+      const message = `Revoke vouch #${endorsementId}`;
+      const messageHash = hashMessage(message);
+      
+      try {
+        const recoveredAddress = await recoverAddress({
+          hash: messageHash,
+          signature: sig as `0x${string}`,
+        });
+        
+        if (recoveredAddress.toLowerCase() !== normalizedAddress) {
+          return res.status(400).json({ error: "Invalid signature" });
+        }
+      } catch (sigError) {
+        console.error("Signature verification failed:", sigError);
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+      
+      // Create the tombstone
+      await storage.createEndorsementTombstone({
+        endorsementId,
+        reason: reason || null,
+      });
+      
+      // Trigger LocalHealth recalculation for the endorsee (their score may change)
+      const { localHealthService } = await import('./services/localHealthService');
+      localHealthService.recalculateMultipleLocalHealth([
+        endorsement.endorsee.toLowerCase()
+      ]).catch(err => {
+        console.error('Failed to recalculate LocalHealth after vouch revocation:', err);
+      });
+      
+      res.status(200).json({
+        success: true,
+        message: "Vouch revoked successfully",
+        endorsementId,
+      });
+    } catch (error) {
+      console.error("Error revoking vouch:", error);
+      res.status(500).json({ error: "Failed to revoke vouch" });
     }
   });
 

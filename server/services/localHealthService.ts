@@ -2,6 +2,7 @@ import type { Address } from "viem";
 import { storage } from "../storage";
 import { EgoScorer } from "../algorithm/egoScoring";
 import type { EgoEndorsement } from "../algorithm/egoScoring";
+import { filterValidEndorsements } from "./vouchExpiration";
 
 export class LocalHealthService {
   async recalculateLocalHealth(address: string): Promise<number> {
@@ -17,7 +18,10 @@ export class LocalHealthService {
         limit: 100000
       });
       
-      const globalVouches: EgoEndorsement[] = globalEndorsements.map((e: any) => ({
+      // Filter out revoked and expired vouches
+      const validEndorsements = await filterValidEndorsements(globalEndorsements);
+      
+      const globalVouches: EgoEndorsement[] = validEndorsements.map((e: any) => ({
         endorser: e.endorser.toLowerCase() as Address,
         endorsee: e.endorsee.toLowerCase() as Address,
       }));
@@ -83,7 +87,10 @@ export class LocalHealthService {
         limit: 100000
       });
       
-      const globalVouches: EgoEndorsement[] = globalEndorsements.map((e: any) => ({
+      // Filter out revoked and expired vouches
+      const validEndorsements = await filterValidEndorsements(globalEndorsements);
+      
+      const globalVouches: EgoEndorsement[] = validEndorsements.map((e: any) => ({
         endorser: e.endorser.toLowerCase() as Address,
         endorsee: e.endorsee.toLowerCase() as Address,
       }));

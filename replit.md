@@ -23,6 +23,12 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
 *   **KUDOS Token Economy (Off-Chain MVP)**: A rewards layer decoupled from scoring, earned based on LocalHealth scores. Features daily claiming based on `LocalHealth²`, a 1% transfer fee (0.5% burned, 0.5% pooled), and a 24-hour cooldown.
 *   **Privacy by Default**: Aggregated scores and opted-in reveals are public; endorsement graphs remain opaque.
 *   **Binary Vouch Model**: Simplified endorsements for transparency.
+*   **Vouch Expiration & Revocation (Dec 2025)**: Vouches have a 90-day validity window to encourage ongoing participation:
+    *   **Activity-Based Retention**: A vouch is valid if the vouch is less than 90 days old OR the recipient has been active (vouched for someone) within the last 90 days from today.
+    *   **Manual Revocation**: Endorsers can revoke their vouches at any time by signing a revocation message. Revoked vouches are stored in an `endorsementTombstones` table.
+    *   **Expiration Logic**: Uses `lastSignalActivityAt` timestamp on user contexts to track last outgoing vouch activity.
+    *   **UI Indicators**: Vouch status badges show "Active", days remaining (with warning at <30 days), "Expired", or "Revoked".
+    *   **Anti-Sybil**: Prevents "set and forget" sockpuppet farms—inactive accounts gradually lose their incoming vouches.
 *   **Epoch-Based Computation**: Deterministic, versioned scoring with verifiable artifacts.
 *   **Portable Credentials**: Self-contained, signed JSON objects compatible with W3C Verifiable Credentials.
 *   **Seed Quality Scoring & Seed-Personalized PageRank**: Used for STS calculation and graph integrity.

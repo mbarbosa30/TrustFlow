@@ -80,6 +80,7 @@ export const contexts = pgTable("contexts", {
   policyJson: jsonb("policy_json"), // Context-specific settings (min_cut_threshold, vouch_caps, etc.)
   localHealth: integer("local_health"), // Cached LocalHealth score (0-100, only for ego contexts)
   localHealthUpdatedAt: timestamp("local_health_updated_at"), // Last LocalHealth computation timestamp
+  lastSignalActivityAt: timestamp("last_signal_activity_at"), // Last outgoing vouch timestamp (for vouch expiration)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

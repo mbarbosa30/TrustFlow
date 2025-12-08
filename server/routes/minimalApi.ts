@@ -134,6 +134,10 @@ export function registerMinimalApiRoutes(app: Express) {
           promptHash: community.promptHash,
         });
         
+        // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
+        await storage.getOrCreateEgoContext(endorser.toLowerCase());
+        await storage.updateLastSignalActivity(endorser.toLowerCase());
+        
         // Trigger LocalHealth recalculation for both endorser and endorsee
         // This happens asynchronously after the vouch is stored
         const { localHealthService } = await import('../services/localHealthService');
