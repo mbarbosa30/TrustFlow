@@ -2404,6 +2404,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 8. Dilution Zone Distribution - Piecewise curve zone analysis
+  app.get("/api/analytics/localhealth/dilution-zones", async (req, res) => {
+    try {
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0) {
+        return res.status(200).json({ 
+          zones: [
+            { zone: 'Quality (1-10)', count: 0, percentage: 0, penalty: 0 },
+            { zone: 'Warning (11-15)', count: 0, percentage: 0, penalty: 15 },
+            { zone: 'Penalty (16-25)', count: 0, percentage: 0, penalty: 45 },
+            { zone: 'Critical (25+)', count: 0, percentage: 0, penalty: 60 }
+          ],
+          totalUsers: 0,
+          avgVouchesGiven: 0,
+          avgPenalty: 0
+        });
+      }
+
+      // Count outgoing vouches per user
+      const outgoingCounts = new Map<string, number>();
+      vouches.forEach(v => {
+        const endorser = v.endorser.toLowerCase();
+        outgoingCounts.set(endorser, (outgoingCounts.get(endorser) || 0) + 1);
+      });
+
+      // Get all unique users
+      const allUsers = new Set<string>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) allUsers.add(ctx.ownerAddress.toLowerCase());
+      });
+      vouches.forEach(v => {
+        allUsers.add(v.endorser.toLowerCase());
+        allUsers.add(v.endorsee.toLowerCase());
+      });
+
+      // Categorize users into piecewise zones
+      let qualityZone = 0;    // 1-10 vouches (no penalty)
+      let warningZone = 0;    // 11-15 vouches (gentle decay to 0.85)
+      let penaltyZone = 0;    // 16-25 vouches (steeper decay to 0.55)
+      let criticalZone = 0;   // 25+ vouches (asymptotic to 0.4)
+      let totalPenalty = 0;
+      let totalVouchesGiven = 0;
+
+      allUsers.forEach(addr => {
+        const count = outgoingCounts.get(addr) || 0;
+        totalVouchesGiven += count;
+        
+        if (count <= 10) {
+          qualityZone++;
+        } else if (count <= 15) {
+          warningZone++;
+          const progress = (count - 10) / 5;
+          totalPenalty += 15 * progress;
+        } else if (count <= 25) {
+          penaltyZone++;
+          const progress = (count - 15) / 10;
+          totalPenalty += 15 + 30 * (progress * progress);
+        } else {
+          criticalZone++;
+          const excess = count - 25;
+          const decay = 0.15 * (1 - Math.exp(-0.1 * excess));
+          totalPenalty += 45 + decay * 100;
+        }
+      });
+
+      const total = allUsers.size;
+      const zones = [
+        { zone: 'Quality (1-10)', count: qualityZone, percentage: total > 0 ? Math.round(qualityZone / total * 100) : 0, penalty: 0 },
+        { zone: 'Warning (11-15)', count: warningZone, percentage: total > 0 ? Math.round(warningZone / total * 100) : 0, penalty: 15 },
+        { zone: 'Penalty (16-25)', count: penaltyZone, percentage: total > 0 ? Math.round(penaltyZone / total * 100) : 0, penalty: 45 },
+        { zone: 'Critical (25+)', count: criticalZone, percentage: total > 0 ? Math.round(criticalZone / total * 100) : 0, penalty: 60 }
+      ];
+
+      return res.status(200).json({
+        zones,
+        totalUsers: total,
+        avgVouchesGiven: total > 0 ? Math.round(totalVouchesGiven / total * 10) / 10 : 0,
+        avgPenalty: total > 0 ? Math.round(totalPenalty / total * 10) / 10 : 0
+      });
+    } catch (error) {
+      console.error("Error fetching dilution zones:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 9. Network Resilience - Vertex-disjoint path statistics
+  app.get("/api/analytics/localhealth/network-resilience", async (req, res) => {
+    try {
+      const { EgoScorer, computeVertexDisjointPaths } = await import('./algorithm/egoScoring');
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      if (vouches.length === 0 || allContexts.length === 0) {
+        return res.status(200).json({ 
+          distribution: [
+            { paths: '0', count: 0 },
+            { paths: '1', count: 0 },
+            { paths: '2', count: 0 },
+            { paths: '3', count: 0 },
+            { paths: '4', count: 0 },
+            { paths: '5+', count: 0 }
+          ],
+          avgDisjointPaths: 0,
+          highlyResilient: 0,
+          vulnerable: 0,
+          totalAnalyzed: 0
+        });
+      }
+
+      const globalVouches = vouches.map(v => ({
+        endorser: v.endorser.toLowerCase() as `0x${string}`,
+        endorsee: v.endorsee.toLowerCase() as `0x${string}`
+      }));
+
+      // Build adjacency for path counting
+      const incomingMap = new Map<string, string[]>();
+      globalVouches.forEach(v => {
+        const list = incomingMap.get(v.endorsee) || [];
+        list.push(v.endorser);
+        incomingMap.set(v.endorsee, list);
+      });
+
+      // Analyze path counts for users with vouchers
+      const pathCounts: number[] = [];
+      let vulnerable = 0;
+      let highlyResilient = 0;
+      
+      for (const ctx of allContexts) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        const vouchers = incomingMap.get(addr) || [];
+        
+        if (vouchers.length < 2) {
+          pathCounts.push(vouchers.length);
+          if (vouchers.length === 0) vulnerable++;
+          continue;
+        }
+        
+        // Compute vertex-disjoint paths
+        const disjointPaths = computeVertexDisjointPaths(
+          addr as `0x${string}`,
+          vouchers as `0x${string}`[],
+          globalVouches
+        );
+        
+        pathCounts.push(disjointPaths);
+        if (disjointPaths <= 1) vulnerable++;
+        if (disjointPaths >= 4) highlyResilient++;
+      }
+
+      // Build distribution
+      const distribution = [
+        { paths: '0', count: pathCounts.filter(p => p === 0).length },
+        { paths: '1', count: pathCounts.filter(p => p === 1).length },
+        { paths: '2', count: pathCounts.filter(p => p === 2).length },
+        { paths: '3', count: pathCounts.filter(p => p === 3).length },
+        { paths: '4', count: pathCounts.filter(p => p === 4).length },
+        { paths: '5+', count: pathCounts.filter(p => p >= 5).length }
+      ];
+
+      const avgDisjointPaths = pathCounts.length > 0
+        ? Math.round(pathCounts.reduce((a, b) => a + b, 0) / pathCounts.length * 10) / 10
+        : 0;
+
+      return res.status(200).json({
+        distribution,
+        avgDisjointPaths,
+        highlyResilient,
+        vulnerable,
+        totalAnalyzed: pathCounts.length
+      });
+    } catch (error) {
+      console.error("Error fetching network resilience:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // 10. Adaptive Baseline Monitor - Current computed thresholds
+  app.get("/api/analytics/localhealth/adaptive-baselines", async (req, res) => {
+    try {
+      const { computeAdaptiveBaselines, DEFAULT_CONFIG } = await import('./algorithm/egoScoring');
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      
+      // Fixed baselines for comparison
+      const FIXED_VOUCH_COUNT = 8.0;
+      const FIXED_REDUNDANCY = 35.0;
+      
+      if (vouches.length === 0 || allContexts.length === 0) {
+        return res.status(200).json({ 
+          adaptive: {
+            healthyVouchCount: FIXED_VOUCH_COUNT,
+            healthyRedundancy: FIXED_REDUNDANCY,
+            source: 'fixed',
+            networkTooSmall: true
+          },
+          fixed: {
+            healthyVouchCount: FIXED_VOUCH_COUNT,
+            healthyRedundancy: FIXED_REDUNDANCY
+          },
+          networkStats: {
+            totalUsers: 0,
+            totalVouches: 0,
+            avgVouchCount: 0,
+            medianVouchCount: 0,
+            p75VouchCount: 0
+          },
+          adaptiveEnabled: DEFAULT_CONFIG.useAdaptiveBaselines
+        });
+      }
+
+      // Count incoming vouches per user
+      const incomingCounts = new Map<string, number>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        incomingCounts.set(endorsee, (incomingCounts.get(endorsee) || 0) + 1);
+      });
+
+      // Get vouch counts for all users (including those with 0)
+      const allUsers = new Set<string>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) allUsers.add(ctx.ownerAddress.toLowerCase());
+      });
+      
+      const vouchCounts = Array.from(allUsers).map(addr => incomingCounts.get(addr) || 0);
+      vouchCounts.sort((a, b) => a - b);
+
+      const totalUsers = vouchCounts.length;
+      const avgVouchCount = totalUsers > 0 
+        ? Math.round(vouchCounts.reduce((a, b) => a + b, 0) / totalUsers * 10) / 10 
+        : 0;
+      const medianVouchCount = totalUsers > 0 
+        ? vouchCounts[Math.floor(totalUsers / 2)] 
+        : 0;
+      const p75VouchCount = totalUsers > 0 
+        ? vouchCounts[Math.floor(totalUsers * 0.75)] 
+        : 0;
+
+      // Compute adaptive baselines
+      const globalVouches = vouches.map(v => ({
+        endorser: v.endorser.toLowerCase() as `0x${string}`,
+        endorsee: v.endorsee.toLowerCase() as `0x${string}`
+      }));
+      
+      const adaptiveBaselines = computeAdaptiveBaselines(globalVouches);
+      const networkTooSmall = totalUsers < 10;
+
+      return res.status(200).json({
+        adaptive: {
+          healthyVouchCount: adaptiveBaselines.healthyVouchCount,
+          healthyRedundancy: adaptiveBaselines.healthyRedundancy,
+          source: networkTooSmall ? 'fixed (network too small)' : 'computed from 75th percentile',
+          networkTooSmall
+        },
+        fixed: {
+          healthyVouchCount: FIXED_VOUCH_COUNT,
+          healthyRedundancy: FIXED_REDUNDANCY
+        },
+        networkStats: {
+          totalUsers,
+          totalVouches: vouches.length,
+          avgVouchCount,
+          medianVouchCount,
+          p75VouchCount
+        },
+        adaptiveEnabled: DEFAULT_CONFIG.useAdaptiveBaselines
+      });
+    } catch (error) {
+      console.error("Error fetching adaptive baselines:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Test Data Management Endpoints
   app.post("/api/test-data/organic-growth", async (req, res) => {
     try {

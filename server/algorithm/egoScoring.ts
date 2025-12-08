@@ -17,7 +17,7 @@ export interface EgoScoringConfig {
   useVertexDisjointPaths: boolean;
 }
 
-const DEFAULT_EGO_CONFIG: EgoScoringConfig = {
+export const DEFAULT_CONFIG: EgoScoringConfig = {
   maxDistance: 3,
   minAcceptanceFlow: 0.5,
   minAcceptanceMinCut: 2,
@@ -86,11 +86,11 @@ function computePiecewiseDilutionPenalty(vouchCount: number): number {
  * Key insight: Standard edge-disjoint max-flow allows paths to share nodes,
  * but vertex-disjoint requires paths to have no common intermediate vertices.
  */
-function computeVertexDisjointPaths(
-  vouchers: Address[],
+export function computeVertexDisjointPaths(
   target: Address,
+  vouchers: Address[],
   globalVouches: EgoEndorsement[],
-  maxDistance: number
+  maxDistance: number = 3
 ): number {
   // Build a graph with node splitting for vertex-disjoint counting
   // Each node v becomes v_in and v_out with edge (v_in -> v_out, capacity=1)
@@ -195,14 +195,21 @@ function computeVertexDisjointPaths(
  * Uses 75th percentile of vouch counts and redundancy scores
  * to define "healthy" - meaning top 25% of users are approaching max score.
  */
-function computeAdaptiveBaselines(
-  addresses: Address[],
+export function computeAdaptiveBaselines(
   globalVouches: EgoEndorsement[]
 ): { healthyVouchCount: number; healthyRedundancy: number } {
   // Default fallbacks if network is too small
   const DEFAULT_HEALTHY_VOUCH_COUNT = 8.0;
   const DEFAULT_HEALTHY_REDUNDANCY = 35.0;
   const MIN_NETWORK_SIZE = 10;
+  
+  // Extract unique addresses from vouches
+  const allAddresses = new Set<string>();
+  globalVouches.forEach(v => {
+    allAddresses.add(v.endorser.toLowerCase());
+    allAddresses.add(v.endorsee.toLowerCase());
+  });
+  const addresses = Array.from(allAddresses);
   
   if (addresses.length < MIN_NETWORK_SIZE) {
     return {
@@ -212,12 +219,15 @@ function computeAdaptiveBaselines(
   }
   
   // Compute vouch counts for all addresses
+  const incomingCounts = new Map<string, number>();
+  globalVouches.forEach(v => {
+    const endorsee = v.endorsee.toLowerCase();
+    incomingCounts.set(endorsee, (incomingCounts.get(endorsee) || 0) + 1);
+  });
+  
   const vouchCounts: number[] = [];
   for (const addr of addresses) {
-    const addrLower = addr.toLowerCase();
-    const count = globalVouches.filter(
-      v => v.endorsee.toLowerCase() === addrLower
-    ).length;
+    const count = incomingCounts.get(addr) || 0;
     if (count > 0) {
       vouchCounts.push(count);
     }
@@ -252,7 +262,7 @@ export class EgoScorer {
   private cachedBaselines: { healthyVouchCount: number; healthyRedundancy: number } | null = null;
 
   constructor(config: Partial<EgoScoringConfig> = {}) {
-    this.config = { ...DEFAULT_EGO_CONFIG, ...config };
+    this.config = { ...DEFAULT_CONFIG, ...config };
   }
   
   /**
@@ -272,7 +282,7 @@ export class EgoScorer {
     
     // Compute adaptive baselines (cache for performance)
     if (!this.cachedBaselines) {
-      this.cachedBaselines = computeAdaptiveBaselines(addresses, globalVouches);
+      this.cachedBaselines = computeAdaptiveBaselines(globalVouches);
     }
     return this.cachedBaselines;
   }
@@ -296,7 +306,7 @@ export class EgoScorer {
     // Step 0: Compute adaptive baselines if enabled (before scoring)
     // This allows the algorithm to adapt to network size and density
     if (this.config.useAdaptiveBaselines) {
-      this.cachedBaselines = computeAdaptiveBaselines(addresses, globalVouches);
+      this.cachedBaselines = computeAdaptiveBaselines(globalVouches);
       console.log(`Adaptive baselines: vouch=${this.cachedBaselines.healthyVouchCount.toFixed(1)}, redundancy=${this.cachedBaselines.healthyRedundancy.toFixed(1)}`);
     }
     
@@ -833,8 +843,8 @@ export class EgoScorer {
     let vertexDisjointBonus = 0;
     if (this.config.useVertexDisjointPaths && directVouchers.length >= 2) {
       const disjointPaths = computeVertexDisjointPaths(
-        directVouchers,
         ownerAddress,
+        directVouchers,
         globalVouches,
         this.config.maxDistance
       );
