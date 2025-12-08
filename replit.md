@@ -46,8 +46,12 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
         *   **Algorithm Breakdown**: API returns detailed components (flow_component + redundancy_component) that sum to the final LocalHealth score.
     *   **Outgoing Vouch Adjustment**: Applies a piecewise dilution curve to penalize excessive vouching, ensuring accountability.
     *   LocalHealth is purely graph-based, independent of economic factors.
-*   **LocalHealth Score Caching**: Event-driven caching system in `contexts` table, triggering recalculation upon receiving or giving a vouch for API optimization.
-*   **Network Recalculation**: Admin tool for batch computing and persisting all LocalHealth scores across the network.
+*   **LocalHealth Score Caching**: Scores are cached in `contexts` table for fast API responses.
+*   **Scheduled Network Recalculation (Dec 2025)**: 
+    *   **6-Hour Batch Computation**: RecalculationScheduler runs network-wide LocalHealth computation automatically every 6 hours on server boot
+    *   **No On-Vouch Recalculation**: Removed expensive per-vouch recomputation for performance (network-wide computation required for accurate scores)
+    *   **Admin Endpoints**: `GET /api/admin/scheduler-status` (check next run), `POST /api/admin/scheduler-run-now` (trigger immediate recalculation)
+    *   **Manual Override**: Admin can still trigger recalculation via `POST /api/admin/recalculate-network`
 *   **Advanced Algorithm Analytics**: Mathematician-focused Dashboard with 8 analytics endpoints for convergence metrics, vouch timelines, flow/redundancy correlation, voucher strength distribution, flow saturation, dilution zones, network resilience, and adaptive baseline monitoring.
 *   **Network Traction API**: `/api/stats/network-traction` endpoint providing aggregated LocalHealth-focused metrics for network health, distribution, and dilution.
 *   **Signal-Focused Pages (Dec 2025)**: All public-facing pages use "Signal" in user-facing copy (internal code uses LocalHealth):
