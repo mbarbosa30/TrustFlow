@@ -246,13 +246,8 @@ export function registerPublicApiRoutes(app: Express) {
       await storage.getOrCreateEgoContext(normalizedEndorser);
       await storage.updateLastSignalActivity(normalizedEndorser);
       
-      const { localHealthService } = await import('../services/localHealthService');
-      localHealthService.recalculateMultipleLocalHealth([
-        normalizedEndorser,
-        normalizedEndorsee
-      ]).catch(err => {
-        console.error('Failed to recalculate LocalHealth after vouch:', err);
-      });
+      // Note: LocalHealth scores are recalculated every 6 hours by the scheduler
+      // On-vouch recalculation removed for performance (network-wide computation is expensive)
       
       res.status(202).json({ ok: true });
     } catch (error) {
@@ -424,12 +419,8 @@ export function registerPublicApiRoutes(app: Express) {
         reason: "Revoked by endorser via API",
       });
       
-      const { localHealthService } = await import('../services/localHealthService');
-      localHealthService.recalculateMultipleLocalHealth([
-        normalizedEndorsee
-      ]).catch(err => {
-        console.error('Failed to recalculate LocalHealth after revocation:', err);
-      });
+      // Note: LocalHealth scores are recalculated every 6 hours by the scheduler
+      // On-revocation recalculation removed for performance
       
       res.json({ ok: true, revoked: true });
     } catch (error) {

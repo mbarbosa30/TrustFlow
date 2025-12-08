@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeMockData } from "./health/mock-data";
 import { initializeCommunityZero } from "./communities/init";
+import { recalculationScheduler } from "./services/recalculationScheduler";
 
 const app = express();
 
@@ -91,5 +92,8 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Start scheduled network recalculation (every 6 hours)
+    recalculationScheduler.start();
   });
 })();

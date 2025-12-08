@@ -145,15 +145,8 @@ export function registerMinimalApiRoutes(app: Express) {
         await storage.getOrCreateEgoContext(endorser.toLowerCase());
         await storage.updateLastSignalActivity(endorser.toLowerCase());
         
-        // Trigger LocalHealth recalculation for both endorser and endorsee
-        // This happens asynchronously after the vouch is stored
-        const { localHealthService } = await import('../services/localHealthService');
-        localHealthService.recalculateMultipleLocalHealth([
-          endorser.toLowerCase(),
-          endorsee.toLowerCase()
-        ]).catch(err => {
-          console.error('Failed to recalculate LocalHealth after vouch:', err);
-        });
+        // Note: LocalHealth scores are recalculated every 6 hours by the scheduler
+        // On-vouch recalculation removed for performance (network-wide computation is expensive)
         
         res.status(202).json({ ok: true });
       } catch (error) {
@@ -197,10 +190,9 @@ export function registerMinimalApiRoutes(app: Express) {
           if (cachedScore !== null) {
             // Ensure integer (guard against legacy float cache)
             localHealth = Math.round(cachedScore);
-          } else {
-            // No cached score - trigger recalculation
-            localHealth = await localHealthService.recalculateLocalHealth(address);
           }
+          // Note: If no cached score, return 0 and wait for 6-hour scheduled recalculation
+          // On-demand recalculation removed for performance
         } catch (egoError) {
           console.error('Error getting LocalHealth for API:', egoError);
           // Continue with localHealth = 0 if retrieval fails

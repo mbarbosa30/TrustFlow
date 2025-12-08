@@ -3607,14 +3607,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.getOrCreateEgoContext(endorsementWithBigInt.endorser.toLowerCase());
       await storage.updateLastSignalActivity(endorsementWithBigInt.endorser.toLowerCase());
       
-      // Trigger LocalHealth recalculation for both endorser and endorsee
-      const { localHealthService } = await import('./services/localHealthService');
-      localHealthService.recalculateMultipleLocalHealth([
-        endorsementWithBigInt.endorser.toLowerCase(),
-        endorsementWithBigInt.endorsee.toLowerCase()
-      ]).catch(err => {
-        console.error('Failed to recalculate LocalHealth after global vouch:', err);
-      });
+      // Note: LocalHealth scores are recalculated every 6 hours by the scheduler
+      // On-vouch recalculation removed for performance (network-wide computation is expensive)
       
       res.status(201).json({ 
         success: true, 
@@ -3685,13 +3679,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason: reason || null,
       });
       
-      // Trigger LocalHealth recalculation for the endorsee (their score may change)
-      const { localHealthService } = await import('./services/localHealthService');
-      localHealthService.recalculateMultipleLocalHealth([
-        endorsement.endorsee.toLowerCase()
-      ]).catch(err => {
-        console.error('Failed to recalculate LocalHealth after vouch revocation:', err);
-      });
+      // Note: LocalHealth scores are recalculated every 6 hours by the scheduler
+      // On-revocation recalculation removed for performance
       
       res.status(200).json({
         success: true,
