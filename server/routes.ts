@@ -1355,6 +1355,370 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Algorithm Convergence Telemetry - Shows LocalHealth iteration behavior
+  app.get("/api/analytics/convergence-metrics", async (req, res) => {
+    try {
+      const { EgoScorer } = await import('./algorithm/egoScoring');
+      
+      // Get all vouches and addresses for computation
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      const allContexts = await storage.getAllContexts();
+      const addresses = allContexts.filter(c => c.ownerAddress).map(c => c.ownerAddress as `0x${string}`);
+      
+      if (addresses.length === 0 || vouches.length === 0) {
+        return res.status(200).json({
+          iterations: 0,
+          converged: true,
+          convergenceThreshold: 0.5,
+          residualDecay: [],
+          finalMaxChange: 0,
+          userCount: 0,
+          vouchCount: 0
+        });
+      }
+
+      // Simulate convergence tracking with instrumented algorithm
+      const scorer = new EgoScorer();
+      const globalVouches = vouches.map(v => ({
+        endorser: v.endorser.toLowerCase() as `0x${string}`,
+        endorsee: v.endorsee.toLowerCase() as `0x${string}`
+      }));
+
+      // Track convergence manually by running iterations
+      const maxIterations = 10;
+      const convergenceThreshold = 0.5;
+      const residualDecay: { iteration: number; maxChange: number; avgChange: number }[] = [];
+      
+      let currentScores = new Map<string, number>();
+      for (const addr of addresses) {
+        const addrLower = addr.toLowerCase();
+        const incomingCount = globalVouches.filter(v => v.endorsee.toLowerCase() === addrLower).length;
+        currentScores.set(addrLower, Math.min(100, Math.sqrt(incomingCount) * 20));
+      }
+
+      let iteration = 0;
+      let maxChange = Infinity;
+      
+      for (; iteration < maxIterations && maxChange >= convergenceThreshold; iteration++) {
+        const newScores = new Map<string, number>();
+        let totalChange = 0;
+        maxChange = 0;
+
+        for (const addr of addresses) {
+          const result = scorer.computeLocalHealth(addr, [], globalVouches);
+          const addrLower = addr.toLowerCase();
+          newScores.set(addrLower, result.localHealth);
+          
+          const oldScore = currentScores.get(addrLower) || 0;
+          const change = Math.abs(result.localHealth - oldScore);
+          maxChange = Math.max(maxChange, change);
+          totalChange += change;
+        }
+
+        const avgChange = addresses.length > 0 ? totalChange / addresses.length : 0;
+        residualDecay.push({ iteration: iteration + 1, maxChange, avgChange });
+
+        for (const [addr, score] of Array.from(newScores.entries())) {
+          currentScores.set(addr, score);
+        }
+      }
+
+      return res.status(200).json({
+        iterations: iteration,
+        converged: maxChange < convergenceThreshold,
+        convergenceThreshold,
+        residualDecay,
+        finalMaxChange: maxChange,
+        userCount: addresses.length,
+        vouchCount: vouches.length
+      });
+    } catch (error) {
+      console.error("Error computing convergence metrics:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Vouch Timeline - Activity over real timestamps (not epochs)
+  app.get("/api/analytics/vouch-timeline", async (req, res) => {
+    try {
+      const endorsements = await storage.getEndorsements({ limit: 10000 });
+      
+      if (endorsements.length === 0) {
+        return res.status(200).json({ timeline: [], cumulativeGrowth: [] });
+      }
+
+      // Group by day
+      const dailyActivity = new Map<string, { count: number; uniqueEndorsers: Set<string>; uniqueEndorsees: Set<string> }>();
+      
+      endorsements.forEach(e => {
+        const date = new Date(e.createdAt).toISOString().split('T')[0];
+        if (!dailyActivity.has(date)) {
+          dailyActivity.set(date, { count: 0, uniqueEndorsers: new Set(), uniqueEndorsees: new Set() });
+        }
+        const day = dailyActivity.get(date)!;
+        day.count++;
+        day.uniqueEndorsers.add(e.endorser.toLowerCase());
+        day.uniqueEndorsees.add(e.endorsee.toLowerCase());
+      });
+
+      // Sort by date and compute cumulative
+      const sortedDates = Array.from(dailyActivity.keys()).sort();
+      let cumulativeVouches = 0;
+      const allUsers = new Set<string>();
+
+      const timeline = sortedDates.map(date => {
+        const day = dailyActivity.get(date)!;
+        cumulativeVouches += day.count;
+        day.uniqueEndorsers.forEach(u => allUsers.add(u));
+        day.uniqueEndorsees.forEach(u => allUsers.add(u));
+        
+        return {
+          date,
+          vouches: day.count,
+          uniqueEndorsers: day.uniqueEndorsers.size,
+          uniqueEndorsees: day.uniqueEndorsees.size,
+          cumulativeVouches,
+          cumulativeUsers: allUsers.size
+        };
+      });
+
+      return res.status(200).json({ timeline });
+    } catch (error) {
+      console.error("Error fetching vouch timeline:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Flow vs Redundancy Correlation - Scatter plot data
+  app.get("/api/analytics/flow-redundancy-correlation", async (req, res) => {
+    try {
+      const allContexts = await storage.getAllContexts();
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      
+      if (allContexts.length === 0) {
+        return res.status(200).json({ 
+          points: [], 
+          regression: { slope: 0, intercept: 0, r2: 0 },
+          stats: { avgFlow: 0, avgRedundancy: 0, correlation: 0 }
+        });
+      }
+
+      // Build vouch count map
+      const incomingVouches = new Map<string, number>();
+      const outgoingVouches = new Map<string, number>();
+      
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        const endorser = v.endorser.toLowerCase();
+        incomingVouches.set(endorsee, (incomingVouches.get(endorsee) || 0) + 1);
+        outgoingVouches.set(endorser, (outgoingVouches.get(endorser) || 0) + 1);
+      });
+
+      const HEALTHY_VOUCH_COUNT = 8.0;
+      const HEALTHY_REDUNDANCY = 35.0;
+      
+      const points = allContexts.filter(ctx => ctx.ownerAddress).map(ctx => {
+        const address = (ctx.ownerAddress || '').toLowerCase();
+        const localHealth = ctx.localHealth || 0;
+        const vouchCount = incomingVouches.get(address) || 0;
+        const outgoing = outgoingVouches.get(address) || 0;
+        
+        // Estimate flow and redundancy from score
+        const flowRatio = Math.min(1.0, vouchCount / HEALTHY_VOUCH_COUNT);
+        const flowComponent = 60 * Math.pow(flowRatio, 2.0);
+        const redundancyComponent = Math.max(0, localHealth - flowComponent);
+        const redundancyRatio = Math.sqrt(redundancyComponent / 40);
+        const estimatedRedundancy = redundancyRatio * HEALTHY_REDUNDANCY;
+        
+        return {
+          address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          localHealth,
+          vouchCount,
+          outgoingVouches: outgoing,
+          flowComponent: Math.round(flowComponent * 10) / 10,
+          redundancyComponent: Math.round(redundancyComponent * 10) / 10,
+          estimatedRedundancy: Math.round(estimatedRedundancy * 10) / 10
+        };
+      });
+
+      // Simple linear regression: redundancy vs localHealth
+      const n = points.length;
+      const sumX = points.reduce((s, p) => s + p.estimatedRedundancy, 0);
+      const sumY = points.reduce((s, p) => s + p.localHealth, 0);
+      const sumXY = points.reduce((s, p) => s + p.estimatedRedundancy * p.localHealth, 0);
+      const sumX2 = points.reduce((s, p) => s + p.estimatedRedundancy * p.estimatedRedundancy, 0);
+      const sumY2 = points.reduce((s, p) => s + p.localHealth * p.localHealth, 0);
+      
+      const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX) : 0;
+      const intercept = n > 0 ? (sumY - slope * sumX) / n : 0;
+      
+      // R-squared
+      const meanY = sumY / n;
+      const ssTotal = points.reduce((s, p) => s + Math.pow(p.localHealth - meanY, 2), 0);
+      const ssResidual = points.reduce((s, p) => s + Math.pow(p.localHealth - (slope * p.estimatedRedundancy + intercept), 2), 0);
+      const r2 = ssTotal > 0 ? 1 - (ssResidual / ssTotal) : 0;
+
+      return res.status(200).json({
+        points,
+        regression: { 
+          slope: Math.round(slope * 1000) / 1000, 
+          intercept: Math.round(intercept * 100) / 100, 
+          r2: Math.round(r2 * 1000) / 1000 
+        },
+        stats: {
+          avgFlow: Math.round((sumX / n) * 10) / 10,
+          avgRedundancy: Math.round((sumY / n) * 10) / 10,
+          correlation: Math.round(Math.sqrt(Math.abs(r2)) * Math.sign(slope) * 1000) / 1000
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching flow-redundancy correlation:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Voucher Strength Distribution - Histogram data
+  app.get("/api/analytics/voucher-strength-distribution", async (req, res) => {
+    try {
+      const allContexts = await storage.getAllContexts();
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      
+      if (allContexts.length === 0 || vouches.length === 0) {
+        return res.status(200).json({ 
+          histogram: [], 
+          stats: { mean: 0, median: 0, stdDev: 0, skewness: 0 },
+          dilutionAnalysis: []
+        });
+      }
+
+      // Build LocalHealth lookup
+      const healthMap = new Map<string, number>();
+      allContexts.forEach(ctx => {
+        if (ctx.ownerAddress) {
+          healthMap.set(ctx.ownerAddress.toLowerCase(), ctx.localHealth || 0);
+        }
+      });
+
+      // For each vouch, get the voucher's strength (LocalHealth)
+      const voucherStrengths = vouches.map(v => healthMap.get(v.endorser.toLowerCase()) || 0);
+      
+      // Build histogram (buckets of 10)
+      const buckets = Array.from({ length: 10 }, (_, i) => ({ 
+        range: `${i * 10}-${(i + 1) * 10}`, 
+        min: i * 10, 
+        max: (i + 1) * 10,
+        count: 0,
+        percentage: 0
+      }));
+      
+      voucherStrengths.forEach(strength => {
+        const bucketIndex = Math.min(Math.floor(strength / 10), 9);
+        buckets[bucketIndex].count++;
+      });
+      
+      const total = voucherStrengths.length;
+      buckets.forEach(b => { b.percentage = total > 0 ? Math.round((b.count / total) * 1000) / 10 : 0; });
+
+      // Statistics
+      const mean = voucherStrengths.reduce((s, v) => s + v, 0) / total;
+      const sorted = [...voucherStrengths].sort((a, b) => a - b);
+      const median = sorted[Math.floor(sorted.length / 2)] || 0;
+      const variance = voucherStrengths.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / total;
+      const stdDev = Math.sqrt(variance);
+      const skewness = stdDev > 0 
+        ? voucherStrengths.reduce((s, v) => s + Math.pow((v - mean) / stdDev, 3), 0) / total
+        : 0;
+
+      // Dilution analysis - users who vouch for many people
+      const vouchCountByUser = new Map<string, number>();
+      vouches.forEach(v => {
+        const endorser = v.endorser.toLowerCase();
+        vouchCountByUser.set(endorser, (vouchCountByUser.get(endorser) || 0) + 1);
+      });
+
+      const dilutionAnalysis = Array.from(vouchCountByUser.entries())
+        .map(([address, count]) => ({
+          address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          vouchesGiven: count,
+          localHealth: healthMap.get(address) || 0,
+          dilutionPenalty: count > 10 ? Math.min(0.5, (count - 10) * 0.1) : 0
+        }))
+        .sort((a, b) => b.vouchesGiven - a.vouchesGiven)
+        .slice(0, 20);
+
+      return res.status(200).json({
+        histogram: buckets,
+        stats: {
+          mean: Math.round(mean * 10) / 10,
+          median: Math.round(median * 10) / 10,
+          stdDev: Math.round(stdDev * 10) / 10,
+          skewness: Math.round(skewness * 100) / 100
+        },
+        dilutionAnalysis
+      });
+    } catch (error) {
+      console.error("Error fetching voucher strength distribution:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Flow Saturation Curve - Shows diminishing returns
+  app.get("/api/analytics/flow-saturation-curve", async (req, res) => {
+    try {
+      const allContexts = await storage.getAllContexts();
+      const vouches = await storage.getEndorsements({ limit: 10000 });
+      
+      // Build vouch count map
+      const vouchCounts = new Map<string, number>();
+      vouches.forEach(v => {
+        const endorsee = v.endorsee.toLowerCase();
+        vouchCounts.set(endorsee, (vouchCounts.get(endorsee) || 0) + 1);
+      });
+
+      const HEALTHY_VOUCH_COUNT = 8.0;
+      
+      // Group users by vouch count and compute average LocalHealth
+      const byVouchCount = new Map<number, { scores: number[]; count: number }>();
+      
+      allContexts.forEach(ctx => {
+        if (!ctx.ownerAddress) return;
+        const count = vouchCounts.get(ctx.ownerAddress.toLowerCase()) || 0;
+        if (!byVouchCount.has(count)) {
+          byVouchCount.set(count, { scores: [], count: 0 });
+        }
+        byVouchCount.get(count)!.scores.push(ctx.localHealth || 0);
+        byVouchCount.get(count)!.count++;
+      });
+
+      // Build curve data
+      const curvePoints = Array.from(byVouchCount.entries())
+        .map(([vouchCount, data]) => ({
+          vouchCount,
+          avgLocalHealth: data.scores.reduce((s, v) => s + v, 0) / data.scores.length,
+          userCount: data.count,
+          theoreticalFlow: 60 * Math.pow(Math.min(1.0, vouchCount / HEALTHY_VOUCH_COUNT), 2.0)
+        }))
+        .sort((a, b) => a.vouchCount - b.vouchCount);
+
+      // Generate theoretical curve for comparison
+      const theoreticalCurve = Array.from({ length: 16 }, (_, i) => ({
+        vouchCount: i,
+        flowComponent: 60 * Math.pow(Math.min(1.0, i / HEALTHY_VOUCH_COUNT), 2.0),
+        saturationPercentage: Math.min(100, (i / HEALTHY_VOUCH_COUNT) * 100)
+      }));
+
+      return res.status(200).json({
+        empiricalCurve: curvePoints,
+        theoreticalCurve,
+        healthyTarget: HEALTHY_VOUCH_COUNT,
+        maxFlowComponent: 60
+      });
+    } catch (error) {
+      console.error("Error fetching flow saturation curve:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Test Data Management Endpoints
   app.post("/api/test-data/organic-growth", async (req, res) => {
     try {

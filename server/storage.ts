@@ -25,6 +25,7 @@ export interface IStorage {
   getContext(id: number): Promise<Context | undefined>;
   getEgoContext(ownerAddress: string): Promise<Context | undefined>;
   getOrCreateEgoContext(ownerAddress: string): Promise<Context>;
+  getAllContexts(): Promise<Context[]>;
   updateContext(id: number, updates: Partial<InsertContext>): Promise<void>;
   updateLocalHealth(ownerAddress: string, localHealth: number): Promise<void>;
   
@@ -634,6 +635,13 @@ export class MemStorage implements IStorage {
       ownerAddress: normalizedAddress,
       policyJson: defaultPolicy as any,
     });
+  }
+
+  async getAllContexts(): Promise<Context[]> {
+    return await db
+      .select()
+      .from(contexts)
+      .where(eq(contexts.type, 'ego'));
   }
 
   async updateContext(id: number, updates: Partial<InsertContext>): Promise<void> {
