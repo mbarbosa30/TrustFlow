@@ -34,7 +34,7 @@ export function VouchTimelineChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-80 w-full" />
         </CardContent>
       </Card>
     );
@@ -50,7 +50,7 @@ export function VouchTimelineChart() {
           </CardTitle>
           <CardDescription>Timestamp-based network activity</CardDescription>
         </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center text-muted-foreground">
+        <CardContent className="h-80 flex items-center justify-center text-muted-foreground">
           No vouch activity recorded yet
         </CardContent>
       </Card>
@@ -85,7 +85,7 @@ export function VouchTimelineChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>

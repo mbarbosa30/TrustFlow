@@ -40,7 +40,7 @@ export function FlowSaturationCurve() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-80 w-full" />
         </CardContent>
       </Card>
     );
@@ -56,7 +56,7 @@ export function FlowSaturationCurve() {
           </CardTitle>
           <CardDescription>Vouch count vs LocalHealth relationship</CardDescription>
         </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center text-muted-foreground">
+        <CardContent className="h-80 flex items-center justify-center text-muted-foreground">
           No data available
         </CardContent>
       </Card>
@@ -81,7 +81,7 @@ export function FlowSaturationCurve() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>

@@ -47,7 +47,7 @@ export function VoucherStrengthHistogram() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-72 w-full" />
         </CardContent>
       </Card>
     );
@@ -63,7 +63,7 @@ export function VoucherStrengthHistogram() {
           </CardTitle>
           <CardDescription>LocalHealth of users giving vouches</CardDescription>
         </CardHeader>
-        <CardContent className="h-64 flex items-center justify-center text-muted-foreground">
+        <CardContent className="h-72 flex items-center justify-center text-muted-foreground">
           No vouch data available
         </CardContent>
       </Card>
@@ -100,7 +100,7 @@ export function VoucherStrengthHistogram() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-48">
+        <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data.histogram} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
