@@ -1,6 +1,6 @@
 # MaxFlow: Sybil-Resistant Graph Signal Infrastructure via Recursive Trust Weighting
 
-**Version 1.1 — November 2025**
+**Version 1.2 — December 2025**
 
 ---
 
@@ -98,23 +98,25 @@ For user i:
 | 𝒱ᵢ | Set of vouchers (incoming endorsers) |
 | sⱼ | LocalHealth of voucher j ∈ [0, 100] |
 | Fᵢ | directFlow = Σⱼ∈𝒱ᵢ (sⱼ / 100) |
-| φᵢ | flowScore = min(1, Fᵢ / F₀), baseline F₀ = 5 |
-| Rᵢ | ResidualQuality = clip[0,1](Fᵢ / max(1, |𝒱ᵢ|)) |
-| ρᵢ | effectiveRedundancy from ego upstream |
-| dᵢ | redundancy = min(1, ρᵢ / R₀), baseline R₀ = 20 |
-| Dᵢ | DilutionFactor = max(0.5, 1 - 0.1 × max(0, outVouchesᵢ - 10)) |
+| φᵢ | flowScore = min(1, Fᵢ / F₀) |
+| ρᵢ | effectiveRedundancy from ego upstream (+ vertex-disjoint bonus) |
+| dᵢ | redundancy = min(1, ρᵢ / R₀) |
+| Dᵢ | DilutionFactor from piecewise curve (see §4.5) |
+
+**Adaptive Baselines (v1.2):**
+- F₀ = 75th percentile of incoming vouch counts, clamped to [4, 15]
+- R₀ = F₀ × 4.5, clamped to [15, 60]
+- Fallback for small networks (<10 users): F₀ = 8, R₀ = 35
 
 ### 4.2 Score Formula
 
-We separate average voucher quality from accountability and apply the penalty only to the structural term:
-
 ```
-LocalHealth_i = 60 × φᵢ² + 40 × (dᵢ² × Rᵢ × Dᵢ)
+LocalHealth_i = 60 × φᵢ² + 40 × (dᵢ² × Dᵢ)
 ```
 
 **Components:**
-- **60% Flow**: Who vouches for you, recursively weighted
-- **40% Structure × Quality × Accountability**: Path diversity (redundancy), average voucher strength (ResidualQuality), and dilution penalty (DilutionFactor)
+- **60% Flow**: Who vouches for you, weighted by their own scores (quadratic scaling)
+- **40% Structure × Accountability**: Path redundancy (quadratic) × dilution penalty
 
 ### 4.3 Effective Redundancy (Explicit Definition)
 
@@ -127,53 +129,65 @@ Build an upstream ego subgraph from 𝒱ᵢ by BFS on incoming edges (who vouche
 | m | Internal edges in ego subgraph |
 | n | \|Uᵢ\| nodes in ego subgraph |
 | δ | Edge density = m / max(1, n(n-1)) |
+| vdp | Vertex-disjoint path count (via max-flow with node splitting) |
 
 **Formula:**
 ```
-ρᵢ = k + λ_depth × u + λ_conn × (δ × n)
+ρᵢ = k + λ_depth × u + λ_conn × (δ × n) + min(5, max(0, vdp - 1))
 
 λ_depth = 0.2 (default)
 λ_conn = 1.0 (default)
 ```
 
-Values are defaults; can be learned/tuned (§7).
+**Vertex-Disjoint Path Bonus (v1.2):** Each independent path beyond the first adds 1 point to redundancy (capped at 5). These are truly independent paths where no intermediate nodes are shared, computed via max-flow with node splitting.
 
-### 4.4 Iterative Computation (Damped)
+### 4.4 Iterative Computation
 
 Initialize sᵢ⁽⁰⁾ from |𝒱ᵢ| (e.g., min(100, 20√|𝒱ᵢ|)).
 
 At each round:
-1. Compute ŝᵢ⁽ᵗ⁺¹⁾ via the formula above using s⁽ᵗ⁾ for vouchers
-2. Apply damped update:
-   ```
-   sᵢ⁽ᵗ⁺¹⁾ = (1 - α) × sᵢ⁽ᵗ⁾ + α × ŝᵢ⁽ᵗ⁺¹⁾
-   
-   α = 0.85 (default damping factor)
-   ```
+1. Compute sᵢ⁽ᵗ⁺¹⁾ via the formula above using s⁽ᵗ⁾ for vouchers
+2. Replace scores directly: sᵢ⁽ᵗ⁺¹⁾ = computed score
 
 **Stopping criteria:** max|sᵢ⁽ᵗ⁺¹⁾ - sᵢ⁽ᵗ⁾| < ε (default 0.5) or at 10 rounds.
 
-**Convergence note:** With damping, the update is a convex combination of the previous state and a 1-Lipschitz transform. Choosing α < 1 yields a contraction in practice; empirically ≤8 rounds for avg degree < 10.
+**Convergence note (v1.2):** Damping was removed in favor of direct replacement after empirical testing showed stable convergence in 4-6 iterations for typical networks. The bounded voucher weights (0-1) and quadratic scaling naturally prevent oscillation. Scores are computed network-wide every 6 hours via scheduled batch recalculation.
 
-### 4.5 Worked Examples
+### 4.5 Piecewise Dilution Curve (v1.2)
 
-**Flow Component Calculations:**
+Instead of linear 10% penalty per excess vouch, v1.2 uses a smooth continuous decay curve that prevents gaming at threshold boundaries:
+
+| Zone | Outgoing Vouches | Dᵢ Factor | Transition |
+|------|------------------|-----------|------------|
+| Quality | 1-10 | 1.00 | No penalty |
+| Warning | 11-15 | 1.00 → 0.85 | Linear decay (3%/vouch) |
+| Penalty | 16-25 | 0.85 → 0.55 | Quadratic decay |
+| Cap | 25+ | 0.55 → 0.40 | Asymptotic approach |
+
+**Rationale:** The piecewise curve creates smoother incentives without hard cliffs. Users in the warning zone get gentle feedback; heavy over-vouchers face steeper penalties. The asymptotic floor at 40% prevents complete score destruction while maintaining accountability.
+
+### 4.6 Worked Examples
+
+**Flow Component Calculations (with adaptive F₀ = 8):**
 
 | Vouchers | Avg Strength | directFlow (F) | flowScore (φ) | Flow Pts (60×φ²) |
 |----------|--------------|----------------|---------------|------------------|
-| 1 | 50% | 0.5 | 0.10 | 0.6 |
-| 3 | 70% | 2.1 | 0.42 | 10.6 |
-| 5 | 80% | 4.0 | 0.80 | 38.4 |
-| 8 | 90% | 7.2 | 1.00 | 60.0 |
+| 1 | 50% | 0.5 | 0.06 | 0.2 |
+| 3 | 70% | 2.1 | 0.26 | 4.1 |
+| 5 | 80% | 4.0 | 0.50 | 15.0 |
+| 8 | 90% | 7.2 | 0.90 | 48.6 |
+| 10 | 95% | 9.5 | 1.00 | 60.0 |
 
 **Dilution Penalty Impact:**
 
-| Outgoing Vouches | Excess | Penalty | Dᵢ Factor | Redundancy Impact |
-|------------------|--------|---------|-----------|-------------------|
-| ≤10 | 0 | 0% | 1.00 | None |
-| 12 | 2 | 20% | 0.80 | -8 pts max |
-| 15 | 5 | 50% | 0.50 | -20 pts max |
-| 20+ | 10+ | 50% (cap) | 0.50 | -20 pts max |
+| Outgoing Vouches | Zone | Dᵢ Factor | Max Redundancy Impact |
+|------------------|------|-----------|----------------------|
+| ≤10 | Quality | 1.00 | None |
+| 12 | Warning | 0.94 | -2.4 pts |
+| 15 | Warning | 0.85 | -6 pts |
+| 20 | Penalty | 0.78 | -8.8 pts |
+| 25 | Penalty | 0.55 | -18 pts |
+| 35+ | Cap | ~0.46 | -21.6 pts |
 
 ---
 
@@ -258,9 +272,15 @@ Weights are defaults; can be learned (§7).
 | Public vouches | Merkle log enables community auditing |
 | Dilution penalty | Prices endorsement spam |
 
-### 6.2 Planned/Shipping Enhancements
+### 6.2 Shipped & Planned Enhancements
 
-- **Vertex-disjoint paths**: Not just edge-disjoint for true independence
+**Shipped (v1.2):**
+- **Vertex-disjoint paths**: Implemented via max-flow with node splitting for true path independence
+- **Piecewise dilution curve**: Smooth decay preventing threshold gaming
+- **Adaptive baselines**: Percentile-based F₀/R₀ for network scalability
+- **Scheduled batch recalculation**: 6-hour network-wide recomputation
+
+**Planned:**
 - **Per-seed flow floors**: Require ≥30% flow from each of ≥2 seeds to avoid dust-coverage
 - **Seed saturation throttles**: Monitor and damp seeds exceeding 40-50% of total outflow
 - **Cut witnesses**: Publish minimal vertex-cut witness sets with Merkle proofs
@@ -286,9 +306,10 @@ Only seeds with Sₛ ≥ 0.6 count toward "≥2 seeds" requirement.
 **Sybil Network Attack:**
 1. Sybil accounts start with LocalHealth 0 (no incoming vouches)
 2. Attacker must vouch for all Sybils → triggers dilution penalty
-3. 50 Sybils = 40 excess vouches → 50% redundancy penalty on attacker
+3. 50 Sybils = 40 excess vouches → ~54% redundancy penalty on attacker (piecewise curve)
 4. Sybils only gain score weighted by attacker's (now reduced) score
-5. **Result:** Not economically viable
+5. Vertex-disjoint path check reveals shallow/fake network structure
+6. **Result:** Not economically viable
 
 **Seed Capture Attack:**
 1. Seed quality scoring reduces captured seed's capacity multiplier
@@ -299,17 +320,20 @@ Only seeds with Sₛ ≥ 0.6 count toward "≥2 seeds" requirement.
 
 ## 7. Parameterization & Learning
 
-### 7.1 Default Parameters
+### 7.1 Default Parameters (v1.2)
 
 | Parameter | Value | Purpose |
 |-----------|-------|---------|
-| F₀ | 5 | Healthy vouch count baseline |
-| R₀ | 20 | Healthy redundancy baseline |
+| F₀ | Adaptive (4-15) | Healthy vouch count baseline, 75th percentile |
+| R₀ | Adaptive (15-60) | Healthy redundancy baseline, F₀ × 4.5 |
 | λ_depth | 0.2 | Depth bonus weight |
 | λ_conn | 1.0 | Connectivity bonus weight |
-| α | 0.85 | Iteration damping factor |
+| vdp_cap | 5 | Max vertex-disjoint path bonus |
 | ε | 0.5 | Convergence threshold |
 | max_iter | 10 | Maximum iterations |
+| dilution_floor | 0.4 | Minimum dilution factor |
+
+**Fallback values (small networks):** F₀ = 8, R₀ = 35
 
 ### 7.2 Data-Driven Refinement
 
@@ -362,9 +386,11 @@ Include learned weights in `params.json` as "advisory defaults"; core algorithm 
 | Full iteration | O(\|E\| × k) | k ≤ 10 rounds with damping |
 | STS (per user) | O(\|E\| log \|V\|) | Push-Relabel with global relabeling |
 
-**Caching strategy:**
-- Cache LocalHealth with timestamps
-- Recompute on vouch events or on-demand with freshness hints
+**Caching strategy (v1.2):**
+- Cache LocalHealth in database with timestamps
+- Network-wide batch recomputation every 6 hours via scheduler
+- On-demand per-vouch recalculation removed for performance (network-wide computation required for accurate recursive weighting)
+- Admin endpoints for manual trigger and scheduler status monitoring
 
 ### 8.3 API Reference
 
@@ -549,16 +575,18 @@ R_0 = 20                   # Healthy redundancy points
 # Redundancy component weights
 LAMBDA_DEPTH = 0.2         # Weight for upstream depth bonus
 LAMBDA_CONN = 1.0          # Weight for connectivity bonus
+VDP_CAP = 5                # Max vertex-disjoint path bonus (v1.2)
 
-# Dilution parameters
-DILUTION_THRESHOLD = 10    # Outgoing vouches before penalty
-DILUTION_RATE = 0.1        # Penalty per excess vouch
-DILUTION_CAP = 0.5         # Minimum dilution factor
+# Dilution parameters (v1.2: piecewise curve)
+QUALITY_THRESHOLD = 10     # Outgoing vouches before penalty
+WARNING_THRESHOLD = 15     # Gentle decay zone
+PENALTY_THRESHOLD = 25     # Steeper decay zone
+DILUTION_FLOOR = 0.4       # Minimum dilution factor
 
-# Iteration parameters
-ALPHA = 0.85               # Damping factor
+# Iteration parameters (v1.2: no damping)
 MAX_ITERATIONS = 10        # Maximum rounds
 CONVERGENCE_THRESHOLD = 0.5  # Score change threshold
+RECALC_INTERVAL_HOURS = 6   # Scheduled batch interval
 
 # Score weights
 FLOW_WEIGHT = 60           # Flow component weight
@@ -580,13 +608,52 @@ SCALING_EXPONENT = 2.0     # Quadratic scaling
 | **ResidualQuality (R)** | Average voucher strength: F / \|vouchers\| |
 | **effectiveRedundancy (ρ)** | k + λ_depth×u + λ_conn×(δ×n) |
 | **redundancy (d)** | Normalized redundancy: min(1, ρ/R₀) |
-| **DilutionFactor (D)** | Penalty factor for excessive outgoing vouches |
+| **DilutionFactor (D)** | Penalty factor for excessive outgoing vouches (piecewise in v1.2) |
 | **Epoch** | Discrete time period for score computation |
 | **Seed** | Trusted anchor node for community scoring |
 | **Min-cut** | Minimum capacity of edges separating source from sink |
 | **KUDOS** | Reward token earned from LocalHealth; never influences scoring |
-| **Damping (α)** | Iteration smoothing factor (default 0.85) |
+| **Vertex-disjoint paths** | Independent paths sharing no intermediate nodes |
 
 ---
 
-*MaxFlow is open infrastructure. This whitepaper describes the implementation as of November 2025. Algorithm parameters may be updated based on empirical performance and community feedback.*
+## Appendix C: Version History
+
+### Version 1.2 (December 2025)
+
+**Adaptive Baselines:**
+- Changed F₀ from fixed 5 to 75th percentile of incoming vouch counts (clamped 4-15)
+- Changed R₀ from fixed 20 to F₀ × 4.5 (clamped 15-60)
+- Rationale: Fixed baselines don't scale as network grows; percentile-based approach maintains score distribution
+
+**Iteration Without Damping:**
+- Removed α=0.85 damping factor in favor of direct score replacement
+- Empirical testing showed stable 4-6 round convergence without damping
+- Bounded voucher weights and quadratic scaling naturally prevent oscillation
+
+**Piecewise Dilution Curve:**
+- Replaced linear 10%/vouch penalty with smooth 4-zone curve
+- Quality (1-10): 1.00, Warning (11-15): 1.00→0.85, Penalty (16-25): 0.85→0.55, Cap (25+): asymptotic to 0.40
+- Rationale: Prevents gaming at threshold boundaries; smoother incentive gradient
+
+**Vertex-Disjoint Path Bonus:**
+- Added +1 redundancy per independent path (capped at 5)
+- Computed via max-flow with node splitting
+- Rationale: Stronger Sybil resistance by requiring truly independent endorsement paths
+
+**Scheduled Batch Recalculation:**
+- Network-wide recomputation every 6 hours via scheduler
+- Removed per-vouch recalculation for scalability
+- Network-wide computation required for accurate recursive weighting
+
+### Version 1.1 (November 2025)
+
+- Initial published specification
+- Fixed baselines F₀=5, R₀=20
+- Linear dilution with 50% floor
+- Damped iteration with α=0.85
+- LocalHealth formula: 60×φ² + 40×(d²×R×D) including ResidualQuality
+
+---
+
+*MaxFlow is open infrastructure. This whitepaper describes the implementation as of December 2025. Algorithm parameters may be updated based on empirical performance and community feedback.*

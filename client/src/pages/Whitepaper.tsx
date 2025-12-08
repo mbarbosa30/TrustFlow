@@ -679,21 +679,14 @@ export default function Whitepaper() {
               
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="mb-2">
-                  <strong className="text-sm">Flow Score</strong> — Normalized against healthy baseline
+                  <strong className="text-sm">Flow Score</strong> — Normalized against adaptive baseline
                 </div>
                 <div className="overflow-x-auto">
                   <InlineFormula>{"\\phi_i = \\min\\!\\big(1, F_i / F_0\\big)"}</InlineFormula>
-                  <span className="text-sm text-muted-foreground ml-2">where <InlineFormula>{"F_0 = 5"}</InlineFormula> (default)</span>
                 </div>
-              </div>
-              
-              <div className="p-3 rounded-lg bg-muted/30">
-                <div className="mb-2">
-                  <strong className="text-sm">Residual Quality</strong> — Average voucher strength
-                </div>
-                <div className="overflow-x-auto">
-                  <InlineFormula>{"R_i = \\text{clip}_{[0,1]}\\!\\left( \\frac{F_i}{\\max(1,|\\mathcal{V}_i|)} \\right)"}</InlineFormula>
-                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  <strong>Adaptive F₀ (v1.2):</strong> 75th percentile of incoming vouch counts, clamped to [4, 15]. Fallback: 8
+                </p>
               </div>
               
               <div className="p-3 rounded-lg bg-muted/30">
@@ -709,9 +702,9 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="LocalHealth Score Formula" testId="formula-localhealth">
+            <FormulaBox label="LocalHealth Score Formula (v1.2)" testId="formula-localhealth">
               <BlockFormula>
-                {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i^2 \\;+\\; 40 \\cdot \\big(d_i^2 \\cdot R_i \\cdot D_i\\big) }"}
+                {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i^2 \\;+\\; 40 \\cdot \\big(d_i^2 \\cdot D_i\\big) }"}
               </BlockFormula>
             </FormulaBox>
 
@@ -719,13 +712,13 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">60% Flow Component</div>
                 <p className="text-sm text-muted-foreground">
-                  Who vouches for you, weighted by their own scores. High-quality vouchers matter more.
+                  Who vouches for you, weighted by their own scores (quadratic scaling). High-quality vouchers matter more.
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">40% Structure Component</div>
                 <p className="text-sm text-muted-foreground">
-                  Path redundancy × average voucher quality × accountability penalty. Rewards deep, diverse networks.
+                  Path redundancy (quadratic) × accountability penalty. Rewards deep, diverse networks with vertex-disjoint paths.
                 </p>
               </div>
             </div>
@@ -762,31 +755,40 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="Effective Redundancy" testId="formula-redundancy">
+            <FormulaBox label="Effective Redundancy (v1.2)" testId="formula-redundancy">
               <BlockFormula>
-                {"\\rho_i = k + \\lambda_{\\text{depth}} \\cdot u + \\lambda_{\\text{conn}} \\cdot (\\delta \\cdot n)"}
+                {"\\rho_i = k + \\lambda_{\\text{depth}} \\cdot u + \\lambda_{\\text{conn}} \\cdot (\\delta \\cdot n) + \\min(5, \\max(0, \\text{vdp} - 1))"}
               </BlockFormula>
               <p className="text-sm text-muted-foreground text-center mt-2">
-                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.2"}</InlineFormula>, <InlineFormula>{"\\lambda_{\\text{conn}} = 1.0"}</InlineFormula>
+                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.2"}</InlineFormula>, <InlineFormula>{"\\lambda_{\\text{conn}} = 1.0"}</InlineFormula>, vdp = vertex-disjoint paths
               </p>
             </FormulaBox>
+
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+              <p className="font-semibold text-sm mb-2">Vertex-Disjoint Path Bonus (v1.2)</p>
+              <p className="text-sm text-muted-foreground">
+                Each independent path beyond the first adds 1 point to redundancy (capped at 5). These are truly 
+                independent paths where no intermediate nodes are shared, computed via max-flow with node splitting. 
+                This provides stronger Sybil resistance than edge-disjoint paths.
+              </p>
+            </div>
             
             <p className="leading-relaxed">
               The redundancy score <InlineFormula>{"d_i = \\min(1, \\rho_i / R_0)"}</InlineFormula> normalizes against 
-              a healthy baseline of <InlineFormula>{"R_0 = 20"}</InlineFormula>. Users with dense, deep support 
-              networks approach <InlineFormula>{"d_i = 1"}</InlineFormula>; isolated accounts stay near zero.
+              an <strong>adaptive baseline</strong>: <InlineFormula>{"R_0 = F_0 \\times 4.5"}</InlineFormula> (clamped to [15, 60], fallback: 35). 
+              Users with dense, deep support networks approach <InlineFormula>{"d_i = 1"}</InlineFormula>; isolated accounts stay near zero.
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Iterative Computation</CardTitle>
+            <CardTitle className="text-lg">Iterative Computation (v1.2)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm sm:text-base">
             <p className="leading-relaxed">
               Because each user's score depends on their vouchers' scores, we compute LocalHealth iteratively 
-              with damping for stable convergence:
+              across the entire network:
             </p>
             
             <div className="space-y-3">
@@ -798,17 +800,17 @@ export default function Whitepaper() {
               </div>
               
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">2. Update</strong>
+                <strong className="text-sm">2. Compute (network-wide)</strong>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Compute <InlineFormula>{"\\widehat{s}_i^{(t+1)}"}</InlineFormula> using current voucher scores
+                  Compute <InlineFormula>{"s_i^{(t+1)}"}</InlineFormula> for ALL users using current voucher scores
                 </p>
               </div>
               
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">3. Damp</strong>
+                <strong className="text-sm">3. Replace directly</strong>
                 <div className="overflow-x-auto mt-1">
-                  <InlineFormula>{"s_i^{(t+1)} = (1 - \\alpha) \\cdot s_i^{(t)} + \\alpha \\cdot \\widehat{s}_i^{(t+1)}"}</InlineFormula>
-                  <span className="text-sm text-muted-foreground ml-2">(<InlineFormula>{"\\alpha = 0.85"}</InlineFormula>)</span>
+                  <InlineFormula>{"s_i^{(t+1)} = \\text{computed score}"}</InlineFormula>
+                  <span className="text-sm text-muted-foreground ml-2">(no damping in v1.2)</span>
                 </div>
               </div>
               
@@ -821,10 +823,11 @@ export default function Whitepaper() {
             </div>
             
             <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="font-semibold text-sm mb-2">Convergence Guarantee</p>
+              <p className="font-semibold text-sm mb-2">Convergence Note (v1.2)</p>
               <p className="text-sm text-muted-foreground">
-                With damping factor <InlineFormula>{"\\alpha < 1"}</InlineFormula>, the update is a contraction mapping. 
-                Empirically, convergence occurs in 4-8 iterations for typical networks with average degree {'<'} 10.
+                Damping was removed after empirical testing showed stable convergence in 4-6 iterations. The bounded 
+                voucher weights (0-1) and quadratic scaling naturally prevent oscillation. Scores are computed 
+                network-wide every 6 hours via scheduled batch recalculation.
               </p>
             </div>
           </CardContent>
@@ -879,28 +882,24 @@ export default function Whitepaper() {
 
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">Flow Score:</strong>{" "}
-                <InlineFormula>{"\\phi = \\min(1, 2.60/5) = 0.52"}</InlineFormula>
+                <strong className="text-sm">Flow Score (with adaptive F₀=8):</strong>{" "}
+                <InlineFormula>{"\\phi = \\min(1, 2.60/8) = 0.325"}</InlineFormula>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <strong className="text-sm">Flow Points:</strong>{" "}
-                <InlineFormula>{"60 \\times 0.52^2 = 16.2"}</InlineFormula>
-              </div>
-              <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">Residual Quality:</strong>{" "}
-                <InlineFormula>{"R = 2.60/4 = 0.65"}</InlineFormula> (avg voucher = 65%)
+                <InlineFormula>{"60 \\times 0.325^2 = 6.34"}</InlineFormula>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <strong className="text-sm">Assuming</strong> <InlineFormula>{"d = 0.7"}</InlineFormula> (redundancy), <InlineFormula>{"D = 1.0"}</InlineFormula> (no dilution):
                 <br />
-                <strong className="text-sm">Structure Points:</strong>{" "}
-                <InlineFormula>{"40 \\times 0.7^2 \\times 0.65 \\times 1.0 = 12.7"}</InlineFormula>
+                <strong className="text-sm">Structure Points (v1.2):</strong>{" "}
+                <InlineFormula>{"40 \\times 0.7^2 \\times 1.0 = 19.6"}</InlineFormula>
               </div>
             </div>
 
             <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
               <div className="font-semibold text-center">
-                <InlineFormula>{"\\mathrm{LocalHealth}_{Alice} = 16.2 + 12.7 = 28.9"}</InlineFormula>
+                <InlineFormula>{"\\mathrm{LocalHealth}_{Alice} = 6.34 + 19.6 = 25.94"}</InlineFormula>
               </div>
               <p className="text-sm text-muted-foreground text-center mt-2">
                 Alice would benefit from more vouchers or higher-quality vouchers to increase her score.
@@ -1663,9 +1662,61 @@ export default function Whitepaper() {
         </Card>
       </section>
 
+      <Separator className="my-8" />
+
+      <section className="space-y-6 mb-12">
+        <h2 className="text-xl sm:text-2xl font-bold">Version History</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Version 1.2 (December 2025)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Adaptive Baselines</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                F₀ now computed from 75th percentile of incoming vouch counts (clamped 4-15). R₀ = F₀ × 4.5 (clamped 15-60). 
+                Enables algorithm to scale with network growth.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Iteration Without Damping</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Removed α=0.85 damping factor. Direct score replacement shows stable 4-6 iteration convergence. 
+                Network-wide batch recalculation every 6 hours.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Piecewise Dilution Curve</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Smooth 4-zone decay replacing linear penalty. Quality (1-10): 1.0, Warning (11-15): 1.0→0.85, 
+                Penalty (16-25): 0.85→0.55, Cap (25+): asymptotic to 0.4.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Vertex-Disjoint Path Bonus</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                +1 redundancy per independent path (capped at 5). Computed via max-flow with node splitting 
+                for stronger Sybil resistance.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg text-muted-foreground">Version 1.1 (November 2025)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Initial published specification. Fixed baselines F₀=5, R₀=20. Linear dilution with 50% floor. 
+              Damped iteration with α=0.85.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
       <footer className="mt-12 p-4 rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
         <p>
-          MaxFlow is open infrastructure. This whitepaper describes the implementation as of November 2025. 
+          MaxFlow is open infrastructure. This whitepaper describes the implementation as of December 2025. 
           Algorithm parameters may be updated based on empirical performance and community feedback.
         </p>
       </footer>
