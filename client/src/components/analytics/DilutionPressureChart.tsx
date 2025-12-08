@@ -95,7 +95,7 @@ export function DilutionPressureChart() {
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (
-          <div className="h-64" data-testid="chart-dilution-pressure">
+          <div className="h-64 py-4" data-testid="chart-dilution-pressure">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

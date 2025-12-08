@@ -105,7 +105,7 @@ export function SybilRiskChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-56" data-testid="chart-sybil-radar">
+        <div className="h-56 py-4" data-testid="chart-sybil-radar">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData}>
               <PolarGrid className="stroke-muted" />

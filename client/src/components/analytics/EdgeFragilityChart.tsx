@@ -97,7 +97,7 @@ export function EdgeFragilityChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64" data-testid="chart-edge-fragility">
+        <div className="h-64 py-4" data-testid="chart-edge-fragility">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={chartData} 

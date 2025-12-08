@@ -83,7 +83,7 @@ export function RedundancyDepthChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-72" data-testid="chart-redundancy-depth">
+        <div className="h-72 py-4" data-testid="chart-redundancy-depth">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart 
               data={chartData} 

@@ -101,7 +101,7 @@ export function VoucherInfluenceChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-64" data-testid="chart-lorenz-curve">
+        <div className="h-64 py-4" data-testid="chart-lorenz-curve">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={lorenzData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>

@@ -81,7 +81,7 @@ export function GrowthCohortChart() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80" data-testid="chart-growth-cohort">
+        <div className="h-80 py-4" data-testid="chart-growth-cohort">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data.cohorts} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
