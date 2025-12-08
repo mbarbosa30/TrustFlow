@@ -4,6 +4,21 @@ import { EgoScorer } from "../algorithm/egoScoring";
 import type { EgoEndorsement } from "../algorithm/egoScoring";
 import { filterValidEndorsements, buildVouchFilter, isVouchValid } from "./vouchExpiration";
 
+export interface AlgorithmBreakdown {
+  flow_component: number;
+  redundancy_component: number;
+  direct_flow: number;
+  effective_redundancy: number;
+  dilution_factor: number;
+  vertex_disjoint_paths: number;
+  ego_network_size: number;
+  edge_density: number;
+  baselines: {
+    healthy_vouch_count: number;
+    healthy_redundancy: number;
+  };
+}
+
 export interface ExtendedScoreMetrics {
   address: string;
   local_health: number;
@@ -20,6 +35,8 @@ export interface ExtendedScoreMetrics {
   activity: {
     last_vouch_given_at: string | null;
   };
+  
+  algorithm_breakdown: AlgorithmBreakdown | null;
 }
 
 export class LocalHealthService {
@@ -159,6 +176,72 @@ export class LocalHealthService {
     return null;
   }
 
+  async computeAlgorithmBreakdown(address: string): Promise<AlgorithmBreakdown | null> {
+    const normalizedAddress = address.toLowerCase() as Address;
+    
+    try {
+      const globalEndorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 100000
+      });
+      
+      const validEndorsements = await filterValidEndorsements(globalEndorsements);
+      
+      const globalVouches: EgoEndorsement[] = validEndorsements.map((e: any) => ({
+        endorser: e.endorser.toLowerCase() as Address,
+        endorsee: e.endorsee.toLowerCase() as Address,
+      }));
+      
+      if (globalVouches.length === 0) {
+        return null;
+      }
+      
+      const egoScorer = new EgoScorer();
+      
+      const results = egoScorer.computeLocalHealthIterative(
+        [normalizedAddress],
+        globalVouches
+      );
+      
+      const result = results.get(normalizedAddress);
+      if (!result || !result.components) {
+        return {
+          flow_component: 0,
+          redundancy_component: 0,
+          direct_flow: 0,
+          effective_redundancy: 0,
+          dilution_factor: 1.0,
+          vertex_disjoint_paths: 0,
+          ego_network_size: 0,
+          edge_density: 0,
+          baselines: {
+            healthy_vouch_count: 8.0,
+            healthy_redundancy: 36.0,
+          },
+        };
+      }
+      
+      const c = result.components;
+      return {
+        flow_component: c.flowComponent,
+        redundancy_component: c.redundancyComponent,
+        direct_flow: c.directFlow,
+        effective_redundancy: c.effectiveRedundancy,
+        dilution_factor: c.dilutionFactor,
+        vertex_disjoint_paths: c.vertexDisjointPaths,
+        ego_network_size: c.egoNetworkSize,
+        edge_density: c.edgeDensity,
+        baselines: {
+          healthy_vouch_count: c.healthyVouchCount,
+          healthy_redundancy: c.healthyRedundancy,
+        },
+      };
+    } catch (error) {
+      console.error(`Error computing algorithm breakdown for ${address}:`, error);
+      return null;
+    }
+  }
+
   async getExtendedScoreMetrics(address: string): Promise<ExtendedScoreMetrics> {
     const normalizedAddress = address.toLowerCase();
     
@@ -177,10 +260,11 @@ export class LocalHealthService {
       cached = false;
     }
     
-    const [incomingTotal, outgoingTotal, incomingEndorsements] = await Promise.all([
+    const [incomingTotal, outgoingTotal, incomingEndorsements, algorithmBreakdown] = await Promise.all([
       storage.countEndorsements({ endorsee: normalizedAddress, communityId: 0 }),
       storage.countEndorsements({ endorser: normalizedAddress, communityId: 0 }),
       storage.getEndorsements({ endorsee: normalizedAddress, communityId: 0, limit: 1000 }),
+      this.computeAlgorithmBreakdown(normalizedAddress),
     ]);
     
     const filter = await buildVouchFilter();
@@ -210,6 +294,8 @@ export class LocalHealthService {
       activity: {
         last_vouch_given_at: lastVouchGivenAt,
       },
+      
+      algorithm_breakdown: algorithmBreakdown,
     };
   }
 }

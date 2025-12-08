@@ -89,6 +89,19 @@ export interface EgoNodeMetrics {
   minCut: number;
 }
 
+export interface AlgorithmComponents {
+  flowComponent: number;
+  redundancyComponent: number;
+  directFlow: number;
+  effectiveRedundancy: number;
+  dilutionFactor: number;
+  vertexDisjointPaths: number;
+  egoNetworkSize: number;
+  edgeDensity: number;
+  healthyVouchCount: number;
+  healthyRedundancy: number;
+}
+
 export interface EgoScoreResult {
   ownerAddress: Address;
   localHealth: number;
@@ -101,4 +114,5 @@ export interface EgoScoreResult {
     maxPossibleFlow: number;
   };
   nodeDetails: EgoNodeMetrics[];
+  components?: AlgorithmComponents;
 }

@@ -841,8 +841,9 @@ export class EgoScorer {
     // Apply vertex-disjoint path check if enabled (stronger Sybil resistance)
     // This counts truly independent paths where no intermediate nodes are shared
     let vertexDisjointBonus = 0;
+    let disjointPathCount = 0;
     if (this.config.useVertexDisjointPaths && directVouchers.length >= 2) {
-      const disjointPaths = computeVertexDisjointPaths(
+      disjointPathCount = computeVertexDisjointPaths(
         ownerAddress,
         directVouchers,
         globalVouches,
@@ -851,7 +852,7 @@ export class EgoScorer {
       // Bonus for having multiple independent paths (harder to Sybil attack)
       // Each disjoint path beyond the first adds a small redundancy bonus
       // Capped at 5 bonus points (from 5+ disjoint paths)
-      vertexDisjointBonus = Math.min(5, Math.max(0, disjointPaths - 1));
+      vertexDisjointBonus = Math.min(5, Math.max(0, disjointPathCount - 1));
     }
 
     // Cut component: 40% based on effective redundancy + vertex-disjoint bonus
@@ -873,7 +874,7 @@ export class EgoScorer {
         acceptedUsers: directVouchers.length,
         avgResidualFlow: Math.round(residualFlow * 1000) / 1000,
         medianMinCut: Math.round(effectiveRedundancy * 100) / 100,
-        maxPossibleFlow: directFlow, // Weighted max flow (sum of voucher strengths)
+        maxPossibleFlow: directFlow,
       },
       nodeDetails: directVouchers.map(voucher => ({
         address: voucher,
@@ -883,6 +884,18 @@ export class EgoScorer {
         residualFlow,
         minCut: effectiveRedundancy / Math.max(1, directVouchers.length),
       })),
+      components: {
+        flowComponent: Math.round(flowComponent * 100) / 100,
+        redundancyComponent: Math.round(cutComponent * 100) / 100,
+        directFlow: Math.round(directFlow * 1000) / 1000,
+        effectiveRedundancy: Math.round(effectiveRedundancy * 100) / 100,
+        dilutionFactor: Math.round(vouchQualityFactor * 1000) / 1000,
+        vertexDisjointPaths: disjointPathCount,
+        egoNetworkSize: egoSize,
+        edgeDensity: Math.round(edgeDensity * 1000) / 1000,
+        healthyVouchCount: Math.round(HEALTHY_VOUCH_COUNT * 10) / 10,
+        healthyRedundancy: Math.round(HEALTHY_REDUNDANCY * 10) / 10,
+      },
     };
   }
 

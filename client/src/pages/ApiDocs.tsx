@@ -53,6 +53,20 @@ export default function ApiDocs() {
   },
   "activity": {
     "last_vouch_given_at": "2025-01-10T08:15:00.000Z"
+  },
+  "algorithm_breakdown": {
+    "flow_component": 45.5,
+    "redundancy_component": 26.5,
+    "direct_flow": 7.0,
+    "effective_redundancy": 12.4,
+    "dilution_factor": 1.0,
+    "vertex_disjoint_paths": 4,
+    "ego_network_size": 15,
+    "edge_density": 0.12,
+    "baselines": {
+      "healthy_vouch_count": 8.0,
+      "healthy_redundancy": 36.0
+    }
   }
 }`}</code></pre>
 
@@ -67,6 +81,20 @@ export default function ApiDocs() {
           <li><strong>vouch_counts.outgoing_total</strong>: Total vouches ever given (exact count)</li>
           <li><strong>vouch_counts.unique_vouchers</strong>: Distinct active endorsers (from last 1,000 evaluated)</li>
           <li><strong>activity.last_vouch_given_at</strong>: When this user last vouched for someone (null if never). Used for vouch expiration calculation.</li>
+        </ul>
+
+        <h4>Algorithm Breakdown Fields</h4>
+        <ul>
+          <li><strong>flow_component</strong>: Points from incoming trust (0-60). Based on weighted sum of voucher strengths normalized by healthy baseline.</li>
+          <li><strong>redundancy_component</strong>: Points from network redundancy (0-40). Measures path diversity and Sybil resistance.</li>
+          <li><strong>direct_flow</strong>: Raw max-flow value from vouchers to target. Each voucher contributes capacity weighted by their own score.</li>
+          <li><strong>effective_redundancy</strong>: Combined redundancy metric = base vouches + depth bonus + connectivity bonus.</li>
+          <li><strong>dilution_factor</strong>: Penalty multiplier (0.4-1.0) applied for excessive outgoing vouches. 1.0 = no penalty.</li>
+          <li><strong>vertex_disjoint_paths</strong>: Count of truly independent trust paths (no shared intermediate nodes).</li>
+          <li><strong>ego_network_size</strong>: Number of nodes in the user's extended ego subgraph (within 3 hops).</li>
+          <li><strong>edge_density</strong>: Ratio of actual edges to potential edges in the ego subgraph. Higher = more interconnected network.</li>
+          <li><strong>baselines.healthy_vouch_count</strong>: Network 75th percentile vouch count (clamped 4-15). Scores scale relative to this.</li>
+          <li><strong>baselines.healthy_redundancy</strong>: Derived redundancy baseline (healthy_vouch_count × 4.5). Used for redundancy normalization.</li>
         </ul>
 
         <h4>Ego Context (Scoring Model)</h4>
