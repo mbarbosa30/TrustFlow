@@ -76,10 +76,23 @@ export class NetworkRecalculationService {
         endorsee: v.endorsee.toLowerCase() as Address,
       }));
 
-      // Get all user addresses
-      const addresses = egoContexts.map(ctx => ctx.ownerAddress!.toLowerCase() as Address);
+      // CRITICAL: Include ALL participants from vouch graph, not just ego contexts
+      // The iterative algorithm requires all nodes to be computed together for accurate
+      // voucher score weighting. Missing participants causes inflated/deflated scores.
+      const allParticipants = new Set<Address>();
+      for (const v of globalVouches) {
+        allParticipants.add(v.endorser);
+        allParticipants.add(v.endorsee);
+      }
+      
+      // Also include existing ego contexts (may have no vouches yet)
+      for (const ctx of egoContexts) {
+        allParticipants.add(ctx.ownerAddress!.toLowerCase() as Address);
+      }
+      
+      const addresses = Array.from(allParticipants);
 
-      console.log(`Starting iterative LocalHealth calculation for ${addresses.length} users...`);
+      console.log(`Starting iterative LocalHealth calculation for ${addresses.length} participants (${egoContexts.length} with ego contexts)...`);
 
       // Compute all scores iteratively (this properly weights vouches by voucher strength)
       const scoreResults = this.egoScorer.computeLocalHealthIterative(

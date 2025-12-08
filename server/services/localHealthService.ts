@@ -40,14 +40,15 @@ export interface ExtendedScoreMetrics {
 }
 
 export class LocalHealthService {
+  /**
+   * Recalculate LocalHealth for a single address using network-wide computation.
+   * IMPORTANT: Always computes ALL network participants together for accurate results.
+   * Single-user computation produces inflated scores.
+   */
   async recalculateLocalHealth(address: string): Promise<number> {
     const normalizedAddress = address.toLowerCase();
     
     try {
-      const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
-      const coSeeds = await storage.getCoSeeds(egoContext.id);
-      const seedAddresses = coSeeds.map(cs => cs.address.toLowerCase() as Address);
-      
       const globalEndorsements = await storage.getEndorsements({
         communityId: 0,
         limit: 100000
@@ -61,17 +62,26 @@ export class LocalHealthService {
         endorsee: e.endorsee.toLowerCase() as Address,
       }));
       
+      // CRITICAL: Compute ALL network users together for accurate iterative algorithm
+      const allParticipants = new Set<Address>();
+      for (const v of globalVouches) {
+        allParticipants.add(v.endorser);
+        allParticipants.add(v.endorsee);
+      }
+      
       const egoScorer = new EgoScorer();
       
-      // Use iterative algorithm for recursive trust weighting (co-seeds not used for LocalHealth)
+      // Use network-wide iterative algorithm for accurate voucher weighting
       const results = egoScorer.computeLocalHealthIterative(
-        [normalizedAddress as Address],
+        Array.from(allParticipants),
         globalVouches
       );
       
       const result = results.get(normalizedAddress);
       if (!result) {
-        throw new Error(`Failed to compute LocalHealth for ${normalizedAddress}`);
+        // User may have no vouches - return 0
+        await storage.updateLocalHealth(normalizedAddress, 0);
+        return 0;
       }
       
       const localHealth = Math.round(result.localHealth);
@@ -130,13 +140,25 @@ export class LocalHealthService {
         endorsee: e.endorsee.toLowerCase() as Address,
       }));
       
+      // CRITICAL: Include ALL participants from vouch graph for accurate iterative computation
+      // Single-subset computation produces inflated/deflated scores
+      const allParticipants = new Set<Address>();
+      for (const v of globalVouches) {
+        allParticipants.add(v.endorser);
+        allParticipants.add(v.endorsee);
+      }
+      // Also include requested addresses (may not have vouches yet)
+      for (const addr of normalizedAddresses) {
+        allParticipants.add(addr);
+      }
+      
       const egoScorer = new EgoScorer();
       const scoreResults = egoScorer.computeLocalHealthIterative(
-        normalizedAddresses,
+        Array.from(allParticipants),
         globalVouches
       );
       
-      // Update database and build results map
+      // Update database and build results map for REQUESTED addresses only
       for (const address of normalizedAddresses) {
         const scoreResult = scoreResults.get(address.toLowerCase());
         if (scoreResult) {
@@ -196,10 +218,19 @@ export class LocalHealthService {
         return null;
       }
       
+      // CRITICAL: Compute ALL network users together for accurate iterative algorithm
+      // Single-user computation produces inflated scores because voucher weights depend
+      // on all peers being computed in the same iteration cycle
+      const allParticipants = new Set<Address>();
+      for (const v of globalVouches) {
+        allParticipants.add(v.endorser);
+        allParticipants.add(v.endorsee);
+      }
+      
       const egoScorer = new EgoScorer();
       
       const results = egoScorer.computeLocalHealthIterative(
-        [normalizedAddress],
+        Array.from(allParticipants),
         globalVouches
       );
       

@@ -40,8 +40,10 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
 *   **Dual Scoring Model**:
     *   **LocalHealth (Ego Score)**: Personal network quality (0-100) using max-flow/min-cut algorithms with recursive trust weighting.
         *   **Pure Option 2 (Default)**: Measures "how much the network trusts me" using an iterative PageRank-style algorithm where vouches are weighted by the voucher's LocalHealth score (up to 10 iterations). It combines a Flow Component (60%) and a Redundancy Component (40%).
+        *   **Network-Wide Computation (Dec 2025 Fix)**: ALL participants (endorsers + endorsees) must be computed together in each iteration. Single-user or subset computation produces inflated/deflated scores because voucher weights depend on peers.
         *   **Redundancy**: Combines direct vouches, depth bonus, connectivity bonus, and vertex-disjoint path bonus for Sybil resistance.
         *   **Adaptive Baselines**: Dynamically computes healthy baselines from network percentiles (75th percentile vouch count), clamped to 4-15 vouches.
+        *   **Algorithm Breakdown**: API returns detailed components (flow_component + redundancy_component) that sum to the final LocalHealth score.
     *   **Outgoing Vouch Adjustment**: Applies a piecewise dilution curve to penalize excessive vouching, ensuring accountability.
     *   LocalHealth is purely graph-based, independent of economic factors.
 *   **LocalHealth Score Caching**: Event-driven caching system in `contexts` table, triggering recalculation upon receiving or giving a vouch for API optimization.
