@@ -3,11 +3,8 @@ import { validateCommunityApiKey } from '../middleware/apiKeyAuth';
 import { rateLimit } from '../middleware/rateLimit';
 import { storage } from '../storage';
 import { verifyEndorsementSignature, validateEndorsementFields } from '../crypto/eip712';
-import { validateNonce } from '../crypto/nonce';
 import { computeLeafHash } from '../crypto/merkle';
 import type { Address } from 'viem';
-import { EgoScorer } from '../algorithm/egoScoring';
-import type { EgoEndorsement, KudosBoost } from '../algorithm/egoScoring';
 
 /**
  * Minimal API routes for external integrations
@@ -52,10 +49,21 @@ export function registerMinimalApiRoutes(app: Express) {
           });
         }
         
-        // Get current epoch for this community
-        const currentEpoch = await storage.getCurrentEpoch(communityId);
+        // Get or create current epoch for this community
+        let currentEpoch = await storage.getCurrentEpoch(communityId);
         if (!currentEpoch) {
-          return res.status(400).json({ error: "NO_ACTIVE_EPOCH" });
+          // Auto-create epoch 0 if none exists
+          currentEpoch = await storage.createEpoch({
+            id: 0,
+            communityId,
+            status: "active",
+            graphRoot: null,
+            seedRoot: null,
+            paramsHash: null,
+            scoresHash: null,
+            signature: null,
+            closedAt: null,
+          });
         }
         
         const epoch = BigInt(currentEpoch.id);
@@ -75,7 +83,6 @@ export function registerMinimalApiRoutes(app: Express) {
           endorsee: endorsee.toLowerCase() as Address,
           epoch,
           nonce,
-          timestamp,
         });
         
         if (!fieldValidation.valid) {
@@ -188,7 +195,8 @@ export function registerMinimalApiRoutes(app: Express) {
           const cachedScore = await localHealthService.getCachedLocalHealth(address);
           
           if (cachedScore !== null) {
-            localHealth = cachedScore;
+            // Ensure integer (guard against legacy float cache)
+            localHealth = Math.round(cachedScore);
           } else {
             // No cached score - trigger recalculation
             localHealth = await localHealthService.recalculateLocalHealth(address);

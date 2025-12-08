@@ -596,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           id: address,
           address,
-          localHealth: result?.localHealth || 0,
+          localHealth: Math.round(result?.localHealth || 0),
           degree,
           voucherCount: result?.metrics?.acceptedUsers || 0,
           avgVoucherStrength: result?.metrics?.avgResidualFlow || 0
@@ -1679,7 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           address: `${address.slice(0, 6)}...${address.slice(-4)}`,
-          localHealth,
+          localHealth: Math.round(localHealth),
           vouchCount,
           outgoingVouches: outgoing,
           flowComponent: Math.round(flowComponent * 10) / 10,
@@ -1787,7 +1787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(([address, count]) => ({
           address: `${address.slice(0, 6)}...${address.slice(-4)}`,
           vouchesGiven: count,
-          localHealth: healthMap.get(address) || 0,
+          localHealth: Math.round(healthMap.get(address) || 0),
           dilutionPenalty: count > 10 ? Math.min(0.5, (count - 10) * 0.1) : 0
         }))
         .sort((a, b) => b.vouchesGiven - a.vouchesGiven)
@@ -1993,7 +1993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: `${address.slice(0, 6)}...${address.slice(-4)}`,
           fullAddress: address,
           vouchCount: data.vouchCount,
-          localHealth: healthMap.get(address) || 0,
+          localHealth: Math.round(healthMap.get(address) || 0),
           influenceShare: totalInfluence > 0 
             ? Math.round((data.totalInfluence / totalInfluence) * 1000) / 10
             : 0,
@@ -2095,7 +2095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           direct,
           secondHop: secondHopSet.size,
           thirdHop: thirdHopSet.size,
-          localHealth: ctx.localHealth || 0
+          localHealth: Math.round(ctx.localHealth || 0)
         });
       });
 
@@ -2256,7 +2256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             address: `${address.slice(0, 6)}...${address.slice(-4)}`,
             fullAddress: address,
-            localHealth: healthMap.get(address) || 0,
+            localHealth: Math.round(healthMap.get(address) || 0),
             vouchesGiven: data.count,
             excessVouches,
             dilutionPenalty: Math.round(dilutionPenalty * 100),
@@ -2386,7 +2386,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return {
             address: `${address.slice(0, 6)}...${address.slice(-4)}`,
             fullAddress: address,
-            localHealth: healthMap.get(address) || 0,
+            localHealth: Math.round(healthMap.get(address) || 0),
             reciprocityRate: Math.round(reciprocityRate * 100),
             lowStrengthRate: Math.round(lowStrengthRate * 100),
             isNew: risk.isNew,

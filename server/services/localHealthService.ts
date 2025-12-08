@@ -135,7 +135,8 @@ export class LocalHealthService {
     const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
     
     if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
-      return egoContext.localHealth;
+      // Always return rounded integer (guard against legacy float data)
+      return Math.round(egoContext.localHealth);
     }
     
     return null;
