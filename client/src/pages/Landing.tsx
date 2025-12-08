@@ -2,21 +2,44 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   Network, Shield, GitBranch, CheckCircle2, Users, ArrowRight, 
-  Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock, Leaf, TreePine
+  Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock, Leaf, TreePine,
+  Activity, TrendingUp, Heart
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
+interface NetworkTraction {
+  totalUsers: number;
+  totalVouches: number;
+  totalCommunities: number;
+  avgLocalHealth: number;
+  graphDensity: number;
+  avgVouchesPerUser: number;
+  healthDistribution: {
+    low: number;
+    medium: number;
+    high: number;
+  };
+  usersWithScores: number;
+  dilutionZones: {
+    quality: number;
+    warning: number;
+    penalty: number;
+    critical: number;
+    qualityPercent: number;
+  };
+  networkHealth: {
+    qualityVouchers: number;
+    avgScore: number;
+    activeUsers: number;
+  };
+}
+
 export default function Landing() {
-  const { data: stats } = useQuery<{
-    totalUsers: number;
-    totalEndorsements: number;
-    totalEndorsers: number;
-    totalEndorsees: number;
-    avgSTS: number;
-  }>({
-    queryKey: ['/api/stats'],
+  const { data: traction } = useQuery<NetworkTraction>({
+    queryKey: ['/api/stats/network-traction'],
   });
 
   return (
@@ -52,25 +75,31 @@ export default function Landing() {
             </Link>
           </div>
 
-          {stats && stats.totalUsers > 0 && (
-            <div className="mt-12 grid grid-cols-3 gap-8 max-w-lg mx-auto">
+          {traction && traction.totalUsers > 0 && (
+            <div className="mt-12 grid grid-cols-4 gap-6 max-w-2xl mx-auto">
               <div className="text-center" data-testid="stat-users">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {stats.totalUsers.toLocaleString()}
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {traction.totalUsers.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Users</div>
               </div>
-              <div className="text-center" data-testid="stat-endorsements">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {stats.totalEndorsements.toLocaleString()}
+              <div className="text-center" data-testid="stat-vouches">
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {traction.totalVouches.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Vouches</div>
               </div>
-              <div className="text-center" data-testid="stat-avg-score">
-                <div className="text-2xl md:text-3xl font-bold">
-                  {Math.round(stats.avgSTS)}
+              <div className="text-center" data-testid="stat-communities">
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {traction.totalCommunities}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Avg Score</div>
+                <div className="text-xs text-muted-foreground mt-1">Communities</div>
+              </div>
+              <div className="text-center" data-testid="stat-avg-health">
+                <div className="text-2xl md:text-3xl font-bold text-primary">
+                  {traction.avgLocalHealth}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Avg LocalHealth</div>
               </div>
             </div>
           )}
@@ -398,7 +427,109 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-16 px-4 bg-muted/30">
+      {traction && traction.totalUsers > 0 && (
+        <section className="py-16 px-4 bg-muted/30">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge variant="outline" className="mb-4">
+                <Activity className="w-3 h-3 mr-1" />
+                Live Network Stats
+              </Badge>
+              <h2 className="text-3xl font-bold mb-3" data-testid="text-traction-heading">
+                Network Traction
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Real-time computed indicators showing network health and evolution
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card data-testid="card-traction-density">
+                <CardContent className="pt-6 text-center">
+                  <Network className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold mb-1">{traction.graphDensity}%</div>
+                  <div className="text-sm text-muted-foreground">Graph Density</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Edge connections vs maximum possible
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-traction-vouches-per-user">
+                <CardContent className="pt-6 text-center">
+                  <Users className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold mb-1">{traction.avgVouchesPerUser}</div>
+                  <div className="text-sm text-muted-foreground">Avg Vouches/User</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Network connectivity depth
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-traction-quality">
+                <CardContent className="pt-6 text-center">
+                  <Shield className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                  <div className="text-3xl font-bold text-green-600 mb-1">{traction.dilutionZones.qualityPercent}%</div>
+                  <div className="text-sm text-muted-foreground">Quality Vouchers</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Users with ≤10 outgoing vouches
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-traction-active">
+                <CardContent className="pt-6 text-center">
+                  <Heart className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <div className="text-3xl font-bold mb-1">{traction.usersWithScores}</div>
+                  <div className="text-sm text-muted-foreground">Scored Users</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Users with computed LocalHealth
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-primary/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Score Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm">Low (0-30)</span>
+                      <span className="text-sm font-medium">{traction.healthDistribution.low} users</span>
+                    </div>
+                    <Progress value={traction.usersWithScores > 0 ? (traction.healthDistribution.low / traction.usersWithScores) * 100 : 0} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm">Medium (30-60)</span>
+                      <span className="text-sm font-medium">{traction.healthDistribution.medium} users</span>
+                    </div>
+                    <Progress value={traction.usersWithScores > 0 ? (traction.healthDistribution.medium / traction.usersWithScores) * 100 : 0} className="h-2" />
+                  </div>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm">High (60-100)</span>
+                      <span className="text-sm font-medium">{traction.healthDistribution.high} users</span>
+                    </div>
+                    <Progress value={traction.usersWithScores > 0 ? (traction.healthDistribution.high / traction.usersWithScores) * 100 : 0} className="h-2" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground italic mt-4 text-center">
+                  Like rivers carving paths through terrain — scores flow through the network, strengthening over time.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
+
+      <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3" data-testid="text-audiences-heading">

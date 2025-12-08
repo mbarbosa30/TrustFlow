@@ -7,7 +7,7 @@ import { db } from "./db";
 import { verifyEndorsementSignature, validateEndorsementFields, type SignedEndorsement } from "./crypto/eip712";
 import { validateNonce } from "./crypto/nonce";
 import { computeLeafHash } from "./crypto/merkle";
-import { insertPublicEndorsementSchema, publicEndorsements, scores, contexts, type Community, type PublicEndorsement, type Score } from "@shared/schema";
+import { insertPublicEndorsementSchema, publicEndorsements, scores, contexts, type Community, type PublicEndorsement, type Score, type Context } from "@shared/schema";
 import { computeUserConfidence } from "./health/ghi";
 import { sql, eq } from "drizzle-orm";
 import { verifyMessage } from "viem";
@@ -710,6 +710,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Network Traction - aggregated metrics for landing page
+  app.get("/api/stats/network-traction", async (req, res) => {
+    try {
+      // Get basic stats
+      const totalEndorsements = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(publicEndorsements);
+      
+      const allParticipantsResult = await db
+        .select({ address: sql<string>`endorser` })
+        .from(publicEndorsements)
+        .union(
+          db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)
+        );
+      const totalUsers = new Set(allParticipantsResult.map(r => r.address.toLowerCase())).size;
+      
+      // Get communities
+      const allCommunities = await storage.listCommunities();
+      
+      // Get LocalHealth stats
+      const allContexts = await storage.getAllContexts();
+      const contextsWithScores = allContexts.filter((c: Context) => c.localHealth !== null && c.localHealth > 0);
+      const avgLocalHealth = contextsWithScores.length > 0
+        ? contextsWithScores.reduce((sum: number, c: Context) => sum + (c.localHealth || 0), 0) / contextsWithScores.length
+        : 0;
+      
+      // LocalHealth distribution
+      const healthDistribution = {
+        low: contextsWithScores.filter((c: Context) => (c.localHealth || 0) < 30).length,
+        medium: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 30 && (c.localHealth || 0) < 60).length,
+        high: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 60).length,
+      };
+      
+      // Calculate graph density (edges / max possible edges)
+      const maxPossibleEdges = totalUsers * (totalUsers - 1);
+      const actualEdges = totalEndorsements[0]?.count || 0;
+      const graphDensity = maxPossibleEdges > 0 ? (actualEdges / maxPossibleEdges) * 100 : 0;
+      
+      // Get dilution zones from vouches given
+      const endorserCounts = await db
+        .select({
+          endorser: publicEndorsements.endorser,
+          count: sql<number>`count(*)::int`
+        })
+        .from(publicEndorsements)
+        .groupBy(publicEndorsements.endorser);
+      
+      const qualityZone = endorserCounts.filter(e => e.count <= 10).length;
+      const warningZone = endorserCounts.filter(e => e.count > 10 && e.count <= 15).length;
+      const penaltyZone = endorserCounts.filter(e => e.count > 15 && e.count <= 25).length;
+      const criticalZone = endorserCounts.filter(e => e.count > 25).length;
+      const totalEndorsers = endorserCounts.length;
+      
+      const qualityPercent = totalEndorsers > 0 ? Math.round((qualityZone / totalEndorsers) * 100) : 0;
+      
+      // Get resilience stats (users with 4+ disjoint paths)
+      // This would require computing scores for everyone, so we'll estimate based on vouch counts
+      const avgVouchesReceived = totalUsers > 0 ? actualEdges / totalUsers : 0;
+      
+      return res.status(200).json({
+        // Core metrics
+        totalUsers,
+        totalVouches: actualEdges,
+        totalCommunities: allCommunities.length,
+        avgLocalHealth: Math.round(avgLocalHealth * 10) / 10,
+        
+        // Graph health
+        graphDensity: Math.round(graphDensity * 100) / 100,
+        avgVouchesPerUser: Math.round(avgVouchesReceived * 10) / 10,
+        
+        // Score distribution
+        healthDistribution,
+        usersWithScores: contextsWithScores.length,
+        
+        // Dilution zones
+        dilutionZones: {
+          quality: qualityZone,
+          warning: warningZone,
+          penalty: penaltyZone,
+          critical: criticalZone,
+          qualityPercent,
+        },
+        
+        // Network quality indicators
+        networkHealth: {
+          qualityVouchers: qualityPercent,
+          avgScore: Math.round(avgLocalHealth),
+          activeUsers: contextsWithScores.length,
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching network traction:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
