@@ -249,7 +249,10 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => {
                   const fg = graphRef.current;
-                  if (fg) fg.zoom(fg.zoom() * 1.2);
+                  if (fg) {
+                    const currentPos = fg.cameraPosition();
+                    fg.cameraPosition({ z: currentPos.z * 0.8 }, undefined, 300);
+                  }
                 }}
                 data-testid="button-zoom-in"
                 className="h-8 w-8"
@@ -261,7 +264,10 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => {
                   const fg = graphRef.current;
-                  if (fg) fg.zoom(fg.zoom() * 0.8);
+                  if (fg) {
+                    const currentPos = fg.cameraPosition();
+                    fg.cameraPosition({ z: currentPos.z * 1.2 }, undefined, 300);
+                  }
                 }}
                 data-testid="button-zoom-out"
                 className="h-8 w-8"
@@ -443,7 +449,10 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => {
                   const fg = graphRef.current;
-                  if (fg) fg.zoom(fg.zoom() * 1.2);
+                  if (fg) {
+                    const currentPos = fg.cameraPosition();
+                    fg.cameraPosition({ z: currentPos.z * 0.8 }, undefined, 300);
+                  }
                 }}
                 data-testid="button-zoom-in"
               >
@@ -454,7 +463,10 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => {
                   const fg = graphRef.current;
-                  if (fg) fg.zoom(fg.zoom() * 0.8);
+                  if (fg) {
+                    const currentPos = fg.cameraPosition();
+                    fg.cameraPosition({ z: currentPos.z * 1.2 }, undefined, 300);
+                  }
                 }}
                 data-testid="button-zoom-out"
               >

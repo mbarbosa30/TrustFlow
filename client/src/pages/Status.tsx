@@ -424,7 +424,7 @@ export default function Status() {
               Design Principles
             </CardTitle>
             <CardDescription>
-              Why TrustFlow measures health this way
+              Why MaxFlow measures health this way
             </CardDescription>
           </CardHeader>
           <CardContent>

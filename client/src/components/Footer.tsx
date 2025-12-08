@@ -51,22 +51,12 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/kudos" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-kudos">
-                  KUDOS
-                </Link>
-              </li>
-              <li>
-                <Link href="/kudos-economics" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-kudos-economics">
-                  KUDOS Economics
-                </Link>
-              </li>
-              <li>
                 <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-dashboard">
                   Global Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/verify" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/verify" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-verify">
                   Verify Attestations
                 </Link>
               </li>
@@ -95,11 +85,6 @@ export function Footer() {
               <li>
                 <Link href="/api-docs" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-api-docs">
                   API Documentation
-                </Link>
-              </li>
-              <li>
-                <Link href="/bluesky" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-footer-bluesky">
-                  Bluesky Explorer
                 </Link>
               </li>
               <li>
