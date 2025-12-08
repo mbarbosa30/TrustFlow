@@ -13,6 +13,9 @@ import { EdgeFragilityChart } from "@/components/analytics/EdgeFragilityChart";
 import { DilutionPressureChart } from "@/components/analytics/DilutionPressureChart";
 import { SybilRiskChart } from "@/components/analytics/SybilRiskChart";
 import { ConvergenceSensitivityChart } from "@/components/analytics/ConvergenceSensitivityChart";
+import { DilutionZonesChart } from "@/components/analytics/DilutionZonesChart";
+import { NetworkResilienceChart } from "@/components/analytics/NetworkResilienceChart";
+import { AdaptiveBaselineMonitor } from "@/components/analytics/AdaptiveBaselineMonitor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -357,6 +360,25 @@ export default function Dashboard() {
             <div className="space-y-8">
               <VouchTimelineChart />
               <GrowthCohortChart />
+            </div>
+          </section>
+
+          {/* Algorithm Enhancements Section */}
+          <section>
+            <div className="flex items-center gap-3 mb-8">
+              <Shield className="w-6 h-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Security & Algorithm Enhancements</h2>
+                <p className="text-sm text-muted-foreground">Vertex-disjoint paths, piecewise dilution curves, and adaptive baselines</p>
+              </div>
+            </div>
+            
+            <div className="space-y-8">
+              <AdaptiveBaselineMonitor />
+              <div className="grid lg:grid-cols-2 gap-8">
+                <NetworkResilienceChart />
+                <DilutionZonesChart />
+              </div>
             </div>
           </section>
 

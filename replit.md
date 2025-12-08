@@ -92,13 +92,16 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
 *   **Network Recalculation**: Admin tool for batch computing and persisting all LocalHealth scores across the entire network. Computes scores using current algorithm parameters and saves them to the database `contexts.local_health` column. Includes zero-vouch safety guard to prevent empty-graph runs and provides detailed per-user results with timing metrics. Accessible via `/api/admin/recalculate-network` or the Admin panel button.
 *   **Anti-Gaming Rules (Planned)**: Includes per-epoch vouch caps, a warm-up period for new ego contexts, and a reciprocality brake for mutual vouches.
 
-*   **Advanced Algorithm Analytics (Dec 2025)**: Mathematician-focused Dashboard with 5 new analytics endpoints:
+*   **Advanced Algorithm Analytics (Dec 2025)**: Mathematician-focused Dashboard with 8 analytics endpoints:
     *   `/api/analytics/convergence-metrics` - PageRank-style iteration telemetry showing residual decay
     *   `/api/analytics/vouch-timeline` - Timestamp-based network activity (not epoch-based)
     *   `/api/analytics/flow-redundancy-correlation` - Flow vs Redundancy scatter plot with R² regression
     *   `/api/analytics/voucher-strength-distribution` - LocalHealth histogram of vouchers with dilution analysis
     *   `/api/analytics/flow-saturation-curve` - Quadratic scaling visualization showing diminishing returns
-    *   Charts display: convergence behavior (iteration/maxChange decay), component correlation (60% flow + 40% redundancy), voucher quality distribution, saturation curves
+    *   `/api/analytics/localhealth/dilution-zones` - Distribution of users across piecewise penalty zones (1-10, 11-15, 16-25, 25+)
+    *   `/api/analytics/localhealth/network-resilience` - Vertex-disjoint path statistics per user (vulnerable vs highly resilient)
+    *   `/api/analytics/localhealth/adaptive-baselines` - Current computed vs fixed baselines with network percentile stats
+    *   Charts display: convergence behavior, component correlation, voucher quality, saturation curves, dilution zone distribution, network resilience, adaptive baseline monitoring
 
 ### System Design Choices
 *   **TypeScript Everywhere**: Ensures code quality and maintainability.

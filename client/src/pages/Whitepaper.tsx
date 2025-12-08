@@ -37,7 +37,7 @@ export default function Whitepaper() {
           <FileText className="w-8 h-8 text-primary shrink-0" />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
-            <p className="text-sm text-muted-foreground">Version 1.1 — November 2025</p>
+            <p className="text-sm text-muted-foreground">Version 1.2 — December 2025</p>
           </div>
         </div>
         <h2 className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
@@ -698,10 +698,13 @@ export default function Whitepaper() {
               
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="mb-2">
-                  <strong className="text-sm">Dilution Factor</strong> — Penalty for vouching for too many others
+                  <strong className="text-sm">Dilution Factor (Piecewise Curve)</strong> — Smooth penalty for over-vouching
                 </div>
-                <div className="overflow-x-auto">
-                  <InlineFormula>{"D_i = \\max\\!\\big(0.5,\\ 1 - 0.1 \\cdot \\max(0, \\text{outVouches}_i - 10)\\big)"}</InlineFormula>
+                <div className="overflow-x-auto space-y-1">
+                  <div className="text-xs text-muted-foreground">1-10 vouches: <InlineFormula>{"D = 1.0"}</InlineFormula> (no penalty)</div>
+                  <div className="text-xs text-muted-foreground">11-15 vouches: <InlineFormula>{"D = 1.0 - 0.03(v-10)"}</InlineFormula> → 0.85</div>
+                  <div className="text-xs text-muted-foreground">16-25 vouches: <InlineFormula>{"D = 0.85 - 0.30\\cdot((v-15)/10)^2"}</InlineFormula> → 0.55</div>
+                  <div className="text-xs text-muted-foreground">25+ vouches: asymptotic to 0.4</div>
                 </div>
               </div>
             </div>
@@ -1487,6 +1490,37 @@ export default function Whitepaper() {
           <span className="text-primary">10.</span> Future Work
         </h2>
 
+        <Card className="mb-6 border-green-500/30 bg-green-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
+              <CheckCircle2 className="w-5 h-5" />
+              Recently Implemented (December 2025)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="p-3 rounded-lg bg-green-500/10">
+                <div className="font-semibold mb-1">Vertex-Disjoint Paths</div>
+                <p className="text-muted-foreground text-xs">
+                  Node-splitting max-flow counts truly independent paths. Bonus redundancy for multiple disjoint paths (up to +5 points).
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500/10">
+                <div className="font-semibold mb-1">Piecewise Dilution Curves</div>
+                <p className="text-muted-foreground text-xs">
+                  Smooth non-linear penalties: 1-10 vouches = no penalty, 11-15 = gentle decay, 16-25 = steeper decay, 25+ = asymptotic floor.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-green-500/10">
+                <div className="font-semibold mb-1">Adaptive Baselines</div>
+                <p className="text-muted-foreground text-xs">
+                  Dynamic "healthy" thresholds computed from 75th percentile of network. Algorithm adapts as network grows.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
@@ -1497,7 +1531,7 @@ export default function Whitepaper() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <ul className="space-y-1">
-                <li>• Vertex-disjoint path checks</li>
+                <li className="line-through opacity-50">• Vertex-disjoint path checks ✓</li>
                 <li>• Per-seed flow floors</li>
                 <li>• Cut witnesses with Merkle proofs</li>
               </ul>
@@ -1513,9 +1547,9 @@ export default function Whitepaper() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <ul className="space-y-1">
-                <li>• Adaptive baselines</li>
-                <li>• Percentile-based tiers</li>
-                <li>• Piecewise dilution curves</li>
+                <li className="line-through opacity-50">• Adaptive baselines ✓</li>
+                <li>• Percentile-based tiers (display layer)</li>
+                <li className="line-through opacity-50">• Piecewise dilution curves ✓</li>
               </ul>
             </CardContent>
           </Card>

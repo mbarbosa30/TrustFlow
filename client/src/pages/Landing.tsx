@@ -337,6 +337,70 @@ export default function Landing() {
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
+            <Badge variant="outline" className="mb-4 text-green-600 border-green-600/30">
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              December 2025 Release
+            </Badge>
+            <h2 className="text-3xl font-bold mb-3" data-testid="text-security-heading">
+              Security Hardened
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              The latest algorithm enhancements make MaxFlow even harder to game
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-disjoint">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+                  <Shield className="w-5 h-5 text-green-600" />
+                </div>
+                <CardTitle className="text-base">Vertex-Disjoint Paths</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Not just multiple paths—we count truly independent paths with no shared nodes. 
+                  Much harder to fake than edge-disjoint.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-dilution">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+                  <GitBranch className="w-5 h-5 text-green-600" />
+                </div>
+                <CardTitle className="text-base">Piecewise Dilution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Smooth, continuous penalty curve for over-vouching. No sharp cliffs—just 
+                  gradual accountability that scales naturally.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-adaptive">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
+                  <Network className="w-5 h-5 text-green-600" />
+                </div>
+                <CardTitle className="text-base">Adaptive Baselines</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  "Healthy" thresholds computed dynamically from network percentiles. 
+                  Fair scoring whether the network has 10 or 10,000 users.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-3" data-testid="text-audiences-heading">
               Get Started
             </h2>
