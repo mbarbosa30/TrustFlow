@@ -132,7 +132,7 @@ export default function ApiDocs() {
         <TabsContent value="direct" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Direct API Overview</CardTitle>
+              <CardTitle>Public API v1 Overview</CardTitle>
               <CardDescription>
                 No API keys needed. Perfect for wallet-based applications and dApps.
               </CardDescription>
@@ -141,24 +141,30 @@ export default function ApiDocs() {
               <div>
                 <h3 className="font-semibold mb-2">Base URL</h3>
                 <code className="block px-4 py-2 bg-accent/50 rounded text-sm font-mono">
-                  {baseUrl}/api
+                  {baseUrl}/api/v1
                 </code>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">Authentication</h3>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    <strong>Read operations</strong> (getting scores): No authentication required
+                    <strong>Read operations</strong> (scores, vouch status): No authentication required
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    <strong>Write operations</strong> (creating vouches): Requires EIP-712 wallet signatures
+                    <strong>Write operations</strong> (vouching, revoking): Requires EIP-712 wallet signatures
                   </p>
                 </div>
               </div>
               <div>
+                <h3 className="font-semibold mb-2">Rate Limits</h3>
+                <p className="text-sm text-muted-foreground">
+                  200 requests per minute per IP address
+                </p>
+              </div>
+              <div>
                 <h3 className="font-semibold mb-2">CORS</h3>
                 <p className="text-sm text-muted-foreground">
-                  CORS is enabled for all origins. External applications can call MaxFlow API endpoints directly from the browser without CORS errors.
+                  CORS is enabled for all origins. External applications can call the API directly from the browser.
                 </p>
               </div>
             </CardContent>
@@ -185,17 +191,17 @@ export default function ApiDocs() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="w-5 h-5" />
-                Get LocalHealth Score
+                Get Signal Score
               </CardTitle>
               <CardDescription>
-                Get network quality score (0-100) for any wallet address. Pure graph-based signal derived from endorsement network structure only—no economic factors. No authentication required.
+                Get network quality score (0-100) for any wallet address. Pure graph-based signal derived from endorsement network structure. No authentication required.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">GET</Badge>
-                  <code className="text-sm font-mono">/api/ego/:address/score</code>
+                  <code className="text-sm font-mono">/api/v1/score/:address</code>
                 </div>
 
                 <Tabs defaultValue="curl" className="w-full">
@@ -206,22 +212,22 @@ export default function ApiDocs() {
                   </TabsList>
                   <TabsContent value="curl">
                     <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`curl ${baseUrl}/api/ego/0x216844eF94D95279c6d1631875F2dd93FbBdfB61/score`}
+{`curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61`}
                     </pre>
                   </TabsContent>
                   <TabsContent value="js">
                     <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`async function getLocalHealth(address) {
+{`async function getSignal(address) {
   const response = await fetch(
-    '${baseUrl}/api/ego/' + address + '/score'
+    '${baseUrl}/api/v1/score/' + address
   );
   const data = await response.json();
-  return data.localHealth; // 0-100
+  return data.local_health; // 0-100
 }
 
 // Usage
-const score = await getLocalHealth('0x216844eF...');
-console.log(\`LocalHealth Score: \${score}/100\`);`}
+const score = await getSignal('0x216844eF...');
+console.log(\`Signal: \${score}/100\`);`}
                     </pre>
                   </TabsContent>
                   <TabsContent value="python">
@@ -229,10 +235,10 @@ console.log(\`LocalHealth Score: \${score}/100\`);`}
 {`import requests
 
 response = requests.get(
-    '${baseUrl}/api/ego/0x216844eF94D95279c6d1631875F2dd93FbBdfB61/score'
+    '${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61'
 )
 data = response.json()
-print(f"LocalHealth Score: {data['localHealth']}/100")`}
+print(f"Signal: {data['local_health']}/100")`}
                     </pre>
                   </TabsContent>
                 </Tabs>
@@ -240,26 +246,7 @@ print(f"LocalHealth Score: {data['localHealth']}/100")`}
                 <h4 className="font-semibold text-sm mb-2 mt-4">Response</h4>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
 {`{
-  "ownerAddress": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
-  "localHealth": 75.72,
-  "seedAddresses": [],
-  "metrics": {
-    "totalNodes": 8,
-    "acceptedUsers": 5,
-    "avgResidualFlow": 0.123,
-    "medianMinCut": 2.5,
-    "maxPossibleFlow": 1.0
-  },
-  "nodeDetails": [
-    {
-      "address": "0x742d35cc...",
-      "distance": 1,
-      "capacity": 1.0,
-      "flow": 0.25,
-      "residualFlow": 0.123,
-      "minCut": 0.5
-    }
-  ]
+  "local_health": 72
 }`}
                 </pre>
               </div>
@@ -270,58 +257,67 @@ print(f"LocalHealth Score: {data['localHealth']}/100")`}
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="w-5 h-5" />
-                Create Global Vouch
+                Create Vouch
               </CardTitle>
               <CardDescription>
-                Submit a vouch using EIP-712 wallet signature. Works across all communities.
+                Submit a vouch using EIP-712 wallet signature. Requires getting nonce first.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">POST</Badge>
-                  <code className="text-sm font-mono">/api/vouch</code>
+                <h4 className="font-semibold text-sm mb-2">Step 1: Get Nonce</h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">GET</Badge>
+                  <code className="text-sm font-mono">/api/v1/vouch/nonce/:address</code>
                 </div>
-
-                <h4 className="font-semibold text-sm mb-2">Request Body</h4>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`{
-  "endorsement": {
-    "endorser": "0x742d35Cc...",
-    "endorsee": "0x1234567...",
-    "epoch": "1",
-    "nonce": "1",
-    "sig": "0xabcd...",
-    "chainId": 42220,
-    "note": "Optional message"
-  }
+{`// Response
+{
+  "epoch": 0,
+  "nonce": 1
 }`}
                 </pre>
 
-                <h4 className="font-semibold text-sm mb-2 mt-4">Complete Example (ethers.js v6)</h4>
+                <h4 className="font-semibold text-sm mb-2 mt-4">Step 2: Sign and Submit</h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">POST</Badge>
+                  <code className="text-sm font-mono">/api/v1/vouch</code>
+                </div>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`import { BrowserProvider } from 'ethers';
+{`{
+  "endorser": "0x742d35Cc...",
+  "endorsee": "0x1234567...",
+  "epoch": "0",
+  "nonce": "1",
+  "sig": "0xabcd...",
+  "chainId": 1
+}`}
+                </pre>
+
+                <h4 className="font-semibold text-sm mb-2 mt-4">Complete Example (viem)</h4>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`import { createWalletClient, custom } from 'viem';
+import { mainnet } from 'viem/chains';
 
 async function createVouch(endorseeAddress) {
-  // 1. Connect wallet
-  const provider = new BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
-  const endorserAddress = await signer.getAddress();
+  const client = createWalletClient({
+    chain: mainnet,
+    transport: custom(window.ethereum)
+  });
   
-  // 2. Get current epoch and nonce
-  const epochRes = await fetch('${baseUrl}/api/epoch/current');
-  const { epochId } = await epochRes.json();
+  const [endorserAddress] = await client.getAddresses();
   
+  // 1. Get current epoch and nonce
   const nonceRes = await fetch(
-    \`${baseUrl}/api/nonce/\${endorserAddress}/\${epochId}\`
+    '${baseUrl}/api/v1/vouch/nonce/' + endorserAddress
   );
-  const { nextNonce } = await nonceRes.json();
+  const { epoch, nonce } = await nonceRes.json();
   
-  // 3. Prepare EIP-712 message
+  // 2. Sign EIP-712 message
   const domain = {
     name: 'MaxFlow',
     version: '1',
-    chainId: 42220,
+    chainId: 1,
   };
   
   const types = {
@@ -336,26 +332,28 @@ async function createVouch(endorseeAddress) {
   const message = {
     endorser: endorserAddress,
     endorsee: endorseeAddress,
-    epoch: BigInt(epochId),
-    nonce: BigInt(nextNonce),
+    epoch: BigInt(epoch),
+    nonce: BigInt(nonce),
   };
   
-  // 4. Sign
-  const signature = await signer.signTypedData(domain, types, message);
+  const signature = await client.signTypedData({
+    domain,
+    types,
+    primaryType: 'Endorsement',
+    message,
+  });
   
-  // 5. Submit vouch
-  const response = await fetch('${baseUrl}/api/vouch', {
+  // 3. Submit vouch
+  const response = await fetch('${baseUrl}/api/v1/vouch', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      endorsement: {
-        endorser: message.endorser,
-        endorsee: message.endorsee,
-        epoch: message.epoch.toString(),
-        nonce: message.nonce.toString(),
-        sig: signature,
-        chainId: 42220,
-      },
+      endorser: endorserAddress,
+      endorsee: endorseeAddress,
+      epoch: epoch.toString(),
+      nonce: nonce.toString(),
+      sig: signature,
+      chainId: 1,
     }),
   });
   
@@ -365,19 +363,22 @@ async function createVouch(endorseeAddress) {
 
                 <h4 className="font-semibold text-sm mb-2 mt-4">Success Response</h4>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
-{`{
-  "success": true,
-  "endorsement": {
-    "id": 123,
-    "communityId": 0,
-    "scope": "global",
-    "endorser": "0x742d35Cc...",
-    "endorsee": "0x1234567...",
-    "leafHash": "0xdef...",
-    "createdAt": "2025-11-04T21:00:00.000Z"
-  },
-  "message": "Global vouch created successfully"
-}`}
+{`{ "ok": true }`}
+                </pre>
+
+                <h4 className="font-semibold text-sm mb-2 mt-4">Error Responses</h4>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`// Invalid nonce (stale - refetch nonce and retry)
+{ "error": "Invalid nonce - expected 2, got 1..." }
+
+// Duplicate vouch
+{ "error": "Vouch already exists for this endorser->endorsee pair" }
+
+// Invalid signature
+{ "error": "Invalid signature - signature must be from endorser wallet" }
+
+// Race condition (409 status)
+{ "error": "Nonce already used - please get a new nonce" }`}
                 </pre>
               </div>
             </CardContent>
@@ -385,28 +386,123 @@ async function createVouch(endorseeAddress) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Helper Endpoints</CardTitle>
+              <CardTitle>Check Vouch Status</CardTitle>
+              <CardDescription>
+                Check if a vouch exists and its current status (active, expiring soon, expired, or revoked)
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold text-sm mb-2">Get Current Epoch</h4>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">GET</Badge>
-                  <code className="text-sm font-mono">/api/epoch/current</code>
+                  <code className="text-sm font-mono">/api/v1/vouch-status?endorser=...&endorsee=...</code>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Returns the current active epoch ID needed for vouching
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`// Active vouch
+{
+  "exists": true,
+  "status": "active",
+  "days_remaining": 67,
+  "created_at": "2025-11-15T12:00:00.000Z"
+}
+
+// Expiring soon (< 30 days remaining)
+{
+  "exists": true,
+  "status": "expiring_soon",
+  "days_remaining": 12,
+  "created_at": "2025-09-15T12:00:00.000Z"
+}
+
+// Expired
+{
+  "exists": true,
+  "status": "expired",
+  "days_remaining": 0,
+  "created_at": "2025-06-15T12:00:00.000Z"
+}
+
+// Revoked
+{
+  "exists": true,
+  "status": "revoked",
+  "days_remaining": null,
+  "created_at": "2025-11-15T12:00:00.000Z"
+}
+
+// No vouch exists
+{
+  "exists": false,
+  "status": null,
+  "days_remaining": null
+}`}
+                </pre>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Vouches are valid for 90 days from creation OR as long as the recipient remains active (vouches someone within 90 days).
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Revoke Vouch</CardTitle>
+              <CardDescription>
+                Endorsers can revoke their vouches at any time by signing a revocation message
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold text-sm mb-2">Get Next Nonce</h4>
+                <h4 className="font-semibold text-sm mb-2">Step 1: Get Endorsement ID</h4>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400">GET</Badge>
-                  <code className="text-sm font-mono">/api/nonce/:address/:epoch</code>
+                  <code className="text-sm font-mono">/api/v1/revoke/info?endorser=...&endorsee=...</code>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Returns the next nonce for signing. Required to prevent replay attacks.
-                </p>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`// Response
+{
+  "exists": true,
+  "endorsement_id": 1234,
+  "already_revoked": false
+}`}
+                </pre>
+
+                <h4 className="font-semibold text-sm mb-2 mt-4">Step 2: Sign and Submit Revocation</h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400">POST</Badge>
+                  <code className="text-sm font-mono">/api/v1/revoke</code>
+                </div>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`{
+  "endorser": "0x742d35Cc...",
+  "endorsee": "0x1234567...",
+  "endorsementId": 1234,
+  "sig": "0xabcd...",
+  "chainId": 1
+}`}
+                </pre>
+
+                <h4 className="font-semibold text-sm mb-2 mt-4">EIP-712 Revocation Types</h4>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`const types = {
+  Revocation: [
+    { name: 'endorser', type: 'address' },
+    { name: 'endorsee', type: 'address' },
+    { name: 'endorsementId', type: 'uint256' },
+  ],
+};
+
+const message = {
+  endorser: endorserAddress,
+  endorsee: endorseeAddress,
+  endorsementId: BigInt(endorsementId),
+};`}
+                </pre>
+
+                <h4 className="font-semibold text-sm mb-2 mt-4">Success Response</h4>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`{ "ok": true, "revoked": true }`}
+                </pre>
               </div>
             </CardContent>
           </Card>
@@ -420,36 +516,110 @@ async function createVouch(endorseeAddress) {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="font-semibold text-sm mb-2">Caching LocalHealth Scores</h4>
+                <h4 className="font-semibold text-sm mb-2">Caching Signal Scores</h4>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Scores update on-the-fly but change infrequently. Cache for 5-10 minutes:
+                  Scores are cached server-side and update when vouches change. Client-side caching for 5-10 minutes is safe:
                 </p>
                 <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
 {`const scoreCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-async function getCachedScore(address) {
+async function getCachedSignal(address) {
   const cached = scoreCache.get(address);
   if (cached && Date.now() - cached.time < CACHE_TTL) {
     return cached.score;
   }
-  const score = await getLocalHealth(address);
-  scoreCache.set(address, { score, time: Date.now() });
-  return score;
+  const res = await fetch('/api/v1/score/' + address);
+  const { local_health } = await res.json();
+  scoreCache.set(address, { score: local_health, time: Date.now() });
+  return local_health;
 }`}
                 </pre>
               </div>
               <div>
                 <h4 className="font-semibold text-sm mb-2">Handle Nonce Conflicts</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  If you get "Invalid nonce" or 409 errors, fetch a fresh nonce and retry:
+                </p>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`async function submitVouchWithRetry(endorsee, maxRetries = 2) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await createVouch(endorsee);
+    } catch (err) {
+      if (err.message.includes('nonce') && i < maxRetries - 1) {
+        continue; // Retry with fresh nonce
+      }
+      throw err;
+    }
+  }
+}`}
+                </pre>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm mb-2">Address Handling</h4>
                 <p className="text-sm text-muted-foreground">
-                  If you get "Invalid nonce" errors, fetch a fresh nonce and retry once
+                  All addresses are normalized to lowercase server-side. Both checksummed and lowercase addresses are accepted.
                 </p>
               </div>
               <div>
-                <h4 className="font-semibold text-sm mb-2">Validate Addresses</h4>
+                <h4 className="font-semibold text-sm mb-2">Epoch/Nonce Types</h4>
                 <p className="text-sm text-muted-foreground">
-                  Always validate Ethereum address format before making API calls
+                  Both strings and numbers are accepted for epoch and nonce values (e.g., "1" or 1).
                 </p>
+              </div>
+              <div>
+                <h4 className="font-semibold text-sm mb-2">EIP-712 Domain</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Use the correct domain for all signatures:
+                </p>
+                <pre className="px-4 py-3 bg-accent/50 rounded text-xs font-mono overflow-x-auto">
+{`const domain = {
+  name: 'MaxFlow',
+  version: '1',
+  chainId: 1, // or your chain ID
+};`}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>All Endpoints Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 w-12 justify-center">GET</Badge>
+                  <code className="font-mono">/api/v1/score/:address</code>
+                  <span className="text-muted-foreground ml-auto">Get Signal score</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 w-12 justify-center">GET</Badge>
+                  <code className="font-mono">/api/v1/vouch/nonce/:address</code>
+                  <span className="text-muted-foreground ml-auto">Get epoch + nonce</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 w-12 justify-center">POST</Badge>
+                  <code className="font-mono">/api/v1/vouch</code>
+                  <span className="text-muted-foreground ml-auto">Submit vouch</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 w-12 justify-center">GET</Badge>
+                  <code className="font-mono">/api/v1/vouch-status</code>
+                  <span className="text-muted-foreground ml-auto">Check vouch status</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-green-500/10 text-green-700 dark:text-green-400 w-12 justify-center">GET</Badge>
+                  <code className="font-mono">/api/v1/revoke/info</code>
+                  <span className="text-muted-foreground ml-auto">Get endorsement ID</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 w-12 justify-center">POST</Badge>
+                  <code className="font-mono">/api/v1/revoke</code>
+                  <span className="text-muted-foreground ml-auto">Revoke vouch</span>
+                </div>
               </div>
             </CardContent>
           </Card>
