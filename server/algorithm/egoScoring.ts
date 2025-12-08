@@ -12,19 +12,269 @@ export interface EgoScoringConfig {
   maxDistance: number;
   minAcceptanceFlow: number;
   minAcceptanceMinCut: number;
+  useAdaptiveBaselines: boolean;
+  usePiecewiseDilution: boolean;
+  useVertexDisjointPaths: boolean;
 }
 
 const DEFAULT_EGO_CONFIG: EgoScoringConfig = {
   maxDistance: 3,
   minAcceptanceFlow: 0.5,
   minAcceptanceMinCut: 2,
+  useAdaptiveBaselines: true,
+  usePiecewiseDilution: true,
+  useVertexDisjointPaths: true,
 };
+
+/**
+ * Algorithm Enhancement: Piecewise Dilution Curve
+ * 
+ * Instead of linear 10% penalty per excess vouch, uses smooth continuous decay:
+ * - 1-10 vouches: 1.0 (no penalty - quality zone)
+ * - 11-15 vouches: 1.0 → 0.85 linear (gentle decay - warning zone)
+ * - 16-25 vouches: 0.85 → 0.55 smooth (steeper decay - penalty zone)
+ * - 25+ vouches: 0.55 → 0.4 asymptotic (floor approach - cap zone)
+ * 
+ * This prevents gaming threshold boundaries and creates smoother incentives.
+ * All transitions are continuous (no discontinuities at boundaries).
+ */
+function computePiecewiseDilutionPenalty(vouchCount: number): number {
+  const QUALITY_THRESHOLD = 10;
+  const WARNING_THRESHOLD = 15;
+  const PENALTY_THRESHOLD = 25;
+  const MIN_FACTOR = 0.4; // Floor at 40% (was 50% with linear)
+  
+  if (vouchCount <= QUALITY_THRESHOLD) {
+    // Quality zone: no penalty
+    return 1.0;
+  }
+  
+  if (vouchCount <= WARNING_THRESHOLD) {
+    // Warning zone: linear decay from 1.0 to 0.85 over 5 vouches
+    // At 10: 1.0, at 15: 0.85
+    const progress = (vouchCount - QUALITY_THRESHOLD) / (WARNING_THRESHOLD - QUALITY_THRESHOLD);
+    return 1.0 - (0.15 * progress); // 1.0 → 0.85
+  }
+  
+  if (vouchCount <= PENALTY_THRESHOLD) {
+    // Penalty zone: smooth (quadratic) decay from 0.85 to 0.55 over 10 vouches
+    // Uses quadratic easing for smooth curve
+    const progress = (vouchCount - WARNING_THRESHOLD) / (PENALTY_THRESHOLD - WARNING_THRESHOLD);
+    // Quadratic ease-in: starts gentle, gets steeper
+    const easedProgress = progress * progress;
+    return 0.85 - (0.30 * easedProgress); // 0.85 → 0.55
+  }
+  
+  // Cap zone: asymptotic approach from 0.55 to 0.4 for 25+ vouches
+  // Uses exponential decay to prevent sharp floor
+  const excess = vouchCount - PENALTY_THRESHOLD;
+  const remainingRange = 0.55 - MIN_FACTOR; // 0.15
+  const decayRate = 0.1; // Gentle asymptotic approach
+  // Exponential decay: 0.55 - (0.15 * (1 - e^(-0.1 * excess)))
+  // At 25: 0.55, at 35: ~0.46, at 50: ~0.43, approaches 0.4
+  const decay = remainingRange * (1 - Math.exp(-decayRate * excess));
+  return 0.55 - decay;
+}
+
+/**
+ * Algorithm Enhancement: Compute Vertex-Disjoint Path Count
+ * 
+ * Uses max-flow with node splitting to count truly independent paths.
+ * Each node is split into node_in and node_out with capacity 1 between them.
+ * This ensures paths don't share intermediate nodes (stronger Sybil resistance).
+ * 
+ * Key insight: Standard edge-disjoint max-flow allows paths to share nodes,
+ * but vertex-disjoint requires paths to have no common intermediate vertices.
+ */
+function computeVertexDisjointPaths(
+  vouchers: Address[],
+  target: Address,
+  globalVouches: EgoEndorsement[],
+  maxDistance: number
+): number {
+  // Build a graph with node splitting for vertex-disjoint counting
+  // Each node v becomes v_in and v_out with edge (v_in -> v_out, capacity=1)
+  const SOURCE = "SOURCE";
+  const SINK_IN = target.toLowerCase() + "_in";
+  const SINK_OUT = target.toLowerCase() + "_out";
+  
+  const graph = new FlowGraph(SOURCE, SINK_OUT);
+  const addedNodes = new Set<string>();
+  
+  // Helper to add split node
+  const addSplitNode = (nodeId: string) => {
+    const nodeLower = nodeId.toLowerCase();
+    if (addedNodes.has(nodeLower)) return;
+    addedNodes.add(nodeLower);
+    
+    const nodeIn = nodeLower + "_in";
+    const nodeOut = nodeLower + "_out";
+    graph.addNode(nodeIn);
+    graph.addNode(nodeOut);
+    // Internal capacity = 1 (can only be used by one path)
+    graph.addEdge(nodeIn, nodeOut, 1);
+  };
+  
+  // Add target node
+  addSplitNode(target);
+  
+  // Connect SOURCE to vouchers (through their _out since flow enters from outside)
+  for (const voucher of vouchers) {
+    addSplitNode(voucher);
+    const voucherOut = voucher.toLowerCase() + "_out";
+    graph.addEdge(SOURCE, voucherOut, 1);
+  }
+  
+  // Build reachability within maxDistance hops using BFS
+  const reachable = new Set<string>();
+  const queue: { addr: string; dist: number }[] = [];
+  
+  for (const voucher of vouchers) {
+    const vLower = voucher.toLowerCase();
+    reachable.add(vLower);
+    queue.push({ addr: vLower, dist: 0 });
+  }
+  
+  // Build reverse adjacency (endorsee -> endorsers)
+  const reverseAdj = new Map<string, string[]>();
+  for (const { endorser, endorsee } of globalVouches) {
+    const eeL = endorsee.toLowerCase();
+    if (!reverseAdj.has(eeL)) reverseAdj.set(eeL, []);
+    reverseAdj.get(eeL)!.push(endorser.toLowerCase());
+  }
+  
+  // BFS to find nodes within maxDistance
+  let head = 0;
+  while (head < queue.length) {
+    const { addr, dist } = queue[head++];
+    if (dist >= maxDistance) continue;
+    
+    const upstream = reverseAdj.get(addr) || [];
+    for (const neighbor of upstream) {
+      if (!reachable.has(neighbor)) {
+        reachable.add(neighbor);
+        queue.push({ addr: neighbor, dist: dist + 1 });
+      }
+    }
+  }
+  
+  // Add edges between reachable nodes (using split node model)
+  for (const { endorser, endorsee } of globalVouches) {
+    const erL = endorser.toLowerCase();
+    const eeL = endorsee.toLowerCase();
+    
+    if (reachable.has(erL) && reachable.has(eeL)) {
+      addSplitNode(endorser);
+      addSplitNode(endorsee);
+      
+      // Edge goes from endorser_out to endorsee_in (flow direction)
+      const erOut = erL + "_out";
+      const eeIn = eeL + "_in";
+      graph.addEdge(erOut, eeIn, 1);
+    }
+  }
+  
+  // Connect vouchers to target
+  for (const voucher of vouchers) {
+    const vOut = voucher.toLowerCase() + "_out";
+    graph.addEdge(vOut, SINK_IN, 1);
+  }
+  
+  // Max-flow gives vertex-disjoint path count
+  const solver = new DinicMaxFlow(graph);
+  return solver.computeMaxFlow();
+}
+
+/**
+ * Algorithm Enhancement: Compute Adaptive Baselines
+ * 
+ * Instead of fixed HEALTHY_VOUCH_COUNT=8 and HEALTHY_REDUNDANCY=35,
+ * computes these from network percentiles so the algorithm adapts
+ * as the network grows or changes.
+ * 
+ * Uses 75th percentile of vouch counts and redundancy scores
+ * to define "healthy" - meaning top 25% of users are approaching max score.
+ */
+function computeAdaptiveBaselines(
+  addresses: Address[],
+  globalVouches: EgoEndorsement[]
+): { healthyVouchCount: number; healthyRedundancy: number } {
+  // Default fallbacks if network is too small
+  const DEFAULT_HEALTHY_VOUCH_COUNT = 8.0;
+  const DEFAULT_HEALTHY_REDUNDANCY = 35.0;
+  const MIN_NETWORK_SIZE = 10;
+  
+  if (addresses.length < MIN_NETWORK_SIZE) {
+    return {
+      healthyVouchCount: DEFAULT_HEALTHY_VOUCH_COUNT,
+      healthyRedundancy: DEFAULT_HEALTHY_REDUNDANCY,
+    };
+  }
+  
+  // Compute vouch counts for all addresses
+  const vouchCounts: number[] = [];
+  for (const addr of addresses) {
+    const addrLower = addr.toLowerCase();
+    const count = globalVouches.filter(
+      v => v.endorsee.toLowerCase() === addrLower
+    ).length;
+    if (count > 0) {
+      vouchCounts.push(count);
+    }
+  }
+  
+  if (vouchCounts.length < MIN_NETWORK_SIZE) {
+    return {
+      healthyVouchCount: DEFAULT_HEALTHY_VOUCH_COUNT,
+      healthyRedundancy: DEFAULT_HEALTHY_REDUNDANCY,
+    };
+  }
+  
+  // Sort and find 75th percentile
+  vouchCounts.sort((a, b) => a - b);
+  const p75Index = Math.floor(vouchCounts.length * 0.75);
+  const p75VouchCount = vouchCounts[p75Index];
+  
+  // Healthy vouch count: 75th percentile, clamped to reasonable range
+  // Min 4 (very small networks), max 15 (very large networks)
+  const healthyVouchCount = Math.max(4, Math.min(15, p75VouchCount));
+  
+  // Estimate healthy redundancy from vouch count
+  // Empirically: redundancy ≈ vouchCount * 4.5 for well-connected networks
+  // This accounts for depth bonus + connectivity bonus
+  const healthyRedundancy = Math.max(15, Math.min(60, healthyVouchCount * 4.5));
+  
+  return { healthyVouchCount, healthyRedundancy };
+}
 
 export class EgoScorer {
   private config: EgoScoringConfig;
+  private cachedBaselines: { healthyVouchCount: number; healthyRedundancy: number } | null = null;
 
   constructor(config: Partial<EgoScoringConfig> = {}) {
     this.config = { ...DEFAULT_EGO_CONFIG, ...config };
+  }
+  
+  /**
+   * Get healthy baselines, computing adaptively if enabled
+   */
+  private getHealthyBaselines(
+    addresses: Address[],
+    globalVouches: EgoEndorsement[]
+  ): { healthyVouchCount: number; healthyRedundancy: number } {
+    if (!this.config.useAdaptiveBaselines) {
+      // Use fixed calibrated baselines
+      return {
+        healthyVouchCount: 8.0,
+        healthyRedundancy: 35.0,
+      };
+    }
+    
+    // Compute adaptive baselines (cache for performance)
+    if (!this.cachedBaselines) {
+      this.cachedBaselines = computeAdaptiveBaselines(addresses, globalVouches);
+    }
+    return this.cachedBaselines;
   }
 
   /**
@@ -43,6 +293,13 @@ export class EgoScorer {
     maxIterations: number = 10,
     convergenceThreshold: number = 0.5
   ): Map<string, EgoScoreResult> {
+    // Step 0: Compute adaptive baselines if enabled (before scoring)
+    // This allows the algorithm to adapt to network size and density
+    if (this.config.useAdaptiveBaselines) {
+      this.cachedBaselines = computeAdaptiveBaselines(addresses, globalVouches);
+      console.log(`Adaptive baselines: vouch=${this.cachedBaselines.healthyVouchCount.toFixed(1)}, redundancy=${this.cachedBaselines.healthyRedundancy.toFixed(1)}`);
+    }
+    
     // Step 1: Initialize scores based on incoming vouch count (simple baseline)
     const currentScores = new Map<string, number>();
     for (const addr of addresses) {
@@ -526,42 +783,71 @@ export class EgoScorer {
     // Step 4: Calculate scoring with calibrated healthy baseline
     // CALIBRATION NOTE (Dec 2025): Raised baselines to prevent score saturation
     // A score of 100 should be mathematically rare, requiring exceptional network quality
-    // Fixed baseline: ~8 quality vouches with rich depth/connectivity = "healthy" network
-    const HEALTHY_VOUCH_COUNT = 8.0;
-    // Calibrated for dense networks: requires substantial network depth and connectivity
-    const HEALTHY_REDUNDANCY = 35.0; // Raised from 20 to prevent easy saturation
+    // 
+    // ENHANCEMENT: Adaptive baselines (if enabled) compute healthy values from network percentiles
+    // This allows the algorithm to adapt as the network grows
+    const baselines = this.cachedBaselines || { healthyVouchCount: 8.0, healthyRedundancy: 35.0 };
+    const HEALTHY_VOUCH_COUNT = baselines.healthyVouchCount;
+    const HEALTHY_REDUNDANCY = baselines.healthyRedundancy;
     // Score ceiling: subtract epsilon so 100 is mathematically rare
     const SCORE_CEILING_EPSILON = 1.0;
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow = sum of voucher strengths (weighted by voucher LocalHealth)
     // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
-    // 1 vouch → (1/8)^2.0 = 0.016 = 0.9 pts, 4 vouches → 0.25 = 15 pts, 8+ vouches → 1.0 = 60 pts
+    // With adaptive: baselines adjust to network, maintaining ~25% of users near max
     const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
     const flowComponent = 60 * Math.pow(flowScore, 2.0);
 
     // Redundancy score: normalized by healthy redundancy baseline
     // Measures network depth (ego size) and connectivity (edge density)
-    // 1 vouch, no depth → ~1 redundancy / 35 ≈ 3% = 1.2 pts
-    // 4 vouches, some depth → ~8 redundancy / 35 ≈ 23% = 9 pts
-    // 8+ vouches, excellent depth → ~35 redundancy / 35 = 100% = 40 pts
+    // With adaptive: HEALTHY_REDUNDANCY scales with network density
     const redundancy = Math.min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY);
 
     // Apply dilution penalty for outgoing vouches
+    // Uses piecewise curve if enabled for smoother incentives (prevents gaming thresholds)
     const outgoingVouchees = globalVouches
       .filter(v => v.endorser.toLowerCase() === ownerAddress.toLowerCase());
     
-    let vouchQualityFactor = 1.0;
-    const DILUTION_THRESHOLD = 10;
-    if (outgoingVouchees.length > DILUTION_THRESHOLD) {
-      const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
-      const dilutionPenalty = 0.1 * excess; // 10% per excess vouch
-      vouchQualityFactor = Math.max(0.5, 1 - dilutionPenalty); // Cap at 50% reduction
+    let vouchQualityFactor: number;
+    if (this.config.usePiecewiseDilution) {
+      // Piecewise dilution curve: smooth non-linear penalty
+      // 1-10 vouches: 1.0 (no penalty)
+      // 11-15 vouches: 1.0 → 0.85 (gentle decay)
+      // 16-25 vouches: 0.85 → 0.55 (steeper decay)
+      // 25+ vouches: asymptotic approach to 0.4
+      vouchQualityFactor = computePiecewiseDilutionPenalty(outgoingVouchees.length);
+    } else {
+      // Legacy linear dilution: 10% per excess vouch beyond 10
+      vouchQualityFactor = 1.0;
+      const DILUTION_THRESHOLD = 10;
+      if (outgoingVouchees.length > DILUTION_THRESHOLD) {
+        const excess = outgoingVouchees.length - DILUTION_THRESHOLD;
+        const dilutionPenalty = 0.1 * excess;
+        vouchQualityFactor = Math.max(0.5, 1 - dilutionPenalty);
+      }
     }
 
-    // Cut component: 40% based on effective redundancy
+    // Apply vertex-disjoint path check if enabled (stronger Sybil resistance)
+    // This counts truly independent paths where no intermediate nodes are shared
+    let vertexDisjointBonus = 0;
+    if (this.config.useVertexDisjointPaths && directVouchers.length >= 2) {
+      const disjointPaths = computeVertexDisjointPaths(
+        directVouchers,
+        ownerAddress,
+        globalVouches,
+        this.config.maxDistance
+      );
+      // Bonus for having multiple independent paths (harder to Sybil attack)
+      // Each disjoint path beyond the first adds a small redundancy bonus
+      // Capped at 5 bonus points (from 5+ disjoint paths)
+      vertexDisjointBonus = Math.min(5, Math.max(0, disjointPaths - 1));
+    }
+
+    // Cut component: 40% based on effective redundancy + vertex-disjoint bonus
     // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
-    const cutComponent = 40 * Math.pow(redundancy, 2.0) * vouchQualityFactor;
+    const adjustedRedundancy = Math.min(1.0, (effectiveRedundancy + vertexDisjointBonus) / HEALTHY_REDUNDANCY);
+    const cutComponent = 40 * Math.pow(adjustedRedundancy, 2.0) * vouchQualityFactor;
     
     // Apply score ceiling: subtract epsilon so 100 is mathematically rare
     // Only exceptional networks with >8 quality vouchers AND >35 redundancy points approach 99

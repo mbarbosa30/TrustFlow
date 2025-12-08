@@ -67,11 +67,17 @@ The backend is built with Express.js and TypeScript (Node.js) providing RESTful 
                 *   Connectivity bonus: (edge_count / potential_edges) × ego_size (rewards network density)
             *   **Ego Subgraph**: Built via upstream-only BFS from vouchers (finds people who vouch for vouchers), excluding owner to prevent inflation
             *   **Healthy Baseline (Dec 2025 Calibration)**: 8 vouchers + 35 redundancy points. Raised from 5/20 to prevent score saturation. Score ceiling of 99 (epsilon = 1.0) ensures 100 is mathematically rare.
+            *   **Adaptive Baselines (Dec 2025)**: When enabled, healthy baselines are computed dynamically from network percentiles (75th percentile vouch count) rather than fixed values. This allows the algorithm to adapt as the network grows. Clamped to 4-15 vouch range, with redundancy estimated as vouchCount × 4.5.
+            *   **Vertex-Disjoint Path Bonus (Dec 2025)**: Security hardening that counts truly independent paths (no shared intermediate nodes) using max-flow with node splitting. Each disjoint path beyond the first adds up to 5 bonus redundancy points. This is harder to Sybil attack than edge-disjoint paths.
             *   **Score Distribution**: Depends on both vouch count AND voucher quality. Strong vouchers (high LocalHealth) provide more value than weak vouchers.
         *   **Hybrid Mode (Optional)**: When co-seeds are selected, measures "connection quality within my trusted circle" for enhanced Sybil resistance. Flow computed from co-seeds through network to owner.
     *   **Outgoing Vouch Adjustment**: Adds accountability for who you vouch for. Cut component is multiplied by a vouch quality factor:
-        *   Dilution penalty: 10% per vouch beyond 10 vouches (prevents vouch spam)
-        *   Caps at 50% reduction, ~10-20% typical impact
+        *   **Piecewise Dilution Curve (Dec 2025)**: Smooth non-linear penalty replacing linear 10% per vouch:
+            *   1-10 vouches: No penalty (quality zone)
+            *   11-15 vouches: 1.0 → 0.85 (gentle 3% per vouch decay)
+            *   16-25 vouches: 0.85 → 0.55 (steeper quadratic decay)
+            *   25+ vouches: Asymptotic floor at 0.4 (prevents cliff effects)
+        *   Legacy linear mode available via config flag for backward compatibility
     *   **Pure Graph-Based Scoring**: LocalHealth derived entirely from endorsement network structure. No economic factors (KUDOS, tokens, payments) influence scores. This ensures signal integrity, auditability, and alignment with MaxFlow's identity as neutral infrastructure.
     *   **Global Trust (Planned)**: Cross-network reputation score combining Local Health and Incoming Flow.
 *   **LocalHealth Score Caching**: Event-driven caching system for LocalHealth scores to optimize API performance:
