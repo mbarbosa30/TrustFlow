@@ -236,6 +236,132 @@ const message = {
       </section>
 
       <section>
+        <h2>Additional Context Endpoints</h2>
+        <p>These endpoints provide additional context about users and their endorsement history.</p>
+
+        <h3>GET /api/endorsements</h3>
+        <p>List endorsements (vouches) with optional filtering. Useful for displaying who vouched for someone.</p>
+        
+        <h4>Query Parameters</h4>
+        <ul>
+          <li><strong>endorser</strong> (optional): Filter by endorser address</li>
+          <li><strong>endorsee</strong> (optional): Filter by endorsee address</li>
+          <li><strong>limit</strong> (optional): Max results to return (default: 100)</li>
+          <li><strong>offset</strong> (optional): Pagination offset</li>
+        </ul>
+        
+        <h4>Example Request</h4>
+        <pre><code>{`curl "${baseUrl}/api/endorsements?endorsee=0x216844ef94d95279c6d1631875f2dd93fbbdfb61&limit=10"`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "endorsements": [
+    {
+      "id": 42,
+      "communityId": 0,
+      "scope": "community",
+      "endorser": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
+      "endorsee": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+      "epoch": 0,
+      "nonce": 5,
+      "sig": "0x...",
+      "leafHash": "0x...",
+      "promptHash": null,
+      "note": null,
+      "createdAt": "2025-10-15T14:30:00.000Z"
+    }
+  ],
+  "count": 1
+}`}</code></pre>
+
+        <h4>Response Fields</h4>
+        <ul>
+          <li><strong>id</strong>: Unique endorsement identifier</li>
+          <li><strong>communityId</strong>: Community ID (0 = global graph)</li>
+          <li><strong>endorser</strong>: Address that gave the vouch</li>
+          <li><strong>endorsee</strong>: Address that received the vouch</li>
+          <li><strong>epoch</strong>: Epoch when vouch was created</li>
+          <li><strong>sig</strong>: EIP-712 signature</li>
+          <li><strong>leafHash</strong>: Merkle tree leaf hash for verification</li>
+          <li><strong>promptHash</strong>: Hash of community prompt (null for global vouches)</li>
+          <li><strong>note</strong>: Optional note from endorser</li>
+          <li><strong>createdAt</strong>: Timestamp when vouch was created</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>GET /api/endorsements/with-status</h3>
+        <p>List endorsements with expiration status for each. Shows whether vouches are active, expiring soon, expired, or revoked.</p>
+        
+        <h4>Query Parameters</h4>
+        <ul>
+          <li><strong>endorser</strong> (optional): Filter by endorser address</li>
+          <li><strong>endorsee</strong> (optional): Filter by endorsee address</li>
+          <li><strong>limit</strong> (optional): Max results to return</li>
+        </ul>
+        
+        <h4>Example Request</h4>
+        <pre><code>{`curl "${baseUrl}/api/endorsements/with-status?endorsee=0x216844ef94d95279c6d1631875f2dd93fbbdfb61"`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "endorsements": [
+    {
+      "id": 42,
+      "communityId": 0,
+      "scope": "community",
+      "endorser": "0x742d35cc6634c0532925a3b844bc9e7595f0beb",
+      "endorsee": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+      "epoch": 0,
+      "nonce": 5,
+      "sig": "0x...",
+      "leafHash": "0x...",
+      "promptHash": null,
+      "note": null,
+      "createdAt": "2025-10-15T14:30:00.000Z",
+      "expirationStatus": {
+        "isValid": true,
+        "isRevoked": false,
+        "isExpired": false,
+        "expiresAt": "2026-01-13T14:30:00.000Z",
+        "daysUntilExpiration": 45
+      }
+    }
+  ],
+  "count": 1
+}`}</code></pre>
+
+        <h4>Expiration Status Fields</h4>
+        <ul>
+          <li><strong>isValid</strong>: Whether the vouch counts toward the endorsee's score</li>
+          <li><strong>isRevoked</strong>: Whether the endorser manually revoked this vouch</li>
+          <li><strong>isExpired</strong>: Whether the vouch has expired (90+ days old and recipient inactive)</li>
+          <li><strong>expiresAt</strong>: When the vouch will expire (null if revoked)</li>
+          <li><strong>daysUntilExpiration</strong>: Days remaining until expiration (null if revoked/expired)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>GET /api/user/:address</h3>
+        <p>Get wallet profile information (display name) for an address.</p>
+        
+        <h4>Example Request</h4>
+        <pre><code>{`curl ${baseUrl}/api/user/0x216844ef94d95279c6d1631875f2dd93fbbdfb61`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+  "name": "Alice",
+  "createdAt": "2025-09-01T10:00:00.000Z",
+  "updatedAt": "2025-10-15T14:30:00.000Z"
+}`}</code></pre>
+
+        <h4>404 Response</h4>
+        <pre><code>{`{ "error": "Profile not found" }`}</code></pre>
+        <p>Returns 404 if no profile exists for the address. Profiles are created when users set a display name.</p>
+      </section>
+
+      <section>
         <h2>Endpoints Summary</h2>
         <table>
           <thead>
@@ -275,6 +401,21 @@ const message = {
               <td>POST</td>
               <td>/api/v1/revoke</td>
               <td>Revoke vouch</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/endorsements</td>
+              <td>List endorsements</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/endorsements/with-status</td>
+              <td>List with expiration</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/user/:address</td>
+              <td>Get wallet profile</td>
             </tr>
           </tbody>
         </table>
