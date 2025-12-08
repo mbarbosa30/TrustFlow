@@ -54,14 +54,45 @@ export function registerPublicApiRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid address format" });
       }
       
+      const forceRefresh = req.query.force_refresh === 'true';
+      
       const { localHealthService } = await import('../services/localHealthService');
       
-      const metrics = await localHealthService.getExtendedScoreMetrics(address);
+      const metrics = await localHealthService.getExtendedScoreMetrics(address, forceRefresh);
       
       res.json(metrics);
     } catch (error) {
       console.error('Error getting score:', error);
       res.status(500).json({ error: "Failed to get score" });
+    }
+  });
+
+  const refreshRateLimit = rateLimit({
+    windowMs: 60000,
+    max: 10,
+    keyGenerator: (req) => req.ip || 'unknown'
+  });
+
+  app.post("/api/v1/score/:address/refresh", refreshRateLimit, async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: "Invalid address format" });
+      }
+      
+      const { localHealthService } = await import('../services/localHealthService');
+      
+      const metrics = await localHealthService.getExtendedScoreMetrics(address, true);
+      
+      res.json({
+        ...metrics,
+        refreshed: true,
+        refreshed_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error refreshing score:', error);
+      res.status(500).json({ error: "Failed to refresh score" });
     }
   });
 

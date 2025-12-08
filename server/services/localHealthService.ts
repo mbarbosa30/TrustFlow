@@ -242,7 +242,12 @@ export class LocalHealthService {
     }
   }
 
-  async getExtendedScoreMetrics(address: string): Promise<ExtendedScoreMetrics> {
+  /**
+   * Get extended score metrics for an address
+   * @param address - The address to get metrics for
+   * @param forceRefresh - If true, bypasses cache and recomputes score from scratch
+   */
+  async getExtendedScoreMetrics(address: string, forceRefresh: boolean = false): Promise<ExtendedScoreMetrics> {
     const normalizedAddress = address.toLowerCase();
     
     const egoContext = await storage.getOrCreateEgoContext(normalizedAddress);
@@ -251,13 +256,24 @@ export class LocalHealthService {
     let cached = false;
     let cachedAt: string | null = null;
     
-    if (egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
+    // Check cache validity (5 minute TTL) unless force refresh requested
+    const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    const now = new Date();
+    const cacheAge = egoContext.updatedAt 
+      ? now.getTime() - egoContext.updatedAt.getTime() 
+      : Infinity;
+    const cacheValid = !forceRefresh && cacheAge < CACHE_TTL_MS;
+    
+    if (cacheValid && egoContext.localHealth !== null && egoContext.localHealth !== undefined) {
       localHealth = Math.round(egoContext.localHealth);
       cached = true;
       cachedAt = egoContext.updatedAt?.toISOString() || null;
     } else {
+      // Force recalculation - compute fresh score
+      console.log(`${forceRefresh ? 'Force refreshing' : 'Cache expired - recalculating'} LocalHealth for ${normalizedAddress}`);
       localHealth = await this.recalculateLocalHealth(normalizedAddress);
       cached = false;
+      cachedAt = new Date().toISOString();
     }
     
     const [incomingTotal, outgoingTotal, incomingEndorsements, algorithmBreakdown] = await Promise.all([
@@ -268,9 +284,9 @@ export class LocalHealthService {
     ]);
     
     const filter = await buildVouchFilter();
-    const now = new Date();
+    const filterNow = new Date();
     
-    const incomingActive = incomingEndorsements.filter(e => isVouchValid(e, filter, now));
+    const incomingActive = incomingEndorsements.filter(e => isVouchValid(e, filter, filterNow));
     
     const uniqueVouchers = new Set(
       incomingActive.map(e => e.endorser.toLowerCase())
