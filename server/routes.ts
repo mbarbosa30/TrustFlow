@@ -280,6 +280,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Populate test data for algorithm validation
+  app.post("/api/admin/populate-test-data", async (req, res) => {
+    try {
+      const { clearTestData, populateTestData } = await import("./testdata/algorithmTestData");
+      
+      // Clear existing test data first
+      await clearTestData();
+      
+      // Populate with new test scenarios
+      const result = await populateTestData();
+      
+      return res.status(200).json({
+        message: "Test data populated successfully",
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error populating test data:", error);
+      return res.status(500).json({ 
+        error: "Failed to populate test data",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Validate algorithm against test scenarios
+  app.get("/api/admin/validate-algorithm", async (req, res) => {
+    try {
+      const { runAlgorithmValidation, testScenarios } = await import("./testdata/algorithmTestData");
+      
+      const result = await runAlgorithmValidation();
+      
+      return res.status(200).json({
+        message: "Algorithm validation complete",
+        passedCount: result.scenarios.filter(s => s.passed).length,
+        totalScenarios: result.scenarios.length,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error validating algorithm:", error);
+      return res.status(500).json({ 
+        error: "Algorithm validation failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Network recalculation endpoint (admin function)
   app.post("/api/admin/recalculate-network", async (req, res) => {
     try {

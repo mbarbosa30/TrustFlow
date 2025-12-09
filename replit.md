@@ -66,6 +66,8 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
         *   **Vertex-Disjoint Paths**: Bonus for having multiple truly independent paths (no shared intermediate nodes) - harder to Sybil attack.
         *   **Adaptive Baselines**: Dynamically computes healthy baselines from network percentiles (75th percentile vouch count), clamped to 4-15 vouches.
         *   **Algorithm Breakdown**: API returns detailed components (flow_component + redundancy_component) that sum to the final LocalHealth score.
+        *   **Floored Sqrt Capacity Weighting (Dec 2025 Fix)**: Voucher edge capacities use `0.35 + 0.65 * sqrt(voucherScore/100)` formula. The 0.35 floor prevents iterative collapse while maintaining stability. sqrt damping counteracts quadratic scaling in the score formula. Unknown vouchers default to score 0 (Sybil resistance).
+        *   **Algorithm Test Data**: Comprehensive test scenarios in `server/testdata/algorithmTestData.ts` covering: hub-spoke patterns, mesh networks, Sybil rings, sockpuppet farms, collusion clusters, over-vouching dilution, multi-path redundancy, expired/revoked vouches, isolated users, and large-scale stress tests. Admin endpoints: `POST /api/admin/populate-test-data`, `GET /api/admin/validate-algorithm`.
     *   **Outgoing Vouch Adjustment**: Applies a piecewise dilution curve to penalize excessive vouching, ensuring accountability.
     *   LocalHealth is purely graph-based, independent of economic factors.
 *   **LocalHealth Score Caching**: Scores are cached in `contexts` table for fast API responses.

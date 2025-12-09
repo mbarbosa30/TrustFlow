@@ -749,15 +749,20 @@ export class EgoScorer {
     // 
     // IMPORTANT: Use floored sqrt weighting to prevent feedback loop collapse
     // The sqrt damping counteracts the quadratic scaling in the score formula
-    // The 0.5 floor ensures stable fixed point above 70 for well-vouched addresses
+    // 
+    // SYBIL RESISTANCE: Default unknown vouchers to score 0 (not 50)
+    // This prevents sockpuppet attacks where fresh accounts vouch for an attacker
+    // Fresh accounts contribute only the floor capacity until they earn their own vouches
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       if (voucherScores) {
-        const voucherScore = voucherScores.get(voucher) ?? 50; // Default to mid-range (voucher already lowercase)
-        // Floored sqrt weighting: minimum 0.5, maximum 1.0
-        // Higher floor (0.5) ensures scores stabilize in the 70-85 range for well-vouched addresses
-        // score=100→1.0, score=50→0.85, score=25→0.75, score=10→0.66, score=0→0.5
-        capacity = 0.5 + 0.5 * Math.sqrt(voucherScore / 100);
+        // Default to 0 for unknown vouchers (Sybil resistance)
+        // Only vouchers who have earned their own score contribute full capacity
+        const voucherScore = voucherScores.get(voucher) ?? 0;
+        // Floored sqrt weighting: minimum 0.35, maximum 1.0
+        // Lower floor (0.35) punishes sockpuppets while maintaining stability
+        // score=100→1.0, score=50→0.81, score=25→0.675, score=10→0.555, score=0→0.35
+        capacity = 0.35 + 0.65 * Math.sqrt(voucherScore / 100);
       }
       directGraph.addEdge(voucher, normalizedOwner, capacity);
     }
