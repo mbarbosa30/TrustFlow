@@ -38,10 +38,10 @@ export function LocalHealthHistogram({ distribution, isLoading = false }: LocalH
               <div key={index} className="flex items-center gap-3">
                 <span className="text-xs text-muted-foreground w-16">{item.bin}</span>
                 <div className="flex-1 relative">
-                  <div className="h-8 bg-primary/20 rounded overflow-hidden">
+                  <div className="h-8 rounded overflow-hidden" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.2)' }}>
                     <div
-                      className="h-full bg-primary transition-all"
-                      style={{ width: `${maxCount > 0 ? (item.count / maxCount) * 100 : 0}%` }}
+                      className="h-full transition-all"
+                      style={{ backgroundColor: 'hsl(var(--score-growth))', width: `${maxCount > 0 ? (item.count / maxCount) * 100 : 0}%` }}
                       data-testid={`bar-local-health-${item.bin}`}
                     />
                   </div>

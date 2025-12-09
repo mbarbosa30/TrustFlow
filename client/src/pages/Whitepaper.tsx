@@ -20,7 +20,7 @@ function ResponsiveTable({ children, className = "" }: { children: React.ReactNo
 
 function FormulaBox({ children, label, testId }: { children: React.ReactNode; label?: string; testId?: string }) {
   return (
-    <div className="p-3 sm:p-4 rounded-lg bg-primary/10 border border-primary/20 my-4 overflow-x-auto" data-testid={testId}>
+    <div className="p-3 sm:p-4 rounded-lg my-4 overflow-x-auto" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)', border: '1px solid hsl(var(--score-transition) / 0.2)' }} data-testid={testId}>
       {label && <p className="text-xs text-muted-foreground mb-2 font-medium">{label}</p>}
       <div className="min-w-[300px]">
         {children}
@@ -34,7 +34,7 @@ export default function Whitepaper() {
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
       <header className="mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-          <FileText className="w-8 h-8 text-primary shrink-0" />
+          <FileText className="w-8 h-8 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
             <p className="text-sm text-muted-foreground">Version 1.2 — December 2025</p>
@@ -65,14 +65,14 @@ export default function Whitepaper() {
           </p>
           
           <div className="grid gap-3 sm:gap-4">
-            <div className="p-3 sm:p-4 rounded-lg bg-muted/30 border-l-4 border-primary">
+            <div className="p-3 sm:p-4 rounded-lg bg-muted/30" style={{ borderLeft: '4px solid hsl(var(--score-growth))' }}>
               <div className="font-semibold mb-1">LocalHealth (0-100)</div>
               <p className="text-muted-foreground text-sm">
                 Personal network quality score computed by an iterative algorithm where each incoming vouch is weighted 
                 by the voucher's own score—creating recursive trust propagation. No seeds required.
               </p>
             </div>
-            <div className="p-3 sm:p-4 rounded-lg bg-muted/30 border-l-4 border-primary">
+            <div className="p-3 sm:p-4 rounded-lg bg-muted/30" style={{ borderLeft: '4px solid hsl(var(--score-dormant))' }}>
               <div className="font-semibold mb-1">STS — Standardized Trust Score (0-100)</div>
               <p className="text-muted-foreground text-sm">
                 Community score built on Advogato-style max-flow/min-cut from community-managed seeds, with robust 
@@ -81,7 +81,7 @@ export default function Whitepaper() {
             </div>
           </div>
 
-          <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20 mt-6">
+          <div className="p-3 sm:p-4 rounded-lg mt-6" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
             <p className="font-semibold mb-3 flex items-center gap-2">
               <Target className="w-4 h-4" />
               Core Design Properties
@@ -128,7 +128,7 @@ export default function Whitepaper() {
 
       <section id="introduction" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <span className="text-primary">1.</span> Introduction & Motivation
+          <span style={{ color: 'hsl(var(--score-transition))' }}>1.</span> Introduction & Motivation
         </h2>
         
         <Card>
@@ -220,7 +220,7 @@ export default function Whitepaper() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-primary" />
+              <Lightbulb className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
               The MaxFlow Approach
             </CardTitle>
           </CardHeader>
@@ -259,23 +259,23 @@ export default function Whitepaper() {
               in dense networks accumulate higher scores through multiple independent paths.
             </p>
 
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
               <p className="font-semibold mb-2">Design Principles</p>
               <div className="grid gap-2 text-sm">
                 <div className="flex gap-2">
-                  <span className="font-mono text-primary">1.</span>
+                  <span className="font-mono" style={{ color: 'hsl(var(--score-transition))' }}>1.</span>
                   <div><strong>Neutrality</strong> — Scores are mathematical signals; applications decide their meaning</div>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-mono text-primary">2.</span>
+                  <span className="font-mono" style={{ color: 'hsl(var(--score-transition))' }}>2.</span>
                   <div><strong>Verifiability</strong> — Deterministic computation from public data with signed attestations</div>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-mono text-primary">3.</span>
+                  <span className="font-mono" style={{ color: 'hsl(var(--score-transition))' }}>3.</span>
                   <div><strong>Accountability</strong> — Endorsing has costs; spam reduces your own score</div>
                 </div>
                 <div className="flex gap-2">
-                  <span className="font-mono text-primary">4.</span>
+                  <span className="font-mono" style={{ color: 'hsl(var(--score-transition))' }}>4.</span>
                   <div><strong>Separation</strong> — Economic rewards never influence graph-based scoring</div>
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function Whitepaper() {
                   Rivers find optimal paths to the sea through topology alone—no central planner. Our max-flow 
                   algorithm computes the same: how much "trust" can flow from sources to sinks through the network.
                 </p>
-                <p className="text-xs font-mono text-primary/70">Graph property: Max-flow capacity</p>
+                <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>Graph property: Max-flow capacity</p>
               </div>
               
               <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
@@ -319,7 +319,7 @@ export default function Whitepaper() {
                   Stronger roots get more nutrients, enabling more growth—a recursive feedback loop. Our 
                   iterative algorithm works identically: vouches from high-score users carry more weight.
                 </p>
-                <p className="text-xs font-mono text-primary/70">Graph property: Recursive trust weighting</p>
+                <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>Graph property: Recursive trust weighting</p>
               </div>
               
               <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
@@ -332,7 +332,7 @@ export default function Whitepaper() {
                   collapses the network. Our redundancy component rewards exactly this: multiple independent 
                   connection paths.
                 </p>
-                <p className="text-xs font-mono text-primary/70">Graph property: Path redundancy</p>
+                <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-dormant) / 0.7)' }}>Graph property: Path redundancy</p>
               </div>
               
               <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
@@ -345,7 +345,7 @@ export default function Whitepaper() {
                   dilution penalty works the same way: over-vouching dilutes your score, creating natural 
                   accountability.
                 </p>
-                <p className="text-xs font-mono text-primary/70">Graph property: Outgoing vouch penalty</p>
+                <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-transition) / 0.7)' }}>Graph property: Outgoing vouch penalty</p>
               </div>
             </div>
 
@@ -364,7 +364,7 @@ export default function Whitepaper() {
 
       <section id="related-work" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <span className="text-primary">2.</span> Related Work & Comparison
+          <span style={{ color: 'hsl(var(--score-transition))' }}>2.</span> Related Work & Comparison
         </h2>
         
         <Card>
@@ -462,7 +462,7 @@ export default function Whitepaper() {
                     <td className="py-2 px-3 text-muted-foreground">Depends on external providers</td>
                   </tr>
                   <tr>
-                    <td className="py-2 px-3 font-medium text-primary">MaxFlow</td>
+                    <td className="py-2 px-3 font-medium" style={{ color: 'hsl(var(--score-growth))' }}>MaxFlow</td>
                     <td className="py-2 px-3 text-muted-foreground">Recursive trust + max-flow</td>
                     <td className="py-2 px-3 text-muted-foreground">Self-contained, accountable</td>
                     <td className="py-2 px-3 text-muted-foreground">Cold start for new networks</td>
@@ -478,7 +478,7 @@ export default function Whitepaper() {
 
       <section id="system-overview" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <span className="text-primary">3.</span> System Architecture
+          <span style={{ color: 'hsl(var(--score-transition))' }}>3.</span> System Architecture
         </h2>
 
         <Card>
@@ -494,11 +494,11 @@ export default function Whitepaper() {
             </p>
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">V</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-growth))' }}>V</span>
                 <div>User accounts identified by Ethereum addresses (normalized to lowercase)</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">E</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-growth))' }}>E</span>
                 <div>
                   Binary endorsements <InlineFormula>{"e = (u \\to v)"}</InlineFormula> where user <InlineFormula>{"u"}</InlineFormula> vouches 
                   for user <InlineFormula>{"v"}</InlineFormula>, tagged with epoch and community
@@ -572,20 +572,20 @@ export default function Whitepaper() {
             </p>
             <div className="grid gap-2 sm:gap-3">
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <Zap className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <Zap className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-transition))' }} />
                 <div>
                   <strong>Determinism</strong> — Same inputs always produce same outputs, enabling independent verification
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <Shield className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <Shield className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-dormant))' }} />
                 <div>
                   <strong>Anti-gaming</strong> — Epoch-lagged capacities prevent "distance inflation" attacks where 
                   adversaries manipulate their hop-distance from seeds within an epoch
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
                 <div>
                   <strong>Attestations</strong> — Each epoch publishes <code className="text-xs">params.json</code>, 
                   <code className="text-xs">seed_root</code>, <code className="text-xs">graph_root</code>, and 
@@ -601,8 +601,8 @@ export default function Whitepaper() {
 
       <section id="localhealth" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Cpu className="w-6 h-6 text-primary" />
-          <span className="text-primary">4.</span> LocalHealth Algorithm
+          <Cpu className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
+          <span style={{ color: 'hsl(var(--score-transition))' }}>4.</span> LocalHealth Algorithm
         </h2>
 
         <Card>
@@ -913,7 +913,7 @@ export default function Whitepaper() {
 
       <section id="sts" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <span className="text-primary">5.</span> STS (Standardized Trust Score)
+          <span style={{ color: 'hsl(var(--score-transition))' }}>5.</span> STS (Standardized Trust Score)
         </h2>
 
         <Card>
@@ -1042,8 +1042,8 @@ export default function Whitepaper() {
 
       <section id="threat-model" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Shield className="w-6 h-6 text-primary" />
-          <span className="text-primary">6.</span> Threat Model & Security
+          <Shield className="w-6 h-6" style={{ color: 'hsl(var(--score-dormant))' }} />
+          <span style={{ color: 'hsl(var(--score-transition))' }}>6.</span> Threat Model & Security
         </h2>
 
         <Card>
@@ -1177,8 +1177,8 @@ export default function Whitepaper() {
 
       <section id="evaluation" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-primary" />
-          <span className="text-primary">7.</span> Evaluation Methodology
+          <BarChart3 className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
+          <span style={{ color: 'hsl(var(--score-transition))' }}>7.</span> Evaluation Methodology
         </h2>
 
         <Card>
@@ -1233,28 +1233,28 @@ export default function Whitepaper() {
 
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">A.</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-transition))' }}>A.</span>
                 <div>
                   <strong className="text-sm">Isolated Sybil Cluster</strong>
                   <p className="text-sm text-muted-foreground">N fake accounts vouching only for each other. Expected: all scores near zero.</p>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">B.</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-transition))' }}>B.</span>
                 <div>
                   <strong className="text-sm">Bridge Attack</strong>
                   <p className="text-sm text-muted-foreground">Sybil cluster with k bridges to established users. Expected: scores bounded by bridge capacity.</p>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">C.</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-transition))' }}>C.</span>
                 <div>
                   <strong className="text-sm">Seed Capture</strong>
                   <p className="text-sm text-muted-foreground">One seed compromised, vouching for Sybils. Expected: seed quality score degrades, limiting damage.</p>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex gap-3">
-                <span className="font-mono text-primary shrink-0">D.</span>
+                <span className="font-mono shrink-0" style={{ color: 'hsl(var(--score-transition))' }}>D.</span>
                 <div>
                   <strong className="text-sm">Vouch Merchant</strong>
                   <p className="text-sm text-muted-foreground">High-score user sells vouches to many buyers. Expected: dilution penalty reduces their score and vouch value.</p>
@@ -1317,8 +1317,8 @@ export default function Whitepaper() {
 
       <section id="discussion" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Scale className="w-6 h-6 text-primary" />
-          <span className="text-primary">8.</span> Discussion & Limitations
+          <Scale className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
+          <span style={{ color: 'hsl(var(--score-transition))' }}>8.</span> Discussion & Limitations
         </h2>
 
         <Card>
@@ -1403,7 +1403,7 @@ export default function Whitepaper() {
 
       <section id="implementation" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <span className="text-primary">9.</span> Implementation
+          <span style={{ color: 'hsl(var(--score-transition))' }}>9.</span> Implementation
         </h2>
 
         <Card>
@@ -1461,19 +1461,19 @@ export default function Whitepaper() {
           <CardContent>
             <div className="space-y-2 font-mono text-xs sm:text-sm">
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="text-primary whitespace-nowrap">GET /api/ego/:addr/score</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/ego/:addr/score</div>
                 <div className="text-muted-foreground mt-1">→ localHealth, voucherCount, redundancy, dilution</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="text-primary whitespace-nowrap">GET /api/ego/:addr/explain</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/ego/:addr/explain</div>
                 <div className="text-muted-foreground mt-1">→ minCut, seedPaths, componentBreakdown</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="text-primary whitespace-nowrap">POST /api/vouch</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-transition))' }}>POST /api/vouch</div>
                 <div className="text-muted-foreground mt-1">→ endorsee, signature (triggers recompute)</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="text-primary whitespace-nowrap">GET /api/community/:id/sts/:addr</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-dormant))' }}>GET /api/community/:id/sts/:addr</div>
                 <div className="text-muted-foreground mt-1">→ sts, F, C, S, D, PR, minCut, depth</div>
               </div>
             </div>
@@ -1485,8 +1485,8 @@ export default function Whitepaper() {
 
       <section id="future-work" className="space-y-6 mb-12">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-          <Lightbulb className="w-6 h-6 text-primary" />
-          <span className="text-primary">10.</span> Future Work
+          <Lightbulb className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
+          <span style={{ color: 'hsl(var(--score-transition))' }}>10.</span> Future Work
         </h2>
 
         <Card className="mb-6 border-green-500/30 bg-green-500/5">
@@ -1589,19 +1589,19 @@ export default function Whitepaper() {
             
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="p-3 rounded-lg bg-muted/30 flex items-center gap-3">
-                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
                 <span>Allocate capital (microcredit, grants)</span>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex items-center gap-3">
-                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
                 <span>Weight governance (DAO voting)</span>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex items-center gap-3">
-                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
                 <span>Gate access (communities, features)</span>
               </div>
               <div className="p-3 rounded-lg bg-muted/30 flex items-center gap-3">
-                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                <ArrowRight className="w-4 h-4 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
                 <span>Route grants (quadratic funding)</span>
               </div>
             </div>

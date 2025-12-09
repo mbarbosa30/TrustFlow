@@ -72,7 +72,7 @@ export default function WhyScore() {
                   <div className="text-xs text-muted-foreground mt-1">
                     Direct flow from vouchers to you, normalized by healthy baseline (5 vouches)
                   </div>
-                  <div className="text-[0.65rem] text-primary/70 mt-1 italic">
+                  <div className="text-[0.65rem] mt-1 italic" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>
                     Like rivers finding paths to the sea through network topology
                   </div>
                 </div>
@@ -84,7 +84,7 @@ export default function WhyScore() {
                   <div className="text-xs text-muted-foreground mt-1">
                     Network depth and connectivity: vouch count + upstream supporters + edge density
                   </div>
-                  <div className="text-[0.65rem] text-primary/70 mt-1 italic">
+                  <div className="text-[0.65rem] mt-1 italic" style={{ color: 'hsl(var(--score-dormant) / 0.7)' }}>
                     Like forest mycorrhizal networks—multiple paths = resilience
                   </div>
                 </div>
@@ -168,7 +168,7 @@ export default function WhyScore() {
                       Vouches are weighted by voucher's LocalHealth score. A vouch from someone with a high score carries more weight 
                       than one from someone with a low score—making score bootstrapping computationally expensive.
                     </p>
-                    <p className="text-[0.65rem] text-primary/70 mt-1 italic">
+                    <p className="text-[0.65rem] mt-1 italic" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>
                       Like root systems: stronger roots get more nutrients, enabling more growth
                     </p>
                   </div>
@@ -309,7 +309,7 @@ export default function WhyScore() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t bg-primary/10 rounded-lg p-4">
+              <div className="pt-4 border-t rounded-lg p-4" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <h3 className="font-semibold mb-2 text-sm">Infrastructure Principle</h3>
                 <p className="text-xs text-muted-foreground">
                   <strong>MaxFlow provides the "what" (verifiable graph signals), not the "why" (interpretation).</strong> The algorithm computes flow and redundancy; your application decides what those signals mean in your context. This separation keeps the infrastructure neutral, auditable, and reusable across diverse use cases—from credit scoring to governance to content curation.
@@ -422,7 +422,7 @@ export default function WhyScore() {
                 </ul>
               </div>
 
-              <div className="pt-3 border-t bg-primary/10 rounded-lg p-3">
+              <div className="pt-3 border-t rounded-lg p-3" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)' }}>
                 <h4 className="font-semibold text-sm mb-1">Why This Matters for Vulnerable Communities</h4>
                 <p className="text-xs text-muted-foreground">
                   Without seed scoring, compromising 1-2 seeds could pollute the entire graph. With it, attackers need to 

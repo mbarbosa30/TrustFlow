@@ -21,7 +21,7 @@ export default function HowItWorks() {
             <p>
               We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms with recursive trust weighting. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> computed from incoming vouches weighted by voucher strength using an iterative algorithm, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. LocalHealth uses recursive weighting where vouch capacity = voucherScore / 100, creating trust propagation through the network. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
-            <div className="mt-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', border: '1px solid' }}>
               <p className="text-sm mb-0">
                 <strong>These scores are neutral signals</strong>—MaxFlow computes verifiable graph metrics (flow, redundancy, connectivity). Your application chooses their meaning: creditworthiness, governance weight, access control, grant allocation, etc.
               </p>
@@ -61,7 +61,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              <strong className="text-primary">Your score is influenced by who YOU vouch for.</strong> This creates economic cost to vouch spam and makes endorsements selective—the core anti-Sybil mechanism.
+              <strong style={{ color: 'hsl(var(--score-transition))' }}>Your score is influenced by who YOU vouch for.</strong> This creates economic cost to vouch spam and makes endorsements selective—the core anti-Sybil mechanism.
             </p>
             
             <div className="my-4 space-y-4">
@@ -81,7 +81,7 @@ export default function HowItWorks() {
                 </ul>
               </div>
 
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
                 <p className="font-semibold mb-2">Game Theory: Why This Works</p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li><strong>Attack cost:</strong> Creating fake networks requires vouching for many Sybil accounts → dilution penalty reduces attacker's own score</li>
@@ -89,8 +89,8 @@ export default function HowItWorks() {
                   <li><strong>Graph quality:</strong> When endorsements are selective, the resulting graph signals (flow, redundancy) are reliable</li>
                   <li><strong>Neutral enforcement:</strong> The system penalizes graph spam; applications interpret the cleaned signal</li>
                 </ul>
-                <div className="mt-3 pt-3 border-t border-primary/10">
-                  <p className="text-xs text-primary/70 italic flex items-start gap-2">
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid hsl(var(--score-growth) / 0.1)' }}>
+                  <p className="text-xs italic flex items-start gap-2" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>
                     <Leaf className="w-3 h-3 mt-0.5 shrink-0" />
                     <span>Like ecosystems: organisms that over-extend get naturally pruned. Species that take without contributing eventually get excluded from symbiotic networks.</span>
                   </p>
@@ -148,7 +148,7 @@ export default function HowItWorks() {
             </p>
             
             <div className="space-y-4 my-4">
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge>Default</Badge>
                   <span className="font-semibold">Pure Option 2: Recursive Trust Weighting</span>
@@ -166,7 +166,7 @@ export default function HowItWorks() {
               </div>
             </div>
 
-            <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
+            <div className="my-6 p-6 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)', border: '2px solid hsl(var(--score-transition) / 0.2)' }}>
               <p className="text-center text-lg font-bold font-mono mb-2">
                 Ego Score = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
               </p>
