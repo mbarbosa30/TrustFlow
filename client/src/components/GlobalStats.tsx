@@ -31,8 +31,8 @@ function StatCard({ icon: Icon, title, value, subtitle, biome }: StatCardProps) 
       }}
     >
       <div 
-        className="absolute inset-0 opacity-[0.04]"
-        style={{ background: `linear-gradient(135deg, hsl(var(${colorVar})) 0%, transparent 60%)` }}
+        className="absolute inset-0 opacity-[0.12]"
+        style={{ background: `linear-gradient(135deg, hsl(var(${colorVar})) 0%, transparent 70%)` }}
       />
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3 relative">
         <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>

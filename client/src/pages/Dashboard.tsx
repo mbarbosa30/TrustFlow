@@ -69,17 +69,17 @@ export default function Dashboard() {
         className="w-full relative overflow-hidden"
         style={{ 
           background: `linear-gradient(135deg, 
-            hsl(var(--score-growth) / 0.08) 0%, 
-            hsl(var(--score-canopy) / 0.05) 40%,
+            hsl(var(--score-growth) / 0.15) 0%, 
+            hsl(var(--score-canopy) / 0.12) 50%,
             hsl(var(--background)) 100%)`
         }}
       >
-        {/* Organic mesh overlay */}
+        {/* Organic mesh overlay - more visible */}
         <div 
-          className="absolute inset-0 opacity-30"
+          className="absolute inset-0"
           style={{
-            backgroundImage: `radial-gradient(circle at 20% 80%, hsl(var(--score-growth) / 0.15) 0%, transparent 50%),
-                              radial-gradient(circle at 80% 20%, hsl(var(--score-canopy) / 0.1) 0%, transparent 40%)`
+            backgroundImage: `radial-gradient(circle at 15% 85%, hsl(var(--score-growth) / 0.25) 0%, transparent 45%),
+                              radial-gradient(circle at 85% 15%, hsl(var(--score-canopy) / 0.2) 0%, transparent 35%)`
           }}
         />
         <div className="max-w-[1800px] mx-auto px-6 py-12 relative">
@@ -170,7 +170,7 @@ export default function Dashboard() {
         style={{ 
           background: `linear-gradient(180deg, 
             hsl(var(--background)) 0%,
-            hsl(var(--score-sun) / 0.03) 50%,
+            hsl(var(--score-sun) / 0.08) 50%,
             hsl(var(--background)) 100%)`
         }}
       >
