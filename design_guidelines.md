@@ -11,6 +11,47 @@
 2. **Privacy-First Visual Language** - Obfuscation should feel intentional, not hidden
 3. **Data Hierarchy** - Scores, paths, and technical details have clear visual priority
 4. **Trustworthy Restraint** - Minimal decoration, maximum information density
+5. **Nature as Metaphor** - Trust flows like water; networks grow like roots
+
+---
+
+## Nature-Derived Color Philosophy
+
+**Core Insight:** The max-flow algorithm mirrors nature's fundamental patterns—rivers finding paths, roots seeking nutrients, mycelium distributing resources. Our color system reflects this organic truth.
+
+### Score Range Colors (Semantic)
+
+| Score Range | Name | CSS Variable | HSL | Nature Metaphor |
+|-------------|------|--------------|-----|-----------------|
+| 80-100 | Canopy | `--score-canopy` | 142 76% 36% | Thriving canopy, peak photosynthesis |
+| 60-79 | Growth | `--score-growth` | 120 40% 45% | Moss green, healthy expansion |
+| 40-59 | Transition | `--score-transition` | 45 85% 50% | Golden amber, developing potential |
+| 20-39 | Dormant | `--score-dormant` | 25 35% 45% | Warm earth, resting but alive |
+| 0-19 | Seedling | `--score-seedling` | 30 15% 55% | Muted stone, beginning growth |
+
+### Dilution Zone Colors
+
+| Zone | CSS Variable | HSL | Meaning |
+|------|--------------|-----|---------|
+| Quality (1-10) | `--dilution-quality` | 142 70% 40% | Healthy, sustainable vouching |
+| Warning (11-15) | `--dilution-warning` | 45 90% 55% | Approaching over-extension |
+| Penalty (16-25) | `--dilution-penalty` | 25 60% 50% | Over-extraction, stressed |
+| Cap (25+) | `--dilution-cap` | 0 0% 50% | Exhausted capacity |
+
+### Primary Color
+
+The primary brand color is **Forest Green** (`142 70% 32%` light / `142 70% 40%` dark), chosen because:
+- Green symbolizes growth, health, and thriving ecosystems
+- It distinguishes MaxFlow from blue-dominant Web3 projects
+- It reinforces the nature/organic narrative of trust networks
+
+### Usage Guidelines
+
+- **Graph nodes**: Use score range colors based on absolute LocalHealth (0-100)
+- **UI actions**: Use primary green for buttons, links, focus states
+- **Warnings**: Use amber/gold tones (transition palette)
+- **Errors**: Keep destructive red for actual errors only
+- **Charts**: Use nature palette (greens, amber, earth tones)
 
 ---
 

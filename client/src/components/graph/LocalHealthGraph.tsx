@@ -80,6 +80,11 @@ export function LocalHealthGraph({
       muted: rootStyles.getPropertyValue('--muted-foreground').trim().split(' '),
       destructive: rootStyles.getPropertyValue('--destructive').trim().split(' '),
       border: rootStyles.getPropertyValue('--border').trim().split(' '),
+      scoreCanopy: rootStyles.getPropertyValue('--score-canopy').trim().split(' '),
+      scoreGrowth: rootStyles.getPropertyValue('--score-growth').trim().split(' '),
+      scoreTransition: rootStyles.getPropertyValue('--score-transition').trim().split(' '),
+      scoreDormant: rootStyles.getPropertyValue('--score-dormant').trim().split(' '),
+      scoreSeedling: rootStyles.getPropertyValue('--score-seedling').trim().split(' '),
     };
   }, [themeVersion]);
 
@@ -95,26 +100,31 @@ export function LocalHealthGraph({
 
   const getNodeColor = useCallback((node: GraphNode) => {
     const score = node.localHealth;
-    const { min, max } = scoreRange;
-    const normalizedScore = ((score - min) / (max - min)) * 100;
     
-    if (normalizedScore >= 80) {
-      const hsl = themeColors.primary;
+    // Nature-derived color mapping based on absolute score (0-100)
+    // Canopy (80-100): Thriving forest green - the healthiest nodes
+    // Growth (60-79): Moss green - healthy and expanding
+    // Transition (40-59): Golden amber - developing potential
+    // Dormant (20-39): Warm earth - resting but alive
+    // Seedling (0-19): Muted stone - beginning, needs nurturing
+    
+    if (score >= 80) {
+      const hsl = themeColors.scoreCanopy;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
-    } else if (normalizedScore >= 60) {
-      const hsl = themeColors.primary;
-      return `hsl(${hsl[0]} ${hsl[1]} ${Math.min(100, parseInt(hsl[2]) + 20)}%)`;
-    } else if (normalizedScore >= 40) {
-      const hsl = themeColors.accent;
+    } else if (score >= 60) {
+      const hsl = themeColors.scoreGrowth;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
-    } else if (normalizedScore >= 20) {
-      const hsl = themeColors.muted;
+    } else if (score >= 40) {
+      const hsl = themeColors.scoreTransition;
+      return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
+    } else if (score >= 20) {
+      const hsl = themeColors.scoreDormant;
       return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
     } else {
-      const hsl = themeColors.destructive;
-      return `hsl(${hsl[0]} ${hsl[1]} ${Math.min(100, parseInt(hsl[2]) + 30)}%)`;
+      const hsl = themeColors.scoreSeedling;
+      return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]})`;
     }
-  }, [themeColors, scoreRange]);
+  }, [themeColors]);
 
   const getNodeSize = useCallback((node: GraphNode) => {
     const baseSize = 1;
@@ -341,21 +351,21 @@ export function LocalHealthGraph({
             </div>
           )}
 
-          {/* Legend - Bottom Right */}
+          {/* Legend - Bottom Right (Nature-derived score colors) */}
           <div className="absolute bottom-4 right-4 z-10">
             <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 border">
-              <div className="text-xs text-muted-foreground mb-2">LocalHealth Score</div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.destructive[0]} ${themeColors.destructive[1]} ${Math.min(100, parseInt(themeColors.destructive[2]) + 30)}%)` }} />
-                <span className="text-xs mr-2">0-20</span>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.muted[0]} ${themeColors.muted[1]} ${themeColors.muted[2]})` }} />
-                <span className="text-xs mr-2">20-40</span>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.accent[0]} ${themeColors.accent[1]} ${themeColors.accent[2]})` }} />
-                <span className="text-xs mr-2">40-60</span>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.primary[0]} ${themeColors.primary[1]} ${Math.min(100, parseInt(themeColors.primary[2]) + 20)}%)` }} />
-                <span className="text-xs mr-2">60-80</span>
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.primary[0]} ${themeColors.primary[1]} ${themeColors.primary[2]})` }} />
-                <span className="text-xs">80+</span>
+              <div className="text-xs text-muted-foreground mb-2">Signal Score</div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreSeedling[0]} ${themeColors.scoreSeedling[1]} ${themeColors.scoreSeedling[2]})` }} />
+                <span className="text-xs mr-2">Seedling</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreDormant[0]} ${themeColors.scoreDormant[1]} ${themeColors.scoreDormant[2]})` }} />
+                <span className="text-xs mr-2">Dormant</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreTransition[0]} ${themeColors.scoreTransition[1]} ${themeColors.scoreTransition[2]})` }} />
+                <span className="text-xs mr-2">Transition</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreGrowth[0]} ${themeColors.scoreGrowth[1]} ${themeColors.scoreGrowth[2]})` }} />
+                <span className="text-xs mr-2">Growth</span>
+                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreCanopy[0]} ${themeColors.scoreCanopy[1]} ${themeColors.scoreCanopy[2]})` }} />
+                <span className="text-xs">Canopy</span>
               </div>
             </div>
           </div>

@@ -34,15 +34,15 @@
 
   --sidebar-border: 0 0% 91%;
 
-  --sidebar-primary: 217 91% 35%;
+  --sidebar-primary: 142 70% 32%;
 
-  --sidebar-primary-foreground: 217 91% 98%;
+  --sidebar-primary-foreground: 142 70% 98%;
 
-  --sidebar-accent: 217 15% 88%;
+  --sidebar-accent: 142 15% 88%;
 
-  --sidebar-accent-foreground: 217 15% 25%;
+  --sidebar-accent-foreground: 142 15% 25%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 142 70% 45%;
 
   --popover: 0 0% 94%;
 
@@ -50,33 +50,47 @@
 
   --popover-border: 0 0% 88%;
 
-  --primary: 217 91% 35%;
+  --primary: 142 70% 32%;
 
-  --primary-foreground: 217 91% 98%;
+  --primary-foreground: 142 70% 98%;
 
   --secondary: 0 0% 90%;
 
   --secondary-foreground: 0 0% 9%;
 
-  --muted: 217 8% 91%;
+  --muted: 142 8% 91%;
 
-  --muted-foreground: 217 8% 45%;
+  --muted-foreground: 142 8% 45%;
 
-  --accent: 217 12% 89%;
+  --accent: 142 12% 89%;
 
-  --accent-foreground: 217 12% 25%;
+  --accent-foreground: 142 12% 25%;
 
   --destructive: 0 84% 35%;
 
   --destructive-foreground: 0 84% 98%;
 
   --input: 0 0% 75%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 35%;
-  --chart-2: 142 76% 28%;
-  --chart-3: 271 81% 35%;
-  --chart-4: 48 96% 35%;
-  --chart-5: 340 82% 35%;
+  --ring: 142 70% 45%;
+
+  /* Nature-derived score range colors */
+  --score-canopy: 142 76% 36%;
+  --score-growth: 120 40% 45%;
+  --score-transition: 45 85% 50%;
+  --score-dormant: 25 35% 45%;
+  --score-seedling: 30 15% 55%;
+
+  /* Dilution zone indicators */
+  --dilution-quality: 142 70% 40%;
+  --dilution-warning: 45 90% 55%;
+  --dilution-penalty: 25 60% 50%;
+  --dilution-cap: 0 0% 50%;
+
+  --chart-1: 142 70% 35%;
+  --chart-2: 120 45% 40%;
+  --chart-3: 45 85% 50%;
+  --chart-4: 25 40% 45%;
+  --chart-5: 160 50% 40%;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-serif: Georgia, serif;
@@ -152,15 +166,15 @@
 
   --sidebar-border: 0 0% 18%;
 
-  --sidebar-primary: 217 91% 35%;
+  --sidebar-primary: 142 70% 40%;
 
-  --sidebar-primary-foreground: 217 91% 98%;
+  --sidebar-primary-foreground: 142 70% 98%;
 
-  --sidebar-accent: 217 12% 20%;
+  --sidebar-accent: 142 12% 20%;
 
-  --sidebar-accent-foreground: 217 12% 90%;
+  --sidebar-accent-foreground: 142 12% 90%;
 
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-ring: 142 70% 50%;
 
   --popover: 0 0% 14%;
 
@@ -168,33 +182,47 @@
 
   --popover-border: 0 0% 20%;
 
-  --primary: 217 91% 35%;
+  --primary: 142 70% 40%;
 
-  --primary-foreground: 217 91% 98%;
+  --primary-foreground: 142 70% 98%;
 
   --secondary: 0 0% 18%;
 
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 217 8% 16%;
+  --muted: 142 8% 16%;
 
-  --muted-foreground: 217 8% 70%;
+  --muted-foreground: 142 8% 70%;
 
-  --accent: 217 12% 19%;
+  --accent: 142 12% 19%;
 
-  --accent-foreground: 217 12% 90%;
+  --accent-foreground: 142 12% 90%;
 
   --destructive: 0 84% 35%;
 
   --destructive-foreground: 0 84% 98%;
 
   --input: 0 0% 35%;
-  --ring: 217 91% 60%;
-  --chart-1: 217 91% 70%;
-  --chart-2: 142 76% 65%;
-  --chart-3: 271 81% 70%;
-  --chart-4: 48 96% 65%;
-  --chart-5: 340 82% 65%;
+  --ring: 142 70% 50%;
+
+  /* Nature-derived score range colors (dark mode - slightly brighter) */
+  --score-canopy: 142 76% 45%;
+  --score-growth: 120 45% 50%;
+  --score-transition: 45 90% 55%;
+  --score-dormant: 25 40% 50%;
+  --score-seedling: 30 20% 55%;
+
+  /* Dilution zone indicators (dark mode) */
+  --dilution-quality: 142 70% 50%;
+  --dilution-warning: 45 90% 60%;
+  --dilution-penalty: 25 65% 55%;
+  --dilution-cap: 0 0% 55%;
+
+  --chart-1: 142 70% 55%;
+  --chart-2: 120 50% 50%;
+  --chart-3: 45 90% 60%;
+  --chart-4: 25 45% 55%;
+  --chart-5: 160 55% 50%;
 
   --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.30);
   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.35);
