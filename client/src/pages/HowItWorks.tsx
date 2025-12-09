@@ -68,16 +68,16 @@ export default function HowItWorks() {
               <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
                 <p className="font-semibold mb-2 text-amber-600 dark:text-amber-400">Dilution Penalty (Vouch Spam Prevention)</p>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Vouching for {'>'}10 people applies a penalty factor to your redundancy component (40% of total score). The penalty grows linearly at 10% per excess vouch, capped at 50% reduction.
+                  Vouching for {'>'}10 people applies a penalty factor to your min-cut component (40% of total score). The penalty uses a piecewise curve for smooth decay.
                 </p>
                 <div className="text-sm font-mono bg-muted/50 p-3 rounded-lg">
-                  cutComponent = 40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)
+                  cutComponent = 40 × (minCut²) × dilutionFactor
                 </div>
                 <ul className="text-sm text-muted-foreground mt-3 space-y-1 pl-4">
                   <li><strong>≤10 vouches:</strong> No penalty (factor = 1.0)</li>
-                  <li><strong>12 vouches:</strong> 20% redundancy penalty → ~3-8% total score impact</li>
-                  <li><strong>15 vouches:</strong> 50% redundancy penalty (capped) → ~10-20% total score impact depending on redundancy level</li>
-                  <li><strong>Worked example:</strong> User with 5 direct vouches, redundancy 0.7, gets 15 total vouches → redundancy drops 19.6pts → 9.8pts, total score 79.6 → 69.8 (12.3% reduction)</li>
+                  <li><strong>11-15 vouches:</strong> Gentle decay (1.0 → 0.85)</li>
+                  <li><strong>16-25 vouches:</strong> Steeper decay (0.85 → 0.55)</li>
+                  <li><strong>25+ vouches:</strong> Asymptotic floor approaching 0.4</li>
                 </ul>
               </div>
 
@@ -85,8 +85,8 @@ export default function HowItWorks() {
                 <p className="font-semibold mb-2">Game Theory: Why This Works</p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li><strong>Attack cost:</strong> Creating fake networks requires vouching for many Sybil accounts → dilution penalty reduces attacker's own score</li>
-                  <li><strong>Selectivity incentive:</strong> To maintain your redundancy score, vouch selectively for well-connected people</li>
-                  <li><strong>Graph quality:</strong> When endorsements are selective, the resulting graph signals (flow, redundancy) are reliable</li>
+                  <li><strong>Selectivity incentive:</strong> To maintain your min-cut score, vouch selectively for well-connected people</li>
+                  <li><strong>Graph quality:</strong> When endorsements are selective, the resulting graph signals (flow, min-cut) are reliable</li>
                   <li><strong>Neutral enforcement:</strong> The system penalizes graph spam; applications interpret the cleaned signal</li>
                 </ul>
                 <div className="mt-3 pt-3" style={{ borderTop: '1px solid hsl(var(--score-growth) / 0.1)' }}>

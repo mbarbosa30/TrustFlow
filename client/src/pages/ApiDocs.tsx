@@ -67,6 +67,7 @@ curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_re
     "flow_component": 45.5,
     "redundancy_component": 26.5,
     "direct_flow": 7.0,
+    "actual_min_cut": 5.0,
     "effective_redundancy": 12.4,
     "dilution_factor": 1.0,
     "vertex_disjoint_paths": 4,
@@ -95,9 +96,10 @@ curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_re
         <h4>Algorithm Breakdown Fields</h4>
         <ul>
           <li><strong>flow_component</strong>: Points from incoming trust (0-60). Based on weighted sum of voucher strengths normalized by healthy baseline.</li>
-          <li><strong>redundancy_component</strong>: Points from network redundancy (0-40). Measures path diversity and Sybil resistance.</li>
+          <li><strong>redundancy_component</strong>: Points from network redundancy (0-40). Based on true min-cut computed via Dinic's algorithm.</li>
           <li><strong>direct_flow</strong>: Raw max-flow value from vouchers to target. Each voucher contributes capacity weighted by their own score.</li>
-          <li><strong>effective_redundancy</strong>: Combined redundancy metric = base vouches + depth bonus + connectivity bonus.</li>
+          <li><strong>actual_min_cut</strong>: True min-cut computed via Dinic's algorithm. Measures the minimum edges to disconnect trust sources—core Sybil resistance metric.</li>
+          <li><strong>effective_redundancy</strong>: Combined redundancy metric = actual_min_cut + depth bonus + vertex-disjoint path bonus.</li>
           <li><strong>dilution_factor</strong>: Penalty multiplier (0.4-1.0) applied for excessive outgoing vouches. 1.0 = no penalty.</li>
           <li><strong>vertex_disjoint_paths</strong>: Count of truly independent trust paths (no shared intermediate nodes).</li>
           <li><strong>ego_network_size</strong>: Number of nodes in the user's extended ego subgraph (within 3 hops).</li>
@@ -114,7 +116,7 @@ curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_re
         </p>
         <ul>
           <li><strong>Flow Component (60%)</strong>: Iterative PageRank-style algorithm where vouches are weighted by the voucher's own score (up to 10 iterations)</li>
-          <li><strong>Redundancy Component (40%)</strong>: Measures path diversity via direct vouches, depth bonus, connectivity, and vertex-disjoint paths for Sybil resistance</li>
+          <li><strong>Min-Cut Component (40%)</strong>: True min-cut computed via Dinic's algorithm, plus depth bonus and vertex-disjoint path bonus for Sybil resistance</li>
           <li><strong>Dilution Penalty</strong>: Excessive outgoing vouches reduce the weight of each vouch given, ensuring accountability</li>
           <li><strong>Adaptive Baseline</strong>: Network-wide 75th percentile vouch count (clamped 4-15) sets healthy participation thresholds</li>
         </ul>

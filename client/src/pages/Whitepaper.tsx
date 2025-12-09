@@ -718,7 +718,7 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">40% Structure Component</div>
                 <p className="text-sm text-muted-foreground">
-                  Path redundancy (quadratic) × accountability penalty. Rewards deep, diverse networks with vertex-disjoint paths.
+                  True min-cut (quadratic) × accountability penalty. Min-cut measures Sybil resistance via Dinic's algorithm, with bonuses for vertex-disjoint paths.
                 </p>
               </div>
             </div>
@@ -727,27 +727,27 @@ export default function Whitepaper() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Effective Redundancy</CardTitle>
+            <CardTitle className="text-lg">True Min-Cut Redundancy (v1.3)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm sm:text-base">
             <p className="leading-relaxed">
-              Beyond just counting vouchers, we measure <strong>structural redundancy</strong>—how many independent 
-              paths connect you to the broader network. This is computed from an "ego subgraph" built by upstream 
-              BFS from your vouchers.
+              We measure <strong>structural redundancy</strong> using the <strong>true min-cut</strong>—the minimum 
+              number of edges that must be removed to disconnect your trust sources from you. This is the core 
+              Sybil resistance metric, computed via Dinic's max-flow algorithm on the ego subgraph.
             </p>
             
             <div className="grid gap-2 sm:grid-cols-2">
               <div className="p-3 rounded-lg bg-muted/30">
-                <InlineFormula>{"k = |\\mathcal{V}_i|"}</InlineFormula>
-                <p className="text-xs text-muted-foreground mt-1">Direct voucher count</p>
+                <InlineFormula>{"\\text{minCut}_i"}</InlineFormula>
+                <p className="text-xs text-muted-foreground mt-1">True min-cut via Dinic's algorithm</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <InlineFormula>{"u = |U_i| - k"}</InlineFormula>
                 <p className="text-xs text-muted-foreground mt-1">Additional upstream supporters</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
-                <InlineFormula>{"\\delta = m / n(n-1)"}</InlineFormula>
-                <p className="text-xs text-muted-foreground mt-1">Edge density in ego subgraph</p>
+                <InlineFormula>{"\\text{vdp}"}</InlineFormula>
+                <p className="text-xs text-muted-foreground mt-1">Vertex-disjoint path count</p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <InlineFormula>{"n = |U_i|"}</InlineFormula>
@@ -755,28 +755,29 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="Effective Redundancy (v1.2)" testId="formula-redundancy">
+            <FormulaBox label="Effective Redundancy (v1.3 — True Min-Cut)" testId="formula-redundancy">
               <BlockFormula>
-                {"\\rho_i = k + \\lambda_{\\text{depth}} \\cdot u + \\lambda_{\\text{conn}} \\cdot (\\delta \\cdot n) + \\min(5, \\max(0, \\text{vdp} - 1))"}
+                {"\\rho_i = \\text{minCut}_i + \\lambda_{\\text{depth}} \\cdot u + \\min(5, \\max(0, \\text{vdp} - 1))"}
               </BlockFormula>
               <p className="text-sm text-muted-foreground text-center mt-2">
-                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.2"}</InlineFormula>, <InlineFormula>{"\\lambda_{\\text{conn}} = 1.0"}</InlineFormula>, vdp = vertex-disjoint paths
+                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.1"}</InlineFormula>, vdp = vertex-disjoint paths
               </p>
             </FormulaBox>
 
             <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
-              <p className="font-semibold text-sm mb-2">Vertex-Disjoint Path Bonus (v1.2)</p>
+              <p className="font-semibold text-sm mb-2">Why True Min-Cut? (v1.3 Enhancement)</p>
               <p className="text-sm text-muted-foreground">
-                Each independent path beyond the first adds 1 point to redundancy (capped at 5). These are truly 
-                independent paths where no intermediate nodes are shared, computed via max-flow with node splitting. 
-                This provides stronger Sybil resistance than edge-disjoint paths.
+                Min-cut directly measures Sybil resistance: it's the number of fake accounts an attacker needs to 
+                create to fully disconnect you from the trust network. We compute this using Dinic's algorithm on a 
+                multi-hop flow graph built from your ego subgraph. Vertex-disjoint paths (computed via node splitting) 
+                add a bonus for having truly independent paths with no shared intermediate nodes.
               </p>
             </div>
             
             <p className="leading-relaxed">
               The redundancy score <InlineFormula>{"d_i = \\min(1, \\rho_i / R_0)"}</InlineFormula> normalizes against 
               an <strong>adaptive baseline</strong>: <InlineFormula>{"R_0 = F_0 \\times 4.5"}</InlineFormula> (clamped to [15, 60], fallback: 35). 
-              Users with dense, deep support networks approach <InlineFormula>{"d_i = 1"}</InlineFormula>; isolated accounts stay near zero.
+              Users with high min-cut and diverse paths approach <InlineFormula>{"d_i = 1"}</InlineFormula>; isolated accounts stay near zero.
             </p>
           </CardContent>
         </Card>
