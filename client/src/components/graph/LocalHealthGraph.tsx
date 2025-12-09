@@ -159,10 +159,25 @@ export function LocalHealthGraph({
     const sourceScore = nodeScoreMap.get(sourceId) || scoreRange.min;
     const { min, max } = scoreRange;
     const normalizedScore = (sourceScore - min) / (max - min);
-    const minOpacity = 0.2;
-    const maxOpacity = 0.8;
+    const minOpacity = 0.3;
+    const maxOpacity = 0.7;
     const opacity = minOpacity + normalizedScore * (maxOpacity - minOpacity);
-    const hsl = themeColors.border;
+    
+    // Use nature-derived colors for edges based on source node score
+    // This creates organic "flow" visuals - nutrients flowing from strong to weak
+    let hsl: string[];
+    if (sourceScore >= 80) {
+      hsl = themeColors.scoreCanopy;
+    } else if (sourceScore >= 60) {
+      hsl = themeColors.scoreGrowth;
+    } else if (sourceScore >= 40) {
+      hsl = themeColors.scoreTransition;
+    } else if (sourceScore >= 20) {
+      hsl = themeColors.scoreDormant;
+    } else {
+      hsl = themeColors.scoreSeedling;
+    }
+    
     return `hsl(${hsl[0]} ${hsl[1]} ${hsl[2]} / ${opacity})`;
   }, [themeColors, nodeScoreMap, scoreRange]);
 

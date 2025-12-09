@@ -74,25 +74,25 @@ export default function Landing() {
           {traction && traction.totalVouchers > 0 && (
             <div className="mt-12 grid grid-cols-4 gap-6 max-w-2xl mx-auto">
               <div className="text-center" data-testid="stat-vouchers">
-                <div className="text-2xl md:text-3xl font-bold text-primary">
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
                   {traction.totalVouchers.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Vouchers</div>
               </div>
               <div className="text-center" data-testid="stat-vouches">
-                <div className="text-2xl md:text-3xl font-bold text-primary">
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
                   {traction.totalVouches.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Vouches</div>
               </div>
               <div className="text-center" data-testid="stat-scored-users">
-                <div className="text-2xl md:text-3xl font-bold text-primary">
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
                   {traction.scoredUsers}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Scored Users</div>
               </div>
               <div className="text-center" data-testid="stat-avg-signal">
-                <div className="text-2xl md:text-3xl font-bold text-primary">
+                <div className="text-2xl md:text-3xl font-bold text-foreground">
                   {traction.avgLocalHealth}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">Avg Signal</div>
@@ -116,8 +116,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="hover-elevate" data-testid="card-usecase-governance">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Vote className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Vote className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-lg">DAO Governance</CardTitle>
               </CardHeader>
@@ -136,8 +136,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-lending">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Banknote className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Banknote className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-lg">Microlending</CardTitle>
               </CardHeader>
@@ -156,8 +156,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-grants">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Gift className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Gift className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-lg">Grant Allocation</CardTitle>
               </CardHeader>
@@ -176,8 +176,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-access">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Lock className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Lock className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-lg">Access Control</CardTitle>
               </CardHeader>
@@ -210,40 +210,40 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center" data-testid="step-vouch">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-2">1. Build Connections</h3>
               <p className="text-muted-foreground text-sm">
                 Vouch for people you trust. Each endorsement is public and on-chain. Your reputation is at stake.
               </p>
-              <p className="text-xs text-primary/70 italic mt-2">
+              <p className="text-xs text-muted-foreground italic mt-2">
                 Like roots extending through soil — growth has a cost.
               </p>
             </div>
 
             <div className="text-center" data-testid="step-compute">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Network className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Network className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-2">2. Flow Computes</h3>
               <p className="text-muted-foreground text-sm">
                 Max-flow algorithms score your network. Your score depends on the strength of your connections — and theirs. Recursive. Recursive. Recursive.
               </p>
-              <p className="text-xs text-primary/70 italic mt-2">
+              <p className="text-xs text-muted-foreground italic mt-2">
                 Like rivers finding paths — flow optimizes naturally.
               </p>
             </div>
 
             <div className="text-center" data-testid="step-use">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Zap className="w-8 h-8 text-muted-foreground" />
               </div>
               <h3 className="text-xl font-semibold mb-2">3. Signal Ships</h3>
               <p className="text-muted-foreground text-sm">
                 Export verifiable credentials. Apps interpret your score for governance, lending, access — whatever they need.
               </p>
-              <p className="text-xs text-primary/70 italic mt-2">
+              <p className="text-xs text-muted-foreground italic mt-2">
                 Like ecosystems bearing fruit — signals become value.
               </p>
             </div>
@@ -265,8 +265,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card data-testid="card-feature-recursive">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <TreePine className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <TreePine className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Recursive Trust</CardTitle>
               </CardHeader>
@@ -274,7 +274,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mb-2">
                   A vouch from a high-score user matters more. Sybil clusters can't bootstrap themselves.
                 </p>
-                <p className="text-xs text-primary/70 italic">
+                <p className="text-xs text-muted-foreground italic">
                   Like root systems: stronger roots get more nutrients, enabling more growth.
                 </p>
               </CardContent>
@@ -282,8 +282,8 @@ export default function Landing() {
 
             <Card data-testid="card-feature-redundancy">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Network className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Network className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Path Redundancy</CardTitle>
               </CardHeader>
@@ -291,7 +291,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mb-2">
                   One endorser isn't enough. We measure how many independent paths connect you to trusted seeds.
                 </p>
-                <p className="text-xs text-primary/70 italic">
+                <p className="text-xs text-muted-foreground italic">
                   Like mycorrhizal networks: forests survive because multiple paths carry nutrients.
                 </p>
               </CardContent>
@@ -299,8 +299,8 @@ export default function Landing() {
 
             <Card data-testid="card-feature-accountability">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Leaf className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Leaf className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Natural Pruning</CardTitle>
               </CardHeader>
@@ -308,7 +308,7 @@ export default function Landing() {
                 <p className="text-sm text-muted-foreground mb-2">
                   Vouching for too many people dilutes your own score. No free lunch for "vouch merchants."
                 </p>
-                <p className="text-xs text-primary/70 italic">
+                <p className="text-xs text-muted-foreground italic">
                   Like ecosystems: organisms that over-extend get pruned by the network itself.
                 </p>
               </CardContent>
@@ -316,8 +316,8 @@ export default function Landing() {
 
             <Card data-testid="card-feature-transparent">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Eye className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Eye className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Fully Transparent</CardTitle>
               </CardHeader>
@@ -330,8 +330,8 @@ export default function Landing() {
 
             <Card data-testid="card-feature-neutral">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <GitBranch className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <GitBranch className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Neutral Infrastructure</CardTitle>
               </CardHeader>
@@ -344,8 +344,8 @@ export default function Landing() {
 
             <Card data-testid="card-feature-verifiable">
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Code className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Code className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <CardTitle className="text-base">Verifiable</CardTitle>
               </CardHeader>
@@ -442,7 +442,7 @@ export default function Landing() {
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <Card data-testid="card-traction-density">
                 <CardContent className="pt-6 text-center">
-                  <Network className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <Network className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                   <div className="text-3xl font-bold mb-1">{traction.graphDensity}%</div>
                   <div className="text-sm text-muted-foreground">Graph Density</div>
                   <p className="text-xs text-muted-foreground mt-2">
@@ -453,7 +453,7 @@ export default function Landing() {
 
               <Card data-testid="card-traction-vouches-per-user">
                 <CardContent className="pt-6 text-center">
-                  <Users className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <Users className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                   <div className="text-3xl font-bold mb-1">{traction.avgVouchesPerUser}</div>
                   <div className="text-sm text-muted-foreground">Avg Vouches/Scored User</div>
                   <p className="text-xs text-muted-foreground mt-2">
@@ -475,7 +475,7 @@ export default function Landing() {
 
               <Card data-testid="card-traction-participants">
                 <CardContent className="pt-6 text-center">
-                  <Heart className="w-8 h-8 text-primary mx-auto mb-3" />
+                  <Heart className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
                   <div className="text-3xl font-bold mb-1">{traction.totalParticipants}</div>
                   <div className="text-sm text-muted-foreground">Graph Participants</div>
                   <p className="text-xs text-muted-foreground mt-2">
@@ -485,10 +485,10 @@ export default function Landing() {
               </Card>
             </div>
 
-            <Card className="border-primary/20">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
+                  <TrendingUp className="w-5 h-5 text-muted-foreground" />
                   Signal Distribution
                 </CardTitle>
               </CardHeader>
@@ -544,10 +544,10 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <Card className="border-primary/30" data-testid="card-audience-builder">
+            <Card data-testid="card-audience-builder">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Code className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Code className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle>I'm a Builder</CardTitle>
               </CardHeader>
@@ -565,10 +565,10 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="border-primary/30" data-testid="card-audience-community">
+            <Card data-testid="card-audience-community">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Building2 className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Building2 className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle>I Run a Community</CardTitle>
               </CardHeader>
@@ -586,10 +586,10 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="border-primary/30" data-testid="card-audience-curious">
+            <Card data-testid="card-audience-curious">
               <CardHeader>
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
-                  <Eye className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
+                  <Eye className="w-6 h-6 text-muted-foreground" />
                 </div>
                 <CardTitle>I'm Curious</CardTitle>
               </CardHeader>
@@ -610,7 +610,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="py-16 px-4 bg-primary/5">
+      <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-6" data-testid="text-cta-heading">
             Ready to Build Sybil-Resistant Reputation?

@@ -84,7 +84,7 @@ export default function Status() {
           <CardContent>
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div className="flex flex-col items-center justify-center p-6 bg-muted/30 rounded-lg">
-                <div className="text-6xl font-bold text-primary mb-2" data-testid="text-avg-signal">
+                <div className="text-6xl font-bold text-foreground mb-2" data-testid="text-avg-signal">
                   {traction.avgLocalHealth}
                 </div>
                 <div className="text-lg text-muted-foreground mb-4">Average Signal</div>
@@ -364,7 +364,7 @@ export default function Status() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
+                    <Zap className="w-4 h-4 text-muted-foreground" />
                     Flow Component (60%)
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -374,7 +374,7 @@ export default function Status() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <Network className="w-4 h-4 text-primary" />
+                    <Network className="w-4 h-4 text-muted-foreground" />
                     Redundancy Component (40%)
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -387,7 +387,7 @@ export default function Status() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <GitBranch className="w-4 h-4 text-primary" />
+                    <GitBranch className="w-4 h-4 text-muted-foreground" />
                     Dilution Penalty
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -397,7 +397,7 @@ export default function Status() {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
                     Adaptive Baselines
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -439,7 +439,7 @@ export default function Status() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-primary" />
+                  <Heart className="w-4 h-4 text-muted-foreground" />
                   Personal Network Focus
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -450,7 +450,7 @@ export default function Status() {
 
               <div>
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
+                  <Shield className="w-4 h-4 text-muted-foreground" />
                   Sybil Resistance
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -461,7 +461,7 @@ export default function Status() {
 
               <div>
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-primary" />
+                  <Activity className="w-4 h-4 text-muted-foreground" />
                   Pure Graph Signal
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -472,7 +472,7 @@ export default function Status() {
 
               <div>
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary" />
+                  <BarChart3 className="w-4 h-4 text-muted-foreground" />
                   Neutral Infrastructure
                 </h3>
                 <p className="text-sm text-muted-foreground">
