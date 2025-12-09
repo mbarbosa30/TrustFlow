@@ -33,10 +33,11 @@ export default function Status() {
   });
 
   const getHealthStatus = (avgHealth: number) => {
-    if (avgHealth >= 60) return { label: "Healthy", color: "bg-green-600 dark:bg-green-400" };
-    if (avgHealth >= 40) return { label: "Developing", color: "bg-blue-600 dark:bg-blue-400" };
-    if (avgHealth >= 20) return { label: "Early Stage", color: "bg-yellow-600 dark:bg-yellow-400" };
-    return { label: "Nascent", color: "bg-orange-600 dark:bg-orange-400" };
+    if (avgHealth >= 80) return { label: "Forest", cssVar: "--score-canopy" };
+    if (avgHealth >= 60) return { label: "River", cssVar: "--score-growth" };
+    if (avgHealth >= 40) return { label: "Sun", cssVar: "--score-transition" };
+    if (avgHealth >= 20) return { label: "Soil", cssVar: "--score-dormant" };
+    return { label: "Stone", cssVar: "--score-seedling" };
   };
 
   if (isLoading) {
@@ -88,7 +89,10 @@ export default function Status() {
                   {traction.avgLocalHealth}
                 </div>
                 <div className="text-lg text-muted-foreground mb-4">Average Signal</div>
-                <Badge className={`${status.color} text-white`} data-testid="badge-network-status">
+                <Badge 
+                  style={{ backgroundColor: `hsl(var(${status.cssVar}))`, color: 'white' }} 
+                  data-testid="badge-network-status"
+                >
                   {status.label}
                 </Badge>
               </div>
@@ -330,7 +334,7 @@ export default function Status() {
                   <Shield className="w-4 h-4" />
                   Quality Rate
                 </CardTitle>
-                <div className="text-2xl font-bold text-green-600" data-testid="text-quality-rate">
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--dilution-quality))' }} data-testid="text-quality-rate">
                   {traction.dilutionZones.qualityPercent}%
                 </div>
               </div>
@@ -410,7 +414,7 @@ export default function Status() {
             
             <div className="mt-6 p-4 bg-muted/30 rounded-lg">
               <div className="flex items-start gap-3">
-                <Leaf className="w-5 h-5 text-green-600 mt-0.5" />
+                <Leaf className="w-5 h-5 mt-0.5" style={{ color: 'hsl(var(--score-canopy))' }} />
                 <div>
                   <p className="text-sm font-medium mb-1">Nature-Inspired Resilience</p>
                   <p className="text-xs text-muted-foreground">

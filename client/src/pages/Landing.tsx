@@ -50,7 +50,7 @@ export default function Landing() {
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
             Trust,{" "}
-            <span className="text-primary">Computed Naturally</span>
+            <span style={{ color: 'hsl(var(--score-growth))' }}>Computed Naturally</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8" data-testid="text-hero-subheadline">
@@ -362,7 +362,7 @@ export default function Landing() {
       <section className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4 text-green-600 border-green-600/30">
+            <Badge variant="outline" className="mb-4">
               <CheckCircle2 className="w-3 h-3 mr-1" />
               December 2025 Release
             </Badge>
@@ -375,10 +375,10 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-disjoint">
+            <Card data-testid="card-security-disjoint" style={{ borderColor: 'hsl(var(--score-growth) / 0.3)', backgroundColor: 'hsl(var(--score-growth) / 0.05)' }}>
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
-                  <Shield className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.15)' }}>
+                  <Shield className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
                 </div>
                 <CardTitle className="text-base">Vertex-Disjoint Paths</CardTitle>
               </CardHeader>
@@ -390,10 +390,10 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-dilution">
+            <Card data-testid="card-security-dilution" style={{ borderColor: 'hsl(var(--score-transition) / 0.3)', backgroundColor: 'hsl(var(--score-transition) / 0.05)' }}>
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
-                  <GitBranch className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.15)' }}>
+                  <GitBranch className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
                 </div>
                 <CardTitle className="text-base">Piecewise Dilution</CardTitle>
               </CardHeader>
@@ -405,10 +405,10 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            <Card className="border-green-500/20 bg-green-500/5" data-testid="card-security-adaptive">
+            <Card data-testid="card-security-adaptive" style={{ borderColor: 'hsl(var(--score-dormant) / 0.3)', backgroundColor: 'hsl(var(--score-dormant) / 0.05)' }}>
               <CardHeader className="pb-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center mb-3">
-                  <Network className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-dormant) / 0.15)' }}>
+                  <Network className="w-5 h-5" style={{ color: 'hsl(var(--score-dormant))' }} />
                 </div>
                 <CardTitle className="text-base">Adaptive Baselines</CardTitle>
               </CardHeader>
@@ -464,8 +464,8 @@ export default function Landing() {
 
               <Card data-testid="card-traction-quality">
                 <CardContent className="pt-6 text-center">
-                  <Shield className="w-8 h-8 text-green-600 mx-auto mb-3" />
-                  <div className="text-3xl font-bold text-green-600 mb-1">{traction.dilutionZones.qualityPercent}%</div>
+                  <Shield className="w-8 h-8 mx-auto mb-3" style={{ color: 'hsl(var(--score-growth))' }} />
+                  <div className="text-3xl font-bold mb-1" style={{ color: 'hsl(var(--score-growth))' }}>{traction.dilutionZones.qualityPercent}%</div>
                   <div className="text-sm text-muted-foreground">Quality Vouchers</div>
                   <p className="text-xs text-muted-foreground mt-2">
                     Vouchers with ≤10 outgoing vouches
@@ -496,28 +496,28 @@ export default function Landing() {
                 <div className="grid md:grid-cols-4 gap-4">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-red-600">Critical (&lt;40)</span>
+                      <span className="text-sm" style={{ color: 'hsl(var(--score-dormant))' }}>Soil/Stone (&lt;40)</span>
                       <span className="text-sm font-medium">{traction.healthDistribution.critical}</span>
                     </div>
                     <Progress value={traction.scoredUsers > 0 ? (traction.healthDistribution.critical / traction.scoredUsers) * 100 : 0} className="h-2" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-yellow-600">Warning (40-60)</span>
+                      <span className="text-sm" style={{ color: 'hsl(var(--score-transition))' }}>Sun (40-60)</span>
                       <span className="text-sm font-medium">{traction.healthDistribution.warning}</span>
                     </div>
                     <Progress value={traction.scoredUsers > 0 ? (traction.healthDistribution.warning / traction.scoredUsers) * 100 : 0} className="h-2" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-blue-600">Healthy (60-80)</span>
+                      <span className="text-sm" style={{ color: 'hsl(var(--score-growth))' }}>River (60-80)</span>
                       <span className="text-sm font-medium">{traction.healthDistribution.healthy}</span>
                     </div>
                     <Progress value={traction.scoredUsers > 0 ? (traction.healthDistribution.healthy / traction.scoredUsers) * 100 : 0} className="h-2" />
                   </div>
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-green-600">Quality (80-100)</span>
+                      <span className="text-sm" style={{ color: 'hsl(var(--score-canopy))' }}>Forest (80-100)</span>
                       <span className="text-sm font-medium">{traction.healthDistribution.quality}</span>
                     </div>
                     <Progress value={traction.scoredUsers > 0 ? (traction.healthDistribution.quality / traction.scoredUsers) * 100 : 0} className="h-2" />

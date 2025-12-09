@@ -231,7 +231,7 @@ export default function Dashboard() {
                       <span className="px-3 py-2 bg-blue-500/10 rounded text-base" data-testid="text-flow-component">{flowComponent.toFixed(1)}</span>
                       <span className="text-muted-foreground text-xs">(flow)</span>
                       <span>+</span>
-                      <span className="px-3 py-2 bg-green-500/10 rounded text-base" data-testid="text-redundancy-component">{redundancyComponent.toFixed(1)}</span>
+                      <span className="px-3 py-2 bg-accent/30 rounded text-base" data-testid="text-redundancy-component">{redundancyComponent.toFixed(1)}</span>
                       <span className="text-muted-foreground text-xs">(redundancy)</span>
                       <span>=</span>
                       <span className="px-4 py-2 bg-primary text-primary-foreground rounded font-bold text-lg" data-testid="text-expected-local-health">

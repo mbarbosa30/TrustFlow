@@ -6,19 +6,15 @@ interface GHIGaugeProps {
 }
 
 export function GHIGauge({ ghi, size = "md" }: GHIGaugeProps) {
-  const getColor = (value: number) => {
-    if (value >= 80) return "text-green-600 dark:text-green-400";
-    if (value >= 60) return "text-yellow-600 dark:text-yellow-400";
-    if (value >= 40) return "text-orange-600 dark:text-orange-400";
-    return "text-red-600 dark:text-red-400";
+  const getColorVar = (value: number) => {
+    if (value >= 80) return "--score-canopy";
+    if (value >= 60) return "--score-growth";
+    if (value >= 40) return "--score-transition";
+    if (value >= 20) return "--score-dormant";
+    return "--score-seedling";
   };
 
-  const getGaugeColor = (value: number) => {
-    if (value >= 80) return "stroke-green-600 dark:stroke-green-400";
-    if (value >= 60) return "stroke-yellow-600 dark:stroke-yellow-400";
-    if (value >= 40) return "stroke-orange-600 dark:stroke-orange-400";
-    return "stroke-red-600 dark:stroke-red-400";
-  };
+  const colorVar = getColorVar(ghi);
 
   const sizeConfig = {
     sm: { width: 120, height: 80, fontSize: "text-2xl", strokeWidth: 8 },
@@ -57,12 +53,12 @@ export function GHIGauge({ ghi, size = "md" }: GHIGaugeProps) {
             strokeWidth={config.strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${progress} ${circumference}`}
-            className={getGaugeColor(ghi)}
+            style={{ stroke: `hsl(var(${colorVar}))` }}
           />
         </svg>
         
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
-          <div className={`font-bold ${config.fontSize} ${getColor(ghi)}`} data-testid="text-ghi-value">
+          <div className={`font-bold ${config.fontSize}`} style={{ color: `hsl(var(${colorVar}))` }} data-testid="text-ghi-value">
             {ghi}
           </div>
           <div className="text-xs text-muted-foreground font-mono">GHI</div>

@@ -18,12 +18,12 @@ interface NetworkResilienceData {
 }
 
 const PATH_COLORS = [
-  'hsl(0, 84%, 60%)',      // 0 paths - red
-  'hsl(25, 95%, 53%)',     // 1 path - orange
-  'hsl(45, 93%, 47%)',     // 2 paths - yellow
-  'hsl(142, 50%, 50%)',    // 3 paths - light green
-  'hsl(142, 70%, 40%)',    // 4 paths - green
-  'hsl(142, 76%, 36%)',    // 5+ paths - dark green
+  'hsl(var(--destructive))',     // 0 paths - destructive/red
+  'hsl(var(--score-dormant))',   // 1 path - soil brown
+  'hsl(var(--score-transition))', // 2 paths - sunlit amber
+  'hsl(var(--score-growth))',    // 3 paths - river teal
+  'hsl(var(--score-growth))',    // 4 paths - river teal
+  'hsl(var(--score-canopy))',    // 5+ paths - forest green
 ];
 
 export function NetworkResilienceChart() {
@@ -105,10 +105,10 @@ export function NetworkResilienceChart() {
             </div>
             <div className="text-xs text-muted-foreground">Vulnerable ({vulnerablePercent}%)</div>
           </div>
-          <div className="text-center p-3 rounded-lg bg-green-500/10">
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
             <div className="flex items-center justify-center gap-1">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span className="text-2xl font-bold text-green-600" data-testid="text-resilient">
+              <CheckCircle className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
+              <span className="text-2xl font-bold" style={{ color: 'hsl(var(--score-growth))' }} data-testid="text-resilient">
                 {data.highlyResilient}
               </span>
             </div>
@@ -154,7 +154,7 @@ export function NetworkResilienceChart() {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">4+ paths:</span>
-            <Badge variant="default" className="bg-green-600">Strong Sybil resistance</Badge>
+            <Badge variant="outline" style={{ borderColor: 'hsl(var(--score-growth))', color: 'hsl(var(--score-growth))' }}>Strong Sybil resistance</Badge>
           </div>
         </div>
 

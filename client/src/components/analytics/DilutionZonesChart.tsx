@@ -19,10 +19,10 @@ interface DilutionZonesData {
 }
 
 const ZONE_COLORS = {
-  'Quality (1-10)': 'hsl(142, 76%, 36%)',
-  'Warning (11-15)': 'hsl(45, 93%, 47%)',
-  'Penalty (16-25)': 'hsl(25, 95%, 53%)',
-  'Critical (25+)': 'hsl(0, 84%, 60%)',
+  'Quality (1-10)': 'hsl(var(--dilution-quality))',
+  'Warning (11-15)': 'hsl(var(--dilution-warning))',
+  'Penalty (16-25)': 'hsl(var(--dilution-penalty))',
+  'Critical (25+)': 'hsl(var(--dilution-cap))',
 };
 
 export function DilutionZonesChart() {
@@ -64,7 +64,7 @@ export function DilutionZonesChart() {
 
   const chartData = data.zones.map(zone => ({
     ...zone,
-    fill: ZONE_COLORS[zone.zone as keyof typeof ZONE_COLORS] || 'hsl(var(--primary))',
+    fill: ZONE_COLORS[zone.zone as keyof typeof ZONE_COLORS] || 'hsl(var(--score-dormant))',
   }));
 
   return (
@@ -92,8 +92,8 @@ export function DilutionZonesChart() {
             <div className="text-2xl font-bold" data-testid="text-avg-penalty">{data.avgPenalty}%</div>
             <div className="text-xs text-muted-foreground">Avg Penalty</div>
           </div>
-          <div className="text-center p-3 rounded-lg bg-green-500/10">
-            <div className="text-2xl font-bold text-green-600" data-testid="text-quality-pct">
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--dilution-quality) / 0.1)' }}>
+            <div className="text-2xl font-bold" style={{ color: 'hsl(var(--dilution-quality))' }} data-testid="text-quality-pct">
               {data.zones[0]?.percentage || 0}%
             </div>
             <div className="text-xs text-muted-foreground">In Quality Zone</div>

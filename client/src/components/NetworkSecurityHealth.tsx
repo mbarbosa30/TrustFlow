@@ -59,21 +59,21 @@ export function NetworkSecurityHealth({ data, isLoading }: SecurityHealthProps) 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'healthy':
-        return <Badge variant="default" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"><ShieldCheck className="h-3 w-3 mr-1" /> Healthy</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.15)', color: 'hsl(var(--score-canopy))', borderColor: 'hsl(var(--score-canopy) / 0.3)' }}><ShieldCheck className="h-3 w-3 mr-1" /> Healthy</Badge>;
       case 'strong':
-        return <Badge variant="default" className="bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"><ShieldCheck className="h-3 w-3 mr-1" /> Strong</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.15)', color: 'hsl(var(--score-canopy))', borderColor: 'hsl(var(--score-canopy) / 0.3)' }}><ShieldCheck className="h-3 w-3 mr-1" /> Strong</Badge>;
       case 'adequate':
-        return <Badge variant="default" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"><ShieldCheck className="h-3 w-3 mr-1" /> Adequate</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.15)', color: 'hsl(var(--score-growth))', borderColor: 'hsl(var(--score-growth) / 0.3)' }}><ShieldCheck className="h-3 w-3 mr-1" /> Adequate</Badge>;
       case 'moderate':
-        return <Badge variant="default" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"><ShieldAlert className="h-3 w-3 mr-1" /> Moderate</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.15)', color: 'hsl(var(--score-growth))', borderColor: 'hsl(var(--score-growth) / 0.3)' }}><ShieldAlert className="h-3 w-3 mr-1" /> Moderate</Badge>;
       case 'caution':
-        return <Badge variant="default" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"><ShieldAlert className="h-3 w-3 mr-1" /> Caution</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.15)', color: 'hsl(var(--score-transition))', borderColor: 'hsl(var(--score-transition) / 0.3)' }}><ShieldAlert className="h-3 w-3 mr-1" /> Caution</Badge>;
       case 'warning':
-        return <Badge variant="default" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"><AlertTriangle className="h-3 w-3 mr-1" /> Warning</Badge>;
+        return <Badge variant="default" className="bg-destructive/10 text-destructive border-destructive/20"><AlertTriangle className="h-3 w-3 mr-1" /> Warning</Badge>;
       case 'weak':
-        return <Badge variant="default" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"><AlertTriangle className="h-3 w-3 mr-1" /> Weak</Badge>;
+        return <Badge variant="default" style={{ backgroundColor: 'hsl(var(--score-dormant) / 0.15)', color: 'hsl(var(--score-dormant))', borderColor: 'hsl(var(--score-dormant) / 0.3)' }}><AlertTriangle className="h-3 w-3 mr-1" /> Weak</Badge>;
       case 'low':
-        return <Badge variant="default" className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"><AlertTriangle className="h-3 w-3 mr-1" /> Low</Badge>;
+        return <Badge variant="default" className="bg-destructive/10 text-destructive border-destructive/20"><AlertTriangle className="h-3 w-3 mr-1" /> Low</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
