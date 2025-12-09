@@ -77,7 +77,7 @@ export function FlowSaturationCurve() {
           </div>
         </CardTitle>
         <CardDescription>
-          Quadratic scaling: Flow = 60 × (vouches / {data.healthyTarget})² — diminishing returns after saturation
+          Linear scaling with tiered capacity: Flow = 60 × min(1, vouches / {data.healthyTarget}) — capped at saturation point
         </CardDescription>
       </CardHeader>
       <CardContent>
