@@ -101,12 +101,12 @@ export function LocalHealthGraph({
   const getNodeColor = useCallback((node: GraphNode) => {
     const score = node.localHealth;
     
-    // Nature-derived color mapping based on absolute score (0-100)
-    // Canopy (80-100): Thriving forest green - the healthiest nodes
-    // Growth (60-79): Moss green - healthy and expanding
-    // Transition (40-59): Golden amber - developing potential
-    // Dormant (20-39): Warm earth - resting but alive
-    // Seedling (0-19): Muted stone - beginning, needs nurturing
+    // Multi-biome color mapping based on absolute score (0-100)
+    // Canopy (80-100): Forest green - peak health, thriving ecosystem
+    // Growth (60-79): River teal - water-fed expansion, flowing trust
+    // Transition (40-59): Sunlit amber - activation energy, warming potential
+    // Dormant (20-39): Soil umber - grounded stability, dormant strength
+    // Seedling (0-19): Stone quartz - cool potential, foundation building
     
     if (score >= 80) {
       const hsl = themeColors.scoreCanopy;
@@ -366,21 +366,21 @@ export function LocalHealthGraph({
             </div>
           )}
 
-          {/* Legend - Bottom Right (Nature-derived score colors) */}
+          {/* Legend - Bottom Right (Multi-biome score colors) */}
           <div className="absolute bottom-4 right-4 z-10">
             <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 border">
               <div className="text-xs text-muted-foreground mb-2">Signal Score</div>
               <div className="flex items-center gap-1 flex-wrap">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreSeedling[0]} ${themeColors.scoreSeedling[1]} ${themeColors.scoreSeedling[2]})` }} />
-                <span className="text-xs mr-2">Seedling</span>
+                <span className="text-xs mr-2">Stone</span>
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreDormant[0]} ${themeColors.scoreDormant[1]} ${themeColors.scoreDormant[2]})` }} />
-                <span className="text-xs mr-2">Dormant</span>
+                <span className="text-xs mr-2">Soil</span>
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreTransition[0]} ${themeColors.scoreTransition[1]} ${themeColors.scoreTransition[2]})` }} />
-                <span className="text-xs mr-2">Transition</span>
+                <span className="text-xs mr-2">Sun</span>
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreGrowth[0]} ${themeColors.scoreGrowth[1]} ${themeColors.scoreGrowth[2]})` }} />
-                <span className="text-xs mr-2">Growth</span>
+                <span className="text-xs mr-2">River</span>
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: `hsl(${themeColors.scoreCanopy[0]} ${themeColors.scoreCanopy[1]} ${themeColors.scoreCanopy[2]})` }} />
-                <span className="text-xs">Canopy</span>
+                <span className="text-xs">Forest</span>
               </div>
             </div>
           </div>

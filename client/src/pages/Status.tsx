@@ -141,8 +141,8 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      Quality (80-100)
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-canopy))' }} />
+                      Forest (80-100)
                     </span>
                     <span className="text-sm font-medium">{traction.healthDistribution.quality}</span>
                   </div>
@@ -154,8 +154,8 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500" />
-                      Healthy (60-80)
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-growth))' }} />
+                      River (60-80)
                     </span>
                     <span className="text-sm font-medium">{traction.healthDistribution.healthy}</span>
                   </div>
@@ -167,8 +167,8 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      Warning (40-60)
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-transition))' }} />
+                      Sun (40-60)
                     </span>
                     <span className="text-sm font-medium">{traction.healthDistribution.warning}</span>
                   </div>
@@ -180,8 +180,8 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      Critical (&lt;40)
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-dormant))' }} />
+                      Soil/Stone (&lt;40)
                     </span>
                     <span className="text-sm font-medium">{traction.healthDistribution.critical}</span>
                   </div>
@@ -212,7 +212,7 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--dilution-quality))' }} />
                       Quality Zone (1-10)
                     </span>
                     <span className="text-sm font-medium">{traction.dilutionZones.quality}</span>
@@ -225,7 +225,7 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--dilution-warning))' }} />
                       Warning Zone (11-15)
                     </span>
                     <span className="text-sm font-medium">{traction.dilutionZones.warning}</span>
@@ -238,7 +238,7 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-orange-500" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--dilution-penalty))' }} />
                       Penalty Zone (16-25)
                     </span>
                     <span className="text-sm font-medium">{traction.dilutionZones.penalty}</span>
@@ -251,7 +251,7 @@ export default function Status() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--dilution-cap))' }} />
                       Critical Zone (25+)
                     </span>
                     <span className="text-sm font-medium">{traction.dilutionZones.critical}</span>
