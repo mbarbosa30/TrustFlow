@@ -76,15 +76,15 @@
   /* Multi-biome score range colors - nature is rivers, earth, sun, not just trees */
   --score-canopy: 142 70% 35%;      /* Forest green - peak health (80-100) */
   --score-growth: 175 55% 42%;      /* River teal - water-fed expansion (60-79) */
-  --score-transition: 42 85% 52%;   /* Sunlit amber - activation energy (40-59) */
+  --score-transition: 42 90% 58%;   /* Sunlit amber - activation energy (40-59) - WCAG accessible */
   --score-dormant: 25 50% 38%;      /* Rich soil umber - grounded stability (20-39) */
-  --score-seedling: 215 18% 50%;    /* River-stone quartz - cool potential (0-19) */
+  --score-seedling: 215 22% 58%;    /* River-stone quartz - cool potential (0-19) - WCAG accessible */
   
   /* Semantic biome aliases for intuitive theming */
   --score-river: 175 55% 42%;       /* Alias for flow/network visualizations */
-  --score-sun: 42 85% 52%;          /* Alias for energy/activation states */
+  --score-sun: 42 90% 58%;          /* Alias for energy/activation states - WCAG accessible */
   --score-soil: 25 50% 38%;         /* Alias for accountability/grounding */
-  --score-stone: 215 18% 50%;       /* Alias for neutral/foundational elements */
+  --score-stone: 215 22% 58%;       /* Alias for neutral/foundational elements - WCAG accessible */
 
   /* Dilution zone indicators */
   --dilution-quality: 142 70% 40%;
