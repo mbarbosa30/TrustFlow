@@ -36,7 +36,7 @@ export function FlowPathVisualization({ paths }: FlowPathVisualizationProps) {
               {path.nodes.map((node, nodeIndex) => (
                 <div key={nodeIndex} className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
-                    <Circle className="w-2 h-2 fill-current text-primary" />
+                    <Circle className="w-2 h-2 fill-current" style={{ color: 'hsl(var(--score-growth))' }} />
                     <span className="text-sm font-mono">
                       {node.isAnonymous ? "•••" : node.label}
                     </span>

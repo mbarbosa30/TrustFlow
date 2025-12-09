@@ -34,18 +34,18 @@ export function EndorsementMixChart({ data }: EndorsementMixChartProps) {
                 </div>
                 <div className="h-6 flex rounded overflow-hidden">
                   <div
-                    className="bg-primary flex items-center justify-center text-xs text-primary-foreground"
-                    style={{ width: `${(point.trusted / total) * 100}%` }}
+                    className="flex items-center justify-center text-xs text-white"
+                    style={{ width: `${(point.trusted / total) * 100}%`, backgroundColor: 'hsl(var(--score-canopy))' }}
                     title={`Strong: ${((point.trusted / total) * 100).toFixed(1)}%`}
                   />
                   <div
-                    className="bg-accent flex items-center justify-center text-xs text-accent-foreground"
-                    style={{ width: `${(point.known / total) * 100}%` }}
+                    className="flex items-center justify-center text-xs text-white"
+                    style={{ width: `${(point.known / total) * 100}%`, backgroundColor: 'hsl(var(--score-growth))' }}
                     title={`Known: ${((point.known / total) * 100).toFixed(1)}%`}
                   />
                   <div
-                    className="bg-muted flex items-center justify-center text-xs"
-                    style={{ width: `${(point.human / total) * 100}%` }}
+                    className="flex items-center justify-center text-xs"
+                    style={{ width: `${(point.human / total) * 100}%`, backgroundColor: 'hsl(var(--score-seedling))' }}
                     title={`Human: ${((point.human / total) * 100).toFixed(1)}%`}
                   />
                 </div>
@@ -55,15 +55,15 @@ export function EndorsementMixChart({ data }: EndorsementMixChartProps) {
         </div>
         <div className="flex items-center gap-4 mt-4 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-primary rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-canopy))' }} />
             <span>Strong</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-accent rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-growth))' }} />
             <span>Known</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-muted rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-seedling))' }} />
             <span>Human</span>
           </div>
         </div>

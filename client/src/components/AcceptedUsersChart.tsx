@@ -37,22 +37,22 @@ export function AcceptedUsersChart({ data }: AcceptedUsersChartProps) {
                 </div>
                 <div className="h-8 flex rounded overflow-hidden">
                   <div
-                    className="bg-primary flex items-center justify-center text-xs text-primary-foreground font-medium"
-                    style={{ width: `${(point.master / maxTotal) * 100}%` }}
+                    className="flex items-center justify-center text-xs text-white font-medium"
+                    style={{ width: `${(point.master / maxTotal) * 100}%`, backgroundColor: 'hsl(var(--score-canopy))' }}
                     title={`Master: ${point.master}`}
                   >
                     {point.master > 0 && point.master}
                   </div>
                   <div
-                    className="bg-accent flex items-center justify-center text-xs text-accent-foreground font-medium"
-                    style={{ width: `${(point.journeyer / maxTotal) * 100}%` }}
+                    className="flex items-center justify-center text-xs text-white font-medium"
+                    style={{ width: `${(point.journeyer / maxTotal) * 100}%`, backgroundColor: 'hsl(var(--score-growth))' }}
                     title={`Journeyer: ${point.journeyer}`}
                   >
                     {point.journeyer > 0 && point.journeyer}
                   </div>
                   <div
-                    className="bg-muted flex items-center justify-center text-xs text-muted-foreground font-medium"
-                    style={{ width: `${(point.apprentice / maxTotal) * 100}%` }}
+                    className="flex items-center justify-center text-xs font-medium"
+                    style={{ width: `${(point.apprentice / maxTotal) * 100}%`, backgroundColor: 'hsl(var(--score-seedling))' }}
                     title={`Apprentice: ${point.apprentice}`}
                   >
                     {point.apprentice > 0 && point.apprentice}
@@ -64,15 +64,15 @@ export function AcceptedUsersChart({ data }: AcceptedUsersChartProps) {
         </div>
         <div className="flex items-center gap-4 mt-4 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-primary rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-canopy))' }} />
             <span>Master</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-accent rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-growth))' }} />
             <span>Journeyer</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-muted rounded" />
+            <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(var(--score-seedling))' }} />
             <span>Apprentice</span>
           </div>
         </div>

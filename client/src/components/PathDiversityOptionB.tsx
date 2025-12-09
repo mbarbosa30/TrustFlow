@@ -93,7 +93,7 @@ export function PathDiversityOptionB({ data }: PathDiversityOptionBProps) {
             {isSingleEpoch ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center space-y-1">
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-growth))' }}>
                     {(firstMedian * 100).toFixed(0)}%
                   </div>
                   <div className="text-xs text-muted-foreground">

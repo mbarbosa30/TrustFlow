@@ -159,7 +159,7 @@ export function ScoreCard({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="cursor-help">
-                    <div className="text-5xl font-bold tracking-tight text-primary" data-testid="text-flow">
+                    <div className="text-5xl font-bold tracking-tight" style={{ color: 'hsl(var(--score-river))' }} data-testid="text-flow">
                       {displayFlow.toFixed(2)}
                     </div>
                     <div className="text-sm text-muted-foreground mt-2 flex items-center gap-1">

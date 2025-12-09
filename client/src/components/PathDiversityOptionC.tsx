@@ -90,15 +90,16 @@ export function PathDiversityOptionC({ data }: PathDiversityOptionCProps) {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full h-2 bg-muted rounded" />
               <div
-                className="absolute h-2 bg-accent rounded"
+                className="absolute h-2 rounded"
                 style={{
                   left: `${avgP25 * 100}%`,
                   width: `${(avgP75 - avgP25) * 100}%`,
+                  backgroundColor: 'hsl(var(--score-growth))'
                 }}
               />
               <div
-                className="absolute w-1 h-6 bg-primary rounded"
-                style={{ left: `${avgMedian * 100}%` }}
+                className="absolute w-1 h-6 rounded"
+                style={{ left: `${avgMedian * 100}%`, backgroundColor: 'hsl(var(--score-canopy))' }}
               />
             </div>
           </div>
