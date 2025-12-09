@@ -747,22 +747,37 @@ export class EgoScorer {
     // If voucherScores provided, weight by voucher's LocalHealth (normalized to 0-1)
     // Otherwise use unit capacity for initial/single-pass calculation
     // 
-    // IMPORTANT: Use floored sqrt weighting to prevent feedback loop collapse
+    // IMPORTANT: Use TIERED sqrt weighting to prevent feedback loop collapse
     // The sqrt damping counteracts the quadratic scaling in the score formula
     // 
-    // SYBIL RESISTANCE: Default unknown vouchers to score 0 (not 50)
-    // This prevents sockpuppet attacks where fresh accounts vouch for an attacker
-    // Fresh accounts contribute only the floor capacity until they earn their own vouches
+    // SYBIL RESISTANCE: Tiered capacity floors punish sockpuppets aggressively
+    // - Zero-score vouchers (fresh accounts, sockpuppets): 0.08 capacity floor
+    // - Low-score vouchers (1-30): linear interpolation to 0.30
+    // - Normal vouchers (30+): sqrt weighting from 0.30 to 1.0
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       if (voucherScores) {
         // Default to 0 for unknown vouchers (Sybil resistance)
-        // Only vouchers who have earned their own score contribute full capacity
         const voucherScore = voucherScores.get(voucher) ?? 0;
-        // Floored sqrt weighting: minimum 0.35, maximum 1.0
-        // Lower floor (0.35) punishes sockpuppets while maintaining stability
-        // score=100→1.0, score=50→0.81, score=25→0.675, score=10→0.555, score=0→0.35
-        capacity = 0.35 + 0.65 * Math.sqrt(voucherScore / 100);
+        
+        // Tiered capacity floors based on voucher quality
+        // Designed for continuity: each tier connects smoothly to the next
+        if (voucherScore === 0) {
+          // Zero-score: sockpuppets/fresh accounts get minimal capacity
+          // 10 sockpuppets × 0.08 = 0.8 flow (well below healthy baseline of 4)
+          // This gives puppetmaster max ~12 points from flow (0.8/4 × 60)
+          capacity = 0.08;
+        } else if (voucherScore <= 30) {
+          // Low-score: emerging accounts get reduced capacity
+          // Linearly interpolate from 0.08 to 0.30 as score goes from 1 to 30
+          // At score 30: capacity = 0.08 + 0.22 * (30/30) = 0.30
+          capacity = 0.08 + (0.22 * voucherScore / 30);
+        } else {
+          // Normal vouchers (31+): sqrt weighting from 0.30 to 1.0
+          // Use (score-30)/70 so score=31 gives ~0.31 (continuous from 0.30)
+          // score=100→1.0, score=70→0.73, score=50→0.54
+          capacity = 0.30 + 0.70 * Math.sqrt((voucherScore - 30) / 70);
+        }
       }
       directGraph.addEdge(voucher, normalizedOwner, capacity);
     }
@@ -871,10 +886,11 @@ export class EgoScorer {
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow = sum of voucher strengths (weighted by voucher LocalHealth)
-    // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
+    // Linear scaling (1.0) provides direct mapping from flow to score
     // With adaptive: baselines adjust to network, maintaining ~25% of users near max
+    // WEIGHT: 60% - flow quality is primary signal
     const flowScore = Math.min(1.0, directFlow / HEALTHY_VOUCH_COUNT);
-    const flowComponent = 60 * Math.pow(flowScore, 2.0);
+    const flowComponent = 60 * flowScore;
 
     // Redundancy score: normalized by healthy redundancy baseline
     // Measures network depth (ego size) and connectivity (edge density)
@@ -917,15 +933,17 @@ export class EgoScorer {
         this.config.maxDistance
       );
       // Bonus for having multiple independent paths (harder to Sybil attack)
-      // Each disjoint path beyond the first adds a small redundancy bonus
-      // Capped at 5 bonus points (from 5+ disjoint paths)
-      vertexDisjointBonus = Math.min(5, Math.max(0, disjointPathCount - 1));
+      // Each disjoint path beyond the first adds a redundancy bonus
+      // Capped at 10 bonus points (from 6+ disjoint paths)
+      // This rewards users with diverse, independent trust sources
+      vertexDisjointBonus = Math.min(10, Math.max(0, (disjointPathCount - 1) * 2));
     }
 
     // Cut component: 40% based on effective redundancy + vertex-disjoint bonus
-    // Exponential scaling (2.0) spreads scores more naturally with quadratic scaling
+    // WEIGHT: 40% - redundancy provides secondary Sybil resistance signal
+    // Linear scaling (1.0) for direct mapping from redundancy to score
     const adjustedRedundancy = Math.min(1.0, (effectiveRedundancy + vertexDisjointBonus) / HEALTHY_REDUNDANCY);
-    const cutComponent = 40 * Math.pow(adjustedRedundancy, 2.0) * vouchQualityFactor;
+    const cutComponent = 40 * adjustedRedundancy * vouchQualityFactor;
     
     // Apply score ceiling: subtract epsilon so 100 is mathematically rare
     // Only exceptional networks with >8 quality vouchers AND >35 redundancy points approach 99
