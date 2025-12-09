@@ -1,27 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Network, Shield, TrendingUp } from "lucide-react";
 
-type BiomeColor = 'canopy' | 'growth' | 'sun' | 'stone' | 'soil';
-
 interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   value: string;
   subtitle: string;
-  biome: BiomeColor;
 }
 
-const biomeVars: Record<BiomeColor, string> = {
-  canopy: '--score-canopy',
-  growth: '--score-growth',
-  sun: '--score-sun',
-  stone: '--score-stone',
-  soil: '--score-soil',
-};
-
-function StatCard({ icon: Icon, title, value, subtitle, biome }: StatCardProps) {
-  const colorVar = biomeVars[biome];
-  
+function StatCard({ icon: Icon, title, value, subtitle }: StatCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
@@ -30,8 +17,7 @@ function StatCard({ icon: Icon, title, value, subtitle, biome }: StatCardProps) 
       </CardHeader>
       <CardContent>
         <div 
-          className="text-3xl font-bold tabular-nums" 
-          style={{ color: `hsl(var(${colorVar}))` }}
+          className="text-3xl font-bold tabular-nums text-foreground" 
           data-testid={`stat-${title.toLowerCase().replace(/\s/g, '-')}`}
         >
           {value}
@@ -61,28 +47,24 @@ export function GlobalStats({ stats }: GlobalStatsProps) {
         title="Total Users"
         value={stats.totalUsers.toLocaleString()}
         subtitle="Active participants"
-        biome="growth"
       />
       <StatCard
         icon={Network}
         title="Endorsements"
         value={stats.totalEndorsements.toLocaleString()}
         subtitle="Total network connections"
-        biome="sun"
       />
       <StatCard
         icon={Shield}
         title="High-Tier Users"
         value={stats.trustedUsers.toLocaleString()}
         subtitle="Achieved highest tier"
-        biome="canopy"
       />
       <StatCard
         icon={TrendingUp}
         title="Avg Score"
         value={stats.avgScore.toFixed(2)}
         subtitle="Network average"
-        biome="stone"
       />
     </div>
   );
