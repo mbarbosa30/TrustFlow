@@ -65,16 +65,35 @@ export default function Dashboard() {
           Primary visual hierarchy - the most important metrics at a glance
           Uses golden ratio proportions and organic breathing animations
           ═══════════════════════════════════════════════════════════════════════════ */}
-      <div className="w-full bg-gradient-to-b from-muted/30 to-background">
-        <div className="max-w-[1800px] mx-auto px-6 py-10">
+      <div 
+        className="w-full relative overflow-hidden"
+        style={{ 
+          background: `linear-gradient(135deg, 
+            hsl(var(--score-growth) / 0.08) 0%, 
+            hsl(var(--score-canopy) / 0.05) 40%,
+            hsl(var(--background)) 100%)`
+        }}
+      >
+        {/* Organic mesh overlay */}
+        <div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, hsl(var(--score-growth) / 0.15) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, hsl(var(--score-canopy) / 0.1) 0%, transparent 40%)`
+          }}
+        />
+        <div className="max-w-[1800px] mx-auto px-6 py-12 relative">
           {/* Header with Title */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10">
             <div className="flex items-center gap-5">
               <div 
-                className="p-4 rounded-2xl animate-pulse-glow" 
-                style={{ backgroundColor: 'hsl(var(--score-growth) / 0.12)' }}
+                className="p-5 rounded-2xl animate-pulse-glow" 
+                style={{ 
+                  backgroundColor: 'hsl(var(--score-canopy) / 0.15)',
+                  boxShadow: '0 0 40px hsl(var(--score-canopy) / 0.2)'
+                }}
               >
-                <Network className="w-10 h-10" style={{ color: 'hsl(var(--score-growth))' }} />
+                <Network className="w-12 h-12" style={{ color: 'hsl(var(--score-canopy))' }} />
               </div>
               <div>
                 <h1 className="text-4xl font-bold tracking-tight" data-testid="heading-dashboard">Trust Network</h1>
@@ -146,7 +165,16 @@ export default function Dashboard() {
           BAND 2: NETWORK HEALTH VITALS
           Secondary metrics - quick health indicators using Fibonacci grid
           ═══════════════════════════════════════════════════════════════════════════ */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
+      <div 
+        className="relative"
+        style={{ 
+          background: `linear-gradient(180deg, 
+            hsl(var(--background)) 0%,
+            hsl(var(--score-sun) / 0.03) 50%,
+            hsl(var(--background)) 100%)`
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="space-y-20">
           
           {/* Flow Analytics Section */}
@@ -483,6 +511,7 @@ export default function Dashboard() {
               }} />
             ) : null}
           </section>
+        </div>
         </div>
       </div>
     </div>
