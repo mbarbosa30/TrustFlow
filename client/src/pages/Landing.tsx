@@ -9,6 +9,7 @@ import {
   Activity, TrendingUp, Heart
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { NetworkBackground } from "@/components/NetworkBackground";
 
 interface NetworkTraction {
   totalVouchers: number;
@@ -42,10 +43,11 @@ export default function Landing() {
     <div className="min-h-screen">
 
       <section 
-        className="relative py-20 md:py-32 px-4"
+        className="relative py-20 md:py-32 px-4 overflow-hidden"
         style={{ background: 'hsl(var(--background))' }}
       >
-        <div className="max-w-5xl mx-auto text-center relative">
+        <NetworkBackground />
+        <div className="max-w-5xl mx-auto text-center relative z-10">
           <Badge variant="outline" className="mb-6" data-testid="badge-hero-tag">
             <Leaf className="w-3 h-3 mr-1" />
             Graph Signal Infrastructure
