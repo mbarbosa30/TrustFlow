@@ -27,9 +27,9 @@ export default function HowItWorks() {
               </p>
             </div>
 
-            <div className="mt-4 p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+            <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.05)', borderColor: 'hsl(var(--score-canopy) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="text-sm flex items-center gap-2 mb-2">
-                <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <Leaf className="w-4 h-4" style={{ color: 'hsl(var(--score-canopy))' }} />
                 <strong>Nature Already Solved This</strong>
               </p>
               <p className="text-xs text-muted-foreground">
@@ -334,7 +334,7 @@ export default function HowItWorks() {
                 </p>
                 
                 <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-sm">Personal Networks</span>
                       <Badge>Current Policy</Badge>
@@ -417,7 +417,7 @@ export default function HowItWorks() {
               <div>PR<sub>i</sub> = log(1 + pr<sub>i</sub>) / log(1 + max_pr) (log-normalized)</div>
             </div>
 
-            <div className="my-6 p-6 rounded-lg bg-primary/10 border-2 border-primary/20">
+            <div className="my-6 p-6 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '2px', borderStyle: 'solid' }}>
               <p className="text-center text-lg font-bold font-mono mb-2">
                 STS<sub>i</sub> = 100 × (0.55F<sub>i</sub> + 0.25C<sub>i</sub> + 0.05S<sub>i</sub> + 0.10D<sub>i</sub> + 0.05PR<sub>i</sub>)
               </p>
@@ -501,7 +501,7 @@ export default function HowItWorks() {
               </li>
             </ul>
 
-            <div className="mt-4 p-4 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.1)', borderColor: 'hsl(var(--score-canopy) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="text-sm mb-2">
                 <strong>How Seed Scores Affect the Graph</strong>
               </p>
@@ -544,7 +544,7 @@ export default function HowItWorks() {
               </ul>
             </div>
 
-            <div className="mt-6 p-4 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <h4 className="font-semibold text-base mb-3">Ego Score (0-100)</h4>
               <p className="text-sm mb-3">
                 Your personal network quality is measured by <strong>Ego Score</strong>, computed using max-flow/min-cut on your ego subgraph (nodes within distance K from your seed set).
@@ -611,7 +611,7 @@ export default function HowItWorks() {
             </div>
 
             <div className="mt-4 text-sm text-muted-foreground">
-              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="text-primary hover:underline">My Network</a> to view your LocalHealth score computed using the iterative recursive trust algorithm.
+              <strong>Current Status:</strong> Personal network infrastructure (database schema, API endpoints, UI) is complete. Visit <a href="/network" className="hover:underline" style={{ color: 'hsl(var(--score-dormant))' }}>My Network</a> to view your LocalHealth score computed using the iterative recursive trust algorithm.
             </div>
           </CardContent>
         </Card>

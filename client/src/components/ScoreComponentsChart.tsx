@@ -64,40 +64,40 @@ export function ScoreComponentsChart({ data, isLoading = false }: ScoreComponent
               type="monotone" 
               dataKey="flow" 
               stackId="1"
-              stroke="hsl(var(--chart-1))" 
-              fill="hsl(var(--chart-1))"
+              stroke="hsl(var(--score-dormant))" 
+              fill="hsl(var(--score-dormant))"
               name="Flow (55%)"
             />
             <Area 
               type="monotone" 
               dataKey="cut" 
               stackId="1"
-              stroke="hsl(var(--chart-2))" 
-              fill="hsl(var(--chart-2))"
+              stroke="hsl(var(--score-growth))" 
+              fill="hsl(var(--score-growth))"
               name="Cut (25%)"
             />
             <Area 
               type="monotone" 
               dataKey="stability" 
               stackId="1"
-              stroke="hsl(var(--chart-3))" 
-              fill="hsl(var(--chart-3))"
+              stroke="hsl(var(--score-transition))" 
+              fill="hsl(var(--score-transition))"
               name="Stability (10%)"
             />
             <Area 
               type="monotone" 
               dataKey="depth" 
               stackId="1"
-              stroke="hsl(var(--chart-4))" 
-              fill="hsl(var(--chart-4))"
+              stroke="hsl(var(--score-canopy))" 
+              fill="hsl(var(--score-canopy))"
               name="Depth (10%)"
             />
             <Area 
               type="monotone" 
               dataKey="pageRank" 
               stackId="1"
-              stroke="hsl(var(--chart-5))" 
-              fill="hsl(var(--chart-5))"
+              stroke="hsl(var(--muted-foreground))" 
+              fill="hsl(var(--muted-foreground))"
               name="PageRank (0%)"
             />
           </AreaChart>

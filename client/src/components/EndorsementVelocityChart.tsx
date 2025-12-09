@@ -58,13 +58,13 @@ export function EndorsementVelocityChart({ data, isLoading = false }: Endorsemen
               <Legend />
               <Bar 
                 dataKey="newEndorsements" 
-                fill="hsl(var(--chart-1))" 
+                fill="hsl(var(--score-growth))" 
                 name="New Endorsements"
                 radius={[4, 4, 0, 0]}
               />
               <Bar 
                 dataKey="revokedEndorsements" 
-                fill="hsl(var(--chart-5))" 
+                fill="hsl(var(--destructive))" 
                 name="Revoked"
                 radius={[4, 4, 0, 0]}
               />

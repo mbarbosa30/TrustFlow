@@ -54,15 +54,15 @@ export function PathDiversityOptionC({ data }: PathDiversityOptionCProps) {
       return <Minus className="w-4 h-4 text-muted-foreground" />;
     }
     return trendNum > 0 
-      ? <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-      : <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />;
+      ? <TrendingUp className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
+      : <TrendingDown className="w-4 h-4" style={{ color: 'hsl(var(--destructive))' }} />;
   };
   
-  const getTrendColor = () => {
-    if (trendNum === 0) return "text-muted-foreground";
+  const getTrendColor = (): React.CSSProperties => {
+    if (trendNum === 0) return { color: 'hsl(var(--muted-foreground))' };
     return trendNum > 0 
-      ? "text-green-600 dark:text-green-400"
-      : "text-red-600 dark:text-red-400";
+      ? { color: 'hsl(var(--score-growth))' }
+      : { color: 'hsl(var(--destructive))' };
   };
 
   return (
@@ -81,7 +81,7 @@ export function PathDiversityOptionC({ data }: PathDiversityOptionCProps) {
             <span>Epochs {recentData[0].epoch} - {recentData[recentData.length - 1].epoch}</span>
             <div className="flex items-center gap-1">
               {getTrendIcon()}
-              <span className={getTrendColor()}>
+              <span style={getTrendColor()}>
                 {trendNum > 0 ? '+' : ''}{trend}%
               </span>
             </div>

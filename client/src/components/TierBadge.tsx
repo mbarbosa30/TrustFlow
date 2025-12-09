@@ -13,16 +13,19 @@ const tierConfig = {
     icon: Shield,
     variant: "secondary" as const,
     description: "STS ≥ 40",
+    colorStyle: { color: 'hsl(var(--score-dormant))' },
   },
   Verified: {
     icon: Award,
     variant: "default" as const,
     description: "STS ≥ 60, min-cut ≥ 2",
+    colorStyle: { color: 'hsl(var(--score-growth))' },
   },
   Trusted: {
     icon: Crown,
     variant: "default" as const,
     description: "STS ≥ 80, min-cut ≥ 3, stability ≥ 0.8",
+    colorStyle: { color: 'hsl(var(--score-canopy))' },
   },
 };
 

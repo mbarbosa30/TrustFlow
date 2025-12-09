@@ -69,19 +69,19 @@ export function NetworkDensityChart({ data, isLoading = false }: NetworkDensityC
               yAxisId="left"
               type="monotone" 
               dataKey="endorsementsPerUser" 
-              stroke="hsl(var(--primary))" 
+              stroke="hsl(var(--score-growth))" 
               strokeWidth={2}
               name="Endorsements per User"
-              dot={{ fill: 'hsl(var(--primary))' }}
+              dot={{ fill: 'hsl(var(--score-growth))' }}
             />
             <Line 
               yAxisId="right"
               type="monotone" 
               dataKey="avgPathLength" 
-              stroke="hsl(var(--chart-2))" 
+              stroke="hsl(var(--score-dormant))" 
               strokeWidth={2}
               name="Avg Path Length"
-              dot={{ fill: 'hsl(var(--chart-2))' }}
+              dot={{ fill: 'hsl(var(--score-dormant))' }}
             />
           </LineChart>
         </ResponsiveContainer>

@@ -104,7 +104,7 @@ export default function Admin() {
 
                   <Card>
                     <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-green-600" data-testid="text-scores-updated">
+                      <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-growth))' }} data-testid="text-scores-updated">
                         {result.scoresUpdated}
                       </div>
                       <p className="text-xs text-muted-foreground">Scores Updated</p>
@@ -158,7 +158,7 @@ export default function Admin() {
                                   {detail.error ? (
                                     <span className="text-red-600 text-xs">{detail.error}</span>
                                   ) : (
-                                    <span className="text-green-600 text-xs">Success</span>
+                                    <span className="text-xs" style={{ color: 'hsl(var(--score-growth))' }}>Success</span>
                                   )}
                                 </td>
                               </tr>

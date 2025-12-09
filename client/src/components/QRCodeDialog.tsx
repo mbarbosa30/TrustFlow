@@ -56,7 +56,7 @@ export function QRCodeDialog({ open, onOpenChange, address }: QRCodeDialogProps)
                 data-testid="button-copy-address"
               >
                 {copied ? (
-                  <Check className="w-4 h-4 text-green-500" />
+                  <Check className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}

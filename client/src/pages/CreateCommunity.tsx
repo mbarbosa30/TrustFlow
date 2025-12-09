@@ -143,13 +143,13 @@ export default function CreateCommunity() {
                     data-testid={`button-template-${tmpl.id}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-5 h-5 text-primary" />
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)' }}>
+                        <Icon className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold">{tmpl.name}</h3>
-                          {isSelected && <Check className="w-4 h-4 text-primary" />}
+                          {isSelected && <Check className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />}
                         </div>
                         <p className="text-sm text-muted-foreground">{tmpl.description}</p>
                       </div>
@@ -420,13 +420,13 @@ export default function CreateCommunity() {
             </CardContent>
           </Card>
 
-          <Card className="bg-primary/5 border-primary/20">
+          <Card className="border" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.05)', borderColor: 'hsl(var(--score-canopy) / 0.2)' }}>
             <CardHeader>
               <CardTitle className="text-base">You'll be the first seed</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p>As the community creator, you're automatically added as the first seed. This gives you high network quality status and ensures the graph has a foundation to build from.</p>
-              <p className="italic pt-2 border-t border-primary/20">
+              <p className="italic pt-2 border-t" style={{ borderColor: 'hsl(var(--score-canopy) / 0.2)' }}>
                 Remember: MaxFlow provides neutral graph signals. Your community decides what these scores mean in your context.
               </p>
             </CardContent>

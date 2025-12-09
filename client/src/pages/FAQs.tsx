@@ -247,8 +247,8 @@ export default function FAQs() {
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
               LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
             </div>
-            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 my-3">
-              <p className="text-sm font-semibold text-primary mb-2">
+            <div className="p-3 rounded-lg my-3" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <p className="text-sm font-semibold mb-2" style={{ color: 'hsl(var(--score-growth))' }}>
                 Recursive Trust Weighting (Nov 2025):
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 pl-4">
@@ -295,7 +295,7 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-3">
-              <strong className="text-primary">Your score is penalized based on who YOU vouch for.</strong> This two-way accountability is the core anti-Sybil mechanism that makes endorsements meaningful and prevents gaming.
+              <strong style={{ color: 'hsl(var(--score-soil))' }}>Your score is penalized based on who YOU vouch for.</strong> This two-way accountability is the core anti-Sybil mechanism that makes endorsements meaningful and prevents gaming.
             </p>
             
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
@@ -364,8 +364,8 @@ export default function FAQs() {
             What is KUDOS and how does it work?
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
-            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 mb-3">
-              <p className="text-sm font-semibold text-primary mb-1">
+            <div className="p-3 rounded-lg mb-3" style={{ backgroundColor: 'hsl(var(--score-sun) / 0.1)', borderColor: 'hsl(var(--score-sun) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--score-sun))' }}>
                 Pure Rewards Layer
               </p>
               <p className="text-xs">
@@ -392,7 +392,7 @@ export default function FAQs() {
         <h2 className="text-lg font-semibold mb-2">Still have questions?</h2>
         <p className="text-sm text-muted-foreground">
           Check out our{" "}
-          <a href="/how-it-works" className="text-primary hover:underline">
+          <a href="/how-it-works" className="hover:underline" style={{ color: 'hsl(var(--score-dormant))' }}>
             How It Works
           </a>{" "}
           page for technical details, or reach out to the community for support.

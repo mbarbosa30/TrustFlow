@@ -333,8 +333,8 @@ export default function CommunityDetail() {
                     <img src={community.logoUrl} alt={`${community.name} logo`} className="w-full h-full object-cover" />
                   </div>
                 ) : (
-                  <div className="w-24 h-24 rounded-lg bg-primary/10 border-2 border-primary/20 flex items-center justify-center shadow-lg">
-                    <Users className="w-12 h-12 text-primary" />
+                  <div className="w-24 h-24 rounded-lg flex items-center justify-center shadow-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '2px', borderStyle: 'solid' }}>
+                    <Users className="w-12 h-12" style={{ color: 'hsl(var(--score-river))' }} />
                   </div>
                 )}
               </div>
@@ -637,7 +637,7 @@ export default function CommunityDetail() {
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-semibold">{t('communityDetail.eligibilityStatus')}</h4>
                         {acceptedMembers.some((m: any) => m.address.toLowerCase() === address.toLowerCase()) ? (
-                          <Badge className="bg-green-500">{t('communityDetail.eligible')}</Badge>
+                          <Badge style={{ backgroundColor: 'hsl(var(--score-growth))' }}>{t('communityDetail.eligible')}</Badge>
                         ) : (
                           <Badge variant="outline">{t('communityDetail.notEligible')}</Badge>
                         )}
@@ -863,7 +863,7 @@ export default function CommunityDetail() {
                         <p className="text-muted-foreground">Loading late installments...</p>
                       ) : !lateInstallments || lateInstallments.length === 0 ? (
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <CheckCircle className="h-5 w-5 text-green-500" />
+                          <CheckCircle className="h-5 w-5" style={{ color: 'hsl(var(--score-growth))' }} />
                           <p>All installments are up to date. No Repay-Assist opportunities available in this community.</p>
                         </div>
                       ) : (
@@ -896,7 +896,7 @@ export default function CommunityDetail() {
                                 <TableCell className="font-semibold">
                                   ${(installment.outstandingAmount / 1000).toFixed(1)}k ARS
                                 </TableCell>
-                                <TableCell className="text-green-600 font-semibold">
+                                <TableCell className="font-semibold" style={{ color: 'hsl(var(--score-growth))' }}>
                                   ${((installment.outstandingAmount * 1.06) / 1000).toFixed(1)}k ARS
                                 </TableCell>
                                 <TableCell>
@@ -1101,19 +1101,19 @@ export default function CommunityDetail() {
                     <h4 className="font-semibold text-sm mb-3">Available Endpoints</h4>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'hsl(var(--score-growth))' }} />
                         <span>Submit vouches with cryptographic signatures</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'hsl(var(--score-growth))' }} />
                         <span>Retrieve detailed trust metrics and scores</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'hsl(var(--score-growth))' }} />
                         <span>Check eligibility status for users</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 mt-0.5 text-primary flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'hsl(var(--score-growth))' }} />
                         <span>Access community-wide statistics</span>
                       </li>
                     </ul>
@@ -1249,7 +1249,7 @@ export default function CommunityDetail() {
                     <div className="grid grid-cols-3 gap-4">
                       <Card>
                         <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-primary">
+                          <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-growth))' }}>
                             {availableLoans?.length || 0}
                           </div>
                           <div className="text-sm text-muted-foreground">Active Loans</div>
@@ -1257,7 +1257,7 @@ export default function CommunityDetail() {
                       </Card>
                       <Card>
                         <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-yellow-600">
+                          <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-transition))' }}>
                             {pendingLoans.length}
                           </div>
                           <div className="text-sm text-muted-foreground">Pending Applications</div>
@@ -1265,7 +1265,7 @@ export default function CommunityDetail() {
                       </Card>
                       <Card>
                         <CardContent className="p-4">
-                          <div className="text-2xl font-bold text-orange-600">
+                          <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-sun))' }}>
                             {pendingPayments.length}
                           </div>
                           <div className="text-sm text-muted-foreground">Pending Payments</div>

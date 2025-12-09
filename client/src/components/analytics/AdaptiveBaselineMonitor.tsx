@@ -89,7 +89,7 @@ export function AdaptiveBaselineMonitor() {
                   {data.adaptive.healthyVouchCount.toFixed(1)}
                 </Badge>
                 {vouchDiff !== 0 && (
-                  <span className={`text-xs ${vouchDiff > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className="text-xs" style={{ color: vouchDiff > 0 ? 'hsl(var(--score-growth))' : 'hsl(var(--destructive))' }}>
                     ({vouchDiff > 0 ? '+' : ''}{vouchDiff.toFixed(1)} vs fixed)
                   </span>
                 )}
@@ -114,7 +114,7 @@ export function AdaptiveBaselineMonitor() {
                   {data.adaptive.healthyRedundancy.toFixed(1)}
                 </Badge>
                 {redundancyDiff !== 0 && (
-                  <span className={`text-xs ${redundancyDiff > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className="text-xs" style={{ color: redundancyDiff > 0 ? 'hsl(var(--score-growth))' : 'hsl(var(--destructive))' }}>
                     ({redundancyDiff > 0 ? '+' : ''}{redundancyDiff.toFixed(1)} vs fixed)
                   </span>
                 )}

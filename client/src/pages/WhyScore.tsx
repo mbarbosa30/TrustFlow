@@ -161,7 +161,7 @@ export default function WhyScore() {
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">
                     <h4 className="font-semibold text-xs mb-1 flex items-center gap-1">
-                      <TreePine className="w-3 h-3 text-green-600 dark:text-green-400" />
+                      <TreePine className="w-3 h-3" style={{ color: 'hsl(var(--score-canopy))' }} />
                       Recursive Weighting
                     </h4>
                     <p className="text-xs text-muted-foreground">

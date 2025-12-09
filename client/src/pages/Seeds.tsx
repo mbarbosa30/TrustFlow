@@ -460,7 +460,7 @@ export default function Seeds() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Globe className="w-5 h-5 text-primary" />
+              <Globe className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
               Select Community
             </CardTitle>
             <CardDescription>
@@ -495,7 +495,7 @@ export default function Seeds() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
+              <Calendar className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
               Current Epoch
             </CardTitle>
             <CardDescription>
@@ -519,7 +519,7 @@ export default function Seeds() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-muted-foreground">Status</div>
-                      <div className="font-semibold text-primary capitalize">{epochData.status}</div>
+                      <div className="font-semibold capitalize" style={{ color: 'hsl(var(--score-growth))' }}>{epochData.status}</div>
                     </div>
                   </div>
 
@@ -697,7 +697,7 @@ export default function Seeds() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-primary" />
+              <Zap className="w-5 h-5" style={{ color: 'hsl(var(--score-sun))' }} />
               Compute Epoch Scores
             </CardTitle>
             <CardDescription>

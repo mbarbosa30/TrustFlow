@@ -95,7 +95,7 @@ export function VerifyAttestation({ onVerify }: VerifyAttestationProps) {
             </div>
           ) : result.valid ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-green-600 dark:text-green-500">
+              <div className="flex items-center gap-2" style={{ color: 'hsl(var(--score-growth))' }}>
                 <CheckCircle2 className="w-6 h-6" />
                 <span className="font-semibold text-lg">Valid Attestation</span>
               </div>

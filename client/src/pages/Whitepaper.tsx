@@ -88,19 +88,19 @@ export default function Whitepaper() {
             </p>
             <div className="grid gap-2 text-sm">
               <div className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
                 <div><strong>Accountability</strong> — Outgoing vouches incur dilution penalties, creating economic cost for endorsement spam</div>
               </div>
               <div className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
                 <div><strong>Epoch-lagged capacities</strong> — Distance-based node capacities use the previous epoch's graph to prevent distance inflation attacks</div>
               </div>
               <div className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
                 <div><strong>Separation of concerns</strong> — Reward layers (e.g., KUDOS tokens) consume scores but never influence them</div>
               </div>
               <div className="flex gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
                 <div><strong>Verifiability</strong> — Parameters, Merkle roots, and signed outputs are published per epoch for independent verification</div>
               </div>
             </div>
@@ -232,8 +232,8 @@ export default function Whitepaper() {
             </p>
             
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/5">
-                <div className="font-semibold text-sm mb-2 text-green-700 dark:text-green-400">Well-Connected Accounts</div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+                <div className="font-semibold text-sm mb-2" style={{ color: 'hsl(var(--score-growth))' }}>Well-Connected Accounts</div>
                 <ul className="text-sm text-muted-foreground space-y-1">
                   <li>• Multiple independent endorsers</li>
                   <li>• Deep upstream support chains</li>
@@ -286,7 +286,7 @@ export default function Whitepaper() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Leaf className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Leaf className="w-5 h-5" style={{ color: 'hsl(var(--score-canopy))' }} />
               Nature-Inspired Design
             </CardTitle>
           </CardHeader>
@@ -298,9 +298,9 @@ export default function Whitepaper() {
             </p>
             
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.05)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Waves className="w-4 h-4 text-blue-500" />
+                  <Waves className="w-4 h-4" style={{ color: 'hsl(var(--score-river))' }} />
                   <span className="font-semibold text-sm">River Networks</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
@@ -310,9 +310,9 @@ export default function Whitepaper() {
                 <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>Graph property: Max-flow capacity</p>
               </div>
               
-              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.05)', borderColor: 'hsl(var(--score-canopy) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <TreePine className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <TreePine className="w-4 h-4" style={{ color: 'hsl(var(--score-canopy))' }} />
                   <span className="font-semibold text-sm">Root Systems</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
@@ -322,9 +322,9 @@ export default function Whitepaper() {
                 <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>Graph property: Recursive trust weighting</p>
               </div>
               
-              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-dormant) / 0.05)', borderColor: 'hsl(var(--score-dormant) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <GitBranch className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <GitBranch className="w-4 h-4" style={{ color: 'hsl(var(--score-transition))' }} />
                   <span className="font-semibold text-sm">Mycorrhizal Networks</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
@@ -335,9 +335,9 @@ export default function Whitepaper() {
                 <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-dormant) / 0.7)' }}>Graph property: Path redundancy</p>
               </div>
               
-              <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-soil) / 0.05)', borderColor: 'hsl(var(--score-soil) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <Leaf className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <Leaf className="w-4 h-4" style={{ color: 'hsl(var(--score-soil))' }} />
                   <span className="font-semibold text-sm">Ecosystem Pruning</span>
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
@@ -349,7 +349,7 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-muted/30 border-l-4 border-green-500/50 mt-4">
+            <div className="p-3 rounded-lg bg-muted/30 border-l-4 mt-4" style={{ borderLeftColor: 'hsl(var(--score-canopy) / 0.5)' }}>
               <p className="text-sm italic">
                 "Trust, computed naturally. Graph algorithms engineered to leverage the same network dynamics 
                 that make rivers find paths, roots grow strong, and ecosystems self-regulate. Proven patterns. 
@@ -386,7 +386,7 @@ export default function Whitepaper() {
                   endorsements, naturally limiting Sybil influence.
                 </p>
                 <div className="text-sm">
-                  <span className="text-green-600 dark:text-green-400 font-medium">MaxFlow extends:</span> We add 
+                  <span className="font-medium" style={{ color: 'hsl(var(--score-growth))' }}>MaxFlow extends:</span> We add 
                   epoch-lagged capacities (preventing distance inflation), seed quality scoring (preventing seed capture), 
                   and robust percentile normalization (stable scores across graph sizes).
                 </div>
@@ -403,7 +403,7 @@ export default function Whitepaper() {
                   well-connected, high-quality nodes.
                 </p>
                 <div className="text-sm">
-                  <span className="text-green-600 dark:text-green-400 font-medium">MaxFlow improves:</span> We use 
+                  <span className="font-medium" style={{ color: 'hsl(var(--score-growth))' }}>MaxFlow improves:</span> We use 
                   damped iteration with explicit convergence bounds, add accountability penalties for outgoing vouches, 
                   and separate flow-based scoring from redundancy metrics for clearer semantics.
                 </div>
@@ -419,7 +419,7 @@ export default function Whitepaper() {
                   can have its own perspective on which nodes are trustworthy, avoiding global consensus requirements.
                 </p>
                 <div className="text-sm">
-                  <span className="text-green-600 dark:text-green-400 font-medium">MaxFlow incorporates:</span> STS 
+                  <span className="font-medium" style={{ color: 'hsl(var(--score-growth))' }}>MaxFlow incorporates:</span> STS 
                   includes seed-personalized PageRank as a 5% component, combining it with max-flow for robustness 
                   against PageRank's sensitivity to high-degree nodes.
                 </div>
@@ -621,12 +621,12 @@ export default function Whitepaper() {
             </p>
             
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="p-3 rounded-lg border border-green-500/30 bg-green-500/5">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
                 <div className="font-semibold text-sm mb-2">Alice's Vouchers</div>
                 <p className="text-sm text-muted-foreground">
                   5 established community members with LocalHealth scores of 70-90. Each vouch carries significant weight.
                 </p>
-                <p className="text-sm font-medium mt-2 text-green-700 dark:text-green-400">Result: High LocalHealth</p>
+                <p className="text-sm font-medium mt-2" style={{ color: 'hsl(var(--score-growth))' }}>Result: High LocalHealth</p>
               </div>
               <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/5">
                 <div className="font-semibold text-sm mb-2">Bob's Vouchers</div>
@@ -764,7 +764,7 @@ export default function Whitepaper() {
               </p>
             </FormulaBox>
 
-            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 mb-4">
+            <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="font-semibold text-sm mb-2">Vertex-Disjoint Path Bonus (v1.2)</p>
               <p className="text-sm text-muted-foreground">
                 Each independent path beyond the first adds 1 point to redundancy (capped at 5). These are truly 
@@ -822,7 +822,7 @@ export default function Whitepaper() {
               </div>
             </div>
             
-            <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.05)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="font-semibold text-sm mb-2">Convergence Note (v1.2)</p>
               <p className="text-sm text-muted-foreground">
                 Damping was removed after empirical testing showed stable convergence in 4-6 iterations. The bounded 
@@ -897,7 +897,7 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <div className="font-semibold text-center">
                 <InlineFormula>{"\\mathrm{LocalHealth}_{Alice} = 6.34 + 19.6 = 25.94"}</InlineFormula>
               </div>
@@ -1063,8 +1063,8 @@ export default function Whitepaper() {
                   Adversary creates N fake accounts that vouch for each other in a dense cluster, attempting to 
                   bootstrap high scores without external network connections.
                 </p>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                  <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--score-growth))' }}>Defense</div>
                   <p className="text-sm text-muted-foreground">
                     Recursive trust weighting: Sybils vouching for Sybils produce low scores because no voucher 
                     has a high score. The cluster cannot bootstrap itself.
@@ -1080,8 +1080,8 @@ export default function Whitepaper() {
                   Adversary compromises or bribes seed accounts to gain direct high-capacity flow into the 
                   Sybil cluster.
                 </p>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                  <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--score-growth))' }}>Defense</div>
                   <p className="text-sm text-muted-foreground">
                     Seed quality scoring: Seeds that primarily flow trust to low-quality nodes get their 
                     capacity multiplier reduced. Diverse seed requirements (≥2 seeds with quality ≥0.6) 
@@ -1098,8 +1098,8 @@ export default function Whitepaper() {
                   A high-score user is bribed or tricked into vouching for Sybil accounts, acting 
                   as a "bridge" between the established network and the attack cluster.
                 </p>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                  <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--score-growth))' }}>Defense</div>
                   <p className="text-sm text-muted-foreground">
                     Dilution penalty: Users who vouch for many others ({'>'}10) suffer score reduction, limiting 
                     the value of being a "vouch merchant." Min-cut requirements ensure multiple independent 
@@ -1116,8 +1116,8 @@ export default function Whitepaper() {
                   Adversary adds edges to reduce their hop-distance from seeds within an epoch, gaining higher 
                   capacity immediately.
                 </p>
-                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
-                  <div className="font-semibold text-sm text-green-700 dark:text-green-400 mb-1">Defense</div>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+                  <div className="font-semibold text-sm mb-1" style={{ color: 'hsl(var(--score-growth))' }}>Defense</div>
                   <p className="text-sm text-muted-foreground">
                     Epoch-lagged capacities: Distance is computed from the previous epoch's accepted graph, 
                     so new edges only take effect in the next epoch.
@@ -1262,7 +1262,7 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.05)', borderColor: 'hsl(var(--score-transition) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="font-semibold text-sm mb-2">Metrics to Track</p>
               <p className="text-sm text-muted-foreground">
                 For each scenario, measure: (1) AUC for distinguishing Sybils from established users by score, 
@@ -1489,28 +1489,28 @@ export default function Whitepaper() {
           <span style={{ color: 'hsl(var(--score-transition))' }}>10.</span> Future Work
         </h2>
 
-        <Card className="mb-6 border-green-500/30 bg-green-500/5">
+        <Card className="mb-6" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
+            <CardTitle className="text-base flex items-center gap-2" style={{ color: 'hsl(var(--score-growth))' }}>
               <CheckCircle2 className="w-5 h-5" />
               Recently Implemented (December 2025)
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <div className="font-semibold mb-1">Vertex-Disjoint Paths</div>
                 <p className="text-muted-foreground text-xs">
                   Node-splitting max-flow counts truly independent paths. Bonus redundancy for multiple disjoint paths (up to +5 points).
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <div className="font-semibold mb-1">Piecewise Dilution Curves</div>
                 <p className="text-muted-foreground text-xs">
                   Smooth non-linear penalties: 1-10 vouches = no penalty, 11-15 = gentle decay, 16-25 = steeper decay, 25+ = asymptotic floor.
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-green-500/10">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <div className="font-semibold mb-1">Adaptive Baselines</div>
                 <p className="text-muted-foreground text-xs">
                   Dynamic "healthy" thresholds computed from 75th percentile of network. Algorithm adapts as network grows.

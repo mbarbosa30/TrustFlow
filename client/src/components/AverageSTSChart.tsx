@@ -78,19 +78,19 @@ export function AverageSTSChart({ data, isLoading = false }: AverageSTSChartProp
             <Line 
               type="monotone" 
               dataKey="mean" 
-              stroke="hsl(var(--primary))" 
+              stroke="hsl(var(--score-dormant))" 
               strokeWidth={2}
               name="Mean STS"
-              dot={{ fill: 'hsl(var(--primary))' }}
+              dot={{ fill: 'hsl(var(--score-dormant))' }}
             />
             <Line 
               type="monotone" 
               dataKey="median" 
-              stroke="hsl(var(--chart-2))" 
+              stroke="hsl(var(--score-transition))" 
               strokeWidth={2}
               strokeDasharray="5 5"
               name="Median STS"
-              dot={{ fill: 'hsl(var(--chart-2))' }}
+              dot={{ fill: 'hsl(var(--score-transition))' }}
             />
           </ComposedChart>
         </ResponsiveContainer>

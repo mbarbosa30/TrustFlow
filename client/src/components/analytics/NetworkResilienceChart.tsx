@@ -96,10 +96,10 @@ export function NetworkResilienceChart() {
             <div className="text-2xl font-bold" data-testid="text-total-analyzed">{data.totalAnalyzed}</div>
             <div className="text-xs text-muted-foreground">Users Analyzed</div>
           </div>
-          <div className="text-center p-3 rounded-lg bg-red-500/10">
+          <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--destructive) / 0.1)' }}>
             <div className="flex items-center justify-center gap-1">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <span className="text-2xl font-bold text-red-600" data-testid="text-vulnerable">
+              <AlertTriangle className="w-4 h-4" style={{ color: 'hsl(var(--destructive))' }} />
+              <span className="text-2xl font-bold" style={{ color: 'hsl(var(--destructive))' }} data-testid="text-vulnerable">
                 {data.vulnerable}
               </span>
             </div>

@@ -63,7 +63,7 @@ function ExpirationBadge({ status }: { status?: ExpirationStatus }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className="inline-flex items-center gap-1.5 border-yellow-500 text-yellow-600 dark:text-yellow-400">
+          <Badge variant="outline" className="inline-flex items-center gap-1.5" style={{ borderColor: 'hsl(var(--score-transition))', color: 'hsl(var(--score-transition))' }}>
             <Clock className="w-3 h-3" />
             <span>{daysLeft}d left</span>
           </Badge>
@@ -92,7 +92,7 @@ function ExpirationBadge({ status }: { status?: ExpirationStatus }) {
   }
 
   return (
-    <Badge variant="secondary" className="inline-flex items-center gap-1.5 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+    <Badge variant="secondary" className="inline-flex items-center gap-1.5" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', color: 'hsl(var(--score-growth))', borderColor: 'hsl(var(--score-growth) / 0.2)' }}>
       <CheckCircle2 className="w-3 h-3" />
       <span>Active</span>
     </Badge>

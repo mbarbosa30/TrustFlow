@@ -17,15 +17,15 @@ interface TrustLevelBadgeProps {
 const levelConfig = {
   Human: {
     icon: User,
-    className: "bg-muted text-muted-foreground border-muted-border",
+    style: { backgroundColor: 'hsl(var(--score-stone) / 0.2)', color: 'hsl(var(--score-stone))' },
   },
   Known: {
     icon: Users,
-    className: "bg-accent text-accent-foreground border-accent-border",
+    style: { backgroundColor: 'hsl(var(--score-growth) / 0.2)', color: 'hsl(var(--score-growth))' },
   },
   Trusted: {
     icon: Shield,
-    className: "bg-primary text-primary-foreground border-primary-border",
+    style: { backgroundColor: 'hsl(var(--score-canopy) / 0.2)', color: 'hsl(var(--score-canopy))' },
   },
 };
 
@@ -35,7 +35,8 @@ export function ScoreLevelBadge({ level, showIcon = true }: ScoreLevelBadgeProps
 
   return (
     <Badge
-      className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full ${config.className}`}
+      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full"
+      style={config.style}
       data-testid={`badge-score-level-${level.toLowerCase()}`}
     >
       {showIcon && <Icon className="w-3 h-3" />}

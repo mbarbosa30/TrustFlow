@@ -55,17 +55,17 @@ export function PageRankMetrics({ data, isLoading = false }: PageRankMetricsProp
     );
   }
 
-  const getSkewStatus = (skew: number): { status: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
+  const getSkewStatus = (skew: number): { status: string; colorStyle: React.CSSProperties; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
     // prSkew = 1 - Gini coefficient, range 0-1, higher = better (more equal distribution)
-    if (skew >= 0.7) return { status: 'Low Skew', color: 'text-green-600 dark:text-green-400', variant: 'default' };
-    if (skew >= 0.4) return { status: 'Moderate Skew', color: 'text-yellow-600 dark:text-yellow-400', variant: 'secondary' };
-    return { status: 'High Skew', color: 'text-red-600 dark:text-red-400', variant: 'destructive' };
+    if (skew >= 0.7) return { status: 'Low Skew', colorStyle: { color: 'hsl(var(--score-growth))' }, variant: 'default' };
+    if (skew >= 0.4) return { status: 'Moderate Skew', colorStyle: { color: 'hsl(var(--score-transition))' }, variant: 'secondary' };
+    return { status: 'High Skew', colorStyle: { color: 'hsl(var(--destructive))' }, variant: 'destructive' };
   };
 
-  const getConcentrationStatus = (concentration: number): { status: string; color: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
-    if (concentration < 0.3) return { status: 'Distributed', color: 'text-green-600 dark:text-green-400', variant: 'default' };
-    if (concentration < 0.5) return { status: 'Balanced', color: 'text-yellow-600 dark:text-yellow-400', variant: 'secondary' };
-    return { status: 'Concentrated', color: 'text-red-600 dark:text-red-400', variant: 'destructive' };
+  const getConcentrationStatus = (concentration: number): { status: string; colorStyle: React.CSSProperties; variant: 'default' | 'secondary' | 'destructive' | 'outline' } => {
+    if (concentration < 0.3) return { status: 'Distributed', colorStyle: { color: 'hsl(var(--score-growth))' }, variant: 'default' };
+    if (concentration < 0.5) return { status: 'Balanced', colorStyle: { color: 'hsl(var(--score-transition))' }, variant: 'secondary' };
+    return { status: 'Concentrated', colorStyle: { color: 'hsl(var(--destructive))' }, variant: 'destructive' };
   };
 
   const skewStatus = getSkewStatus(data.prSkew);
@@ -87,9 +87,9 @@ export function PageRankMetrics({ data, isLoading = false }: PageRankMetricsProp
           <Tooltip>
             <TooltipTrigger>
               {data.converged ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" data-testid="icon-converged" />
+                <CheckCircle2 className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} data-testid="icon-converged" />
               ) : (
-                <XCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" data-testid="icon-not-converged" />
+                <XCircle className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} data-testid="icon-not-converged" />
               )}
             </TooltipTrigger>
             <TooltipContent>

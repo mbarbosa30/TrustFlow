@@ -16,6 +16,24 @@ Preferred communication style: Simple, everyday language.
 ### UI/UX Decisions
 The frontend is built with React and TypeScript using Vite, Shadcn/ui (Radix UI, Tailwind CSS), and Material Design 3 principles. It uses Inter and JetBrains Mono fonts, custom CSS variable themes for light/dark mode, and prioritizes accessibility.
 
+### Multi-Biome Design System (Dec 2025)
+The "Living Networks" design philosophy uses varied, nature-inspired colors from multiple biomes—avoiding green-saturation by incorporating rivers, earth, sun, and forest colors:
+
+*   **CSS Variables in `index.css`**:
+    *   `--score-canopy`: Forest green - peak health (80-100)
+    *   `--score-growth`: River teal - water-fed expansion (60-79)
+    *   `--score-transition`: Sunlit amber - activation energy (40-59)
+    *   `--score-dormant`: Rich soil umber - grounded stability (20-39)
+    *   `--score-seedling`: River-stone quartz - cool potential (0-19)
+*   **Semantic Aliases** (for intuitive theming):
+    *   `--score-river`: Alias for flow/network visualizations
+    *   `--score-sun`: Alias for energy/activation states
+    *   `--score-soil`: Alias for accountability/grounding
+    *   `--score-stone`: Alias for neutral/foundational elements
+*   **Dilution Indicators**: `--dilution-quality`, `--dilution-warning`, `--dilution-penalty`, `--dilution-cap`
+*   **Usage**: Use `style={{ color: 'hsl(var(--score-river))' }}` instead of `text-primary` class for semantic coloring
+*   **Chart Colors**: `--chart-1` through `--chart-5` map to the biome palette for Recharts visualizations
+
 ### Technical Implementations
 The backend is an Express.js and TypeScript (Node.js) application offering RESTful APIs. Data is managed in PostgreSQL via Neon serverless with Drizzle ORM. Multi-network authentication (Ethereum, Celo, Polygon, Arbitrum, Optimism, Base) and off-chain EIP-712 signatures are handled by Reown AppKit. The project uses a monorepo structure (`client/`, `server/`, `shared/`).
 

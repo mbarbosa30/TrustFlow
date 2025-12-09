@@ -51,7 +51,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       rawValue: components.flow,
       weight: "55%",
       description: "Max-flow capacity from seeds to you through independent paths. Measures the volume of signal capacity that can reach you.",
-      color: "hsl(var(--chart-1))",
+      color: "hsl(var(--score-dormant))",
     },
     {
       name: "Min-Cut",
@@ -59,7 +59,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       rawValue: components.minCut,
       weight: "25%",
       description: "Minimum number of edges to disconnect you from seeds. Measures path redundancy and resistance to graph attacks.",
-      color: "hsl(var(--chart-2))",
+      color: "hsl(var(--score-growth))",
     },
     {
       name: "Stability",
@@ -67,7 +67,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       rawValue: components.stability,
       weight: "5%",
       description: "How much your signal changes when individual seeds are removed. Higher = more resilient network position.",
-      color: "hsl(var(--chart-3))",
+      color: "hsl(var(--score-transition))",
     },
     {
       name: "Depth",
@@ -75,7 +75,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       rawValue: components.depth,
       weight: "10%",
       description: "Shortest path distance from seeds. Lower depth = closer proximity to seed nodes.",
-      color: "hsl(var(--chart-4))",
+      color: "hsl(var(--score-canopy))",
     },
     {
       name: "PageRank",
@@ -83,7 +83,7 @@ export function ComponentsBreakdown({ components, isLoading = false }: Component
       rawValue: components.pageRank,
       weight: "5%",
       description: "Seed-personalized PageRank measuring network embeddedness. Higher = better connected in the network graph.",
-      color: "hsl(var(--chart-5))",
+      color: "hsl(var(--muted-foreground))",
     },
   ];
 

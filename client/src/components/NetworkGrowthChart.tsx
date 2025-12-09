@@ -59,18 +59,18 @@ export function NetworkGrowthChart({ data, isLoading = false }: NetworkGrowthCha
               <Line 
                 type="monotone" 
                 dataKey="totalUsers" 
-                stroke="hsl(var(--primary))" 
+                stroke="hsl(var(--score-dormant))" 
                 strokeWidth={2}
                 name="Total Users"
-                dot={{ fill: 'hsl(var(--primary))' }}
+                dot={{ fill: 'hsl(var(--score-dormant))' }}
               />
               <Line 
                 type="monotone" 
                 dataKey="activeUsers" 
-                stroke="hsl(var(--chart-2))" 
+                stroke="hsl(var(--score-growth))" 
                 strokeWidth={2}
                 name="Active Users"
-                dot={{ fill: 'hsl(var(--chart-2))' }}
+                dot={{ fill: 'hsl(var(--score-growth))' }}
               />
             </LineChart>
           </ResponsiveContainer>

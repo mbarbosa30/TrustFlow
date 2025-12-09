@@ -120,7 +120,7 @@ export function ConvergenceChart() {
               <Area 
                 type="monotone" 
                 dataKey="maxChange" 
-                stroke="hsl(var(--primary))" 
+                stroke="hsl(var(--score-growth))" 
                 fillOpacity={1}
                 fill="url(#colorMaxChange)"
               />

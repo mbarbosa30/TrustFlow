@@ -58,8 +58,8 @@ export function PathDiversityChart({ data, isLoading = false }: PathDiversityCha
                       data-testid="bar-diversity-iqr"
                     />
                     <div
-                      className="absolute w-1 h-8 bg-primary rounded"
-                      style={{ left: `${data.median * 100}%` }}
+                      className="absolute w-1 h-8 rounded"
+                      style={{ left: `${data.median * 100}%`, backgroundColor: 'hsl(var(--score-river))' }}
                       data-testid="bar-diversity-median"
                     />
                   </div>

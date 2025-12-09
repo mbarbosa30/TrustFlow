@@ -96,7 +96,7 @@ export default function UseCases() {
         </p>
       </div>
 
-      <div className="mb-8 p-6 rounded-lg bg-primary/10 border border-primary/20">
+      <div className="mb-8 p-6 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
         <h2 className="text-lg font-semibold mb-2">MaxFlow Provides Neutral Sybil-Resistant Scores</h2>
         <p className="text-sm text-muted-foreground">
           MaxFlow computes verifiable graph signals (LocalHealth 0-100, STS 0-100) that measure network quality: flow capacity, path redundancy, connectivity strength. <strong>Each application interprets them differently</strong> based on their context and needs. Below are example interpretations—not prescriptive uses.
@@ -110,8 +110,8 @@ export default function UseCases() {
             <Card key={index} data-testid={`use-case-${index}`}>
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)' }}>
+                    <Icon className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
                   </div>
                   <CardTitle className="text-lg">{useCase.title}</CardTitle>
                 </div>
@@ -129,7 +129,7 @@ export default function UseCases() {
                       key={exampleIndex}
                       className="flex items-start gap-2 text-sm"
                     >
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                      <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: 'hsl(var(--score-river))' }} />
                       <span>{example}</span>
                     </div>
                   ))}
@@ -146,11 +146,11 @@ export default function UseCases() {
           MaxFlow provides neutral, verifiable graph signals (LocalHealth 0-100, STS 0-100). Export portable score attestations and integrate them into any application. <strong>Your application assigns meaning</strong>: creditworthiness, governance weight, access control, grant allocation, etc. All computations are transparent and reproducible from the public Merkle transparency log.
         </p>
         <div className="flex items-center gap-4 text-sm">
-          <a href="/verify" className="text-primary hover:underline">
+          <a href="/verify" className="hover:underline" style={{ color: 'hsl(var(--score-dormant))' }}>
             Verify Attestations
           </a>
           <span className="text-muted-foreground">•</span>
-          <a href="/how-it-works" className="text-primary hover:underline">
+          <a href="/how-it-works" className="hover:underline" style={{ color: 'hsl(var(--score-dormant))' }}>
             Technical Documentation
           </a>
         </div>

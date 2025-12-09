@@ -433,9 +433,9 @@ export default function Overview() {
                 {kudosData.canClaim ? (
                   claimableAmount > 0 ? (
                     <>
-                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-sun) / 0.1)', borderColor: 'hsl(var(--score-sun) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
                         <div className="text-sm text-muted-foreground mb-1">Claimable now</div>
-                        <div className="text-2xl font-bold text-primary" data-testid="text-claimable-amount">
+                        <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-sun))' }} data-testid="text-claimable-amount">
                           +{claimableAmount.toLocaleString()} KUDOS
                         </div>
                       </div>
