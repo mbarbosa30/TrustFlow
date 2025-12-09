@@ -59,7 +59,7 @@ export default function WhyScore() {
                 <h3 className="font-semibold mb-2">How LocalHealth Works</h3>
                 <p className="text-sm text-muted-foreground">
                   Your <strong>LocalHealth score (0-100)</strong> is a neutral graph signal measuring network connectivity strength based on incoming vouches 
-                  and network depth. It uses quadratic exponential scaling (2.0 exponent) for strict score distribution. <strong>This is infrastructure-level computation</strong>—applications interpret the signal based on their context (creditworthiness, governance eligibility, etc.).
+                  and network depth. It uses linear 60/40 weighting with tiered capacity for Sybil resistance. <strong>This is infrastructure-level computation</strong>—applications interpret the signal based on their context (creditworthiness, governance eligibility, etc.).
                 </p>
               </div>
 
@@ -70,7 +70,7 @@ export default function WhyScore() {
                     Flow Component (60%)
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Direct flow from vouchers to you, normalized by healthy baseline (5 vouches)
+                    Direct flow from vouchers to you, normalized by healthy baseline (4 vouches)
                   </div>
                   <div className="text-[0.65rem] mt-1 italic" style={{ color: 'hsl(var(--score-growth) / 0.7)' }}>
                     Like rivers finding paths to the sea through network topology
@@ -91,7 +91,7 @@ export default function WhyScore() {
               </div>
 
               <div className="pt-4 border-t bg-muted rounded-lg p-4">
-                <h3 className="font-semibold mb-3 text-sm">Score Distribution (Quadratic Scaling)</h3>
+                <h3 className="font-semibold mb-3 text-sm">Score Distribution (Linear Scaling)</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-muted-foreground">1 vouch, minimal network</span>
@@ -153,10 +153,10 @@ export default function WhyScore() {
                 <h3 className="font-semibold mb-2 text-sm">Additional Anti-Gaming Mechanisms</h3>
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-muted/30">
-                    <h4 className="font-semibold text-xs mb-1">Quadratic Scaling</h4>
+                    <h4 className="font-semibold text-xs mb-1">Tiered Capacity</h4>
                     <p className="text-xs text-muted-foreground">
-                      Exponential scaling (2.0) creates wider score discrimination: single vouches yield low scores (~2 pts), 
-                      while high scores require dense multi-hop network topology (~74 pts).
+                      Sockpuppets (score 0) contribute only 0.08 capacity each. 10 fake vouches = 0.8 flow vs 4.0 healthy baseline. 
+                      Higher-score vouchers get sqrt weighting (0.30-1.0), creating natural score discrimination.
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/30">

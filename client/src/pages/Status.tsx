@@ -372,8 +372,8 @@ export default function Status() {
                     Flow Component (60%)
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Measures trust flow from your vouchers to you, weighted by each voucher's own signal strength. 
-                    Stronger vouchers contribute more to your score.
+                    Measures trust flow from your vouchers to you using tiered capacity weighting. 
+                    Voucher contributions depend on their own signal strength, with sockpuppets heavily penalized.
                   </p>
                 </div>
                 <div>
@@ -383,7 +383,7 @@ export default function Status() {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     True min-cut via Dinic's algorithm—the minimum edges to disconnect you from trust sources. 
-                    Includes bonuses for vertex-disjoint paths and upstream network depth.
+                    Includes bonuses for vertex-disjoint paths (up to 10 pts) and upstream network depth.
                   </p>
                 </div>
               </div>
@@ -391,12 +391,13 @@ export default function Status() {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
-                    <GitBranch className="w-4 h-4 text-muted-foreground" />
-                    Dilution Penalty
+                    <Shield className="w-4 h-4 text-muted-foreground" />
+                    Tiered Capacity (Sybil Resistance)
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Users who vouch for too many people face a smooth, piecewise penalty. 
-                    Over-vouching dilutes your endorsement power from 100% down to 40%.
+                    Voucher flow capacity uses tiered formula: zero-score = 0.08 (sockpuppets), 
+                    score 1-30 = 0.08-0.30 (linear), score 31+ = 0.30-1.0 (sqrt). 
+                    10 fake accounts contribute only 0.8 flow vs 4.0 healthy baseline.
                   </p>
                 </div>
                 <div>
@@ -405,8 +406,8 @@ export default function Status() {
                     Adaptive Baselines
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    "Healthy" thresholds are computed from network percentiles (75th) rather than 
-                    fixed values. Fair scoring whether the network has 10 or 10,000 users.
+                    "Healthy" thresholds (vouch=4.0, redundancy=18.0) are computed from network 
+                    percentiles. Fair scoring whether the network has 10 or 10,000 users.
                   </p>
                 </div>
               </div>

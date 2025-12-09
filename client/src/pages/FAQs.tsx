@@ -66,9 +66,9 @@ export default function FAQs() {
               <div>
                 <p className="font-semibold text-sm mb-1">LocalHealth (Personal Networks):</p>
                 <div className="font-mono text-sm bg-muted/50 p-2 rounded-md">
-                  LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
+                  LocalHealth = 60 × flowScore + 40 × redundancyRatio
                 </div>
-                <p className="text-xs mt-1">Iterative algorithm with weighted vouches (capacity = voucherScore / 100). ResidualFlow = directFlow / voucherCount captures average voucher strength.</p>
+                <p className="text-xs mt-1">Iterative algorithm with tiered capacity weighting. Voucher capacity: 0.08 (zero-score), 0.08-0.30 (scores 1-30), 0.30-1.0 (scores 31+).</p>
               </div>
               <div>
                 <p className="font-semibold text-sm mb-1">Community STS (Seed-Based):</p>
@@ -245,7 +245,7 @@ export default function FAQs() {
               LocalHealth (0-100) uses an <strong>iterative PageRank-style algorithm</strong> where vouches are weighted by voucher's network strength. Your score depends on the quality of who vouches for you:
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
-              LocalHealth = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
+              LocalHealth = 60 × flowScore + 40 × redundancyRatio
             </div>
             <div className="p-3 rounded-lg my-3" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="text-sm font-semibold mb-2" style={{ color: 'hsl(var(--score-growth))' }}>
@@ -262,10 +262,10 @@ export default function FAQs() {
               </p>
             </div>
             <p className="text-sm mb-2">
-              <strong>Flow Component (60%):</strong> Measures weighted incoming trust. directFlow = Σ(voucherScore/100), normalized by HEALTHY_VOUCH_COUNT (5). Strong vouchers contribute more.
+              <strong>Flow Component (60%):</strong> Measures weighted incoming trust with tiered capacity (0.08-1.0). Normalized by HEALTHY_VOUCH_COUNT (4). Strong vouchers contribute more.
             </p>
             <p className="text-sm mb-2">
-              <strong>Min-Cut Component (40%):</strong> effectiveRedundancy = actualMinCut + (upstream supporters × 0.1) + vertex-disjoint path bonus. Normalized by HEALTHY_REDUNDANCY (20 pts). Uses true min-cut via Dinic's algorithm.
+              <strong>Min-Cut Component (40%):</strong> effectiveRedundancy = actualMinCut + depthBonus + vertex-disjoint path bonus (max 10 pts). Normalized by HEALTHY_REDUNDANCY (18 pts). Uses true min-cut via Dinic's algorithm.
             </p>
             <p className="text-sm mb-2 text-muted-foreground/80">
               <strong>vouchQuality</strong> = directFlow / voucherCount (avg voucher strength, also called ResidualFlow)
@@ -278,7 +278,7 @@ export default function FAQs() {
                 Vouching for {'>'}10 people applies a penalty to your min-cut component (40% of total score), creating economic cost to spam.
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 pl-4">
-                <li><strong>Formula (LocalHealth):</strong> 40 × (minCut²) × dilutionFactor</li>
+                <li><strong>Formula (LocalHealth):</strong> 40 × redundancyRatio × dilutionFactor</li>
                 <li><strong>Impact:</strong> 10-15% typical score reduction, up to ~20% for high-redundancy networks</li>
                 <li><strong>Why it works:</strong> Can't spam vouches without reducing your own min-cut score → selective endorsements</li>
               </ul>
@@ -354,7 +354,7 @@ export default function FAQs() {
               <strong>Note:</strong> With recursive trust weighting, a single vouch from someone with LocalHealth 100 is worth more than three vouches from people with LocalHealth 20.
             </p>
             <p className="text-sm mt-2">
-              The quadratic scaling (exponent 2.0) creates stricter distribution, making each additional vouch meaningful while requiring dense network topology for higher scores. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
+              The tiered capacity weighting (sockpuppets: 0.08, low scores: 0.08-0.30, high scores: sqrt to 1.0) creates Sybil resistance while the 60/40 linear flow/redundancy formula rewards dense network topology. Remember: these are neutral signals that applications interpret differently (e.g., creditworthiness, governance eligibility, etc.).
             </p>
           </AccordionContent>
         </AccordionItem>

@@ -71,7 +71,7 @@ export default function HowItWorks() {
                   Vouching for {'>'}10 people applies a penalty factor to your min-cut component (40% of total score). The penalty uses a piecewise curve for smooth decay.
                 </p>
                 <div className="text-sm font-mono bg-muted/50 p-3 rounded-lg">
-                  cutComponent = 40 × (minCut²) × dilutionFactor
+                  cutComponent = 40 × redundancyRatio × dilutionFactor
                 </div>
                 <ul className="text-sm text-muted-foreground mt-3 space-y-1 pl-4">
                   <li><strong>≤10 vouches:</strong> No penalty (factor = 1.0)</li>
@@ -168,10 +168,10 @@ export default function HowItWorks() {
 
             <div className="my-6 p-6 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)', border: '2px solid hsl(var(--score-transition) / 0.2)' }}>
               <p className="text-center text-lg font-bold font-mono mb-2">
-                Ego Score = 60 × (flowScore²) + 40 × (redundancy²) × vouchQuality
+                LocalHealth = 60 × flowScore + 40 × redundancyRatio
               </p>
               <p className="text-center text-sm text-muted-foreground">
-                Flow (60%) + Redundancy (40%) × Vouch Accountability, with quadratic scaling (exponent 2.0)
+                Flow (60%) + Redundancy (40%) with linear scaling and tiered capacity weighting
               </p>
             </div>
 
@@ -185,13 +185,13 @@ export default function HowItWorks() {
               <div>
                 <p className="font-semibold mb-1">Flow Component (60%):</p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Measures <strong>weighted incoming trust</strong> from vouchers. Each vouch capacity weighted by voucher's LocalHealth (0-100 normalized to 0-1).
-                  Formula: <span className="font-mono">60 × (flowScore)²</span> where flowScore = directFlow / HEALTHY_VOUCH_COUNT.
+                  Measures <strong>weighted incoming trust</strong> from vouchers using tiered capacity weighting.
+                  Formula: <span className="font-mono">60 × flowScore</span> where flowScore = directFlow / HEALTHY_VOUCH_COUNT (4.0).
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
-                  <p><strong>directFlow</strong> = Σ(voucherScore<sub>j</sub> / 100) for each voucher j</p>
-                  <p><strong>flowScore</strong> = directFlow / 5 (HEALTHY_VOUCH_COUNT), capped at 1.0</p>
-                  <p><strong>vouchQuality</strong> = directFlow / voucherCount (ResidualFlow = avg voucher strength)</p>
+                  <p><strong>directFlow</strong> = Σ capacity(voucherScore<sub>j</sub>) for each voucher j</p>
+                  <p><strong>flowScore</strong> = directFlow / 4.0 (HEALTHY_VOUCH_COUNT), capped at 1.0</p>
+                  <p><strong>vouchQuality</strong> = directFlow / voucherCount (avg voucher strength)</p>
                 </div>
               </div>
 
@@ -199,14 +199,14 @@ export default function HowItWorks() {
                 <p className="font-semibold mb-1">Min-Cut Component (40%):</p>
                 <p className="text-sm text-muted-foreground mb-2">
                   Measures <strong>true min-cut</strong> via Dinic's algorithm—the minimum edges to disconnect you from trust sources.
-                  Formula: <span className="font-mono">40 × (minCutRatio)²</span> where minCutRatio = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
+                  Formula: <span className="font-mono">40 × redundancyRatio</span> where redundancyRatio = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
                   Higher min-cut = more Sybil resistance, harder to isolate you.
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
-                  <p className="font-semibold text-foreground">effectiveRedundancy computation (v1.3):</p>
+                  <p className="font-semibold text-foreground">effectiveRedundancy computation (v1.4):</p>
                   <p>• <strong>Min-cut:</strong> True min-cut via Dinic's algorithm (core Sybil resistance metric)</p>
                   <p>• <strong>Depth bonus:</strong> upstream_supporter_count × 0.1 (rewards multi-hop chains)</p>
-                  <p>• <strong>VDP bonus:</strong> min(5, vertexDisjointPaths - 1) (rewards truly independent paths)</p>
+                  <p>• <strong>VDP bonus:</strong> min(10, (vertexDisjointPaths - 1) × 2) (rewards independent paths)</p>
                   <p className="pt-1 border-t border-muted">effectiveRedundancy = actualMinCut + depthBonus + vdpBonus</p>
                 </div>
               </div>
@@ -265,34 +265,36 @@ export default function HowItWorks() {
 
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">HEALTHY_VOUCH_COUNT = 5</span>
+                  <span className="font-semibold text-sm">HEALTHY_VOUCH_COUNT = 4</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Baseline for "healthy" incoming flow. Users with 5 strong vouchers (avg strength 80%+) achieve flowScore ≈ 0.8 → 38 pts from flow component.
-                  Set to 5 based on power-law distribution of endorsements in social graphs (median active users have 3-7 vouchers).
-                  <span className="text-muted-foreground/70 italic"> Could become global_avg_vouches for adaptive scaling.</span>
+                  Adaptive baseline for "healthy" incoming flow, computed from network's 75th percentile vouch count (clamped 4-15).
+                  Users with 4 quality vouchers achieve flowScore ≈ 1.0 → 60 pts from flow component.
+                  <span className="text-muted-foreground/70 italic"> Adaptive scaling adjusts automatically as network grows.</span>
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">HEALTHY_REDUNDANCY = 20</span>
+                  <span className="font-semibold text-sm">HEALTHY_REDUNDANCY = 18</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Baseline for "healthy" redundancy score (5 vouchers + 10 depth bonus + 5 connectivity). 
+                  Adaptive baseline for "healthy" redundancy score (min-cut + depth bonus + vertex-disjoint paths). 
                   Users at this level have multiple independent paths, making single-edge attacks ineffective.
-                  Calibrated for dense networks where upstream supporters multiply quickly.
+                  <span className="text-muted-foreground/70 italic"> Computed from network percentiles.</span>
                 </p>
               </div>
 
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">Quadratic Scaling (exponent = 2.0)</span>
+                  <span className="font-semibold text-sm">Tiered Capacity Weighting (Sybil Resistance)</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Both flow and redundancy use x² scaling to spread the 0-100 range across active users.
-                  Without quadratic: scores cluster near extremes (very low or maxed).
-                  With quadratic: mid-range users (flowScore 0.5-0.8) get meaningful differentiation (15-40 pts from flow).
+                  Voucher contributions use tiered formula for Sybil resistance:
+                  <strong> Zero-score vouchers: 0.08 capacity</strong> (sockpuppets contribute minimal flow).
+                  <strong> Low-score (1-30): 0.08-0.30</strong> (linear interpolation).
+                  <strong> Normal (31+): 0.30-1.0</strong> (sqrt weighting).
+                  10 sockpuppets × 0.08 = 0.8 flow, well below 4.0 healthy baseline.
                 </p>
               </div>
 

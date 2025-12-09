@@ -399,12 +399,12 @@ export default function Landing() {
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
                   <GitBranch className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <CardTitle className="text-base">Piecewise Dilution</CardTitle>
+                <CardTitle className="text-base">Tiered Capacity</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Smooth, continuous penalty curve for over-vouching. No sharp cliffs—just 
-                  gradual accountability that scales naturally.
+                  Sockpuppet accounts with zero trust contribute only 0.08 capacity each. 
+                  10 fake vouches = 0.8 flow vs 4.0 healthy baseline. Attacks don't scale.
                 </p>
               </CardContent>
             </Card>

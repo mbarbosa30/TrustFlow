@@ -43,18 +43,17 @@ export default function Dashboard() {
     queryKey: ['/api/stats'],
   });
 
-  const HEALTHY_VOUCH_COUNT = 8.0;
-  const HEALTHY_REDUNDANCY = 35.0;
-  const SCALING_EXPONENT = 2.0;
+  const HEALTHY_VOUCH_COUNT = 4.0;
+  const HEALTHY_REDUNDANCY = 18.0;
   const SCORE_CEILING = 99;
 
   const avgVouchers = statsData ? (statsData.totalEndorsements / Math.max(statsData.totalUsers, 1)) : 0;
   const flowRatio = Math.min(1.0, avgVouchers / HEALTHY_VOUCH_COUNT);
-  const flowComponent = 60 * Math.pow(flowRatio, SCALING_EXPONENT);
+  const flowComponent = 60 * flowRatio;
   
   const estimatedRedundancy = avgVouchers * 1.5;
   const redundancyRatio = Math.min(1.0, estimatedRedundancy / HEALTHY_REDUNDANCY);
-  const redundancyComponent = 40 * Math.pow(redundancyRatio, SCALING_EXPONENT);
+  const redundancyComponent = 40 * redundancyRatio;
   
   const expectedAvgLocalHealth = Math.min(SCORE_CEILING, flowComponent + redundancyComponent);
 
@@ -262,7 +261,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="space-y-6">
                   <div className="bg-background rounded-lg p-6 font-mono text-sm overflow-x-auto">
-                    <div className="text-muted-foreground mb-3">// LocalHealth = 60 × (flowRatio)² + 40 × (redundancyRatio)² × vouchQuality</div>
+                    <div className="text-muted-foreground mb-3">// LocalHealth = 60 × flowScore + 40 × redundancyRatio</div>
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="font-bold text-lg" style={{ color: 'hsl(var(--score-growth))' }}>LocalHealth</span>
                       <span>=</span>
@@ -282,19 +281,19 @@ export default function Dashboard() {
                     <div className="space-y-2">
                       <div className="font-medium">Flow Component (60 pts max)</div>
                       <div className="text-muted-foreground">
-                        60 × (vouches / {HEALTHY_VOUCH_COUNT})² = {flowComponent.toFixed(1)}
+                        60 × (vouches / {HEALTHY_VOUCH_COUNT}) = {flowComponent.toFixed(1)}
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="font-medium">Min-Cut Component (40 pts max)</div>
                       <div className="text-muted-foreground">
-                        40 × (minCut / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
+                        40 × (minCut / {HEALTHY_REDUNDANCY}) = {redundancyComponent.toFixed(1)}
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-medium">Iterative Convergence</div>
+                      <div className="font-medium">Tiered Capacity Weighting</div>
                       <div className="text-muted-foreground">
-                        PageRank-style with voucher weighting
+                        Voucher quality: 0.08 (new) → 0.30 → 1.0 (100)
                       </div>
                     </div>
                   </div>
@@ -336,8 +335,8 @@ export default function Dashboard() {
                       <Badge variant="outline">40 pts</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Scaling Exponent</span>
-                      <Badge variant="outline">{SCALING_EXPONENT}</Badge>
+                      <span className="text-sm text-muted-foreground">Scaling</span>
+                      <Badge variant="outline">Linear</Badge>
                     </div>
                     <Separator />
                     <div className="flex justify-between items-center">
