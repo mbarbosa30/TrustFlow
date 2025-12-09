@@ -69,7 +69,7 @@ export function VouchTimelineChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
+            <Calendar className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
             Network Activity Timeline
           </span>
           <div className="flex items-center gap-2">
@@ -90,8 +90,8 @@ export function VouchTimelineChart() {
             <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorVouches" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                  <stop offset="5%" stopColor="hsl(var(--score-transition))" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="hsl(var(--score-transition))" stopOpacity={0.1}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -123,7 +123,7 @@ export function VouchTimelineChart() {
                 yAxisId="left"
                 dataKey="vouches" 
                 name="Daily Vouches"
-                fill="hsl(var(--primary))"
+                fill="hsl(var(--score-transition))"
                 radius={[4, 4, 0, 0]}
               />
               <Line 
@@ -151,7 +151,7 @@ export function VouchTimelineChart() {
         
         <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t text-center">
           <div>
-            <div className="text-lg font-bold text-primary">{latest?.cumulativeVouches || 0}</div>
+            <div className="text-lg font-bold" style={{ color: 'hsl(var(--score-transition))' }}>{latest?.cumulativeVouches || 0}</div>
             <div className="text-xs text-muted-foreground">Total Vouches</div>
           </div>
           <div>

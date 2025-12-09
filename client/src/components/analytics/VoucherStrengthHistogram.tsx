@@ -71,7 +71,7 @@ export function VoucherStrengthHistogram() {
   }
 
   const getBarColor = (bucket: HistogramBucket) => {
-    if (bucket.min >= 60) return 'hsl(var(--primary))';
+    if (bucket.min >= 60) return 'hsl(var(--score-canopy))';
     if (bucket.min >= 30) return 'hsl(var(--accent-foreground))';
     return 'hsl(var(--muted-foreground))';
   };
@@ -87,7 +87,7 @@ export function VoucherStrengthHistogram() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
+            <Users className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
             Voucher Strength
           </span>
           <div className="flex items-center gap-2">

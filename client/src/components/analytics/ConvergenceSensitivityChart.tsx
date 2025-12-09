@@ -80,7 +80,7 @@ export function ConvergenceSensitivityChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
+            <Activity className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
             Convergence Sensitivity
           </span>
           <div className="flex items-center gap-2">
@@ -124,7 +124,7 @@ export function ConvergenceSensitivityChart() {
                 dataKey="flowChange" 
                 name="Flow Change"
                 stackId="a"
-                fill="hsl(var(--primary))"
+                fill="hsl(var(--score-transition))"
               />
               <Bar 
                 dataKey="redundancyChange" 
@@ -138,7 +138,7 @@ export function ConvergenceSensitivityChart() {
         
         <div className="mt-6 space-y-4">
           <div className="flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-primary" />
+            <Gauge className="w-4 h-4" style={{ color: 'hsl(var(--score-transition))' }} />
             <span className="text-sm font-medium">Component Dominance</span>
           </div>
           

@@ -68,7 +68,7 @@ export function FlowRedundancyScatter() {
   }
 
   const getColor = (localHealth: number) => {
-    if (localHealth >= 60) return 'hsl(var(--primary))';
+    if (localHealth >= 60) return 'hsl(var(--score-canopy))';
     if (localHealth >= 30) return 'hsl(var(--accent-foreground))';
     return 'hsl(var(--muted-foreground))';
   };
@@ -78,7 +78,7 @@ export function FlowRedundancyScatter() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <GitBranch className="w-5 h-5 text-primary" />
+            <GitBranch className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
             Component Correlation
           </span>
           <div className="flex items-center gap-2">

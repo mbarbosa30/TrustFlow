@@ -80,7 +80,7 @@ export function DilutionPressureChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Scale className="w-5 h-5 text-primary" />
+            <Scale className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
             Dilution Pressure
           </span>
           <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export function DilutionPressureChart() {
         ) : (
           <div className="h-64 flex items-center justify-center text-muted-foreground" data-testid="text-no-penalties">
             <div className="text-center">
-              <Scale className="w-12 h-12 mx-auto mb-3 text-primary/30" />
+              <Scale className="w-12 h-12 mx-auto mb-3" style={{ color: 'hsl(var(--score-transition) / 0.3)' }} />
               <p>No endorsers with dilution penalties</p>
               <p className="text-xs mt-1">All endorsers have 10 or fewer vouches</p>
             </div>

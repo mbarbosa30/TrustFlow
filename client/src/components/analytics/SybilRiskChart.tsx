@@ -95,7 +95,7 @@ export function SybilRiskChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+            <Shield className="w-5 h-5" style={{ color: 'hsl(var(--score-canopy))' }} />
             Sybil Risk Radar
           </span>
           {getOverallBadge(data.overallRisk)}
@@ -159,7 +159,7 @@ export function SybilRiskChart() {
         {data.riskIndicators.length > 0 && (
           <div className="mt-4 pt-4 border-t">
             <div className="flex items-center gap-2 mb-3">
-              <Eye className="w-4 h-4 text-primary" />
+              <Eye className="w-4 h-4" style={{ color: 'hsl(var(--score-dormant))' }} />
               <span className="text-sm font-medium">Flagged Users</span>
             </div>
             <ScrollArea className="h-28" data-testid="list-flagged-users">

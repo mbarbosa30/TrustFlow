@@ -134,7 +134,7 @@ export function AdaptiveBaselineMonitor() {
 
         <div className="bg-muted/50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-primary" />
+            <TrendingUp className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
             <span className="text-sm font-medium">Network Statistics</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
@@ -162,8 +162,8 @@ export function AdaptiveBaselineMonitor() {
               </div>
               <div className="text-xs text-muted-foreground">Median</div>
             </div>
-            <div className="bg-primary/10 rounded p-1">
-              <div className="text-lg font-bold text-primary" data-testid="text-p75-vouch-count">
+            <div className="rounded p-1" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+              <div className="text-lg font-bold" style={{ color: 'hsl(var(--score-growth))' }} data-testid="text-p75-vouch-count">
                 {data.networkStats.p75VouchCount}
               </div>
               <div className="text-xs text-muted-foreground">75th Percentile</div>

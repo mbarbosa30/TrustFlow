@@ -58,7 +58,7 @@ export function ConvergenceChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
+            <Activity className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
             Iterative Convergence
           </span>
           <div className="flex items-center gap-2">
@@ -86,8 +86,8 @@ export function ConvergenceChart() {
             <ComposedChart data={data.residualDecay} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorMaxChange" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="hsl(var(--score-growth))" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="hsl(var(--score-growth))" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />

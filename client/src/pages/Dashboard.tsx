@@ -66,8 +66,8 @@ export default function Dashboard() {
           {/* Header with Key Metrics */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/10">
-                <Network className="w-8 h-8 text-primary" />
+              <div className="p-3 rounded-xl" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <Network className="w-8 h-8" style={{ color: 'hsl(var(--score-growth))' }} />
               </div>
               <div>
                 <h1 className="text-3xl font-bold" data-testid="heading-dashboard">Trust Network</h1>
@@ -89,10 +89,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-                    <Heart className="w-4 h-4 text-primary" />
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)' }}>
+                    <Heart className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
                     <span className="text-sm text-muted-foreground">Avg LocalHealth</span>
-                    <span className="text-xl font-bold text-primary" data-testid="text-avg-local-health">
+                    <span className="text-xl font-bold" style={{ color: 'hsl(var(--score-growth))' }} data-testid="text-avg-local-health">
                       {localHealthData.avgLocalHealth.toFixed(1)}
                     </span>
                   </div>
@@ -123,7 +123,7 @@ export default function Dashboard() {
           {/* Flow Analytics Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-6 h-6 text-primary" />
+              <Zap className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
               <div>
                 <h2 className="text-2xl font-bold">Flow Analytics</h2>
                 <p className="text-sm text-muted-foreground">Max-flow/min-cut metrics powering LocalHealth computation</p>
@@ -135,7 +135,7 @@ export default function Dashboard() {
               <Card data-testid="card-flow-saturation-metric">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Gauge className="w-4 h-4 text-primary" />
+                    <Gauge className="w-4 h-4" style={{ color: 'hsl(var(--score-transition))' }} />
                     Flow Saturation
                   </CardTitle>
                 </CardHeader>
@@ -154,7 +154,7 @@ export default function Dashboard() {
               <Card data-testid="card-vouch-density">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <GitBranch className="w-4 h-4 text-primary" />
+                    <GitBranch className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
                     Vouch Density
                   </CardTitle>
                 </CardHeader>
@@ -173,7 +173,7 @@ export default function Dashboard() {
               <Card data-testid="card-redundancy-score">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
+                    <Layers className="w-4 h-4" style={{ color: 'hsl(var(--score-dormant))' }} />
                     Redundancy Index
                   </CardTitle>
                 </CardHeader>
@@ -192,7 +192,7 @@ export default function Dashboard() {
               <Card data-testid="card-network-coverage">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
+                    <Shield className="w-4 h-4" style={{ color: 'hsl(var(--score-canopy))' }} />
                     Network Coverage
                   </CardTitle>
                 </CardHeader>
@@ -214,7 +214,7 @@ export default function Dashboard() {
             <Card className="bg-muted/30" data-testid="card-live-formula">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
+                  <Target className="w-5 h-5" style={{ color: 'hsl(var(--score-transition))' }} />
                   LocalHealth Formula (Live Computation)
                 </CardTitle>
                 <CardDescription>
@@ -226,7 +226,7 @@ export default function Dashboard() {
                   <div className="bg-background rounded-lg p-6 font-mono text-sm overflow-x-auto">
                     <div className="text-muted-foreground mb-3">// LocalHealth = 60 × (flowRatio)² + 40 × (redundancyRatio)² × vouchQuality</div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-primary font-bold text-lg">LocalHealth</span>
+                      <span className="font-bold text-lg" style={{ color: 'hsl(var(--score-growth))' }}>LocalHealth</span>
                       <span>=</span>
                       <span className="px-3 py-2 bg-blue-500/10 rounded text-base" data-testid="text-flow-component">{flowComponent.toFixed(1)}</span>
                       <span className="text-muted-foreground text-xs">(flow)</span>
@@ -234,7 +234,7 @@ export default function Dashboard() {
                       <span className="px-3 py-2 bg-accent/30 rounded text-base" data-testid="text-redundancy-component">{redundancyComponent.toFixed(1)}</span>
                       <span className="text-muted-foreground text-xs">(redundancy)</span>
                       <span>=</span>
-                      <span className="px-4 py-2 bg-primary text-primary-foreground rounded font-bold text-lg" data-testid="text-expected-local-health">
+                      <span className="px-4 py-2 rounded font-bold text-lg" style={{ backgroundColor: 'hsl(var(--score-growth))', color: 'white' }} data-testid="text-expected-local-health">
                         {expectedAvgLocalHealth.toFixed(1)}
                       </span>
                     </div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
               <Card data-testid="card-local-health-algorithm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Heart className="w-5 h-5 text-primary" />
+                    <Heart className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
                     Algorithm Parameters
                   </CardTitle>
                   <CardDescription>
@@ -326,7 +326,7 @@ export default function Dashboard() {
           {/* Algorithm Analytics Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <BarChart3 className="w-6 h-6 text-primary" />
+              <BarChart3 className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
               <div>
                 <h2 className="text-2xl font-bold">Algorithm Analytics</h2>
                 <p className="text-sm text-muted-foreground">Convergence telemetry, flow dynamics, and vouch strength distributions</p>
@@ -350,7 +350,7 @@ export default function Dashboard() {
           {/* Network Timeline */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <TrendingUp className="w-6 h-6 text-primary" />
+              <TrendingUp className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
               <div>
                 <h2 className="text-2xl font-bold">Network Timeline</h2>
                 <p className="text-sm text-muted-foreground">Vouch activity and user growth over real timestamps</p>
@@ -366,7 +366,7 @@ export default function Dashboard() {
           {/* Algorithm Enhancements Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <Shield className="w-6 h-6 text-primary" />
+              <Shield className="w-6 h-6" style={{ color: 'hsl(var(--score-canopy))' }} />
               <div>
                 <h2 className="text-2xl font-bold">Security & Algorithm Enhancements</h2>
                 <p className="text-sm text-muted-foreground">Vertex-disjoint paths, piecewise dilution curves, and adaptive baselines</p>
@@ -385,7 +385,7 @@ export default function Dashboard() {
           {/* Network Health & Risk Section */}
           <section>
             <div className="flex items-center gap-3 mb-8">
-              <AlertTriangle className="w-6 h-6 text-primary" />
+              <AlertTriangle className="w-6 h-6" style={{ color: 'hsl(var(--score-dormant))' }} />
               <div>
                 <h2 className="text-2xl font-bold">Network Health & Risks</h2>
                 <p className="text-sm text-muted-foreground">Vulnerability detection, influence concentration, and resilience analysis</p>

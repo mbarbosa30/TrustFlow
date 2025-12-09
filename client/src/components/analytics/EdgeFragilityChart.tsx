@@ -82,7 +82,7 @@ export function EdgeFragilityChart() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <Link2 className="w-5 h-5 text-primary" />
+            <Link2 className="w-5 h-5" style={{ color: 'hsl(var(--score-dormant))' }} />
             Edge Fragility
           </span>
           <div className="flex items-center gap-2">

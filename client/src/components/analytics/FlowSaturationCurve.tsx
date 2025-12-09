@@ -68,7 +68,7 @@ export function FlowSaturationCurve() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-primary" />
+            <TrendingUp className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
             Flow Saturation Curve
           </span>
           <div className="flex items-center gap-2">
@@ -86,8 +86,8 @@ export function FlowSaturationCurve() {
             <ComposedChart margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorTheoretical" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="hsl(var(--score-growth))" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="hsl(var(--score-growth))" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -122,7 +122,7 @@ export function FlowSaturationCurve() {
                 type="monotone" 
                 dataKey="flowComponent" 
                 name="Theoretical Flow"
-                stroke="hsl(var(--primary))" 
+                stroke="hsl(var(--score-growth))" 
                 fill="url(#colorTheoretical)"
                 strokeWidth={2}
               />
@@ -138,7 +138,7 @@ export function FlowSaturationCurve() {
         
         <div className="mt-4 pt-4 border-t">
           <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-4 h-4 text-primary" />
+            <Zap className="w-4 h-4" style={{ color: 'hsl(var(--score-transition))' }} />
             <span className="text-sm font-medium">Algorithm Formula</span>
           </div>
           <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs">
