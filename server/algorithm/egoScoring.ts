@@ -699,10 +699,14 @@ export class EgoScorer {
     globalVouches: EgoEndorsement[],
     voucherScores?: Map<string, number>
   ): EgoScoreResult {
+    // CRITICAL: Normalize ownerAddress to lowercase for consistent graph construction
+    // This prevents case mismatches between FlowGraph sink and edge destinations
+    const normalizedOwner = ownerAddress.toLowerCase() as Address;
+    
     // Find everyone who vouched for the owner (direct vouchers)
     const directVouchers = globalVouches
-      .filter(v => v.endorsee.toLowerCase() === ownerAddress.toLowerCase())
-      .map(v => v.endorser);
+      .filter(v => v.endorsee.toLowerCase() === normalizedOwner)
+      .map(v => v.endorser.toLowerCase() as Address);
 
     if (directVouchers.length === 0) {
       return {
@@ -728,11 +732,11 @@ export class EgoScorer {
     );
     
     // Remove owner from ego subgraph (owner shouldn't count toward depth/connectivity metrics)
-    egoSubgraph.delete(ownerAddress.toLowerCase());
+    egoSubgraph.delete(normalizedOwner);
 
     // Step 2: Compute direct flow (SOURCE → vouchers → owner) for flow component
     const SOURCE = "SOURCE";
-    const directGraph = new FlowGraph(SOURCE, ownerAddress);
+    const directGraph = new FlowGraph(SOURCE, normalizedOwner);
 
     // Connect source to all direct vouchers with unit capacity
     for (const voucher of directVouchers) {
@@ -745,10 +749,10 @@ export class EgoScorer {
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       if (voucherScores) {
-        const voucherScore = voucherScores.get(voucher.toLowerCase()) ?? 50; // Default to mid-range
+        const voucherScore = voucherScores.get(voucher) ?? 50; // Default to mid-range (voucher already lowercase)
         capacity = voucherScore / 100; // Normalize 0-100 score to 0-1 capacity
       }
-      directGraph.addEdge(voucher, ownerAddress, capacity);
+      directGraph.addEdge(voucher, normalizedOwner, capacity);
     }
 
     const directFlowSolver = new DinicMaxFlow(directGraph);
@@ -770,13 +774,13 @@ export class EgoScorer {
     // Build multi-hop flow graph for min-cut computation
     // SOURCE → all upstream nodes in ego subgraph → direct vouchers → OWNER
     const MINCUT_SOURCE = "SOURCE_MINCUT";
-    const multiHopGraph = new FlowGraph(MINCUT_SOURCE, ownerAddress);
+    const multiHopGraph = new FlowGraph(MINCUT_SOURCE, normalizedOwner);
     
     // Add all nodes in ego subgraph to the flow graph
     for (const nodeAddr of Array.from(egoSubgraph)) {
       multiHopGraph.addNode(nodeAddr);
     }
-    multiHopGraph.addNode(ownerAddress.toLowerCase());
+    multiHopGraph.addNode(normalizedOwner);
     
     // Find root nodes (nodes with no incoming edges within ego subgraph)
     // These are the ultimate sources of trust
@@ -810,7 +814,7 @@ export class EgoScorer {
     
     // Add direct voucher → owner edges
     for (const voucher of directVouchers) {
-      multiHopGraph.addEdge(voucher.toLowerCase(), ownerAddress.toLowerCase(), 1.0);
+      multiHopGraph.addEdge(voucher, normalizedOwner, 1.0);
     }
     
     // Compute actual min-cut using Dinic's algorithm
@@ -868,7 +872,7 @@ export class EgoScorer {
     // Apply dilution penalty for outgoing vouches
     // Uses piecewise curve if enabled for smoother incentives (prevents gaming thresholds)
     const outgoingVouchees = globalVouches
-      .filter(v => v.endorser.toLowerCase() === ownerAddress.toLowerCase());
+      .filter(v => v.endorser.toLowerCase() === normalizedOwner);
     
     let vouchQualityFactor: number;
     if (this.config.usePiecewiseDilution) {
