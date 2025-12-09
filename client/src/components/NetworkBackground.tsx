@@ -49,10 +49,10 @@ export function NetworkBackground() {
       nodes.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        size: 2 + Math.random() * 3,
-        opacity: 0.15 + Math.random() * 0.25,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        size: 4 + Math.random() * 5,
+        opacity: 0.4 + Math.random() * 0.3,
       });
     }
 
@@ -62,13 +62,13 @@ export function NetworkBackground() {
         const dx = nodes[i].x - nodes[j].x;
         const dy = nodes[i].y - nodes[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < connectionDistance && Math.random() > 0.6) {
+        if (dist < connectionDistance && Math.random() > 0.4) {
           edges.push({
             from: i,
             to: j,
-            opacity: 0.08 + Math.random() * 0.12,
+            opacity: 0.25 + Math.random() * 0.2,
             flowOffset: Math.random() * 100,
-            flowSpeed: 0.3 + Math.random() * 0.4,
+            flowSpeed: 0.4 + Math.random() * 0.5,
           });
         }
       }
@@ -112,7 +112,7 @@ export function NetworkBackground() {
         ctx.moveTo(fromNode.x, fromNode.y);
         ctx.lineTo(toNode.x, toNode.y);
         ctx.strokeStyle = `hsla(200, 65%, 55%, ${fadeOpacity})`;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
 
         const flowPos = ((time * edge.flowSpeed + edge.flowOffset) % 1);
@@ -120,8 +120,8 @@ export function NetworkBackground() {
         const pulseY = fromNode.y + dy * flowPos;
         
         ctx.beginPath();
-        ctx.arc(pulseX, pulseY, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(200, 70%, 60%, ${fadeOpacity * 1.5})`;
+        ctx.arc(pulseX, pulseY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(200, 75%, 65%, ${fadeOpacity * 2})`;
         ctx.fill();
       }
 
@@ -154,7 +154,7 @@ export function NetworkBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 1 }}
       data-testid="canvas-network-background"
     />
   );
