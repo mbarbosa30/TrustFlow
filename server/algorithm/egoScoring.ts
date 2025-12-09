@@ -746,11 +746,18 @@ export class EgoScorer {
     // Add direct voucher → owner edges weighted by voucher strength
     // If voucherScores provided, weight by voucher's LocalHealth (normalized to 0-1)
     // Otherwise use unit capacity for initial/single-pass calculation
+    // 
+    // IMPORTANT: Use floored linear weighting to prevent feedback loop collapse
+    // The floor prevents scores from collapsing to zero in iterative computation
+    // Combined with quadratic scaling in score formula, this maintains stable equilibrium
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       if (voucherScores) {
         const voucherScore = voucherScores.get(voucher) ?? 50; // Default to mid-range (voucher already lowercase)
-        capacity = voucherScore / 100; // Normalize 0-100 score to 0-1 capacity
+        // Floored linear weighting: minimum 0.3, maximum 1.0
+        // This prevents iterative collapse while still rewarding high-quality vouchers
+        // score=100→1.0, score=50→0.65, score=25→0.475, score=0→0.3
+        capacity = 0.3 + 0.7 * (voucherScore / 100);
       }
       directGraph.addEdge(voucher, normalizedOwner, capacity);
     }
