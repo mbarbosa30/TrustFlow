@@ -702,9 +702,9 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="LocalHealth Score Formula (v1.2)" testId="formula-localhealth">
+            <FormulaBox label="LocalHealth Score Formula (v1.4 — Linear Scaling)" testId="formula-localhealth">
               <BlockFormula>
-                {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i^2 \\;+\\; 40 \\cdot \\big(d_i^2 \\cdot D_i\\big) }"}
+                {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i \\;+\\; 40 \\cdot d_i \\cdot D_i }"}
               </BlockFormula>
             </FormulaBox>
 
@@ -712,13 +712,13 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">60% Flow Component</div>
                 <p className="text-sm text-muted-foreground">
-                  Who vouches for you, weighted by their own scores (quadratic scaling). High-quality vouchers matter more.
+                  Who vouches for you, weighted by tiered capacity (0.08 floor for sockpuppets, sqrt scaling for high scores). High-quality vouchers matter more.
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">40% Structure Component</div>
                 <p className="text-sm text-muted-foreground">
-                  True min-cut (quadratic) × accountability penalty. Min-cut measures Sybil resistance via Dinic's algorithm, with bonuses for vertex-disjoint paths.
+                  True min-cut (linear) × accountability penalty. Min-cut measures Sybil resistance via Dinic's algorithm, with bonuses for vertex-disjoint paths (up to 10 pts).
                 </p>
               </div>
             </div>
@@ -755,12 +755,12 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="Effective Redundancy (v1.3 — True Min-Cut)" testId="formula-redundancy">
+            <FormulaBox label="Effective Redundancy (v1.4 — True Min-Cut)" testId="formula-redundancy">
               <BlockFormula>
-                {"\\rho_i = \\text{minCut}_i + \\lambda_{\\text{depth}} \\cdot u + \\min(5, \\max(0, \\text{vdp} - 1))"}
+                {"\\rho_i = \\text{minCut}_i + \\lambda_{\\text{depth}} \\cdot u + \\min(10, 2 \\cdot \\max(0, \\text{vdp} - 1))"}
               </BlockFormula>
               <p className="text-sm text-muted-foreground text-center mt-2">
-                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.1"}</InlineFormula>, vdp = vertex-disjoint paths
+                <InlineFormula>{"\\lambda_{\\text{depth}} = 0.1"}</InlineFormula>, vdp = vertex-disjoint paths, max VDP bonus = 10 pts
               </p>
             </FormulaBox>
 
@@ -776,7 +776,7 @@ export default function Whitepaper() {
             
             <p className="leading-relaxed">
               The redundancy score <InlineFormula>{"d_i = \\min(1, \\rho_i / R_0)"}</InlineFormula> normalizes against 
-              an <strong>adaptive baseline</strong>: <InlineFormula>{"R_0 = F_0 \\times 4.5"}</InlineFormula> (clamped to [15, 60], fallback: 35). 
+              an <strong>adaptive baseline</strong>: <InlineFormula>{"R_0 = 18.0"}</InlineFormula> (HEALTHY_REDUNDANCY, computed from network percentiles). 
               Users with high min-cut and diverse paths approach <InlineFormula>{"d_i = 1"}</InlineFormula>; isolated accounts stay near zero.
             </p>
           </CardContent>
@@ -883,27 +883,27 @@ export default function Whitepaper() {
 
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">Flow Score (with adaptive F₀=8):</strong>{" "}
-                <InlineFormula>{"\\phi = \\min(1, 2.60/8) = 0.325"}</InlineFormula>
+                <strong className="text-sm">Flow Score (with HEALTHY_VOUCH_COUNT=4.0):</strong>{" "}
+                <InlineFormula>{"\\phi = \\min(1, 2.60/4.0) = 0.65"}</InlineFormula>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong className="text-sm">Flow Points:</strong>{" "}
-                <InlineFormula>{"60 \\times 0.325^2 = 6.34"}</InlineFormula>
+                <strong className="text-sm">Flow Points (v1.4 linear):</strong>{" "}
+                <InlineFormula>{"60 \\times 0.65 = 39.0"}</InlineFormula>
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <strong className="text-sm">Assuming</strong> <InlineFormula>{"d = 0.7"}</InlineFormula> (redundancy), <InlineFormula>{"D = 1.0"}</InlineFormula> (no dilution):
                 <br />
-                <strong className="text-sm">Structure Points (v1.2):</strong>{" "}
-                <InlineFormula>{"40 \\times 0.7^2 \\times 1.0 = 19.6"}</InlineFormula>
+                <strong className="text-sm">Structure Points (v1.4 linear):</strong>{" "}
+                <InlineFormula>{"40 \\times 0.7 \\times 1.0 = 28.0"}</InlineFormula>
               </div>
             </div>
 
             <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <div className="font-semibold text-center">
-                <InlineFormula>{"\\mathrm{LocalHealth}_{Alice} = 6.34 + 19.6 = 25.94"}</InlineFormula>
+                <InlineFormula>{"\\mathrm{LocalHealth}_{Alice} = 39.0 + 28.0 = 67.0"}</InlineFormula>
               </div>
               <p className="text-sm text-muted-foreground text-center mt-2">
-                Alice would benefit from more vouchers or higher-quality vouchers to increase her score.
+                Alice has a solid network. More vouchers from high-score users would increase her flow component further.
               </p>
             </div>
           </CardContent>
@@ -1502,7 +1502,7 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <div className="font-semibold mb-1">Vertex-Disjoint Paths</div>
                 <p className="text-muted-foreground text-xs">
-                  Node-splitting max-flow counts truly independent paths. Bonus redundancy for multiple disjoint paths (up to +5 points).
+                  Node-splitting max-flow counts truly independent paths. Bonus redundancy for multiple disjoint paths (up to +10 points, 2 pts per path).
                 </p>
               </div>
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
@@ -1675,7 +1675,7 @@ export default function Whitepaper() {
             <div className="p-3 rounded-lg bg-muted/30">
               <strong className="text-sm">Adaptive Baselines</strong>
               <p className="text-sm text-muted-foreground mt-1">
-                F₀ now computed from 75th percentile of incoming vouch counts (clamped 4-15). R₀ = F₀ × 4.5 (clamped 15-60). 
+                HEALTHY_VOUCH_COUNT = 4.0, HEALTHY_REDUNDANCY = 18.0 (computed from network percentiles). 
                 Enables algorithm to scale with network growth.
               </p>
             </div>
@@ -1696,8 +1696,15 @@ export default function Whitepaper() {
             <div className="p-3 rounded-lg bg-muted/30">
               <strong className="text-sm">Vertex-Disjoint Path Bonus</strong>
               <p className="text-sm text-muted-foreground mt-1">
-                +1 redundancy per independent path (capped at 5). Computed via max-flow with node splitting 
+                +2 redundancy per independent path (capped at 10). Computed via max-flow with node splitting 
                 for stronger Sybil resistance.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Linear Scaling (v1.4)</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Replaced squared formula with linear 60/40 weighting. Tiered capacity: 0.08 floor for sockpuppets, 
+                0.08-0.30 linear for scores 1-30, 0.30-1.0 sqrt for scores 31+.
               </p>
             </div>
           </CardContent>
