@@ -93,6 +93,7 @@ export interface AlgorithmComponents {
   flowComponent: number;
   redundancyComponent: number;
   directFlow: number;
+  actualMinCut: number;
   effectiveRedundancy: number;
   dilutionFactor: number;
   vertexDisjointPaths: number;

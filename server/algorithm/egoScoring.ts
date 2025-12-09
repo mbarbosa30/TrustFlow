@@ -762,33 +762,84 @@ export class EgoScorer {
       ? Math.min(1.0, directFlow / directVouchers.length)
       : 0;
 
-    // Step 3: Compute effective redundancy using network metrics (simpler & more accurate)
-    // Redundancy = combination of vouch count + network depth + connectivity
+    // Step 3: Compute TRUE MIN-CUT using max-flow algorithm (Sybil-resistant metric)
+    // Min-cut measures the minimum number of edges that must be removed to disconnect
+    // the voucher sources from the owner - this is the core Sybil resistance metric
     const egoSize = egoSubgraph.size;
     
-    // Count edges in ego subgraph (measures connectivity/redundancy)
+    // Build multi-hop flow graph for min-cut computation
+    // SOURCE → all upstream nodes in ego subgraph → direct vouchers → OWNER
+    const MINCUT_SOURCE = "SOURCE_MINCUT";
+    const multiHopGraph = new FlowGraph(MINCUT_SOURCE, ownerAddress);
+    
+    // Add all nodes in ego subgraph to the flow graph
+    for (const nodeAddr of Array.from(egoSubgraph)) {
+      multiHopGraph.addNode(nodeAddr);
+    }
+    multiHopGraph.addNode(ownerAddress.toLowerCase());
+    
+    // Find root nodes (nodes with no incoming edges within ego subgraph)
+    // These are the ultimate sources of trust
+    const hasIncomingEdge = new Set<string>();
+    for (const { endorser, endorsee } of globalVouches) {
+      const endorserLower = endorser.toLowerCase();
+      const endorseeLower = endorsee.toLowerCase();
+      if (egoSubgraph.has(endorserLower) && egoSubgraph.has(endorseeLower)) {
+        hasIncomingEdge.add(endorseeLower);
+      }
+    }
+    
+    // Connect SOURCE to root nodes (nodes with no incoming edges in ego subgraph)
+    // These represent the ultimate trust sources in the network
+    for (const nodeAddr of Array.from(egoSubgraph)) {
+      if (!hasIncomingEdge.has(nodeAddr)) {
+        multiHopGraph.addEdge(MINCUT_SOURCE, nodeAddr, 1.0);
+      }
+    }
+    
+    // Add all edges within ego subgraph with unit capacity
     let egoEdgeCount = 0;
     for (const { endorser, endorsee } of globalVouches) {
       const endorserLower = endorser.toLowerCase();
       const endorseeLower = endorsee.toLowerCase();
       if (egoSubgraph.has(endorserLower) && egoSubgraph.has(endorseeLower)) {
+        multiHopGraph.addEdge(endorserLower, endorseeLower, 1.0);
         egoEdgeCount++;
       }
     }
     
-    // Effective redundancy metric:
-    // - Base: number of direct vouchers (each vouch = 1 redundancy point)
-    // - Depth bonus: ego size beyond vouchers (each extra node = 0.2 points)
-    // - Connectivity bonus: edge density (edges / potential_edges) * ego_size
-    const baseRedundancy = directVouchers.length;
-    const depthBonus = Math.max(0, egoSize - directVouchers.length) * 0.2;
+    // Add direct voucher → owner edges
+    for (const voucher of directVouchers) {
+      multiHopGraph.addEdge(voucher.toLowerCase(), ownerAddress.toLowerCase(), 1.0);
+    }
     
-    // Edge density: actual edges / potential edges in ego subgraph
+    // Compute actual min-cut using Dinic's algorithm
+    const minCutSolver = new DinicMaxFlow(multiHopGraph);
+    const minCutMaxFlow = minCutSolver.computeMaxFlow();
+    const minCutSet = minCutSolver.computeMinCut();
+    
+    // Calculate min-cut capacity (number of edges crossing the cut)
+    let actualMinCut = 0;
+    for (const nodeId of Array.from(minCutSet)) {
+      const node = multiHopGraph.getNode(nodeId);
+      if (node) {
+        for (const edge of node.edges) {
+          if (!minCutSet.has(edge.to) && edge.capacity > 0) {
+            actualMinCut += edge.capacity;
+          }
+        }
+      }
+    }
+    
+    // Edge density for secondary metrics
     const potentialEdges = egoSize > 1 ? egoSize * (egoSize - 1) : 1;
     const edgeDensity = egoEdgeCount / potentialEdges;
-    const connectivityBonus = edgeDensity * egoSize;
     
-    const effectiveRedundancy = baseRedundancy + depthBonus + connectivityBonus;
+    // Effective redundancy now uses TRUE min-cut as primary metric
+    // Min-cut directly measures Sybil resistance (how many fake accounts needed to attack)
+    // Add small bonus for ego network depth (secondary metric)
+    const depthBonus = Math.max(0, egoSize - directVouchers.length) * 0.1;
+    const effectiveRedundancy = actualMinCut + depthBonus;
 
     // Step 4: Calculate scoring with calibrated healthy baseline
     // CALIBRATION NOTE (Dec 2025): Raised baselines to prevent score saturation
@@ -888,6 +939,7 @@ export class EgoScorer {
         flowComponent: Math.round(flowComponent * 100) / 100,
         redundancyComponent: Math.round(cutComponent * 100) / 100,
         directFlow: Math.round(directFlow * 1000) / 1000,
+        actualMinCut: Math.round(actualMinCut * 100) / 100,
         effectiveRedundancy: Math.round(effectiveRedundancy * 100) / 100,
         dilutionFactor: Math.round(vouchQualityFactor * 1000) / 1000,
         vertexDisjointPaths: disjointPathCount,
