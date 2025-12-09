@@ -42,21 +42,14 @@ export default function Landing() {
     <div className="min-h-screen">
 
       <section 
-        className="relative py-20 md:py-32 px-4 overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, 
-            hsl(var(--score-growth) / 0.12) 0%, 
-            hsl(var(--score-canopy) / 0.08) 50%,
-            hsl(var(--background)) 100%)`
-        }}
+        className="relative py-20 md:py-32 px-4"
+        style={{ background: 'hsl(var(--background))' }}
       >
-        {/* Organic gradient orbs */}
+        {/* Subtle mathematical grid hint - very faint */}
         <div 
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none opacity-[0.02]"
           style={{
-            backgroundImage: `radial-gradient(circle at 10% 80%, hsl(var(--score-growth) / 0.2) 0%, transparent 40%),
-                              radial-gradient(circle at 90% 20%, hsl(var(--score-canopy) / 0.15) 0%, transparent 35%),
-                              radial-gradient(circle at 50% 50%, hsl(var(--score-sun) / 0.08) 0%, transparent 50%)`
+            backgroundImage: `radial-gradient(circle at 61.8% 38.2%, hsl(var(--score-stone)) 0%, transparent 50%)`
           }}
         />
         <div className="max-w-5xl mx-auto text-center relative">
@@ -89,58 +82,42 @@ export default function Landing() {
           </div>
 
           {traction && traction.totalVouchers > 0 && (
-            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-              <div 
-                className="text-center p-4 rounded-xl"
-                style={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--score-growth) / 0.15) 0%, transparent 100%)',
-                  border: '1px solid hsl(var(--score-growth) / 0.3)'
-                }}
-                data-testid="stat-vouchers"
-              >
-                <div className="text-2xl md:text-3xl font-bold" style={{ color: 'hsl(var(--score-growth))' }}>
+            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
+              <div className="text-center" data-testid="stat-vouchers">
+                <div 
+                  className="text-3xl md:text-4xl font-bold tabular-nums" 
+                  style={{ color: 'hsl(var(--score-growth))' }}
+                >
                   {traction.totalVouchers.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Vouchers</div>
+                <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Vouchers</div>
               </div>
-              <div 
-                className="text-center p-4 rounded-xl"
-                style={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--score-sun) / 0.15) 0%, transparent 100%)',
-                  border: '1px solid hsl(var(--score-sun) / 0.3)'
-                }}
-                data-testid="stat-vouches"
-              >
-                <div className="text-2xl md:text-3xl font-bold" style={{ color: 'hsl(var(--score-sun))' }}>
+              <div className="text-center" data-testid="stat-vouches">
+                <div 
+                  className="text-3xl md:text-4xl font-bold tabular-nums" 
+                  style={{ color: 'hsl(var(--score-sun))' }}
+                >
                   {traction.totalVouches.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Vouches</div>
+                <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Vouches</div>
               </div>
-              <div 
-                className="text-center p-4 rounded-xl"
-                style={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--score-canopy) / 0.15) 0%, transparent 100%)',
-                  border: '1px solid hsl(var(--score-canopy) / 0.3)'
-                }}
-                data-testid="stat-scored-users"
-              >
-                <div className="text-2xl md:text-3xl font-bold" style={{ color: 'hsl(var(--score-canopy))' }}>
+              <div className="text-center" data-testid="stat-scored-users">
+                <div 
+                  className="text-3xl md:text-4xl font-bold tabular-nums" 
+                  style={{ color: 'hsl(var(--score-canopy))' }}
+                >
                   {traction.scoredUsers}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Scored Users</div>
+                <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Scored Users</div>
               </div>
-              <div 
-                className="text-center p-4 rounded-xl"
-                style={{ 
-                  background: 'linear-gradient(135deg, hsl(var(--score-stone) / 0.15) 0%, transparent 100%)',
-                  border: '1px solid hsl(var(--score-stone) / 0.3)'
-                }}
-                data-testid="stat-avg-signal"
-              >
-                <div className="text-2xl md:text-3xl font-bold" style={{ color: 'hsl(var(--score-stone))' }}>
+              <div className="text-center" data-testid="stat-avg-signal">
+                <div 
+                  className="text-3xl md:text-4xl font-bold tabular-nums" 
+                  style={{ color: 'hsl(var(--score-stone))' }}
+                >
                   {traction.avgLocalHealth}
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Avg Signal</div>
+                <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Avg Signal</div>
               </div>
             </div>
           )}

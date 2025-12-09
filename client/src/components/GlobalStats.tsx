@@ -23,31 +23,12 @@ function StatCard({ icon: Icon, title, value, subtitle, biome }: StatCardProps) 
   const colorVar = biomeVars[biome];
   
   return (
-    <Card 
-      className="card-biome overflow-hidden relative"
-      style={{ 
-        borderColor: `hsl(var(${colorVar}) / 0.3)`,
-        borderWidth: '1px'
-      }}
-    >
-      <div 
-        className="absolute inset-0 opacity-[0.12]"
-        style={{ background: `linear-gradient(135deg, hsl(var(${colorVar})) 0%, transparent 70%)` }}
-      />
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3 relative">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
         <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
-        <div 
-          className="p-2.5 rounded-xl" 
-          style={{ 
-            backgroundColor: `hsl(var(${colorVar}) / 0.15)`, 
-            color: `hsl(var(${colorVar}))`,
-            boxShadow: `0 0 20px hsl(var(${colorVar}) / 0.1)`
-          }}
-        >
-          <Icon className="h-5 w-5" />
-        </div>
+        <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
-      <CardContent className="relative">
+      <CardContent>
         <div 
           className="text-3xl font-bold tabular-nums" 
           style={{ color: `hsl(var(${colorVar}))` }}

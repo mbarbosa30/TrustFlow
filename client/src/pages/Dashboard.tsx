@@ -65,23 +65,7 @@ export default function Dashboard() {
           Primary visual hierarchy - the most important metrics at a glance
           Uses golden ratio proportions and organic breathing animations
           ═══════════════════════════════════════════════════════════════════════════ */}
-      <div 
-        className="w-full relative overflow-hidden"
-        style={{ 
-          background: `linear-gradient(135deg, 
-            hsl(var(--score-growth) / 0.15) 0%, 
-            hsl(var(--score-canopy) / 0.12) 50%,
-            hsl(var(--background)) 100%)`
-        }}
-      >
-        {/* Organic mesh overlay - more visible */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `radial-gradient(circle at 15% 85%, hsl(var(--score-growth) / 0.25) 0%, transparent 45%),
-                              radial-gradient(circle at 85% 15%, hsl(var(--score-canopy) / 0.2) 0%, transparent 35%)`
-          }}
-        />
+      <div className="w-full relative" style={{ background: 'hsl(var(--background))' }}>
         <div className="max-w-[1800px] mx-auto px-6 py-12 relative">
           {/* Header with Title */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10">
@@ -165,15 +149,7 @@ export default function Dashboard() {
           BAND 2: NETWORK HEALTH VITALS
           Secondary metrics - quick health indicators using Fibonacci grid
           ═══════════════════════════════════════════════════════════════════════════ */}
-      <div 
-        className="relative"
-        style={{ 
-          background: `linear-gradient(180deg, 
-            hsl(var(--background)) 0%,
-            hsl(var(--score-sun) / 0.08) 50%,
-            hsl(var(--background)) 100%)`
-        }}
-      >
+      <div className="relative" style={{ background: 'hsl(var(--background))' }}>
         <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="space-y-20">
           
