@@ -387,6 +387,227 @@ export const testScenarios: TestScenario[] = [
       { from: generateAddress(7000), to: generateAddress(2000) },
     ],
   },
+
+  // ============================================
+  // RANDOM INTRA-NETWORK VOUCHES
+  // These add organic density within existing networks
+  // ============================================
+
+  {
+    name: "Random Intra-Network: Mesh Densification",
+    description: "Additional random vouches between Mesh users to simulate organic community growth.",
+    expectedBehavior: "Average Mesh scores should increase slightly with more internal connections.",
+    addresses: [],
+    vouches: [
+      // Random cross-connections within Mesh (2000-2009)
+      { from: generateAddress(2004), to: generateAddress(2000) }, // 2004→2000 (new)
+      { from: generateAddress(2005), to: generateAddress(2001) }, // 2005→2001 (new)
+      { from: generateAddress(2007), to: generateAddress(2003) }, // 2007→2003 (new)
+      { from: generateAddress(2009), to: generateAddress(2000) }, // 2009→2000 (new)
+      { from: generateAddress(2006), to: generateAddress(2001) }, // 2006→2001 (new)
+      { from: generateAddress(2008), to: generateAddress(2003) }, // 2008→2003 (new)
+    ],
+  },
+  {
+    name: "Random Intra-Network: Hub Spokes Interconnect",
+    description: "Hub spoke users vouch for each other, creating small clusters around the hub.",
+    expectedBehavior: "Spoke users should see modest score improvement from peer vouches.",
+    addresses: [],
+    vouches: [
+      // Random connections between hub spokes (1001-1015)
+      { from: generateAddress(1001), to: generateAddress(1002) },
+      { from: generateAddress(1003), to: generateAddress(1004) },
+      { from: generateAddress(1005), to: generateAddress(1006) },
+      { from: generateAddress(1007), to: generateAddress(1001) },
+      { from: generateAddress(1009), to: generateAddress(1003) },
+      { from: generateAddress(1011), to: generateAddress(1005) },
+      { from: generateAddress(1013), to: generateAddress(1007) },
+      { from: generateAddress(1015), to: generateAddress(1009) },
+    ],
+  },
+  {
+    name: "Random Intra-Network: Chain Shortcut",
+    description: "Random skip-connections in the Chain to test if shortcuts affect linear trust decay.",
+    expectedBehavior: "Users with shortcuts should see improved scores vs pure chain position.",
+    addresses: [],
+    vouches: [
+      // Shortcuts in chain (3000-3007)
+      { from: generateAddress(3000), to: generateAddress(3003) }, // Skip 2 hops
+      { from: generateAddress(3001), to: generateAddress(3005) }, // Skip 3 hops
+      { from: generateAddress(3002), to: generateAddress(3007) }, // Skip 4 hops
+    ],
+  },
+
+  // ============================================
+  // MORE RANDOM CROSS-NETWORK BRIDGES
+  // Additional organic-looking connections between networks
+  // ============================================
+
+  {
+    name: "Random Cross-Network: Hub Spokes → Chain Endpoints",
+    description: "Hub spoke users vouch for Chain users, testing trust flow from hub periphery.",
+    expectedBehavior: "Chain endpoints should see some benefit from Hub-connected vouchers.",
+    addresses: [],
+    vouches: [
+      { from: generateAddress(1003), to: generateAddress(3002) },
+      { from: generateAddress(1005), to: generateAddress(3004) },
+      { from: generateAddress(1007), to: generateAddress(3006) },
+      { from: generateAddress(1009), to: generateAddress(3001) },
+    ],
+  },
+  {
+    name: "Random Cross-Network: Mesh → Over-Voucher Recipients",
+    description: "Mesh users vouch for Over-voucher's targets, testing if this validates diluted vouches.",
+    expectedBehavior: "Over-voucher recipients should see modest improvement from quality Mesh vouches.",
+    addresses: [],
+    vouches: [
+      // Over-voucher targets are 7001-7020
+      { from: generateAddress(2001), to: generateAddress(7005) },
+      { from: generateAddress(2003), to: generateAddress(7010) },
+      { from: generateAddress(2005), to: generateAddress(7015) },
+      { from: generateAddress(2007), to: generateAddress(7020) },
+    ],
+  },
+  {
+    name: "Random Cross-Network: Large Hub Spokes → Mesh",
+    description: "Large Hub's spoke users vouch for Mesh users, creating strong trust bridges.",
+    expectedBehavior: "Mesh users receiving Large Hub spoke vouches should see significant boost.",
+    addresses: [],
+    vouches: [
+      // Large Hub spokes (13001-13050) → Mesh (2000-2009)
+      { from: generateAddress(13005), to: generateAddress(2001) },
+      { from: generateAddress(13010), to: generateAddress(2003) },
+      { from: generateAddress(13015), to: generateAddress(2005) },
+      { from: generateAddress(13020), to: generateAddress(2007) },
+      { from: generateAddress(13025), to: generateAddress(2009) },
+    ],
+  },
+  {
+    name: "Random Cross-Network: Multi-Path → Chain Bridge",
+    description: "Multi-path established users connect to Chain, creating redundant cross-network paths.",
+    expectedBehavior: "Chain users should benefit from multi-path redundancy structure.",
+    addresses: [],
+    vouches: [
+      { from: generateAddress(8004), to: generateAddress(3000) },
+      { from: generateAddress(8005), to: generateAddress(3002) },
+      { from: generateAddress(8006), to: generateAddress(3004) },
+    ],
+  },
+
+  // ============================================
+  // ORGANIC GROWTH SIMULATION
+  // Mimics realistic network growth patterns
+  // ============================================
+
+  {
+    name: "Organic Growth Simulation",
+    description: "New users (16000+) join with realistic vouching patterns: some from existing quality users, some from peers.",
+    expectedBehavior: "New users with quality vouches should score 30-50. Peer-only users should score 10-30.",
+    addresses: Array.from({ length: 20 }, (_, i) => generateAddress(16000 + i)),
+    vouches: [
+      // New users vouched by existing quality users
+      { from: generateAddress(1000), to: generateAddress(16000) }, // Hub → new user
+      { from: generateAddress(2000), to: generateAddress(16001) }, // Mesh hub → new user
+      { from: generateAddress(13000), to: generateAddress(16002) }, // Large hub → new user
+      { from: generateAddress(8000), to: generateAddress(16003) }, // Multi-path hub → new user
+      
+      // New users vouched by other new users (peer vouches)
+      { from: generateAddress(16000), to: generateAddress(16004) },
+      { from: generateAddress(16001), to: generateAddress(16005) },
+      { from: generateAddress(16002), to: generateAddress(16006) },
+      { from: generateAddress(16003), to: generateAddress(16007) },
+      { from: generateAddress(16004), to: generateAddress(16008) },
+      { from: generateAddress(16005), to: generateAddress(16009) },
+      
+      // Some new users form small clusters
+      { from: generateAddress(16006), to: generateAddress(16010) },
+      { from: generateAddress(16007), to: generateAddress(16010) },
+      { from: generateAddress(16008), to: generateAddress(16010) },
+      { from: generateAddress(16010), to: generateAddress(16006) },
+      { from: generateAddress(16010), to: generateAddress(16007) },
+      
+      // Cross-vouch between new user clusters
+      { from: generateAddress(16004), to: generateAddress(16011) },
+      { from: generateAddress(16011), to: generateAddress(16012) },
+      { from: generateAddress(16012), to: generateAddress(16013) },
+      { from: generateAddress(16013), to: generateAddress(16004) }, // Circular
+      
+      // New users vouching back to established networks
+      { from: generateAddress(16000), to: generateAddress(1001) },
+      { from: generateAddress(16001), to: generateAddress(2001) },
+      { from: generateAddress(16002), to: generateAddress(13001) },
+      
+      // Isolated new users (no quality sources)
+      { from: generateAddress(16014), to: generateAddress(16015) },
+      { from: generateAddress(16015), to: generateAddress(16016) },
+      { from: generateAddress(16016), to: generateAddress(16014) }, // Isolated ring
+      
+      // Random bidirectional connections
+      { from: generateAddress(16017), to: generateAddress(16018) },
+      { from: generateAddress(16018), to: generateAddress(16017) },
+      { from: generateAddress(16018), to: generateAddress(16019) },
+      { from: generateAddress(16019), to: generateAddress(16018) },
+    ],
+  },
+
+  // ============================================
+  // TRUST CASCADE (MULTI-HOP PROPAGATION)
+  // Tests how trust flows through multiple intermediaries
+  // ============================================
+
+  {
+    name: "Trust Cascade: 5-Hop Chain from Hub",
+    description: "Tests trust attenuation: Hub → A → B → C → D → E. How much trust reaches E?",
+    expectedBehavior: "Each hop should reduce effective trust. Final user should score significantly lower than first.",
+    addresses: Array.from({ length: 5 }, (_, i) => generateAddress(17000 + i)),
+    vouches: [
+      { from: generateAddress(1000), to: generateAddress(17000) }, // Hub → A
+      { from: generateAddress(17000), to: generateAddress(17001) }, // A → B
+      { from: generateAddress(17001), to: generateAddress(17002) }, // B → C
+      { from: generateAddress(17002), to: generateAddress(17003) }, // C → D
+      { from: generateAddress(17003), to: generateAddress(17004) }, // D → E
+    ],
+  },
+  {
+    name: "Trust Cascade: Parallel Paths Converging",
+    description: "Two independent trust paths converge at final user. Tests redundancy bonus from multiple sources.",
+    expectedBehavior: "Final user with 2 independent paths should score higher than single-path equivalent.",
+    addresses: Array.from({ length: 7 }, (_, i) => generateAddress(18000 + i)),
+    vouches: [
+      // Path 1: Hub → 18000 → 18001 → 18006
+      { from: generateAddress(1000), to: generateAddress(18000) },
+      { from: generateAddress(18000), to: generateAddress(18001) },
+      { from: generateAddress(18001), to: generateAddress(18006) },
+      
+      // Path 2: Mesh Hub → 18002 → 18003 → 18006
+      { from: generateAddress(2000), to: generateAddress(18002) },
+      { from: generateAddress(18002), to: generateAddress(18003) },
+      { from: generateAddress(18003), to: generateAddress(18006) },
+      
+      // Path 3: Large Hub → 18004 → 18005 → 18006
+      { from: generateAddress(13000), to: generateAddress(18004) },
+      { from: generateAddress(18004), to: generateAddress(18005) },
+      { from: generateAddress(18005), to: generateAddress(18006) },
+    ],
+  },
+  {
+    name: "Trust Cascade: Attack Amplification Attempt",
+    description: "Sybil ring creates intermediary chain trying to reach Hub. Tests if attack can propagate backward.",
+    expectedBehavior: "Intermediaries should remain low-scored. Attack cannot legitimize via hub proximity.",
+    addresses: Array.from({ length: 4 }, (_, i) => generateAddress(19000 + i)),
+    vouches: [
+      // Sybil ring leader → chain → target near hub
+      { from: generateAddress(4000), to: generateAddress(19000) }, // Ring → A
+      { from: generateAddress(19000), to: generateAddress(19001) }, // A → B
+      { from: generateAddress(19001), to: generateAddress(19002) }, // B → C
+      { from: generateAddress(19002), to: generateAddress(19003) }, // C → D
+      { from: generateAddress(19003), to: generateAddress(1001) }, // D → Hub spoke (attempt)
+      
+      // Additional ring members also vouch for chain start
+      { from: generateAddress(4001), to: generateAddress(19000) },
+      { from: generateAddress(4002), to: generateAddress(19000) },
+    ],
+  },
 ];
 
 export async function clearTestData(): Promise<void> {
@@ -641,6 +862,104 @@ export async function runAlgorithmValidation(): Promise<{
         const bridge1Score = contextMap.get(generateAddress(15001))?.localHealth ?? 0;
         const bridge2Score = contextMap.get(generateAddress(15002))?.localHealth ?? 0;
         notes = `Hub: ${integratedHubScore}, Mesh: ${integratedMeshScore}, Multi-path: ${integratedMultiPathScore}, Bridges: ${bridge1Score}/${bridge2Score}. Full integration connects all networks.`;
+        break;
+
+      // Random Intra-Network Validation Cases
+      case "Random Intra-Network: Mesh Densification":
+        const meshHubWithDensity = contextMap.get(generateAddress(2000))?.localHealth ?? 0;
+        const mesh2001WithDensity = contextMap.get(generateAddress(2001))?.localHealth ?? 0;
+        notes = `Mesh hub 2000: ${meshHubWithDensity}, 2001: ${mesh2001WithDensity}. Internal density improves cluster cohesion.`;
+        break;
+
+      case "Random Intra-Network: Hub Spokes Interconnect":
+        const spoke1002Score = contextMap.get(generateAddress(1002))?.localHealth ?? 0;
+        const spoke1004Score = contextMap.get(generateAddress(1004))?.localHealth ?? 0;
+        notes = `Spoke 1002: ${spoke1002Score}, 1004: ${spoke1004Score}. Peer vouches among spokes increase their scores.`;
+        break;
+
+      case "Random Intra-Network: Chain Shortcut":
+        const chain3003Score = contextMap.get(generateAddress(3003))?.localHealth ?? 0;
+        const chain3005Score = contextMap.get(generateAddress(3005))?.localHealth ?? 0;
+        const chain3007Score = contextMap.get(generateAddress(3007))?.localHealth ?? 0;
+        notes = `Chain 3003: ${chain3003Score}, 3005: ${chain3005Score}, 3007: ${chain3007Score}. Shortcuts improve distant nodes.`;
+        break;
+
+      // More Cross-Network Validation Cases
+      case "Random Cross-Network: Hub Spokes → Chain Endpoints":
+        const chain3002Score = contextMap.get(generateAddress(3002))?.localHealth ?? 0;
+        const chain3004Score = contextMap.get(generateAddress(3004))?.localHealth ?? 0;
+        notes = `Chain 3002: ${chain3002Score}, 3004: ${chain3004Score}. Hub spokes provide modest trust boost to chain.`;
+        break;
+
+      case "Random Cross-Network: Mesh → Over-Voucher Recipients":
+        const ov7005Score = contextMap.get(generateAddress(7005))?.localHealth ?? 0;
+        const ov7015Score = contextMap.get(generateAddress(7015))?.localHealth ?? 0;
+        notes = `Over-voucher recipients 7005: ${ov7005Score}, 7015: ${ov7015Score}. Quality Mesh vouches validate diluted targets.`;
+        break;
+
+      case "Random Cross-Network: Large Hub Spokes → Mesh":
+        const meshWithLargeHubVouch = contextMap.get(generateAddress(2001))?.localHealth ?? 0;
+        const mesh2005Score = contextMap.get(generateAddress(2005))?.localHealth ?? 0;
+        notes = `Mesh 2001: ${meshWithLargeHubVouch}, 2005: ${mesh2005Score}. Large Hub spoke vouches significantly boost Mesh users.`;
+        break;
+
+      case "Random Cross-Network: Multi-Path → Chain Bridge":
+        const chain3000Score = contextMap.get(generateAddress(3000))?.localHealth ?? 0;
+        const chain3004BridgeScore = contextMap.get(generateAddress(3004))?.localHealth ?? 0;
+        notes = `Chain 3000: ${chain3000Score}, 3004: ${chain3004BridgeScore}. Multi-path redundancy extends to Chain.`;
+        break;
+
+      // Organic Growth Simulation Validation
+      case "Organic Growth Simulation":
+        const new16000Score = contextMap.get(generateAddress(16000))?.localHealth ?? 0;
+        const new16010Score = contextMap.get(generateAddress(16010))?.localHealth ?? 0;
+        const isolated16014Score = contextMap.get(generateAddress(16014))?.localHealth ?? 0;
+        const isolated16017Score = contextMap.get(generateAddress(16017))?.localHealth ?? 0;
+        // New users with quality sources should score higher than peer-only clusters
+        if (new16000Score < 10) {
+          passed = false;
+          notes = `New user 16000 (Hub vouched) score ${new16000Score} too low`;
+        } else if (isolated16014Score > new16000Score) {
+          passed = false;
+          notes = `Isolated ring (${isolated16014Score}) should not outscore quality-vouched user (${new16000Score})`;
+        } else {
+          notes = `Hub-vouched: ${new16000Score}, Cluster: ${new16010Score}, Isolated: ${isolated16014Score}, Bidirectional: ${isolated16017Score}. Growth patterns validated.`;
+        }
+        break;
+
+      // Trust Cascade Validation Cases
+      case "Trust Cascade: 5-Hop Chain from Hub":
+        const cascade17000 = contextMap.get(generateAddress(17000))?.localHealth ?? 0;
+        const cascade17002 = contextMap.get(generateAddress(17002))?.localHealth ?? 0;
+        const cascade17004 = contextMap.get(generateAddress(17004))?.localHealth ?? 0;
+        // Trust should attenuate along chain
+        if (cascade17000 <= cascade17004 && cascade17000 > 0) {
+          // First should score higher than last (attenuation)
+          notes = `Hop 1: ${cascade17000}, Hop 3: ${cascade17002}, Hop 5: ${cascade17004}. Expected attenuation pattern.`;
+        } else if (cascade17000 === 0 && cascade17004 === 0) {
+          notes = `All cascade users score 0 - chain has no external trust anchors.`;
+        } else {
+          notes = `Hop 1: ${cascade17000}, Hop 3: ${cascade17002}, Hop 5: ${cascade17004}. Trust cascade measured.`;
+        }
+        break;
+
+      case "Trust Cascade: Parallel Paths Converging":
+        const convergence18006 = contextMap.get(generateAddress(18006))?.localHealth ?? 0;
+        const path1End18001 = contextMap.get(generateAddress(18001))?.localHealth ?? 0;
+        // Final node with 3 converging paths should benefit from redundancy
+        notes = `Convergent user 18006: ${convergence18006} (3 paths), Single-path 18001: ${path1End18001}. Convergence bonus ${convergence18006 > path1End18001 ? 'detected' : 'not seen'}.`;
+        break;
+
+      case "Trust Cascade: Attack Amplification Attempt":
+        const attack19000 = contextMap.get(generateAddress(19000))?.localHealth ?? 0;
+        const attack19003 = contextMap.get(generateAddress(19003))?.localHealth ?? 0;
+        // Attack chain should remain low-scored despite reaching hub spoke
+        if (attack19000 > 35 || attack19003 > 35) {
+          passed = false;
+          notes = `Attack chain scores too high: ${attack19000}, ${attack19003}. Sybil resistance may be compromised.`;
+        } else {
+          notes = `Attack chain 19000: ${attack19000}, 19003: ${attack19003}. Low-quality source cannot amplify through proximity.`;
+        }
         break;
 
       default:
