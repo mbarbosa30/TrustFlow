@@ -33,6 +33,9 @@ The "Living Networks" design philosophy uses varied, nature-inspired colors from
 *   **Dilution Indicators**: `--dilution-quality`, `--dilution-warning`, `--dilution-penalty`, `--dilution-cap`
 *   **Usage**: Use `style={{ color: 'hsl(var(--score-river))' }}` instead of `text-primary` class for semantic coloring
 *   **Chart Colors**: `--chart-1` through `--chart-5` map to the biome palette for Recharts visualizations
+*   **WCAG Accessibility (Dec 2025)**: Score-sun, score-stone, score-transition, and score-seedling use 58% lightness for 4.5:1 contrast compliance
+*   **Mathematical Tokens**: `--spacing-phi` (golden ratio), `--fib-1` through `--fib-10` (Fibonacci spacing), `--text-xs` through `--text-4xl` (1.125 typographic scale)
+*   **Typography Rhythm**: Body line-height 1.6, headings 1.25 with -0.02em tracking, mono blocks 1.7 for breathing room
 
 ### Technical Implementations
 The backend is an Express.js and TypeScript (Node.js) application offering RESTful APIs. Data is managed in PostgreSQL via Neon serverless with Drizzle ORM. Multi-network authentication (Ethereum, Celo, Polygon, Arbitrum, Optimism, Base) and off-chain EIP-712 signatures are handled by Reown AppKit. The project uses a monorepo structure (`client/`, `server/`, `shared/`).
