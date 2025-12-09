@@ -616,12 +616,12 @@ export default function Landing() {
             Ready to Build Sybil-Resistant Reputation?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Connect your wallet to get started. Build your network, earn your score, and export verifiable credentials.
+            Integrate MaxFlow's Sybil-resistant scoring into your application. Access our public API for verifiable reputation signals.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/overview">
+            <Link href="/api-docs">
               <Button size="lg" className="w-full sm:w-auto" data-testid="button-cta-primary">
-                Connect Wallet
+                API Documentation
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
