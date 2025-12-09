@@ -379,11 +379,11 @@ export default function Status() {
                 <div>
                   <h3 className="font-semibold mb-2 flex items-center gap-2">
                     <Network className="w-4 h-4 text-muted-foreground" />
-                    Redundancy Component (40%)
+                    Min-Cut Component (40%)
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Rewards having multiple independent paths of support. Includes bonuses for 
-                    vertex-disjoint paths and upstream network depth.
+                    True min-cut via Dinic's algorithm—the minimum edges to disconnect you from trust sources. 
+                    Includes bonuses for vertex-disjoint paths and upstream network depth.
                   </p>
                 </div>
               </div>
@@ -419,7 +419,7 @@ export default function Status() {
                   <p className="text-sm font-medium mb-1">Nature-Inspired Resilience</p>
                   <p className="text-xs text-muted-foreground">
                     Signal scoring mirrors patterns found in natural systems: flow capacity like watersheds, 
-                    recursive weighting like root nutrient distribution, path redundancy like mycorrhizal networks, 
+                    recursive weighting like root nutrient distribution, min-cut resilience like mycorrhizal networks, 
                     and dilution penalties like ecosystem pruning. These aren't metaphors—they're the same 
                     mathematical patterns that make natural networks ungameable.
                   </p>
