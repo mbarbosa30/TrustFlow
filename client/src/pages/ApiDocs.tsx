@@ -96,7 +96,7 @@ curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_re
         <h4>Algorithm Breakdown Fields</h4>
         <ul>
           <li><strong>flow_component</strong>: Points from incoming trust (0-60). Based on weighted sum of voucher strengths normalized by healthy baseline.</li>
-          <li><strong>redundancy_component</strong>: Points from network redundancy (0-40). Based on true min-cut computed via Dinic's algorithm.</li>
+          <li><strong>redundancy_component</strong>: Points from true min-cut (0-40). The min-cut component measures Sybil resistance via Dinic's algorithm. (Field name retained for API compatibility.)</li>
           <li><strong>direct_flow</strong>: Raw max-flow value from vouchers to target. Each voucher contributes capacity weighted by their own score.</li>
           <li><strong>actual_min_cut</strong>: True min-cut computed via Dinic's algorithm. Measures the minimum edges to disconnect trust sources—core Sybil resistance metric.</li>
           <li><strong>effective_redundancy</strong>: Combined redundancy metric = actual_min_cut + depth bonus + vertex-disjoint path bonus.</li>

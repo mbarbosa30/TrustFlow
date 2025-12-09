@@ -196,18 +196,18 @@ export default function HowItWorks() {
               </div>
 
               <div>
-                <p className="font-semibold mb-1">Redundancy Component (40%):</p>
+                <p className="font-semibold mb-1">Min-Cut Component (40%):</p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Measures effective redundancy normalized by healthy baseline (20 points), with quadratic scaling.
-                  Formula: <span className="font-mono">40 × (redundancy)²</span> where redundancy = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
-                  Higher redundancy = more multi-hop support, harder to isolate you.
+                  Measures <strong>true min-cut</strong> via Dinic's algorithm—the minimum edges to disconnect you from trust sources.
+                  Formula: <span className="font-mono">40 × (minCutRatio)²</span> where minCutRatio = min(1.0, effectiveRedundancy / HEALTHY_REDUNDANCY).
+                  Higher min-cut = more Sybil resistance, harder to isolate you.
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
-                  <p className="font-semibold text-foreground">effectiveRedundancy computation:</p>
-                  <p>• <strong>Base count:</strong> Number of direct vouchers (each vouch = 1 point)</p>
-                  <p>• <strong>Depth bonus:</strong> upstream_supporter_count × 0.2 (rewards multi-hop chains)</p>
-                  <p>• <strong>Connectivity bonus:</strong> (edge_count / potential_edges) × ego_size (rewards network density)</p>
-                  <p className="pt-1 border-t border-muted">effectiveRedundancy = base + depthBonus + connectivityBonus</p>
+                  <p className="font-semibold text-foreground">effectiveRedundancy computation (v1.3):</p>
+                  <p>• <strong>Min-cut:</strong> True min-cut via Dinic's algorithm (core Sybil resistance metric)</p>
+                  <p>• <strong>Depth bonus:</strong> upstream_supporter_count × 0.1 (rewards multi-hop chains)</p>
+                  <p>• <strong>VDP bonus:</strong> min(5, vertexDisjointPaths - 1) (rewards truly independent paths)</p>
+                  <p className="pt-1 border-t border-muted">effectiveRedundancy = actualMinCut + depthBonus + vdpBonus</p>
                 </div>
               </div>
 

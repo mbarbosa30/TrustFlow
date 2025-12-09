@@ -286,9 +286,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <div className="font-medium">Redundancy Component (40 pts max)</div>
+                      <div className="font-medium">Min-Cut Component (40 pts max)</div>
                       <div className="text-muted-foreground">
-                        40 × (redundancy / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
+                        40 × (minCut / {HEALTHY_REDUNDANCY})² = {redundancyComponent.toFixed(1)}
                       </div>
                     </div>
                     <div className="space-y-2">

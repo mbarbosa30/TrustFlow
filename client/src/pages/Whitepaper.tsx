@@ -329,7 +329,7 @@ export default function Whitepaper() {
                 </div>
                 <p className="text-xs text-muted-foreground mb-2">
                   Forest "wood-wide webs" distribute nutrients through redundant paths—no single tree failure 
-                  collapses the network. Our redundancy component rewards exactly this: multiple independent 
+                  collapses the network. Our min-cut component rewards exactly this: multiple independent 
                   connection paths.
                 </p>
                 <p className="text-xs font-mono" style={{ color: 'hsl(var(--score-dormant) / 0.7)' }}>Graph property: Path redundancy</p>

@@ -79,10 +79,10 @@ export default function WhyScore() {
                 <div className="p-3 rounded bg-muted/30">
                   <div className="text-sm font-semibold flex items-center gap-1">
                     <GitBranch className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                    Redundancy Component (40%)
+                    Min-Cut Component (40%)
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
-                    Network depth and connectivity: vouch count + upstream supporters + edge density
+                    True min-cut via Dinic's algorithm + depth bonus + vertex-disjoint paths
                   </div>
                   <div className="text-[0.65rem] mt-1 italic" style={{ color: 'hsl(var(--score-dormant) / 0.7)' }}>
                     Like forest mycorrhizal networks—multiple paths = resilience
@@ -123,7 +123,7 @@ export default function WhyScore() {
                     Your score is influenced by who YOU vouch for
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">
-                    This two-way accountability is the core anti-Sybil mechanism. Vouching for {'>'}10 people applies a penalty to your redundancy component (40% of total score), creating economic cost to spam.
+                    This two-way accountability is the core anti-Sybil mechanism. Vouching for {'>'}10 people applies a penalty to your min-cut component (40% of total score), creating economic cost to spam.
                   </p>
                   <p className="text-[0.65rem] text-amber-700/70 dark:text-amber-300/70 mb-3 italic">
                     Like ecosystems: organisms that take without contributing get naturally pruned from symbiotic networks.

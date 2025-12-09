@@ -102,7 +102,7 @@ export default function FAQs() {
             <ul className="list-disc list-inside space-y-2 text-sm mb-3">
               <li><strong>Rivers and watersheds:</strong> Water finds optimal paths to the sea through network topology alone—no central planner. Our max-flow algorithm computes the same: how much "trust" can flow through the network.</li>
               <li><strong>Root systems:</strong> Plants grow stronger roots by feeding from healthy neighbors. Similarly, our recursive trust weighting means vouches from high-score users carry more weight—a self-reinforcing quality signal.</li>
-              <li><strong>Forest mycorrhizal networks:</strong> The "wood-wide web" distributes nutrients through redundant fungal pathways. When one tree fails, others continue. Our redundancy component rewards exactly this: multiple independent connection paths.</li>
+              <li><strong>Forest mycorrhizal networks:</strong> The "wood-wide web" distributes nutrients through redundant fungal pathways. When one tree fails, others continue. Our min-cut component rewards exactly this: multiple independent connection paths.</li>
               <li><strong>Ecosystem pruning:</strong> Species that take without contributing eventually get excluded from symbiotic networks. Our dilution penalty works the same way: over-vouching reduces your score, creating natural accountability.</li>
             </ul>
             <p className="text-sm italic text-muted-foreground/80">
@@ -265,7 +265,7 @@ export default function FAQs() {
               <strong>Flow Component (60%):</strong> Measures weighted incoming trust. directFlow = Σ(voucherScore/100), normalized by HEALTHY_VOUCH_COUNT (5). Strong vouchers contribute more.
             </p>
             <p className="text-sm mb-2">
-              <strong>Redundancy Component (40%):</strong> effectiveRedundancy = base count + (upstream supporters × 0.2) + connectivity bonus. Normalized by HEALTHY_REDUNDANCY (20 pts).
+              <strong>Min-Cut Component (40%):</strong> effectiveRedundancy = actualMinCut + (upstream supporters × 0.1) + vertex-disjoint path bonus. Normalized by HEALTHY_REDUNDANCY (20 pts). Uses true min-cut via Dinic's algorithm.
             </p>
             <p className="text-sm mb-2 text-muted-foreground/80">
               <strong>vouchQuality</strong> = directFlow / voucherCount (avg voucher strength, also called ResidualFlow)
@@ -275,12 +275,12 @@ export default function FAQs() {
                 Vouch Accountability (Core Anti-Sybil Mechanism):
               </p>
               <p className="text-xs text-muted-foreground mb-2">
-                Vouching for {'>'}10 people applies a penalty to your redundancy component (40% of total score), creating economic cost to spam.
+                Vouching for {'>'}10 people applies a penalty to your min-cut component (40% of total score), creating economic cost to spam.
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 pl-4">
-                <li><strong>Formula (LocalHealth):</strong> 40 × (redundancy²) × max(0.5, 1 - 0.1 × excess)</li>
+                <li><strong>Formula (LocalHealth):</strong> 40 × (minCut²) × dilutionFactor</li>
                 <li><strong>Impact:</strong> 10-15% typical score reduction, up to ~20% for high-redundancy networks</li>
-                <li><strong>Why it works:</strong> Can't spam vouches without reducing your own redundancy score → selective endorsements</li>
+                <li><strong>Why it works:</strong> Can't spam vouches without reducing your own min-cut score → selective endorsements</li>
               </ul>
             </div>
             <p className="text-sm">
@@ -301,7 +301,7 @@ export default function FAQs() {
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
               <p className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">The Dilution Penalty</p>
               <p className="text-sm text-muted-foreground mb-2">
-                Vouching for {'>'}10 people applies a multiplicative penalty to your redundancy component (40% of total score). The penalty factor grows at 10% per excess vouch, capped at 50%.
+                Vouching for {'>'}10 people applies a multiplicative penalty to your min-cut component (40% of total score). The penalty uses a piecewise curve for smooth decay.
               </p>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between">
@@ -318,20 +318,20 @@ export default function FAQs() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                <strong>Worked example (LocalHealth):</strong> User with 5 direct vouchers, redundancy 0.7, gets 15 total vouches → redundancy component drops from 19.6pts → 9.8pts, total score 79.6 → 69.8 (12.3% reduction)
+                <strong>Worked example (LocalHealth):</strong> User with 5 direct vouchers, min-cut 0.7, gives 15 total vouches → min-cut component drops due to dilution, ~10-15% total score reduction
               </p>
             </div>
 
             <p className="text-sm mb-2 font-semibold">Game Theory: Why This Stops Attacks</p>
             <ul className="list-disc list-inside space-y-1 text-sm mb-3">
               <li><strong>Attack scenario:</strong> Creating fake network of 50 Sybil accounts requires vouching for all 50</li>
-              <li><strong>Your penalty:</strong> 40 excess vouches → 50% redundancy penalty → significant score reduction</li>
+              <li><strong>Your penalty:</strong> 40 excess vouches → min-cut dilution penalty → significant score reduction</li>
               <li><strong>Sybils' scores:</strong> Still low (no incoming vouches from established users)</li>
-              <li><strong>Result:</strong> You hurt your redundancy score to create weak fake accounts → not economically viable</li>
+              <li><strong>Result:</strong> You hurt your min-cut score to create weak fake accounts → not economically viable</li>
             </ul>
 
             <p className="text-sm">
-              <strong>The key insight:</strong> You can't spam vouches without reducing your own redundancy component. This makes endorsements selective, which makes the resulting graph signals (flow, redundancy) reliable—the definition of Sybil resistance.
+              <strong>The key insight:</strong> You can't spam vouches without reducing your own min-cut component. This makes endorsements selective, which makes the resulting graph signals (flow, min-cut) reliable—the definition of Sybil resistance.
             </p>
           </AccordionContent>
         </AccordionItem>
