@@ -10,16 +10,24 @@ interface StatCardProps {
 
 function StatCard({ icon: Icon, title, value, subtitle }: StatCardProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+    <Card className="card-biome">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-3">
+        <CardTitle className="text-sm font-medium tracking-tight">{title}</CardTitle>
+        <div 
+          className="p-2 rounded-lg" 
+          style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', color: 'hsl(var(--score-growth))' }}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold" data-testid={`stat-${title.toLowerCase().replace(/\s/g, '-')}`}>
+        <div 
+          className="metric-secondary tabular-nums" 
+          data-testid={`stat-${title.toLowerCase().replace(/\s/g, '-')}`}
+        >
           {value}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+        <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{subtitle}</p>
       </CardContent>
     </Card>
   );

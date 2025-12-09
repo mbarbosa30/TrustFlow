@@ -60,73 +60,107 @@ export default function Dashboard() {
 
   return (
     <div className="w-full">
-      {/* Hero Section - LocalHealth Network Graph */}
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          BAND 1: SIGNAL SUMMARY HERO
+          Primary visual hierarchy - the most important metrics at a glance
+          Uses golden ratio proportions and organic breathing animations
+          ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="w-full bg-gradient-to-b from-muted/30 to-background">
-        <div className="max-w-[1800px] mx-auto px-6 py-8">
-          {/* Header with Key Metrics */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
-                <Network className="w-8 h-8" style={{ color: 'hsl(var(--score-growth))' }} />
+        <div className="max-w-[1800px] mx-auto px-6 py-10">
+          {/* Header with Title */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10">
+            <div className="flex items-center gap-5">
+              <div 
+                className="p-4 rounded-2xl animate-pulse-glow" 
+                style={{ backgroundColor: 'hsl(var(--score-growth) / 0.12)' }}
+              >
+                <Network className="w-10 h-10" style={{ color: 'hsl(var(--score-growth))' }} />
               </div>
               <div>
-                <h1 className="text-3xl font-bold" data-testid="heading-dashboard">Trust Network</h1>
-                <p className="text-muted-foreground">
-                  LocalHealth signals computed from endorsement graph topology
+                <h1 className="text-4xl font-bold tracking-tight" data-testid="heading-dashboard">Trust Network</h1>
+                <p className="text-muted-foreground mt-1 text-lg">
+                  LocalHealth signals computed from graph topology
                 </p>
               </div>
             </div>
             
-            {/* Key Metrics Strip */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Hero Metrics - Primary Signal Band */}
+            <div className="signal-hero flex flex-wrap items-center gap-6 animate-fade-in-up">
               {localHealthData && (
                 <>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Users</span>
-                    <span className="text-xl font-bold" data-testid="text-local-health-total-users">
-                      {localHealthData.totalUsers}
-                    </span>
+                  {/* Primary Metric: Average LocalHealth */}
+                  <div className="text-center">
+                    <div 
+                      className="metric-hero animate-breathe" 
+                      style={{ color: 'hsl(var(--score-growth))' }} 
+                      data-testid="text-avg-local-health"
+                    >
+                      {localHealthData.avgLocalHealth.toFixed(1)}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-2">
+                      <Heart className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
+                      Avg Signal
+                    </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg border" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)' }}>
-                    <Heart className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
-                    <span className="text-sm text-muted-foreground">Avg LocalHealth</span>
-                    <span className="text-xl font-bold" style={{ color: 'hsl(var(--score-growth))' }} data-testid="text-avg-local-health">
-                      {localHealthData.avgLocalHealth.toFixed(1)}
-                    </span>
+                  {/* Separator */}
+                  <div className="h-16 w-px bg-border hidden sm:block" />
+                  
+                  {/* Secondary Metrics */}
+                  <div className="flex gap-8">
+                    <div className="text-center">
+                      <div className="metric-secondary" data-testid="text-local-health-total-users">
+                        {localHealthData.totalUsers}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <Users className="w-3 h-3" />
+                        Scored Users
+                      </div>
+                    </div>
+                    
+                    {statsData && (
+                      <div className="text-center">
+                        <div className="metric-secondary" data-testid="text-total-endorsements">
+                          {statsData.totalEndorsements}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                          <Activity className="w-3 h-3" />
+                          Total Vouches
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
-              )}
-              
-              {statsData && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border">
-                  <Activity className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Vouches</span>
-                  <span className="text-xl font-bold" data-testid="text-total-endorsements">
-                    {statsData.totalEndorsements}
-                  </span>
-                </div>
               )}
             </div>
           </div>
 
           {/* Full-Width Graph - Hero Element */}
-          <LocalHealthGraph limit={100} communityId={0} height="65vh" heroMode={true} />
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <LocalHealthGraph limit={100} communityId={0} height="65vh" heroMode={true} />
+          </div>
         </div>
       </div>
 
-      {/* Main Analytics Section */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="space-y-16">
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          BAND 2: NETWORK HEALTH VITALS
+          Secondary metrics - quick health indicators using Fibonacci grid
+          ═══════════════════════════════════════════════════════════════════════════ */}
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="space-y-20">
           
           {/* Flow Analytics Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <Zap className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
+          <section className="animate-fade-in-up">
+            <div className="section-header-biome">
+              <div 
+                className="p-3 rounded-xl" 
+                style={{ backgroundColor: 'hsl(var(--score-sun) / 0.12)' }}
+              >
+                <Zap className="w-6 h-6" style={{ color: 'hsl(var(--score-sun))' }} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Flow Analytics</h2>
-                <p className="text-sm text-muted-foreground">Max-flow/min-cut metrics powering LocalHealth computation</p>
+                <h2>Flow Analytics</h2>
+                <p>Max-flow/min-cut metrics powering LocalHealth computation</p>
               </div>
             </div>
             
@@ -323,13 +357,22 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              BAND 3: DEEP ANALYTICS
+              Tertiary content - detailed charts for power users and researchers
+              ═══════════════════════════════════════════════════════════════════════════ */}
           {/* Algorithm Analytics Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <BarChart3 className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
+          <section className="animate-fade-in-up">
+            <div className="section-header-biome">
+              <div 
+                className="p-3 rounded-xl" 
+                style={{ backgroundColor: 'hsl(var(--score-growth) / 0.12)' }}
+              >
+                <BarChart3 className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Algorithm Analytics</h2>
-                <p className="text-sm text-muted-foreground">Convergence telemetry, flow dynamics, and vouch strength distributions</p>
+                <h2>Algorithm Analytics</h2>
+                <p>Convergence telemetry, flow dynamics, and vouch strength distributions</p>
               </div>
             </div>
             
@@ -348,12 +391,17 @@ export default function Dashboard() {
           </section>
 
           {/* Network Timeline */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <TrendingUp className="w-6 h-6" style={{ color: 'hsl(var(--score-transition))' }} />
+          <section className="animate-fade-in-up">
+            <div className="section-header-biome">
+              <div 
+                className="p-3 rounded-xl" 
+                style={{ backgroundColor: 'hsl(var(--score-sun) / 0.12)' }}
+              >
+                <TrendingUp className="w-6 h-6" style={{ color: 'hsl(var(--score-sun))' }} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Network Timeline</h2>
-                <p className="text-sm text-muted-foreground">Vouch activity and user growth over real timestamps</p>
+                <h2>Network Timeline</h2>
+                <p>Vouch activity and user growth over real timestamps</p>
               </div>
             </div>
             
@@ -364,12 +412,17 @@ export default function Dashboard() {
           </section>
 
           {/* Algorithm Enhancements Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <Shield className="w-6 h-6" style={{ color: 'hsl(var(--score-canopy))' }} />
+          <section className="animate-fade-in-up">
+            <div className="section-header-biome">
+              <div 
+                className="p-3 rounded-xl" 
+                style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.12)' }}
+              >
+                <Shield className="w-6 h-6" style={{ color: 'hsl(var(--score-canopy))' }} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Security & Algorithm Enhancements</h2>
-                <p className="text-sm text-muted-foreground">Vertex-disjoint paths, piecewise dilution curves, and adaptive baselines</p>
+                <h2>Security & Algorithm Enhancements</h2>
+                <p>Vertex-disjoint paths, piecewise dilution curves, and adaptive baselines</p>
               </div>
             </div>
             
@@ -383,12 +436,17 @@ export default function Dashboard() {
           </section>
 
           {/* Network Health & Risk Section */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <AlertTriangle className="w-6 h-6" style={{ color: 'hsl(var(--score-dormant))' }} />
+          <section className="animate-fade-in-up">
+            <div className="section-header-biome">
+              <div 
+                className="p-3 rounded-xl" 
+                style={{ backgroundColor: 'hsl(var(--score-soil) / 0.12)' }}
+              >
+                <AlertTriangle className="w-6 h-6" style={{ color: 'hsl(var(--score-soil))' }} />
+              </div>
               <div>
-                <h2 className="text-2xl font-bold">Network Health & Risks</h2>
-                <p className="text-sm text-muted-foreground">Vulnerability detection, influence concentration, and resilience analysis</p>
+                <h2>Network Health & Risks</h2>
+                <p>Vulnerability detection, influence concentration, and resilience analysis</p>
               </div>
             </div>
             

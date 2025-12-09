@@ -115,8 +115,8 @@ export function ScoreCard({
   };
 
   return (
-    <Card className="p-8 rounded-2xl" data-testid="card-score">
-      <CardContent className="p-0 space-y-6">
+    <Card className="signal-hero p-0 rounded-2xl" data-testid="card-score">
+      <CardContent className="p-8 space-y-6">
         {communityScores && communityScores.length > 0 && (
           <div>
             <label className="text-xs text-muted-foreground mb-2 block">Community</label>
@@ -145,12 +145,16 @@ export function ScoreCard({
           </span>
         </div>
 
-        <div className={displayFlow !== undefined ? "grid grid-cols-2 gap-6" : ""}>
+        <div className={displayFlow !== undefined ? "grid grid-cols-2 gap-8" : ""}>
           <div>
-            <div className="text-5xl font-bold tracking-tight" data-testid="text-score">
+            <div 
+              className="metric-hero animate-breathe" 
+              style={{ color: 'hsl(var(--score-growth))' }}
+              data-testid="text-score"
+            >
               {displaySts}
             </div>
-            <div className="text-sm text-muted-foreground mt-2">
+            <div className="text-sm text-muted-foreground mt-3">
               Network Quality Score {displayFlow === undefined ? "(0-100)" : ""}
             </div>
           </div>
@@ -159,10 +163,10 @@ export function ScoreCard({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="cursor-help">
-                    <div className="text-5xl font-bold tracking-tight" style={{ color: 'hsl(var(--score-river))' }} data-testid="text-flow">
+                    <div className="metric-secondary" style={{ color: 'hsl(var(--score-river))' }} data-testid="text-flow">
                       {displayFlow.toFixed(2)}
                     </div>
-                    <div className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
+                    <div className="text-sm text-muted-foreground mt-3 flex items-center gap-1">
                       Raw Flow
                       <Info className="w-3 h-3" />
                     </div>
