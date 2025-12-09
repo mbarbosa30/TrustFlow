@@ -36,7 +36,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
               className="flex items-center gap-2 font-bold text-xl hover-elevate rounded-lg px-2 py-1" 
               data-testid="link-home"
             >
-              <Network className="w-6 h-6" style={{ color: 'hsl(var(--score-growth))' }} />
+              <Network className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
               <span>MaxFlow</span>
             </Link>
             

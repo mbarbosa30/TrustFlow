@@ -118,8 +118,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="hover-elevate" data-testid="card-usecase-governance">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                  <Vote className="w-6 h-6 text-muted-foreground" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-river) / 0.12)' }}>
+                  <Vote className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
                 </div>
                 <CardTitle className="text-lg">DAO Governance</CardTitle>
               </CardHeader>
@@ -138,8 +138,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-lending">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                  <Banknote className="w-6 h-6 text-muted-foreground" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-river) / 0.12)' }}>
+                  <Banknote className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
                 </div>
                 <CardTitle className="text-lg">Microlending</CardTitle>
               </CardHeader>
@@ -158,8 +158,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-grants">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                  <Gift className="w-6 h-6 text-muted-foreground" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-river) / 0.12)' }}>
+                  <Gift className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
                 </div>
                 <CardTitle className="text-lg">Grant Allocation</CardTitle>
               </CardHeader>
@@ -178,8 +178,8 @@ export default function Landing() {
 
             <Card className="hover-elevate" data-testid="card-usecase-access">
               <CardHeader className="pb-3">
-                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-3">
-                  <Lock className="w-6 h-6 text-muted-foreground" />
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-river) / 0.12)' }}>
+                  <Lock className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
                 </div>
                 <CardTitle className="text-lg">Access Control</CardTitle>
               </CardHeader>
@@ -212,8 +212,8 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center" data-testid="step-vouch">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'hsl(var(--score-river) / 0.1)' }}>
+                <Users className="w-8 h-8" style={{ color: 'hsl(var(--score-river))' }} />
               </div>
               <h3 className="text-xl font-semibold mb-2">1. Build Connections</h3>
               <p className="text-muted-foreground text-sm">
@@ -225,8 +225,8 @@ export default function Landing() {
             </div>
 
             <div className="text-center" data-testid="step-compute">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Network className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'hsl(var(--score-river) / 0.15)' }}>
+                <Network className="w-8 h-8" style={{ color: 'hsl(var(--score-river))' }} />
               </div>
               <h3 className="text-xl font-semibold mb-2">2. Flow Computes</h3>
               <p className="text-muted-foreground text-sm">
@@ -238,8 +238,8 @@ export default function Landing() {
             </div>
 
             <div className="text-center" data-testid="step-use">
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-muted-foreground" />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.12)' }}>
+                <Zap className="w-8 h-8" style={{ color: 'hsl(var(--score-canopy))' }} />
               </div>
               <h3 className="text-xl font-semibold mb-2">3. Signal Ships</h3>
               <p className="text-muted-foreground text-sm">
