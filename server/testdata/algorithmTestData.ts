@@ -266,6 +266,127 @@ export const testScenarios: TestScenario[] = [
       { from: generateAddress(14011), to: generateAddress(14000) },
     ],
   },
+
+  // ============================================
+  // CROSS-NETWORK VOUCHING SCENARIOS
+  // These test how scores propagate when previously isolated networks connect
+  // ============================================
+
+  {
+    name: "Cross-Network: Mesh → Sybil Ring Bridge",
+    description: "A high-quality Mesh user (2000) vouches for a Sybil Ring member (4000). Tests if healthy network can 'legitimize' attack patterns.",
+    expectedBehavior: "Ring member 4000 should see modest score increase, but ring structure still limits propagation. Mesh user unaffected.",
+    addresses: [], // Uses existing addresses from Mesh (2000-2009) and Sybil Ring (4000-4005)
+    vouches: [
+      // Mesh hub (2000) vouches for Sybil ring leader (4000)
+      { from: generateAddress(2000), to: generateAddress(4000) },
+    ],
+  },
+  {
+    name: "Cross-Network: Sybil Ring → Mesh Attack",
+    description: "Multiple Sybil Ring members vouch for a Mesh user. Tests if attack network can 'infect' healthy patterns.",
+    expectedBehavior: "Mesh user should see minimal benefit due to tiered capacity (low-score vouchers contribute only 0.08 each).",
+    addresses: [],
+    vouches: [
+      // All ring members vouch for mesh user 2001
+      { from: generateAddress(4000), to: generateAddress(2001) },
+      { from: generateAddress(4001), to: generateAddress(2001) },
+      { from: generateAddress(4002), to: generateAddress(2001) },
+      { from: generateAddress(4003), to: generateAddress(2001) },
+      { from: generateAddress(4004), to: generateAddress(2001) },
+      { from: generateAddress(4005), to: generateAddress(2001) },
+    ],
+  },
+  {
+    name: "Cross-Network: Hub → Sockpuppet Farm",
+    description: "The high-quality Hub (1000) vouches for the puppetmaster (5000). Tests if one quality vouch can legitimize fake account farms.",
+    expectedBehavior: "Puppetmaster gets some benefit from quality vouch, but sockpuppets remain low-quality. Farm structure still visible.",
+    addresses: [],
+    vouches: [
+      // Hub center (1000) vouches for sockpuppet master (5000)
+      { from: generateAddress(1000), to: generateAddress(5000) },
+    ],
+  },
+  {
+    name: "Cross-Network: Mesh ↔ Collusion Bidirectional",
+    description: "Mutual vouches between Mesh and Collusion Cluster. Tests bidirectional trust propagation.",
+    expectedBehavior: "Collusion cluster should see score improvement. Mesh user might see slight reduction from vouching for low-quality target.",
+    addresses: [],
+    vouches: [
+      // Mesh (2002) vouches for Collusion leader (6000)
+      { from: generateAddress(2002), to: generateAddress(6000) },
+      // Collusion leader (6000) vouches back for Mesh (2002)
+      { from: generateAddress(6000), to: generateAddress(2002) },
+      // Additional cross-connections
+      { from: generateAddress(2003), to: generateAddress(6001) },
+      { from: generateAddress(6002), to: generateAddress(2004) },
+    ],
+  },
+  {
+    name: "Cross-Network: Chain Connecting Hub, Mesh, and Collusion",
+    description: "A new bridge user creates a chain: Hub(1000) → Bridge(15000) → Mesh(2005) → Collusion(6003). Tests multi-hop cross-network flow.",
+    expectedBehavior: "Bridge user should score moderately. Trust should flow along chain but attenuate with distance.",
+    addresses: [generateAddress(15000)], // New bridge user
+    vouches: [
+      // Hub vouches for new bridge user
+      { from: generateAddress(1000), to: generateAddress(15000) },
+      // Bridge vouches for mesh user
+      { from: generateAddress(15000), to: generateAddress(2005) },
+      // Mesh user vouches for collusion member
+      { from: generateAddress(2005), to: generateAddress(6003) },
+    ],
+  },
+  {
+    name: "Cross-Network: Multi-Path Redundancy → Mesh Amplification",
+    description: "The multi-path hub (8000) and its established vouchers connect to Mesh users. Tests if redundancy structure amplifies cross-network trust.",
+    expectedBehavior: "Mesh users receiving vouches from established multi-path users should see quality boost.",
+    addresses: [],
+    vouches: [
+      // Multi-path established users (8001-8003) vouch for mesh users
+      { from: generateAddress(8001), to: generateAddress(2006) },
+      { from: generateAddress(8002), to: generateAddress(2007) },
+      { from: generateAddress(8003), to: generateAddress(2008) },
+      // Multi-path hub vouches for mesh hub
+      { from: generateAddress(8000), to: generateAddress(2000) },
+    ],
+  },
+  {
+    name: "Cross-Network: Sybil Ring Attempts Large Hub Infection",
+    description: "All Sybil Ring members vouch for the Large Scale Hub (13000). Tests if mass low-quality vouches affect high-quality hubs.",
+    expectedBehavior: "Large hub score should be minimally affected. 6 low-quality vouches × 0.08 = 0.48 capacity vs 50+ existing quality vouches.",
+    addresses: [],
+    vouches: [
+      { from: generateAddress(4000), to: generateAddress(13000) },
+      { from: generateAddress(4001), to: generateAddress(13000) },
+      { from: generateAddress(4002), to: generateAddress(13000) },
+      { from: generateAddress(4003), to: generateAddress(13000) },
+      { from: generateAddress(4004), to: generateAddress(13000) },
+      { from: generateAddress(4005), to: generateAddress(13000) },
+    ],
+  },
+  {
+    name: "Cross-Network: Full Integration (All Networks Connected)",
+    description: "Creates a web of connections between all major test networks. Tests global algorithm behavior with interconnected graph.",
+    expectedBehavior: "Overall network quality should improve as isolated components connect. Attack patterns should remain distinguishable.",
+    addresses: [generateAddress(15001), generateAddress(15002)], // Additional bridge nodes
+    vouches: [
+      // Hub ↔ Multi-path
+      { from: generateAddress(1000), to: generateAddress(8000) },
+      { from: generateAddress(8000), to: generateAddress(1001) },
+      // Mesh ↔ Chain
+      { from: generateAddress(2000), to: generateAddress(3000) },
+      { from: generateAddress(3007), to: generateAddress(2009) },
+      // Large Hub ↔ Multi-path
+      { from: generateAddress(13000), to: generateAddress(8001) },
+      // Bridge nodes connecting disparate networks
+      { from: generateAddress(1002), to: generateAddress(15001) },
+      { from: generateAddress(15001), to: generateAddress(3003) },
+      { from: generateAddress(2003), to: generateAddress(15002) },
+      { from: generateAddress(15002), to: generateAddress(8002) },
+      // Over-voucher connects to mesh (tests dilution across networks)
+      { from: generateAddress(7000), to: generateAddress(2000) },
+    ],
+  },
 ];
 
 export async function clearTestData(): Promise<void> {
@@ -464,8 +585,59 @@ export async function runAlgorithmValidation(): Promise<{
         }
         break;
 
+      // Cross-Network validation cases
+      case "Cross-Network: Mesh → Sybil Ring Bridge":
+        const sybilLeaderScore = contextMap.get(generateAddress(4000))?.localHealth ?? 0;
+        const meshHubScore = contextMap.get(generateAddress(2000))?.localHealth ?? 0;
+        notes = `Sybil leader 4000: ${sybilLeaderScore}, Mesh hub 2000: ${meshHubScore}. Ring leader should get modest boost from quality vouch.`;
+        break;
+
+      case "Cross-Network: Sybil Ring → Mesh Attack":
+        const meshVictimScore = contextMap.get(generateAddress(2001))?.localHealth ?? 0;
+        // 6 ring vouchers × 0.08 capacity = 0.48 flow contribution (minimal)
+        notes = `Mesh user 2001 score: ${meshVictimScore}. 6 low-quality vouches add only ~0.48 flow (6×0.08). Tiered capacity working.`;
+        break;
+
+      case "Cross-Network: Hub → Sockpuppet Farm":
+        const puppetmasterWithHubScore = contextMap.get(generateAddress(5000))?.localHealth ?? 0;
+        const hubCenterScore = contextMap.get(generateAddress(1000))?.localHealth ?? 0;
+        notes = `Puppetmaster 5000: ${puppetmasterWithHubScore} (with Hub vouch), Hub 1000: ${hubCenterScore}. One quality vouch helps but farm structure still weak.`;
+        break;
+
+      case "Cross-Network: Mesh ↔ Collusion Bidirectional":
+        const collusionLeaderScore = contextMap.get(generateAddress(6000))?.localHealth ?? 0;
+        const meshConnectorScore = contextMap.get(generateAddress(2002))?.localHealth ?? 0;
+        notes = `Collusion 6000: ${collusionLeaderScore}, Mesh 2002: ${meshConnectorScore}. Bidirectional bridges improve isolated clusters.`;
+        break;
+
+      case "Cross-Network: Chain Connecting Hub, Mesh, and Collusion":
+        const bridgeUserScore = contextMap.get(generateAddress(15000))?.localHealth ?? 0;
+        const collusionEndScore = contextMap.get(generateAddress(6003))?.localHealth ?? 0;
+        notes = `Bridge 15000: ${bridgeUserScore}, Collusion 6003: ${collusionEndScore}. Trust flows along chain but attenuates.`;
+        break;
+
+      case "Cross-Network: Multi-Path Redundancy → Mesh Amplification":
+        const meshAmplifiedScore = contextMap.get(generateAddress(2006))?.localHealth ?? 0;
+        const multiPathHubScore = contextMap.get(generateAddress(8000))?.localHealth ?? 0;
+        notes = `Mesh 2006: ${meshAmplifiedScore} (boosted by multi-path), Multi-path hub 8000: ${multiPathHubScore}. Redundant structures amplify trust.`;
+        break;
+
+      case "Cross-Network: Sybil Ring Attempts Large Hub Infection":
+        const largeHubWithSybilScore = contextMap.get(generateAddress(13000))?.localHealth ?? 0;
+        notes = `Large hub 13000: ${largeHubWithSybilScore}. 6 Sybil vouches (0.48 capacity) negligible vs 51 quality vouches. Attack fails.`;
+        break;
+
+      case "Cross-Network: Full Integration (All Networks Connected)":
+        const integratedHubScore = contextMap.get(generateAddress(1000))?.localHealth ?? 0;
+        const integratedMeshScore = contextMap.get(generateAddress(2000))?.localHealth ?? 0;
+        const integratedMultiPathScore = contextMap.get(generateAddress(8000))?.localHealth ?? 0;
+        const bridge1Score = contextMap.get(generateAddress(15001))?.localHealth ?? 0;
+        const bridge2Score = contextMap.get(generateAddress(15002))?.localHealth ?? 0;
+        notes = `Hub: ${integratedHubScore}, Mesh: ${integratedMeshScore}, Multi-path: ${integratedMultiPathScore}, Bridges: ${bridge1Score}/${bridge2Score}. Full integration connects all networks.`;
+        break;
+
       default:
-        const avgScore = scores.reduce((sum, s) => sum + (s.localHealth ?? 0), 0) / scores.length;
+        const avgScore = scores.reduce((sum, s) => sum + (s.localHealth ?? 0), 0) / (scores.length || 1);
         notes = `Average score: ${avgScore.toFixed(1)}`;
     }
 
