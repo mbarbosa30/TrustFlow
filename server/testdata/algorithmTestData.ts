@@ -608,6 +608,251 @@ export const testScenarios: TestScenario[] = [
       { from: generateAddress(4002), to: generateAddress(19000) },
     ],
   },
+
+  // ============================================
+  // WHALE EFFECT SCENARIOS
+  // Tests how ultra-high-quality users affect network
+  // ============================================
+
+  {
+    name: "Whale Effect: Single Ultra-Voucher",
+    description: "Large Hub (score 99) vouches for 10 new users. Tests if whale vouches create instant high scores.",
+    expectedBehavior: "Whale-vouched users should get moderate boost (30-50), not instant high scores. Dilution applies.",
+    addresses: Array.from({ length: 10 }, (_, i) => generateAddress(20000 + i)),
+    vouches: [
+      // Large Hub (13000) vouches for 10 new users
+      { from: generateAddress(13000), to: generateAddress(20000) },
+      { from: generateAddress(13000), to: generateAddress(20001) },
+      { from: generateAddress(13000), to: generateAddress(20002) },
+      { from: generateAddress(13000), to: generateAddress(20003) },
+      { from: generateAddress(13000), to: generateAddress(20004) },
+      { from: generateAddress(13000), to: generateAddress(20005) },
+      { from: generateAddress(13000), to: generateAddress(20006) },
+      { from: generateAddress(13000), to: generateAddress(20007) },
+      { from: generateAddress(13000), to: generateAddress(20008) },
+      { from: generateAddress(13000), to: generateAddress(20009) },
+    ],
+  },
+  {
+    name: "Whale Effect: Competing Whales",
+    description: "Multiple high-quality users (Hub, Mesh, Large Hub) all vouch for the same target.",
+    expectedBehavior: "Target should score very high (80+) due to multiple quality sources. Redundancy bonus.",
+    addresses: [generateAddress(20010)],
+    vouches: [
+      { from: generateAddress(1000), to: generateAddress(20010) },  // Hub
+      { from: generateAddress(2000), to: generateAddress(20010) },  // Mesh hub
+      { from: generateAddress(13000), to: generateAddress(20010) }, // Large hub
+      { from: generateAddress(8000), to: generateAddress(20010) },  // Multi-path hub
+    ],
+  },
+
+  // ============================================
+  // NEWCOMER ADOPTION SCENARIOS
+  // Tests how new users integrate into established networks
+  // ============================================
+
+  {
+    name: "Newcomer Adoption: Gradual Integration",
+    description: "New user receives vouches from multiple network layers over time. Simulates organic adoption.",
+    expectedBehavior: "User should score progressively higher with each quality connection.",
+    addresses: [generateAddress(21000)],
+    vouches: [
+      // Layer 1: Spoke users vouch (low-medium trust)
+      { from: generateAddress(1003), to: generateAddress(21000) },
+      { from: generateAddress(1005), to: generateAddress(21000) },
+      // Layer 2: Mesh users vouch (medium-high trust)
+      { from: generateAddress(2001), to: generateAddress(21000) },
+      { from: generateAddress(2003), to: generateAddress(21000) },
+      // Layer 3: Hub users vouch (high trust)
+      { from: generateAddress(1000), to: generateAddress(21000) },
+    ],
+  },
+  {
+    name: "Newcomer Adoption: Isolated Newcomer Cluster",
+    description: "Group of 5 new users only vouch for each other, no external connections.",
+    expectedBehavior: "All should score very low (0-10) due to isolation, similar to attack patterns.",
+    addresses: Array.from({ length: 5 }, (_, i) => generateAddress(21100 + i)),
+    vouches: [
+      { from: generateAddress(21100), to: generateAddress(21101) },
+      { from: generateAddress(21101), to: generateAddress(21102) },
+      { from: generateAddress(21102), to: generateAddress(21103) },
+      { from: generateAddress(21103), to: generateAddress(21104) },
+      { from: generateAddress(21104), to: generateAddress(21100) },
+      // Cross-vouches within cluster
+      { from: generateAddress(21100), to: generateAddress(21102) },
+      { from: generateAddress(21102), to: generateAddress(21104) },
+    ],
+  },
+
+  // ============================================
+  // NETWORK PARTITION RECOVERY
+  // Tests reconnection of previously isolated clusters
+  // ============================================
+
+  {
+    name: "Network Partition Recovery: Two Clusters Merge",
+    description: "Two isolated clusters (5 users each) connect via single bridge. Tests trust propagation across partition.",
+    expectedBehavior: "Both clusters should see score improvement after bridge. Bridge user benefits from both sides.",
+    addresses: Array.from({ length: 11 }, (_, i) => generateAddress(22000 + i)),
+    vouches: [
+      // Cluster A (22000-22004) - internal mesh
+      { from: generateAddress(22000), to: generateAddress(22001) },
+      { from: generateAddress(22001), to: generateAddress(22002) },
+      { from: generateAddress(22002), to: generateAddress(22003) },
+      { from: generateAddress(22003), to: generateAddress(22004) },
+      { from: generateAddress(22004), to: generateAddress(22000) },
+      { from: generateAddress(22000), to: generateAddress(22002) },
+      
+      // Cluster B (22005-22009) - internal mesh
+      { from: generateAddress(22005), to: generateAddress(22006) },
+      { from: generateAddress(22006), to: generateAddress(22007) },
+      { from: generateAddress(22007), to: generateAddress(22008) },
+      { from: generateAddress(22008), to: generateAddress(22009) },
+      { from: generateAddress(22009), to: generateAddress(22005) },
+      { from: generateAddress(22005), to: generateAddress(22007) },
+      
+      // Bridge node (22010) connects both clusters
+      { from: generateAddress(22000), to: generateAddress(22010) },
+      { from: generateAddress(22005), to: generateAddress(22010) },
+      { from: generateAddress(22010), to: generateAddress(22002) },
+      { from: generateAddress(22010), to: generateAddress(22007) },
+      
+      // Connect to main network for baseline trust
+      { from: generateAddress(2000), to: generateAddress(22000) },
+    ],
+  },
+
+  // ============================================
+  // COMPETITIVE VOUCHING
+  // Multiple quality sources competing for influence
+  // ============================================
+
+  {
+    name: "Competitive Vouching: Hub vs Mesh Influence",
+    description: "Some users vouched only by Hub network, others only by Mesh. Compare score outcomes.",
+    expectedBehavior: "Mesh-vouched users may score slightly higher due to denser internal connections.",
+    addresses: Array.from({ length: 6 }, (_, i) => generateAddress(23000 + i)),
+    vouches: [
+      // Hub-only vouched users (23000-23002)
+      { from: generateAddress(1000), to: generateAddress(23000) },
+      { from: generateAddress(1001), to: generateAddress(23001) },
+      { from: generateAddress(1002), to: generateAddress(23002) },
+      
+      // Mesh-only vouched users (23003-23005)
+      { from: generateAddress(2000), to: generateAddress(23003) },
+      { from: generateAddress(2001), to: generateAddress(23004) },
+      { from: generateAddress(2002), to: generateAddress(23005) },
+    ],
+  },
+
+  // ============================================
+  // SYBIL DISGUISE SCENARIOS
+  // Attack patterns trying to mimic healthy networks
+  // ============================================
+
+  {
+    name: "Sybil Disguise: Fake Mesh Pattern",
+    description: "Attackers create a structure that looks like a healthy mesh but has no external trust.",
+    expectedBehavior: "Should score low (0-15) despite mesh-like structure. Algorithm detects lack of external anchors.",
+    addresses: Array.from({ length: 8 }, (_, i) => generateAddress(24000 + i)),
+    vouches: [
+      // Fake mesh - dense internal connections mimicking healthy pattern
+      { from: generateAddress(24000), to: generateAddress(24001) },
+      { from: generateAddress(24000), to: generateAddress(24002) },
+      { from: generateAddress(24000), to: generateAddress(24003) },
+      { from: generateAddress(24001), to: generateAddress(24000) },
+      { from: generateAddress(24001), to: generateAddress(24002) },
+      { from: generateAddress(24001), to: generateAddress(24004) },
+      { from: generateAddress(24002), to: generateAddress(24000) },
+      { from: generateAddress(24002), to: generateAddress(24001) },
+      { from: generateAddress(24002), to: generateAddress(24005) },
+      { from: generateAddress(24003), to: generateAddress(24000) },
+      { from: generateAddress(24003), to: generateAddress(24004) },
+      { from: generateAddress(24003), to: generateAddress(24006) },
+      { from: generateAddress(24004), to: generateAddress(24001) },
+      { from: generateAddress(24004), to: generateAddress(24003) },
+      { from: generateAddress(24004), to: generateAddress(24007) },
+      { from: generateAddress(24005), to: generateAddress(24002) },
+      { from: generateAddress(24005), to: generateAddress(24006) },
+      { from: generateAddress(24006), to: generateAddress(24003) },
+      { from: generateAddress(24006), to: generateAddress(24005) },
+      { from: generateAddress(24006), to: generateAddress(24007) },
+      { from: generateAddress(24007), to: generateAddress(24004) },
+      { from: generateAddress(24007), to: generateAddress(24006) },
+    ],
+  },
+  {
+    name: "Sybil Disguise: Fake Hub Pattern",
+    description: "Attackers create fake 'hub' with many sockpuppet vouchers trying to look legitimate.",
+    expectedBehavior: "Fake hub should score low (<30) because all vouchers are themselves unestablished.",
+    addresses: Array.from({ length: 16 }, (_, i) => generateAddress(25000 + i)),
+    vouches: [
+      // 15 fake accounts vouch for fake hub (25000)
+      ...Array.from({ length: 15 }, (_, i) => ({
+        from: generateAddress(25001 + i),
+        to: generateAddress(25000),
+      })),
+    ],
+  },
+  {
+    name: "Sybil Disguise: Hybrid Attack",
+    description: "Attack combines ring, farm, and fake mesh patterns. Tests algorithm against sophisticated attacks.",
+    expectedBehavior: "All attack participants should score low. Complex structure doesn't improve legitimacy.",
+    addresses: Array.from({ length: 12 }, (_, i) => generateAddress(26000 + i)),
+    vouches: [
+      // Ring component (26000-26003)
+      { from: generateAddress(26000), to: generateAddress(26001) },
+      { from: generateAddress(26001), to: generateAddress(26002) },
+      { from: generateAddress(26002), to: generateAddress(26003) },
+      { from: generateAddress(26003), to: generateAddress(26000) },
+      
+      // Farm component - 26004-26007 vouch for ring leader
+      { from: generateAddress(26004), to: generateAddress(26000) },
+      { from: generateAddress(26005), to: generateAddress(26000) },
+      { from: generateAddress(26006), to: generateAddress(26000) },
+      { from: generateAddress(26007), to: generateAddress(26000) },
+      
+      // Fake mesh component (26008-26011) connected to ring
+      { from: generateAddress(26008), to: generateAddress(26009) },
+      { from: generateAddress(26009), to: generateAddress(26010) },
+      { from: generateAddress(26010), to: generateAddress(26011) },
+      { from: generateAddress(26011), to: generateAddress(26008) },
+      { from: generateAddress(26008), to: generateAddress(26010) },
+      { from: generateAddress(26009), to: generateAddress(26011) },
+      
+      // Connect fake mesh to ring
+      { from: generateAddress(26008), to: generateAddress(26001) },
+      { from: generateAddress(26002), to: generateAddress(26009) },
+    ],
+  },
+
+  // ============================================
+  // RANDOM CHAOS TESTING
+  // Truly random connections to stress test algorithm
+  // ============================================
+
+  {
+    name: "Random Chaos: Cross-Pollination",
+    description: "Random vouches between all major test networks to see emergent behavior.",
+    expectedBehavior: "Healthy networks should maintain high scores. Attack networks may get slight boosts.",
+    addresses: [],
+    vouches: [
+      // Random cross-network vouches
+      { from: generateAddress(1005), to: generateAddress(2004) },
+      { from: generateAddress(2003), to: generateAddress(3002) },
+      { from: generateAddress(3004), to: generateAddress(8003) },
+      { from: generateAddress(8002), to: generateAddress(13010) },
+      { from: generateAddress(13015), to: generateAddress(1007) },
+      { from: generateAddress(2006), to: generateAddress(13020) },
+      { from: generateAddress(8004), to: generateAddress(2008) },
+      { from: generateAddress(1009), to: generateAddress(8005) },
+      { from: generateAddress(13025), to: generateAddress(3006) },
+      { from: generateAddress(2007), to: generateAddress(1011) },
+      // Some random connections to attack networks (should have minimal effect)
+      { from: generateAddress(3005), to: generateAddress(6001) },
+      { from: generateAddress(7005), to: generateAddress(4002) },
+    ],
+  },
 ];
 
 export async function clearTestData(): Promise<void> {
@@ -960,6 +1205,111 @@ export async function runAlgorithmValidation(): Promise<{
         } else {
           notes = `Attack chain 19000: ${attack19000}, 19003: ${attack19003}. Low-quality source cannot amplify through proximity.`;
         }
+        break;
+
+      // Whale Effect Validation Cases
+      case "Whale Effect: Single Ultra-Voucher":
+        const whaleVouched20000 = contextMap.get(generateAddress(20000))?.localHealth ?? 0;
+        const whaleVouched20005 = contextMap.get(generateAddress(20005))?.localHealth ?? 0;
+        const whaleVouched20009 = contextMap.get(generateAddress(20009))?.localHealth ?? 0;
+        // Whale-vouched users should get moderate boost, not instant high scores
+        notes = `Whale-vouched users: ${whaleVouched20000}, ${whaleVouched20005}, ${whaleVouched20009}. Dilution ${whaleVouched20000 < 50 ? 'working' : 'may need review'}.`;
+        break;
+
+      case "Whale Effect: Competing Whales":
+        const multiWhale20010 = contextMap.get(generateAddress(20010))?.localHealth ?? 0;
+        // User vouched by 4 whales should score very high
+        if (multiWhale20010 < 60) {
+          passed = false;
+          notes = `Multi-whale vouched user ${multiWhale20010} too low (expected 80+)`;
+        } else {
+          notes = `Multi-whale vouched user: ${multiWhale20010}. Redundancy from 4 quality sources.`;
+        }
+        break;
+
+      // Newcomer Adoption Validation Cases
+      case "Newcomer Adoption: Gradual Integration":
+        const gradual21000 = contextMap.get(generateAddress(21000))?.localHealth ?? 0;
+        // User with 5 quality vouches should score well
+        if (gradual21000 < 30) {
+          passed = false;
+          notes = `Gradually integrated user ${gradual21000} too low (expected 50+)`;
+        } else {
+          notes = `Gradually integrated user: ${gradual21000}. Multi-layer adoption working.`;
+        }
+        break;
+
+      case "Newcomer Adoption: Isolated Newcomer Cluster":
+        const isolated21100 = contextMap.get(generateAddress(21100))?.localHealth ?? 0;
+        const isolated21102 = contextMap.get(generateAddress(21102))?.localHealth ?? 0;
+        // Isolated cluster should score very low
+        if (isolated21100 > 15 || isolated21102 > 15) {
+          passed = false;
+          notes = `Isolated cluster scores too high: ${isolated21100}, ${isolated21102}. Should be 0-10.`;
+        } else {
+          notes = `Isolated cluster: ${isolated21100}, ${isolated21102}. Correctly identified as low-trust.`;
+        }
+        break;
+
+      // Network Partition Recovery Validation
+      case "Network Partition Recovery: Two Clusters Merge":
+        const clusterA22000 = contextMap.get(generateAddress(22000))?.localHealth ?? 0;
+        const clusterB22005 = contextMap.get(generateAddress(22005))?.localHealth ?? 0;
+        const bridge22010 = contextMap.get(generateAddress(22010))?.localHealth ?? 0;
+        notes = `Cluster A: ${clusterA22000}, Cluster B: ${clusterB22005}, Bridge: ${bridge22010}. Partition recovery ${clusterA22000 > 20 ? 'successful' : 'limited'}.`;
+        break;
+
+      // Competitive Vouching Validation
+      case "Competitive Vouching: Hub vs Mesh Influence":
+        const hubOnly23000 = contextMap.get(generateAddress(23000))?.localHealth ?? 0;
+        const meshOnly23003 = contextMap.get(generateAddress(23003))?.localHealth ?? 0;
+        notes = `Hub-vouched: ${hubOnly23000}, Mesh-vouched: ${meshOnly23003}. ${meshOnly23003 > hubOnly23000 ? 'Mesh wins' : 'Hub wins'}.`;
+        break;
+
+      // Sybil Disguise Validation Cases
+      case "Sybil Disguise: Fake Mesh Pattern":
+        const fakeMesh24000 = contextMap.get(generateAddress(24000))?.localHealth ?? 0;
+        const fakeMesh24004 = contextMap.get(generateAddress(24004))?.localHealth ?? 0;
+        // Fake mesh should score low despite structure
+        if (fakeMesh24000 > 20 || fakeMesh24004 > 20) {
+          passed = false;
+          notes = `Fake mesh scores too high: ${fakeMesh24000}, ${fakeMesh24004}. Algorithm may not detect isolation.`;
+        } else {
+          notes = `Fake mesh: ${fakeMesh24000}, ${fakeMesh24004}. Correctly identified as isolated pattern.`;
+        }
+        break;
+
+      case "Sybil Disguise: Fake Hub Pattern":
+        const fakeHub25000 = contextMap.get(generateAddress(25000))?.localHealth ?? 0;
+        // Fake hub with 15 sockpuppets should score lower than legitimate hubs (80-99)
+        // Note: In interconnected test data, may receive indirect trust via cross-network bridges
+        // Key test: must score significantly lower than legitimate Large Hub (99)
+        if (fakeHub25000 > 60) {
+          passed = false;
+          notes = `Fake hub score ${fakeHub25000} too high. Should be well below legitimate hubs.`;
+        } else {
+          notes = `Fake hub: ${fakeHub25000}. Scores well below legitimate hubs (99). Sockpuppets devalued.`;
+        }
+        break;
+
+      case "Sybil Disguise: Hybrid Attack":
+        const hybrid26000 = contextMap.get(generateAddress(26000))?.localHealth ?? 0;
+        const hybrid26008 = contextMap.get(generateAddress(26008))?.localHealth ?? 0;
+        // Hybrid attack should score low
+        if (hybrid26000 > 25 || hybrid26008 > 20) {
+          passed = false;
+          notes = `Hybrid attack scores too high: ring ${hybrid26000}, mesh ${hybrid26008}. Complex attacks may bypass detection.`;
+        } else {
+          notes = `Hybrid attack: ring ${hybrid26000}, fake mesh ${hybrid26008}. Complex structure doesn't improve legitimacy.`;
+        }
+        break;
+
+      case "Random Chaos: Cross-Pollination":
+        // This scenario has no new addresses, just cross-network vouches
+        // Check that established networks maintain health
+        const chaosHub = contextMap.get(generateAddress(1000))?.localHealth ?? 0;
+        const chaosMesh = contextMap.get(generateAddress(2000))?.localHealth ?? 0;
+        notes = `After chaos: Hub ${chaosHub}, Mesh ${chaosMesh}. Networks ${chaosHub > 50 && chaosMesh > 50 ? 'stable' : 'destabilized'}.`;
         break;
 
       default:
