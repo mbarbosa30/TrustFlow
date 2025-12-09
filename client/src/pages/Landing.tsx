@@ -52,7 +52,7 @@ export default function Landing() {
           </Badge>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight max-w-4xl mx-auto" data-testid="text-hero-headline">
-            Trust, Computed Naturally
+            Trust, Computed <span style={{ color: 'hsl(var(--score-growth))' }}>Naturally</span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8" data-testid="text-hero-subheadline">
@@ -76,25 +76,25 @@ export default function Landing() {
           {traction && traction.totalVouchers > 0 && (
             <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
               <div className="text-center" data-testid="stat-vouchers">
-                <div className="text-3xl md:text-4xl font-bold tabular-nums text-foreground">
+                <div className="text-3xl md:text-4xl font-bold tabular-nums" style={{ color: 'hsl(var(--score-growth))' }}>
                   {traction.totalVouchers.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Vouchers</div>
               </div>
               <div className="text-center" data-testid="stat-vouches">
-                <div className="text-3xl md:text-4xl font-bold tabular-nums text-foreground">
+                <div className="text-3xl md:text-4xl font-bold tabular-nums" style={{ color: 'hsl(var(--score-growth))' }}>
                   {traction.totalVouches.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Vouches</div>
               </div>
               <div className="text-center" data-testid="stat-scored-users">
-                <div className="text-3xl md:text-4xl font-bold tabular-nums text-foreground">
+                <div className="text-3xl md:text-4xl font-bold tabular-nums" style={{ color: 'hsl(var(--score-growth))' }}>
                   {traction.scoredUsers}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Scored Users</div>
               </div>
               <div className="text-center" data-testid="stat-avg-signal">
-                <div className="text-3xl md:text-4xl font-bold tabular-nums text-foreground">
+                <div className="text-3xl md:text-4xl font-bold tabular-nums" style={{ color: 'hsl(var(--score-growth))' }}>
                   {traction.avgLocalHealth}
                 </div>
                 <div className="text-xs text-muted-foreground mt-2 tracking-wide uppercase">Avg Signal</div>
