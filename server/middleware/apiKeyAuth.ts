@@ -3,6 +3,71 @@ import { db } from '../db';
 import { communities } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
+// Single-flight lock for admin operations
+let recalculationInProgress = false;
+
+export function isRecalculationInProgress(): boolean {
+  return recalculationInProgress;
+}
+
+export function setRecalculationInProgress(value: boolean): void {
+  recalculationInProgress = value;
+}
+
+/**
+ * Middleware to authenticate admin API requests using ADMIN_API_KEY
+ * Validates the X-Admin-Key header against the environment variable
+ */
+export function validateAdminApiKey(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const adminKey = req.headers['x-admin-key'] as string;
+  const expectedKey = process.env.ADMIN_API_KEY;
+  
+  if (!expectedKey) {
+    console.warn("ADMIN_API_KEY not configured - admin endpoints are disabled");
+    return res.status(503).json({ 
+      error: "ADMIN_DISABLED",
+      message: "Admin endpoints are not configured. Set ADMIN_API_KEY secret to enable."
+    });
+  }
+  
+  if (!adminKey) {
+    return res.status(401).json({ 
+      error: "MISSING_ADMIN_KEY",
+      message: "X-Admin-Key header is required"
+    });
+  }
+  
+  if (adminKey !== expectedKey) {
+    return res.status(403).json({ 
+      error: "INVALID_ADMIN_KEY",
+      message: "Invalid admin API key"
+    });
+  }
+  
+  next();
+}
+
+/**
+ * Middleware to prevent concurrent recalculations (single-flight lock)
+ */
+export function singleFlightRecalculation(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (recalculationInProgress) {
+    return res.status(409).json({
+      error: "RECALCULATION_IN_PROGRESS",
+      message: "A network recalculation is already in progress. Please wait and try again later."
+    });
+  }
+  next();
+}
+
 /**
  * Middleware to authenticate API requests using Community API keys
  * Validates the X-Community-Key header and attaches community context to request

@@ -280,8 +280,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin middleware imports - rate limiting and single-flight lock only (no API key required)
+  const { singleFlightRecalculation, setRecalculationInProgress } = await import("./middleware/apiKeyAuth");
+  const { rateLimit } = await import("./middleware/rateLimit");
+  
+  // Admin rate limiters
+  const adminRateLimit = rateLimit({
+    windowMs: 60000, // 1 minute
+    max: 10, // 10 requests per minute for most admin endpoints
+    keyGenerator: (req) => req.ip || 'unknown'
+  });
+  
+  const recalculationRateLimit = rateLimit({
+    windowMs: 300000, // 5 minutes
+    max: 1, // 1 request per 5 minutes for heavy recalculation
+    keyGenerator: (req) => req.ip || 'unknown'
+  });
+
   // Populate test data for algorithm validation
-  app.post("/api/admin/populate-test-data", async (req, res) => {
+  app.post("/api/admin/populate-test-data", adminRateLimit, async (req, res) => {
     try {
       const { clearTestData, populateTestData } = await import("./testdata/algorithmTestData");
       
@@ -305,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Validate algorithm against test scenarios
-  app.get("/api/admin/validate-algorithm", async (req, res) => {
+  app.get("/api/admin/validate-algorithm", adminRateLimit, async (req, res) => {
     try {
       const { runAlgorithmValidation, testScenarios } = await import("./testdata/algorithmTestData");
       
@@ -326,20 +343,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Network recalculation endpoint (admin function)
-  app.post("/api/admin/recalculate-network", async (req, res) => {
+  // Network recalculation endpoint (admin function) - with single-flight lock and rate limiting
+  app.post("/api/admin/recalculate-network", recalculationRateLimit, singleFlightRecalculation, async (req, res) => {
     try {
+      setRecalculationInProgress(true);
+      
       const { NetworkRecalculationService } = await import("./services/networkRecalculation");
       const recalcService = new NetworkRecalculationService();
       
       console.log("Starting network recalculation...");
       const result = await recalcService.recalculateAllScores();
       
+      setRecalculationInProgress(false);
+      
       return res.status(200).json({
         message: "Network recalculation complete",
         result,
       });
     } catch (error) {
+      setRecalculationInProgress(false);
       console.error("Error recalculating network:", error);
       return res.status(500).json({ 
         error: "Network recalculation failed",
@@ -349,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Scheduler status endpoint
-  app.get("/api/admin/scheduler-status", async (req, res) => {
+  app.get("/api/admin/scheduler-status", adminRateLimit, async (req, res) => {
     try {
       const { recalculationScheduler } = await import("./services/recalculationScheduler");
       const status = recalculationScheduler.getStatus();
@@ -361,8 +383,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Trigger immediate recalculation via scheduler
-  app.post("/api/admin/scheduler-run-now", async (req, res) => {
+  // Trigger immediate recalculation via scheduler - with single-flight lock and rate limiting
+  app.post("/api/admin/scheduler-run-now", recalculationRateLimit, singleFlightRecalculation, async (req, res) => {
     try {
       const { recalculationScheduler } = await import("./services/recalculationScheduler");
       

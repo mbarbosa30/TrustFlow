@@ -46,6 +46,158 @@ const publicRateLimit = rateLimit({
 
 export function registerPublicApiRoutes(app: Express) {
   
+  // Bulk cached scores endpoint - fast retrieval of all pre-computed LocalHealth scores
+  // No computation, just database query - sub-second for 400+ users
+  app.get("/api/v1/scores/cached", publicRateLimit, async (req, res) => {
+    try {
+      const minScore = parseInt(req.query.min_score as string) || 0;
+      const limit = Math.min(parseInt(req.query.limit as string) || 10000, 10000);
+      
+      // Query all ego contexts with cached LocalHealth scores
+      const allContexts = await storage.getAllContexts();
+      
+      // Filter to ego contexts with scores, apply minScore filter
+      const egoContexts = allContexts
+        .filter(ctx => 
+          ctx.type === 'ego' && 
+          ctx.ownerAddress && 
+          ctx.localHealth !== null && 
+          ctx.localHealth >= minScore
+        )
+        .slice(0, limit);
+      
+      const scores = egoContexts.map(ctx => ({
+        address: ctx.ownerAddress!.toLowerCase(),
+        local_health: ctx.localHealth!,
+        last_updated: ctx.localHealthUpdatedAt?.toISOString() || ctx.updatedAt?.toISOString() || null,
+      }));
+      
+      // Get scheduler status for freshness info
+      let schedulerInfo = null;
+      try {
+        const { recalculationScheduler } = await import('../services/recalculationScheduler');
+        const status = recalculationScheduler.getStatus();
+        schedulerInfo = {
+          last_run: status.lastRunAt,
+          next_run: status.nextRunAt,
+          interval_hours: status.intervalHours,
+        };
+      } catch (e) {
+        // Scheduler may not be initialized
+      }
+      
+      res.json({
+        count: scores.length,
+        min_score_filter: minScore,
+        scores,
+        scheduler: schedulerInfo,
+        note: "Scores are cached from the last network-wide computation. Use GET /api/v1/score/:address/details for on-demand detailed metrics.",
+      });
+    } catch (error) {
+      console.error('Error getting cached scores:', error);
+      res.status(500).json({ error: "Failed to get cached scores" });
+    }
+  });
+
+  // Single-user detailed metrics endpoint - computes algorithm breakdown on-demand
+  // More expensive but provides full component breakdown for one user
+  app.get("/api/v1/score/:address/details", publicRateLimit, async (req, res) => {
+    try {
+      const address = req.params.address.toLowerCase();
+      
+      if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: "Invalid address format" });
+      }
+      
+      const { localHealthService } = await import('../services/localHealthService');
+      
+      // Get cached score and compute detailed breakdown
+      const egoContext = await storage.getOrCreateEgoContext(address);
+      const algorithmBreakdown = await localHealthService.computeAlgorithmBreakdown(address);
+      
+      // Get vouch counts
+      const [incomingTotal, outgoingTotal, incomingEndorsements] = await Promise.all([
+        storage.countEndorsements({ endorsee: address, communityId: 0 }),
+        storage.countEndorsements({ endorser: address, communityId: 0 }),
+        storage.getEndorsements({ endorsee: address, communityId: 0, limit: 1000 }),
+      ]);
+      
+      // Filter active vouches
+      const { buildVouchFilter, isVouchValid } = await import('../services/vouchExpiration');
+      const filter = await buildVouchFilter();
+      const now = new Date();
+      const incomingActive = incomingEndorsements.filter(e => isVouchValid(e, filter, now));
+      const uniqueVouchers = new Set(incomingActive.map(e => e.endorser.toLowerCase())).size;
+      
+      // Determine confidence tier based on LocalHealth score
+      const localHealth = egoContext.localHealth ?? 0;
+      let confidenceTier: string;
+      let confidenceDescription: string;
+      if (localHealth >= 75) {
+        confidenceTier = "high_confidence";
+        confidenceDescription = "Almost certainly human - strong organic network with redundant trust paths";
+      } else if (localHealth >= 65) {
+        confidenceTier = "likely_human";
+        confidenceDescription = "Likely human - organic redundancy detected, passes Sybil resistance checks";
+      } else if (localHealth >= 50) {
+        confidenceTier = "uncertain";
+        confidenceDescription = "Uncertain - could be newcomer building network OR potential attack pattern";
+      } else {
+        confidenceTier = "low_confidence";
+        confidenceDescription = "Low confidence - matches common attack patterns or very new user";
+      }
+      
+      res.json({
+        address,
+        local_health: localHealth,
+        cached_at: egoContext.localHealthUpdatedAt?.toISOString() || egoContext.updatedAt?.toISOString() || null,
+        
+        confidence: {
+          tier: confidenceTier,
+          description: confidenceDescription,
+          thresholds: {
+            high_confidence: "≥75",
+            likely_human: "≥65",
+            uncertain: "50-64",
+            low_confidence: "<50",
+          },
+        },
+        
+        vouch_counts: {
+          incoming_total: incomingTotal,
+          incoming_active: incomingActive.length,
+          outgoing_total: outgoingTotal,
+          unique_vouchers: uniqueVouchers,
+        },
+        
+        activity: {
+          last_vouch_given_at: egoContext.lastSignalActivityAt?.toISOString() || null,
+        },
+        
+        algorithm_breakdown: algorithmBreakdown ? {
+          flow_component: Math.round(algorithmBreakdown.flow_component * 100) / 100,
+          redundancy_component: Math.round(algorithmBreakdown.redundancy_component * 100) / 100,
+          direct_flow: Math.round(algorithmBreakdown.direct_flow * 100) / 100,
+          actual_min_cut: Math.round((algorithmBreakdown as any).actual_min_cut * 100) / 100 || 0,
+          effective_redundancy: Math.round(algorithmBreakdown.effective_redundancy * 100) / 100,
+          dilution_factor: Math.round(algorithmBreakdown.dilution_factor * 100) / 100,
+          vertex_disjoint_paths: algorithmBreakdown.vertex_disjoint_paths,
+          ego_network_size: algorithmBreakdown.ego_network_size,
+          edge_density: Math.round(algorithmBreakdown.edge_density * 1000) / 1000,
+          baselines: {
+            healthy_vouch_count: algorithmBreakdown.baselines.healthy_vouch_count,
+            healthy_redundancy: algorithmBreakdown.baselines.healthy_redundancy,
+          },
+        } : null,
+        
+        note: "Algorithm breakdown is computed on-demand from the current network state.",
+      });
+    } catch (error) {
+      console.error('Error getting score details:', error);
+      res.status(500).json({ error: "Failed to get score details" });
+    }
+  });
+
   app.get("/api/v1/score/:address", publicRateLimit, async (req, res) => {
     try {
       const address = req.params.address.toLowerCase();

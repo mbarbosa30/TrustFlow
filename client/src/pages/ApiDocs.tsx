@@ -128,6 +128,170 @@ curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61?force_re
       </section>
 
       <section>
+        <h3>GET /api/v1/scores/cached</h3>
+        <p>
+          <strong>Bulk cached scores endpoint.</strong> Retrieve all pre-computed LocalHealth scores from the database in a single request. 
+          This is the fastest way to get scores for multiple users - ideal for applications that need to display many scores at once.
+        </p>
+        
+        <h4>Performance</h4>
+        <p>
+          This endpoint returns cached scores computed during the 6-hour network-wide recalculation cycle. 
+          <strong>No computation occurs on request</strong> - it's a simple database query, typically completing in under 100ms for 500+ users.
+        </p>
+        
+        <h4>Query Parameters</h4>
+        <ul>
+          <li><strong>min_score</strong> (optional): Minimum LocalHealth score to include (default: 0)</li>
+          <li><strong>limit</strong> (optional): Maximum number of scores to return (default: 10000, max: 10000)</li>
+        </ul>
+        
+        <h4>Example Requests</h4>
+        <pre><code>{`# Get all cached scores
+curl ${baseUrl}/api/v1/scores/cached
+
+# Get only scores >= 65 (likely human threshold)
+curl "${baseUrl}/api/v1/scores/cached?min_score=65"
+
+# Get top 100 scores
+curl "${baseUrl}/api/v1/scores/cached?limit=100"`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "count": 412,
+  "min_score_filter": 0,
+  "scores": [
+    {
+      "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+      "local_health": 72,
+      "last_updated": "2025-01-15T06:00:00.000Z"
+    },
+    {
+      "address": "0x742d35cc6634c0532925a3b844bc9e7595f0beb2",
+      "local_health": 85,
+      "last_updated": "2025-01-15T06:00:00.000Z"
+    }
+  ],
+  "scheduler": {
+    "last_run": "2025-01-15T06:00:00.000Z",
+    "next_run": "2025-01-15T12:00:00.000Z",
+    "interval_hours": 6
+  },
+  "note": "Scores are cached from the last network-wide computation. Use GET /api/v1/score/:address/details for on-demand detailed metrics."
+}`}</code></pre>
+
+        <h4>Response Fields</h4>
+        <ul>
+          <li><strong>count</strong>: Total number of scores returned</li>
+          <li><strong>min_score_filter</strong>: The min_score filter applied (0 if not specified)</li>
+          <li><strong>scores</strong>: Array of cached score objects</li>
+          <li><strong>scores[].address</strong>: Wallet address (lowercase)</li>
+          <li><strong>scores[].local_health</strong>: Cached LocalHealth score (0-100)</li>
+          <li><strong>scores[].last_updated</strong>: When this score was last computed</li>
+          <li><strong>scheduler</strong>: Information about the 6-hour recalculation scheduler</li>
+          <li><strong>scheduler.last_run</strong>: When the last network-wide recalculation completed</li>
+          <li><strong>scheduler.next_run</strong>: When the next recalculation is scheduled</li>
+          <li><strong>scheduler.interval_hours</strong>: How often recalculation runs (6 hours)</li>
+        </ul>
+
+        <h4>When to Use This Endpoint</h4>
+        <ul>
+          <li><strong>Displaying leaderboards or score lists</strong> - Fast retrieval of many scores</li>
+          <li><strong>Batch verification</strong> - Check scores for multiple users at once</li>
+          <li><strong>Analytics dashboards</strong> - Get aggregate score data quickly</li>
+          <li><strong>Periodic syncing</strong> - Keep your app's cache updated every few hours</li>
+        </ul>
+        <p>
+          For detailed algorithm breakdown on a single user, use <code>GET /api/v1/score/:address/details</code> instead.
+        </p>
+      </section>
+
+      <section>
+        <h3>GET /api/v1/score/:address/details</h3>
+        <p>
+          <strong>Single-user detailed metrics endpoint.</strong> Get comprehensive algorithm breakdown and confidence tier 
+          for one wallet address. Computes the algorithm breakdown on-demand for the most detailed analysis.
+        </p>
+        
+        <h4>Performance</h4>
+        <p>
+          This endpoint computes the algorithm breakdown on-demand by running the iterative scoring algorithm. 
+          Response time is typically 1-5 seconds depending on network size. Use sparingly for individual user analysis.
+        </p>
+        
+        <h4>Example Request</h4>
+        <pre><code>{`curl ${baseUrl}/api/v1/score/0x216844eF94D95279c6d1631875F2dd93FbBdfB61/details`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+  "local_health": 72,
+  "cached_at": "2025-01-15T06:00:00.000Z",
+  
+  "confidence": {
+    "tier": "likely_human",
+    "description": "Likely human - organic redundancy detected, passes Sybil resistance checks",
+    "thresholds": {
+      "high_confidence": "≥75",
+      "likely_human": "≥65",
+      "uncertain": "50-64",
+      "low_confidence": "<50"
+    }
+  },
+  
+  "vouch_counts": {
+    "incoming_total": 8,
+    "incoming_active": 7,
+    "outgoing_total": 5,
+    "unique_vouchers": 7
+  },
+  
+  "activity": {
+    "last_vouch_given_at": "2025-01-10T08:15:00.000Z"
+  },
+  
+  "algorithm_breakdown": {
+    "flow_component": 45.5,
+    "redundancy_component": 26.5,
+    "direct_flow": 7.0,
+    "actual_min_cut": 5.0,
+    "effective_redundancy": 12.4,
+    "dilution_factor": 1.0,
+    "vertex_disjoint_paths": 4,
+    "ego_network_size": 15,
+    "edge_density": 0.12,
+    "baselines": {
+      "healthy_vouch_count": 8.0,
+      "healthy_redundancy": 36.0
+    }
+  },
+  
+  "note": "Algorithm breakdown is computed on-demand from the current network state."
+}`}</code></pre>
+
+        <h4>Confidence Tiers</h4>
+        <p>The confidence tier indicates how likely the wallet belongs to a real human based on validated attack pattern analysis:</p>
+        <ul>
+          <li><strong>high_confidence (≥75)</strong>: Almost certainly human - strong organic network with redundant trust paths. All legitimate network patterns score here.</li>
+          <li><strong>likely_human (≥65)</strong>: Likely human - organic redundancy detected, passes Sybil resistance checks. Safe for most access control.</li>
+          <li><strong>uncertain (50-64)</strong>: Uncertain - could be a newcomer legitimately building their network OR a potential attack pattern. Consider additional verification.</li>
+          <li><strong>low_confidence (&lt;50)</strong>: Low confidence - matches common attack patterns (sockpuppet farms, flash mobs, Sybil rings) or very new user with minimal network.</li>
+        </ul>
+        <p>
+          These thresholds are derived from 51 validated test scenarios covering hub-spoke patterns, mesh networks, 
+          Sybil rings, sockpuppet farms, flash mob attacks, and more. All known attack patterns score below 55.
+        </p>
+
+        <h4>When to Use This Endpoint</h4>
+        <ul>
+          <li><strong>User profile pages</strong> - Show detailed score breakdown to users</li>
+          <li><strong>Access control decisions</strong> - Check confidence tier before granting privileges</li>
+          <li><strong>Debugging score issues</strong> - Understand why a user has a particular score</li>
+          <li><strong>Fraud investigation</strong> - Analyze algorithm components for suspicious patterns</li>
+        </ul>
+      </section>
+
+      <section>
         <h3>POST /api/v1/score/:address/refresh</h3>
         <p>Force a fresh score recalculation for a wallet. Useful when you need the most up-to-date score immediately after a vouch action.</p>
         
@@ -460,8 +624,18 @@ const message = {
           <tbody>
             <tr>
               <td>GET</td>
+              <td>/api/v1/scores/cached</td>
+              <td>Bulk cached scores (fast)</td>
+            </tr>
+            <tr>
+              <td>GET</td>
               <td>/api/v1/score/:address</td>
               <td>Get Signal score</td>
+            </tr>
+            <tr>
+              <td>GET</td>
+              <td>/api/v1/score/:address/details</td>
+              <td>Detailed metrics + confidence</td>
             </tr>
             <tr>
               <td>GET</td>
