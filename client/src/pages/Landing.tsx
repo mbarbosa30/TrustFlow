@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Network, Shield, GitBranch, CheckCircle2, Users, ArrowRight, 
   Vote, Banknote, Gift, Building2, Code, Eye, Zap, Lock, Leaf, TreePine,
-  Activity, TrendingUp, Heart
+  Activity, TrendingUp, Heart, Waypoints
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { NetworkBackground } from "@/components/NetworkBackground";

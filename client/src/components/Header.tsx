@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Network } from "lucide-react";
+import { Waypoints } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { WalletConnect } from "@/components/WalletConnect";
@@ -36,7 +36,7 @@ export function Header({ navItems, authenticatedNavItems, variant = "app" }: Hea
               className="flex items-center gap-2 font-bold text-xl hover-elevate rounded-lg px-2 py-1" 
               data-testid="link-home"
             >
-              <Network className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
+              <Waypoints className="w-6 h-6" style={{ color: 'hsl(var(--score-river))' }} />
               <span>MaxFlow</span>
             </Link>
             

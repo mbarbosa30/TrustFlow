@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Network } from "lucide-react";
+import { Waypoints } from "lucide-react";
 
 export function Footer() {
   return (
@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 font-bold text-lg mb-3">
-              <Network className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
+              <Waypoints className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
               <span>MaxFlow</span>
             </div>
             <p className="text-sm text-muted-foreground">
