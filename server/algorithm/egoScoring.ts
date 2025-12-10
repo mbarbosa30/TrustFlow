@@ -27,6 +27,135 @@ export const DEFAULT_CONFIG: EgoScoringConfig = {
 };
 
 /**
+ * Algorithm Enhancement: Diminishing Returns Curve
+ * 
+ * Applies logarithmic scaling to raw scores so that:
+ * - Initial scores (0-30) are relatively easy to achieve
+ * - Mid-range scores (30-50) require more effort
+ * - High scores (50-65) require genuine network integration
+ * - Elite scores (65-80) are very difficult without diverse high-quality connections
+ * - Top scores (80+) are economically infeasible to game
+ * 
+ * Formula: Uses sigmoid + log blend for smooth diminishing returns
+ * - Below 30: nearly linear (easy entry)
+ * - 30-50: gentle compression (growing effort)
+ * - 50-65: moderate compression (genuine integration needed)
+ * - 65-80: strong compression (diversity gates kick in)
+ * - 80+: extreme compression (near-impossible without real network)
+ */
+function applyDiminishingReturns(rawScore: number): number {
+  // Scores below 30 pass through mostly unchanged (easy entry)
+  if (rawScore <= 30) {
+    return rawScore;
+  }
+  
+  // Use piecewise logarithmic compression for higher scores
+  if (rawScore <= 50) {
+    // 30-50 range: gentle compression
+    // Map 30-50 raw to ~30-45 output
+    const excess = rawScore - 30;
+    const compressedExcess = 15 * Math.log1p(excess) / Math.log1p(20);
+    return 30 + compressedExcess;
+  }
+  
+  if (rawScore <= 70) {
+    // 50-70 range: moderate compression
+    // Map 50-70 raw to ~45-58 output
+    const baseOutput = 45; // Output at raw=50
+    const excess = rawScore - 50;
+    const compressedExcess = 13 * Math.log1p(excess) / Math.log1p(20);
+    return baseOutput + compressedExcess;
+  }
+  
+  if (rawScore <= 90) {
+    // 70-90 range: strong compression
+    // Map 70-90 raw to ~58-70 output
+    const baseOutput = 58; // Output at raw=70
+    const excess = rawScore - 70;
+    const compressedExcess = 12 * Math.log1p(excess) / Math.log1p(20);
+    return baseOutput + compressedExcess;
+  }
+  
+  // 90-100 range: extreme compression
+  // Map 90-100 raw to ~70-80 output (with quality gates, can reach higher)
+  const baseOutput = 70; // Output at raw=90
+  const excess = rawScore - 90;
+  const compressedExcess = 10 * Math.log1p(excess) / Math.log1p(10);
+  return baseOutput + compressedExcess;
+}
+
+/**
+ * Algorithm Enhancement: Quality Gates
+ * 
+ * Unlocks higher score tiers based on voucher quality distribution.
+ * Returns a multiplier that can boost scores ABOVE the diminishing returns curve
+ * when genuine high-quality network integration is demonstrated.
+ * 
+ * Tier thresholds (requires quality vouchers to unlock):
+ * - 50+: Need at least 1 voucher with score >= 50 (emerging networks)
+ * - 65+: Need at least 2 vouchers with score >= 65 (likely human threshold)
+ * - 80+: Need at least 3 vouchers with score >= 75, plus vertex-disjoint paths
+ * 
+ * @returns Object with: 
+ *   - maxUnlockedTier: The highest tier this user can reach
+ *   - qualityBonus: Extra points for exceptional quality (0-20)
+ */
+function computeQualityGates(
+  voucherScores: Map<string, number>,
+  directVouchers: string[],
+  vertexDisjointPaths: number
+): { maxUnlockedTier: number; qualityBonus: number } {
+  // Count vouchers at each quality level
+  let quality50Count = 0;  // >= 50
+  let quality65Count = 0;  // >= 65
+  let quality75Count = 0;  // >= 75
+  let totalQuality = 0;
+  
+  for (const voucher of directVouchers) {
+    const score = voucherScores.get(voucher) ?? 0;
+    totalQuality += score;
+    if (score >= 50) quality50Count++;
+    if (score >= 65) quality65Count++;
+    if (score >= 75) quality75Count++;
+  }
+  
+  // Determine max unlocked tier
+  let maxUnlockedTier = 50; // Everyone can reach up to 50
+  
+  if (quality50Count >= 1) {
+    maxUnlockedTier = 65; // Can reach up to 65
+  }
+  
+  if (quality65Count >= 2) {
+    maxUnlockedTier = 80; // Can reach up to 80
+  }
+  
+  // Elite tier (80+) requires strong quality AND structural diversity
+  if (quality75Count >= 3 && vertexDisjointPaths >= 2) {
+    maxUnlockedTier = 100; // Can approach max
+  }
+  
+  // Quality bonus: reward for exceptional network quality
+  // Based on average voucher quality and count of high-quality sources
+  let qualityBonus = 0;
+  const avgQuality = directVouchers.length > 0 
+    ? totalQuality / directVouchers.length 
+    : 0;
+  
+  // Bonus for high average quality (up to +10)
+  if (avgQuality >= 70) {
+    qualityBonus += Math.min(10, (avgQuality - 70) / 3);
+  }
+  
+  // Additional bonus for multiple high-quality vouchers (up to +10)
+  if (quality75Count >= 4) {
+    qualityBonus += Math.min(10, (quality75Count - 3) * 2);
+  }
+  
+  return { maxUnlockedTier, qualityBonus };
+}
+
+/**
  * Algorithm Enhancement: Piecewise Dilution Curve
  * 
  * Instead of linear 10% penalty per excess vouch, uses smooth continuous decay:
@@ -932,8 +1061,6 @@ export class EgoScorer {
     const baselines = this.cachedBaselines || { healthyVouchCount: 8.0, healthyRedundancy: 35.0 };
     const HEALTHY_VOUCH_COUNT = baselines.healthyVouchCount;
     const HEALTHY_REDUNDANCY = baselines.healthyRedundancy;
-    // Score ceiling: subtract epsilon so 100 is mathematically rare
-    const SCORE_CEILING_EPSILON = 1.0;
     
     // Flow component: Normalize by healthy vouch baseline (rewards having more vouchers)
     // directFlow = sum of voucher strengths (weighted by voucher LocalHealth)
@@ -996,10 +1123,68 @@ export class EgoScorer {
     const adjustedRedundancy = Math.min(1.0, (effectiveRedundancy + vertexDisjointBonus) / HEALTHY_REDUNDANCY);
     const cutComponent = 40 * adjustedRedundancy * vouchQualityFactor;
     
+    // LOW-QUALITY VOUCHER CAP: Limit contribution from <50 score vouchers to 35% of flow
+    // This prevents Sybil clusters from accumulating score through mass low-quality vouches
+    // Only applies when voucherScores are available (iterative scoring)
+    let lowQualityPenalty = 0;
+    const LOW_QUALITY_CONTRIBUTION_CAP = 0.35; // 35% max from low-quality sources
+    if (voucherScores && directVouchers.length > 0) {
+      let lowQualityContribution = 0;
+      let highQualityContribution = 0;
+      for (const voucher of directVouchers) {
+        const score = voucherScores.get(voucher) ?? 0;
+        const contribution = voucherCapacities.get(voucher)?.capacity ?? 1.0;
+        if (score < 50) {
+          lowQualityContribution += contribution;
+        } else {
+          highQualityContribution += contribution;
+        }
+      }
+      const totalContribution = lowQualityContribution + highQualityContribution;
+      const lowQualityRatio = totalContribution > 0 ? lowQualityContribution / totalContribution : 0;
+      
+      // If low-quality ratio exceeds cap, reduce flow component proportionally
+      if (lowQualityRatio > LOW_QUALITY_CONTRIBUTION_CAP) {
+        const excessRatio = lowQualityRatio - LOW_QUALITY_CONTRIBUTION_CAP;
+        lowQualityPenalty = flowComponent * excessRatio * 0.5; // 50% of excess is penalized
+      }
+    }
+    
+    // Calculate raw score before diminishing returns
+    const rawScorePreDiminishing = (flowComponent - lowQualityPenalty) + cutComponent;
+    
+    // DIMINISHING RETURNS: Apply logarithmic compression to make higher scores harder
+    // Easy to get some score (0-30), progressively harder to improve
+    const diminishedScore = applyDiminishingReturns(rawScorePreDiminishing);
+    
+    // QUALITY GATES: Check if user has unlocked higher tiers based on voucher quality
+    // Genuine high-quality networks can exceed diminishing returns curve
+    let finalScore = diminishedScore;
+    let maxUnlockedTier = 50;
+    let qualityBonus = 0;
+    
+    if (voucherScores) {
+      const qualityGates = computeQualityGates(
+        voucherScores,
+        directVouchers,
+        disjointPathCount
+      );
+      maxUnlockedTier = qualityGates.maxUnlockedTier;
+      qualityBonus = qualityGates.qualityBonus;
+      
+      // Cap score at unlocked tier (but allow quality bonus to push slightly above)
+      if (diminishedScore > maxUnlockedTier) {
+        finalScore = maxUnlockedTier;
+      }
+      
+      // Apply quality bonus (can push above diminished score up to tier cap)
+      finalScore = Math.min(maxUnlockedTier, finalScore + qualityBonus);
+    }
+    
     // Apply score ceiling: subtract epsilon so 100 is mathematically rare
     // Only exceptional networks with >8 quality vouchers AND >35 redundancy points approach 99
-    const rawScore = flowComponent + cutComponent;
-    const localHealth = Math.min(100 - SCORE_CEILING_EPSILON, Math.max(0, rawScore));
+    const SCORE_CEILING_EPSILON = 1.0;
+    const localHealth = Math.min(100 - SCORE_CEILING_EPSILON, Math.max(0, finalScore));
 
     return {
       ownerAddress,
@@ -1032,6 +1217,12 @@ export class EgoScorer {
         edgeDensity: Math.round(edgeDensity * 1000) / 1000,
         healthyVouchCount: Math.round(HEALTHY_VOUCH_COUNT * 10) / 10,
         healthyRedundancy: Math.round(HEALTHY_REDUNDANCY * 10) / 10,
+        // Diminishing returns tracking
+        rawScorePreDiminishing: Math.round(rawScorePreDiminishing * 100) / 100,
+        diminishedScore: Math.round(diminishedScore * 100) / 100,
+        maxUnlockedTier,
+        qualityBonus: Math.round(qualityBonus * 100) / 100,
+        lowQualityPenalty: Math.round(lowQualityPenalty * 100) / 100,
       },
     };
   }

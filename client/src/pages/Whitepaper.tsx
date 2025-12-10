@@ -37,7 +37,7 @@ export default function Whitepaper() {
           <FileText className="w-8 h-8 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
-            <p className="text-sm text-muted-foreground">Version 1.4 — December 2025</p>
+            <p className="text-sm text-muted-foreground">Version 1.5 — December 2025</p>
           </div>
         </div>
         <h2 className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
@@ -1790,6 +1790,24 @@ export default function Whitepaper() {
                   Detects coordinated mass-vouching ({'>'}20 low-score vouchers). Caps low-quality flow at 2.0. Flash mob targets score 52 instead of 99.
                 </p>
               </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Diminishing Returns</div>
+                <p className="text-muted-foreground text-xs">
+                  Logarithmic scaling makes higher scores progressively harder. Easy entry (0-30), moderate effort (30-50), genuine integration needed (50-65+).
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Quality Gates</div>
+                <p className="text-muted-foreground text-xs">
+                  Tier unlocks: 50+ requires 1 voucher ≥50, 65+ requires 2 vouchers ≥65, 80+ requires 3 vouchers ≥75 plus vertex-disjoint paths.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Low-Quality Cap</div>
+                <p className="text-muted-foreground text-xs">
+                  Vouchers with scores {'<'}50 can contribute max 35% of flow component. Prevents Sybil clusters from accumulating score through mass low-quality vouches.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1942,7 +1960,42 @@ export default function Whitepaper() {
         <h2 className="text-xl sm:text-2xl font-bold">Version History</h2>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Version 1.4 (December 2025)</CardTitle>
+            <CardTitle className="text-lg">Version 1.5 (December 2025)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Diminishing Returns Curve</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Logarithmic scaling makes higher scores progressively harder: 0-30 (easy entry), 30-50 (growing effort), 
+                50-65 (genuine integration), 65-80 (strong compression), 80+ (near-impossible without real network).
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Quality Gates</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tier unlocks based on voucher quality: 50+ requires 1 voucher ≥50, 65+ requires 2 vouchers ≥65, 
+                80+ requires 3 vouchers ≥75 plus vertex-disjoint paths.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Low-Quality Contribution Cap</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Vouchers with scores {'<'}50 can contribute max 35% of flow component. Prevents Sybil clusters 
+                from accumulating score through mass low-quality vouches.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Quality Bonus System</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Exceptional networks receive up to +20 bonus: +10 for avg voucher quality ≥70, +10 for 4+ 
+                vouchers with score ≥75.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg text-muted-foreground">Version 1.4 (December 2025)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="p-3 rounded-lg bg-muted/30">

@@ -101,6 +101,12 @@ export interface AlgorithmComponents {
   edgeDensity: number;
   healthyVouchCount: number;
   healthyRedundancy: number;
+  // Diminishing returns tracking (v1.5)
+  rawScorePreDiminishing?: number;
+  diminishedScore?: number;
+  maxUnlockedTier?: number;
+  qualityBonus?: number;
+  lowQualityPenalty?: number;
 }
 
 export interface EgoScoreResult {
