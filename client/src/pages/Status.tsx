@@ -488,6 +488,96 @@ export default function Status() {
             </div>
           </CardContent>
         </Card>
+
+        <Card data-testid="card-algorithm-validation">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
+              Algorithm Validation
+            </CardTitle>
+            <CardDescription>
+              Validated scenarios demonstrating Sybil resistance and scoring accuracy
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2 text-sm" style={{ color: 'hsl(var(--score-growth))' }}>Legitimate Networks</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Healthy Mesh (10 users)</span>
+                      <Badge variant="default">82-99</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Large Hub (51 vouchers)</span>
+                      <Badge variant="default">95</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Multi-Whale Vouched</span>
+                      <Badge variant="default">91</Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-2 text-sm text-destructive">Attack Patterns</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Sybil Ring (6 accounts)</span>
+                      <Badge variant="secondary">37</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Fake Hub (15 sockpuppets)</span>
+                      <Badge variant="secondary">51</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-2 rounded bg-muted/30">
+                      <span className="text-muted-foreground">Fake Mesh Pattern</span>
+                      <Badge variant="secondary">7</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2 text-sm">Key Validations</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="p-2 rounded bg-muted/30">
+                      <div className="font-medium mb-1">Trust Cascade Attenuation</div>
+                      <p className="text-xs text-muted-foreground">
+                        5-hop chain: 21 → 8 → 5 (trust decays with distance)
+                      </p>
+                    </div>
+                    <div className="p-2 rounded bg-muted/30">
+                      <div className="font-medium mb-1">Whale Dilution Effect</div>
+                      <p className="text-xs text-muted-foreground">
+                        Single whale: 33 each | 4 whales: 91 (redundancy bonus)
+                      </p>
+                    </div>
+                    <div className="p-2 rounded bg-muted/30">
+                      <div className="font-medium mb-1">Tiered Capacity</div>
+                      <p className="text-xs text-muted-foreground">
+                        6 sockpuppets = 0.48 flow (well below 4.0 baseline)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
+                    <span className="font-semibold text-sm">43 Scenarios Passing</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    430 vouches across 285 users covering legitimate networks, attack patterns, 
+                    cross-network dynamics, and edge cases.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

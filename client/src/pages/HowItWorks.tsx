@@ -388,6 +388,122 @@ export default function HowItWorks() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Waves className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
+              Real-World Examples
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="prose prose-sm max-w-none dark:prose-invert">
+            <p>
+              These examples are from validated test scenarios demonstrating how the algorithm behaves 
+              in practice. Each illustrates a key property of the scoring system.
+            </p>
+
+            <div className="my-4 space-y-4">
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Waves className="w-4 h-4" style={{ color: 'hsl(var(--score-river))' }} />
+                  <span className="font-semibold">Trust Cascade: How Trust Attenuates Over Distance</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  A high-quality hub vouches for User A, who vouches for User B, who vouches for User C, 
+                  continuing for 5 hops. Trust naturally decays along the chain:
+                </p>
+                <div className="flex flex-wrap gap-2 text-sm font-mono">
+                  <span className="px-2 py-1 rounded bg-muted">Hop 1: 21</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="px-2 py-1 rounded bg-muted">Hop 3: 8</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="px-2 py-1 rounded bg-muted">Hop 5: 5</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Why it matters: Attackers can't amplify trust by creating long vouch chains.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)', border: '1px solid hsl(var(--score-transition) / 0.2)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GitBranch className="w-4 h-4" style={{ color: 'hsl(var(--score-transition))' }} />
+                  <span className="font-semibold">Whale Effect: Dilution vs Redundancy</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  When a single "whale" (high-score user) vouches for 10 people, each recipient 
+                  gets a modest score due to dilution. But when 4 separate whales each vouch for 
+                  the same person, redundancy bonus kicks in:
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div className="p-2 rounded bg-muted/50">
+                    <div className="font-medium">Single Whale → 10 Recipients</div>
+                    <div className="font-mono text-muted-foreground">Score: 33 each (diluted)</div>
+                  </div>
+                  <div className="p-2 rounded bg-muted/50">
+                    <div className="font-medium">4 Whales → 1 Recipient</div>
+                    <div className="font-mono" style={{ color: 'hsl(var(--score-growth))' }}>Score: 91 (redundancy bonus)</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Why it matters: Multiple independent quality sources = higher trust than one source vouching for many.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <TreePine className="w-4 h-4 text-destructive" />
+                  <span className="font-semibold">Sybil Disguise: Fake Patterns Don't Fool the Algorithm</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Attackers might try to mimic legitimate network structures. Here's how they score:
+                </p>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>Fake Mesh (8 accounts, dense connections)</span>
+                    <span className="font-mono font-medium">7</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>Fake Hub (15 sockpuppets vouching)</span>
+                    <span className="font-mono font-medium">51</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>Hybrid Attack (ring + mesh)</span>
+                    <span className="font-mono font-medium">18/5</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Compare to legitimate: Healthy Mesh (82-99), Large Hub (95). Tiered capacity 
+                  means 10 sockpuppets × 0.08 = 0.8 flow, well below the 4.0 healthy baseline.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Leaf className="w-4 h-4" style={{ color: 'hsl(var(--score-canopy))' }} />
+                  <span className="font-semibold">Newcomer Integration: Cold Start to Trusted</span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  New users can't game their way in, but legitimate integration works:
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div className="p-2 rounded bg-background">
+                    <div className="font-medium">Isolated Newcomer Cluster</div>
+                    <div className="text-muted-foreground">5 new accounts, no external links</div>
+                    <div className="font-mono text-destructive">Score: 5-6</div>
+                  </div>
+                  <div className="p-2 rounded bg-background">
+                    <div className="font-medium">Gradual Integration</div>
+                    <div className="text-muted-foreground">5 vouches from established network</div>
+                    <div className="font-mono" style={{ color: 'hsl(var(--score-growth))' }}>Score: 72</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Why it matters: The path from newcomer to trusted requires genuine network integration.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Standardized Network Score (STS)</CardTitle>
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">

@@ -1275,6 +1275,115 @@ export default function Whitepaper() {
 
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
+              Validated Test Scenarios
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm sm:text-base leading-relaxed">
+              The algorithm has been validated against <strong>43 test scenarios</strong> covering legitimate networks, 
+              attack patterns, cross-network dynamics, and edge cases. Key empirical results:
+            </p>
+
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+                <div className="font-semibold text-sm mb-2" style={{ color: 'hsl(var(--score-growth))' }}>Legitimate Network Scores</div>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Healthy Mesh Network (10 users, bidirectional)</span>
+                    <span className="font-mono font-medium">82-99</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Large Hub (51 vouchers)</span>
+                    <span className="font-mono font-medium">95</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Multi-Whale Vouched User (4 quality sources)</span>
+                    <span className="font-mono font-medium">91</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gradual Integration (5 quality vouches)</span>
+                    <span className="font-mono font-medium">72</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                <div className="font-semibold text-sm mb-2 text-destructive">Attack Pattern Scores</div>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sybil Ring (6 accounts, circular vouching)</span>
+                    <span className="font-mono font-medium">37 max</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sockpuppet Farm (10 fake accounts → 1 target)</span>
+                    <span className="font-mono font-medium">55*</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fake Hub (15 sockpuppets vouching)</span>
+                    <span className="font-mono font-medium">51</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Fake Mesh Pattern (isolated dense cluster)</span>
+                    <span className="font-mono font-medium">7</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Hybrid Attack (ring + fake mesh)</span>
+                    <span className="font-mono font-medium">18/5</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Isolated Newcomer Cluster (no external links)</span>
+                    <span className="font-mono font-medium">5-6</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  *Sockpuppet Farm score boosted by legitimate Hub vouch in cross-network test
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="font-semibold text-sm mb-2">Key Sybil Resistance Validation</div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
+                    <div>
+                      <strong>Tiered Capacity:</strong> 6 low-quality vouches (score 0) contribute only 0.48 flow 
+                      (6 × 0.08) vs 4.0 healthy baseline—insufficient to boost targets
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
+                    <div>
+                      <strong>Trust Cascade:</strong> 5-hop chain shows proper attenuation (21 → 8 → 5)—trust decays with distance
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
+                    <div>
+                      <strong>Whale Dilution:</strong> Single ultra-voucher's recipients score 33 (diluted), 
+                      vs 91 when vouched by 4 separate quality sources (redundancy bonus)
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'hsl(var(--score-growth))' }} />
+                    <div>
+                      <strong>Convergence:</strong> Algorithm converges in 3-5 iterations for typical networks, 
+                      with max change &lt;0.5 at termination
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground italic">
+              Full test suite: 43 scenarios, 430 vouches, 285 users. Run via <span className="font-mono">/api/admin/validate-algorithm</span>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle className="text-lg">Algorithmic Complexity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
