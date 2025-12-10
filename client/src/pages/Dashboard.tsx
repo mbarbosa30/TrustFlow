@@ -58,7 +58,7 @@ export default function Dashboard() {
   const expectedAvgLocalHealth = Math.min(SCORE_CEILING, flowComponent + redundancyComponent);
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       {/* ═══════════════════════════════════════════════════════════════════════════
           BAND 1: SIGNAL SUMMARY HERO
           Primary visual hierarchy - the most important metrics at a glance
@@ -67,27 +67,27 @@ export default function Dashboard() {
       <div className="w-full relative" style={{ background: 'hsl(var(--background))' }}>
         <div className="max-w-7xl mx-auto px-6 py-12 relative">
           {/* Header with Title */}
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10">
-            <div className="flex items-center gap-5">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5 mb-8">
+            <div className="flex items-center gap-3 sm:gap-5">
               <div 
-                className="p-5 rounded-2xl animate-pulse-glow" 
+                className="p-4 sm:p-5 rounded-2xl animate-pulse-glow" 
                 style={{ 
-                  backgroundColor: 'hsl(var(--score-canopy) / 0.15)',
-                  boxShadow: '0 0 40px hsl(var(--score-canopy) / 0.2)'
+                  backgroundColor: 'hsl(var(--score-canopy) / 0.12)',
+                  boxShadow: '0 0 30px hsl(var(--score-canopy) / 0.15)'
                 }}
               >
-                <Network className="w-12 h-12" style={{ color: 'hsl(var(--score-canopy))' }} />
+                <Network className="w-10 h-10 sm:w-12 sm:h-12" style={{ color: 'hsl(var(--score-canopy))' }} />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight" data-testid="heading-dashboard">Trust Network</h1>
-                <p className="text-muted-foreground mt-1 text-lg">
+                <h1 className="text-2xl sm:text-4xl font-bold tracking-tight" data-testid="heading-dashboard">Trust Network</h1>
+                <p className="text-muted-foreground mt-1 text-base sm:text-lg">
                   LocalHealth signals computed from graph topology
                 </p>
               </div>
             </div>
             
             {/* Hero Metrics - Primary Signal Band */}
-            <div className="signal-hero flex flex-wrap items-center gap-6 animate-fade-in-up">
+            <div className="signal-hero flex flex-wrap items-center gap-5 animate-fade-in-up">
               {localHealthData && (
                 <>
                   {/* Primary Metric: Average LocalHealth */}
@@ -109,7 +109,7 @@ export default function Dashboard() {
                   <div className="h-16 w-px bg-border hidden sm:block" />
                   
                   {/* Secondary Metrics */}
-                  <div className="flex gap-8">
+                  <div className="flex flex-wrap gap-5">
                     <div className="text-center">
                       <div className="metric-secondary" data-testid="text-local-health-total-users">
                         {localHealthData.totalUsers}
@@ -149,8 +149,8 @@ export default function Dashboard() {
           Secondary metrics - quick health indicators using Fibonacci grid
           ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="relative" style={{ background: 'hsl(var(--background))' }}>
-        <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="space-y-20">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="space-y-16">
           
           {/* Flow Analytics Section */}
           <section className="animate-fade-in-up">
@@ -167,7 +167,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {/* Flow Saturation */}
               <Card data-testid="card-flow-saturation-metric">
                 <CardHeader className="pb-3">
@@ -259,10 +259,10 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  <div className="bg-background rounded-lg p-6 font-mono text-sm overflow-x-auto">
-                    <div className="text-muted-foreground mb-3">// LocalHealth = 60 × flowScore + 40 × redundancyRatio</div>
-                    <div className="flex flex-wrap items-center gap-3">
+                <div className="space-y-5">
+                  <div className="bg-background rounded-lg p-4 sm:p-6 font-mono text-sm overflow-x-auto">
+                    <div className="text-muted-foreground mb-3 text-xs sm:text-sm">// LocalHealth = 60 × flowScore + 40 × redundancyRatio</div>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <span className="font-bold text-lg" style={{ color: 'hsl(var(--score-growth))' }}>LocalHealth</span>
                       <span>=</span>
                       <span className="px-3 py-2 bg-blue-500/10 rounded text-base" data-testid="text-flow-component">{flowComponent.toFixed(1)}</span>
@@ -277,7 +277,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   
-                  <div className="grid md:grid-cols-3 gap-6 text-sm">
+                  <div className="grid md:grid-cols-3 gap-5 text-sm">
                     <div className="space-y-2">
                       <div className="font-medium">Flow Component (60 pts max)</div>
                       <div className="text-muted-foreground">
@@ -304,7 +304,7 @@ export default function Dashboard() {
 
           {/* LocalHealth Distribution & Algorithm Info */}
           <section>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <div className="lg:col-span-2">
                 {localHealthData && localHealthData.distribution.length > 0 && (
                   <LocalHealthHistogram
@@ -401,14 +401,14 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-8">
+            <div className="space-y-5">
               <ConvergenceChart />
               <FlowSaturationCurve />
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-5">
                 <FlowRedundancyScatter />
                 <VoucherStrengthHistogram />
               </div>
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-5">
                 <ConvergenceSensitivityChart />
                 <RedundancyDepthChart />
               </div>
@@ -430,7 +430,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-8">
+            <div className="space-y-5">
               <VouchTimelineChart />
               <GrowthCohortChart />
             </div>
@@ -451,9 +451,9 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-8">
+            <div className="space-y-5">
               <AdaptiveBaselineMonitor />
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-5">
                 <NetworkResilienceChart />
                 <DilutionZonesChart />
               </div>
@@ -475,12 +475,12 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-8">
-              <div className="grid lg:grid-cols-2 gap-8">
+            <div className="space-y-5">
+              <div className="grid lg:grid-cols-2 gap-5">
                 <VoucherInfluenceChart />
                 <SybilRiskChart />
               </div>
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid lg:grid-cols-2 gap-5">
                 <EdgeFragilityChart />
                 <DilutionPressureChart />
               </div>

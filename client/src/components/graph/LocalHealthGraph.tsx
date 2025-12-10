@@ -267,7 +267,7 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => graphRef.current?.zoomToFit(400)}
                 data-testid="button-zoom-fit"
-                className="h-8 w-8"
+                aria-label="Fit graph to view"
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
@@ -282,7 +282,7 @@ export function LocalHealthGraph({
                   }
                 }}
                 data-testid="button-zoom-in"
-                className="h-8 w-8"
+                aria-label="Zoom in"
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -297,7 +297,7 @@ export function LocalHealthGraph({
                   }
                 }}
                 data-testid="button-zoom-out"
-                className="h-8 w-8"
+                aria-label="Zoom out"
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
@@ -316,8 +316,8 @@ export function LocalHealthGraph({
               variant="outline"
               onClick={() => setIsFullscreen(true)}
               data-testid="button-fullscreen"
-              className="bg-background/80 backdrop-blur-sm h-8 w-8"
-              title="View in fullscreen"
+              className="bg-background/80 backdrop-blur-sm"
+              aria-label="View graph in fullscreen"
             >
               <Expand className="h-4 w-4" />
             </Button>
@@ -442,6 +442,7 @@ export function LocalHealthGraph({
               onClick={() => setIsFullscreen(false)}
               data-testid="button-close-fullscreen"
               className="bg-background/80 backdrop-blur-sm"
+              aria-label="Close fullscreen view"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -543,6 +544,7 @@ export function LocalHealthGraph({
                 variant="ghost"
                 onClick={() => graphRef.current?.zoomToFit(400)}
                 data-testid="button-zoom-fit"
+                aria-label="Fit graph to view"
               >
                 <Maximize2 className="h-4 w-4" />
               </Button>
@@ -557,6 +559,7 @@ export function LocalHealthGraph({
                   }
                 }}
                 data-testid="button-zoom-in"
+                aria-label="Zoom in"
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -571,6 +574,7 @@ export function LocalHealthGraph({
                   }
                 }}
                 data-testid="button-zoom-out"
+                aria-label="Zoom out"
               >
                 <ZoomOut className="h-4 w-4" />
               </Button>
