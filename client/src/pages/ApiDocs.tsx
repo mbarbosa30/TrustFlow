@@ -203,7 +203,91 @@ curl "${baseUrl}/api/v1/scores/cached?limit=100"`}</code></pre>
         </ul>
         <p>
           For detailed algorithm breakdown on a single user, use <code>GET /api/v1/score/:address/details</code> instead.
+          For bulk detailed data including algorithm breakdowns, use <code>GET /api/v1/scores/cached/detailed</code>.
         </p>
+      </section>
+
+      <section>
+        <h3>GET /api/v1/scores/cached/detailed</h3>
+        <p>
+          <strong>Bulk cached detailed scores endpoint.</strong> Retrieve all pre-computed LocalHealth scores WITH full algorithm breakdowns 
+          in a single request. This returns the same breakdown data as the single-user details endpoint, but for all users at once.
+        </p>
+        
+        <h4>Performance</h4>
+        <p>
+          Like the basic cached endpoint, this reads from the database and requires <strong>no computation</strong>. 
+          Algorithm breakdowns are cached during the 6-hour network-wide recalculation cycle.
+        </p>
+        
+        <h4>Query Parameters</h4>
+        <ul>
+          <li><strong>min_score</strong> (optional): Minimum LocalHealth score to include (default: 0)</li>
+          <li><strong>limit</strong> (optional): Maximum number of scores to return (default: 10000, max: 10000)</li>
+        </ul>
+        
+        <h4>Example Requests</h4>
+        <pre><code>{`# Get all cached scores with detailed breakdowns
+curl ${baseUrl}/api/v1/scores/cached/detailed
+
+# Get only high-confidence users (score >= 75) with breakdowns
+curl "${baseUrl}/api/v1/scores/cached/detailed?min_score=75"
+
+# Get top 50 scores with breakdowns
+curl "${baseUrl}/api/v1/scores/cached/detailed?limit=50"`}</code></pre>
+        
+        <h4>Response</h4>
+        <pre><code>{`{
+  "count": 412,
+  "min_score_filter": 0,
+  "scores": [
+    {
+      "address": "0x216844ef94d95279c6d1631875f2dd93fbbdfb61",
+      "local_health": 72,
+      "confidence_tier": "likely_human",
+      "flow_component": 45.5,
+      "redundancy_component": 26.5,
+      "actual_min_cut": 5.0,
+      "effective_redundancy": 12.4,
+      "vertex_disjoint_paths": 4,
+      "dilution_factor": 1.0,
+      "incoming_active": 7,
+      "outgoing_total": 5,
+      "last_updated": "2025-01-15T06:00:00.000Z"
+    }
+  ],
+  "scheduler": {
+    "last_run": "2025-01-15T06:00:00.000Z",
+    "next_run": "2025-01-15T12:00:00.000Z",
+    "interval_hours": 6
+  },
+  "note": "Detailed scores cached from last network-wide computation (6-hour cycle). Algorithm breakdown data is included."
+}`}</code></pre>
+
+        <h4>Response Fields</h4>
+        <ul>
+          <li><strong>count</strong>: Total number of scores returned</li>
+          <li><strong>scores[].address</strong>: Wallet address (lowercase)</li>
+          <li><strong>scores[].local_health</strong>: Final LocalHealth score (0-100)</li>
+          <li><strong>scores[].confidence_tier</strong>: One of: "high_confidence" (≥75), "likely_human" (≥65), "uncertain" (50-64), "low_confidence" (&lt;50)</li>
+          <li><strong>scores[].flow_component</strong>: Flow component (0-60) from incoming trust</li>
+          <li><strong>scores[].redundancy_component</strong>: Redundancy/min-cut component (0-40) for Sybil resistance</li>
+          <li><strong>scores[].actual_min_cut</strong>: True min-cut computed via Dinic's algorithm</li>
+          <li><strong>scores[].effective_redundancy</strong>: Combined redundancy = min-cut + depth bonus + vertex-disjoint bonus</li>
+          <li><strong>scores[].vertex_disjoint_paths</strong>: Count of truly independent trust paths</li>
+          <li><strong>scores[].dilution_factor</strong>: Penalty multiplier (0.4-1.0) for excessive outgoing vouches</li>
+          <li><strong>scores[].incoming_active</strong>: Number of active (non-expired, non-revoked) incoming vouches</li>
+          <li><strong>scores[].outgoing_total</strong>: Total outgoing vouches given</li>
+          <li><strong>scores[].last_updated</strong>: When this score was last computed</li>
+        </ul>
+
+        <h4>When to Use This Endpoint</h4>
+        <ul>
+          <li><strong>Analytics and research</strong> - Get full algorithm data for all users at once</li>
+          <li><strong>Custom scoring models</strong> - Use raw components to build your own thresholds</li>
+          <li><strong>Network visualization</strong> - Display flow/redundancy breakdown across the network</li>
+          <li><strong>Batch classification</strong> - Filter users by confidence tier in bulk</li>
+        </ul>
       </section>
 
       <section>
