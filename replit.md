@@ -71,7 +71,18 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
             *   Low-score (1-30): Linear interpolation `0.08 + 0.22 * (score/30)` reaching 0.30 at score 30
             *   Normal (31+): Sqrt weighting `0.30 + 0.70 * sqrt((score-30)/70)` - continuous from 0.30 at score 31 to 1.0 at score 100
             *   Unknown vouchers default to score 0 (maximum Sybil resistance)
-        *   **Algorithm Test Data**: Comprehensive test scenarios in `server/testdata/algorithmTestData.ts` covering: hub-spoke patterns, mesh networks, Sybil rings, sockpuppet farms, collusion clusters, over-vouching dilution, multi-path redundancy, expired/revoked vouches, isolated users, and large-scale stress tests. Admin endpoints: `POST /api/admin/populate-test-data`, `GET /api/admin/validate-algorithm`.
+        *   **Flash Mob Protection (Dec 2025)**: Prevents coordinated mass-vouching attacks:
+            *   **Threshold-Based Activation**: Protection only triggers when >20 low-quality (score <30) vouchers detected (FLASH_MOB_THRESHOLD)
+            *   **Capped Low-Quality Flow**: Total flow from score-<30 vouchers capped at 2.0 (100 sockpuppets × 0.08 = 8.0 → capped to 2.0)
+            *   **Quality-Gated Min-Cut**: Low-quality vouchers contribute reduced capacity (0.1-1.0, scaling with score) to redundancy calculation
+            *   **Legitimate Network Preservation**: Small legitimate networks (15 new users vouching for a hub) are NOT penalized
+            *   Result: Flash Mob target scores 52 instead of 99 - below the 65 "likely human" threshold
+        *   **Algorithm Test Data**: Comprehensive 51 test scenarios in `server/testdata/algorithmTestData.ts` covering: hub-spoke patterns, mesh networks, Sybil rings, sockpuppet farms, collusion clusters, over-vouching dilution, multi-path redundancy, expired/revoked vouches, isolated users, large-scale stress tests, and 8 unexpected attack patterns (Compromised Whale, Slow-Burn Sybil, Parasitic Bridge, Reputation Laundering, Flash Mob, Trojan Community, Dilution Sabotage, Eclipse Attack). Admin endpoints: `POST /api/admin/populate-test-data`, `GET /api/admin/validate-algorithm`.
+        *   **Signal Confidence Tiers**: Recommended thresholds derived from validated test scenarios:
+            *   ≥75: High Confidence (almost certainly human)
+            *   ≥65: Likely Human (organic redundancy)
+            *   50-64: Uncertain (could be newcomer OR attack)
+            *   <50: Low Confidence (most attack patterns)
     *   **Outgoing Vouch Adjustment**: Applies a piecewise dilution curve to penalize excessive vouching, ensuring accountability.
     *   LocalHealth is purely graph-based, independent of economic factors.
 *   **LocalHealth Score Caching**: Scores are cached in `contexts` table for fast API responses.

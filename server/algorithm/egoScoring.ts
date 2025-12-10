@@ -737,6 +737,23 @@ export class EgoScorer {
     // Step 2: Compute direct flow (SOURCE → vouchers → owner) for flow component
     const SOURCE = "SOURCE";
     const directGraph = new FlowGraph(SOURCE, normalizedOwner);
+    
+    // FLASH MOB PROTECTION: Cap total flow from low-quality (score < 30) sources
+    // This prevents coordinated mass-vouching attacks where many sockpuppets vouch for one target
+    // Only triggers when there are suspiciously many low-quality vouchers (>20)
+    // 100 score-0 accounts × 0.08 = 8.0 flow → would give 99 score without this cap
+    // With cap of 2.0: max contribution from low-quality = 2.0 → target scores ~50 instead
+    // 
+    // IMPORTANT: Small legitimate networks (hub-and-spoke with 15 new users) should NOT be penalized
+    // The cap only applies when low-quality voucher count exceeds FLASH_MOB_THRESHOLD
+    const LOW_QUALITY_THRESHOLD = 30;
+    const LOW_QUALITY_FLOW_CAP = 2.0;
+    const FLASH_MOB_THRESHOLD = 20; // Only apply cap if >20 low-quality vouchers
+    
+    // Track low-quality vs high-quality flow contributions separately
+    let lowQualityFlowTotal = 0;
+    let highQualityFlowTotal = 0;
+    const voucherCapacities: Map<string, { capacity: number; isLowQuality: boolean }> = new Map();
 
     // Connect source to all direct vouchers with unit capacity
     for (const voucher of directVouchers) {
@@ -756,6 +773,7 @@ export class EgoScorer {
     // - Normal vouchers (30+): sqrt weighting from 0.30 to 1.0
     for (const voucher of directVouchers) {
       let capacity = 1.0;
+      let isLowQuality = false;
       if (voucherScores) {
         // Default to 0 for unknown vouchers (Sybil resistance)
         const voucherScore = voucherScores.get(voucher) ?? 0;
@@ -767,23 +785,43 @@ export class EgoScorer {
           // 10 sockpuppets × 0.08 = 0.8 flow (well below healthy baseline of 4)
           // This gives puppetmaster max ~12 points from flow (0.8/4 × 60)
           capacity = 0.08;
-        } else if (voucherScore <= 30) {
+          isLowQuality = true;
+        } else if (voucherScore < LOW_QUALITY_THRESHOLD) {
           // Low-score: emerging accounts get reduced capacity
           // Linearly interpolate from 0.08 to 0.30 as score goes from 1 to 30
           // At score 30: capacity = 0.08 + 0.22 * (30/30) = 0.30
           capacity = 0.08 + (0.22 * voucherScore / 30);
+          isLowQuality = true;
         } else {
-          // Normal vouchers (31+): sqrt weighting from 0.30 to 1.0
+          // Normal vouchers (30+): sqrt weighting from 0.30 to 1.0
           // Use (score-30)/70 so score=31 gives ~0.31 (continuous from 0.30)
           // score=100→1.0, score=70→0.73, score=50→0.54
           capacity = 0.30 + 0.70 * Math.sqrt((voucherScore - 30) / 70);
+          isLowQuality = false;
+        }
+        
+        // Track totals for cap calculation
+        if (isLowQuality) {
+          lowQualityFlowTotal += capacity;
+        } else {
+          highQualityFlowTotal += capacity;
         }
       }
+      voucherCapacities.set(voucher, { capacity, isLowQuality });
       directGraph.addEdge(voucher, normalizedOwner, capacity);
     }
 
     const directFlowSolver = new DinicMaxFlow(directGraph);
-    const directFlow = directFlowSolver.computeMaxFlow();
+    let directFlow = directFlowSolver.computeMaxFlow();
+    
+    // FLASH MOB PROTECTION: Apply low-quality flow cap
+    // Only applies when there are suspiciously many (>20) low-quality vouchers
+    // This preserves legitimate small networks while catching coordinated attacks
+    const lowQualityVoucherCount = Array.from(voucherCapacities.values()).filter(v => v.isLowQuality).length;
+    if (voucherScores && lowQualityVoucherCount > FLASH_MOB_THRESHOLD && lowQualityFlowTotal > LOW_QUALITY_FLOW_CAP) {
+      const excessLowQuality = lowQualityFlowTotal - LOW_QUALITY_FLOW_CAP;
+      directFlow = Math.max(0, directFlow - excessLowQuality);
+    }
 
     // Calculate residual flow as AVERAGE VOUCHER STRENGTH
     // Normalize by unweighted maximum (number of vouchers) to capture voucher quality
@@ -839,9 +877,22 @@ export class EgoScorer {
       }
     }
     
-    // Add direct voucher → owner edges
+    // Add direct voucher → owner edges with QUALITY-GATED capacity (only for flash mob scenarios)
+    // FLASH MOB PROTECTION: Low-quality vouchers contribute reduced capacity to min-cut
+    // Only applies when there are suspiciously many (>20) low-quality vouchers
+    // This prevents 100 sockpuppets from inflating the min-cut/redundancy score
+    // while preserving legitimate small networks
     for (const voucher of directVouchers) {
-      multiHopGraph.addEdge(voucher, normalizedOwner, 1.0);
+      let mincutCapacity = 1.0;
+      if (voucherScores && lowQualityVoucherCount > FLASH_MOB_THRESHOLD) {
+        const voucherScore = voucherScores.get(voucher) ?? 0;
+        if (voucherScore < LOW_QUALITY_THRESHOLD) {
+          // Low-quality vouchers contribute reduced capacity to min-cut
+          // Score 0: 0.1 capacity, Score 29: ~0.39 capacity
+          mincutCapacity = 0.1 + 0.9 * (voucherScore / LOW_QUALITY_THRESHOLD);
+        }
+      }
+      multiHopGraph.addEdge(voucher, normalizedOwner, mincutCapacity);
     }
     
     // Compute actual min-cut using Dinic's algorithm

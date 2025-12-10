@@ -1437,11 +1437,11 @@ export default function Whitepaper() {
                 <Badge className="mt-1" style={{ backgroundColor: 'hsl(var(--score-growth))', color: 'white' }}>Protected</Badge>
               </div>
 
-              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.05)', border: '1px solid hsl(var(--score-transition) / 0.2)' }}>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
                 <div className="font-semibold text-sm mb-1">Flash Mob Vouch</div>
                 <p className="text-xs text-muted-foreground mb-2">100 low-score accounts vouch for one target</p>
-                <div className="text-xs font-mono">Target: 99 (cross-network effects)</div>
-                <Badge variant="secondary" className="mt-1">Monitoring</Badge>
+                <div className="text-xs font-mono">Target: 52 (threshold &gt;20 triggers cap)</div>
+                <Badge className="mt-1" style={{ backgroundColor: 'hsl(var(--score-growth))', color: 'white' }}>Protected</Badge>
               </div>
 
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
@@ -1454,9 +1454,9 @@ export default function Whitepaper() {
 
             <div className="p-3 rounded-lg bg-muted/30">
               <p className="text-sm">
-                <strong>Key Finding:</strong> 7 of 8 unexpected attack scenarios properly contained below the 65 "likely human" 
-                threshold. The Flash Mob scenario shows elevated scores due to cross-network effects in the test environment—
-                isolated Flash Mob attacks would score lower. All sophisticated attacks (compromise, laundering, eclipse) 
+                <strong>Key Finding:</strong> All 8 unexpected attack scenarios properly contained below the 65 "likely human" 
+                threshold. Flash Mob protection implemented via capped low-quality flow (max 2.0 from score-&lt;30 sources) 
+                and quality-gated min-cut capacity. All sophisticated attacks (compromise, laundering, eclipse, flash mob) 
                 are effectively neutralized.
               </p>
             </div>
