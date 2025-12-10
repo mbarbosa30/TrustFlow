@@ -853,6 +853,190 @@ export const testScenarios: TestScenario[] = [
       { from: generateAddress(7005), to: generateAddress(4002) },
     ],
   },
+
+  // ============================================
+  // UNEXPECTED ATTACK SCENARIOS
+  // Creative edge cases that might slip through
+  // ============================================
+
+  {
+    name: "Compromised Whale",
+    description: "A high-score legitimate account gets hacked and starts vouching for sockpuppets.",
+    expectedBehavior: "Whale's score drops due to dilution. Sockpuppets get modest boost but not enough to pass 65 threshold.",
+    addresses: [
+      generateAddress(27000), // Compromised whale (initially high-quality)
+      ...Array.from({ length: 12 }, (_, i) => generateAddress(27001 + i)), // Sockpuppets
+    ],
+    vouches: [
+      // Legitimate vouches TO the whale (establishing high score first)
+      { from: generateAddress(2000), to: generateAddress(27000) },
+      { from: generateAddress(2001), to: generateAddress(27000) },
+      { from: generateAddress(2002), to: generateAddress(27000) },
+      { from: generateAddress(2003), to: generateAddress(27000) },
+      { from: generateAddress(1000), to: generateAddress(27000) }, // From hub
+      // After compromise: whale vouches for 12 sockpuppets
+      ...Array.from({ length: 12 }, (_, i) => ({
+        from: generateAddress(27000),
+        to: generateAddress(27001 + i),
+      })),
+    ],
+  },
+  {
+    name: "Slow-Burn Sybil (Sleeper Accounts)",
+    description: "Attacker creates accounts slowly over time with sparse connections before coordinated attack.",
+    expectedBehavior: "Pre-activation scores low. Post-activation, even with cross-vouching, should remain <50.",
+    addresses: Array.from({ length: 8 }, (_, i) => generateAddress(28000 + i)),
+    vouches: [
+      // Phase 1: Sparse legitimate-looking connections (1 vouch each from mesh)
+      { from: generateAddress(2000), to: generateAddress(28000) },
+      { from: generateAddress(2002), to: generateAddress(28001) },
+      { from: generateAddress(2004), to: generateAddress(28002) },
+      { from: generateAddress(2006), to: generateAddress(28003) },
+      // Phase 2: Coordinated attack - sleepers vouch for each other and target
+      { from: generateAddress(28000), to: generateAddress(28004) },
+      { from: generateAddress(28001), to: generateAddress(28004) },
+      { from: generateAddress(28002), to: generateAddress(28004) },
+      { from: generateAddress(28003), to: generateAddress(28004) },
+      { from: generateAddress(28004), to: generateAddress(28005) },
+      { from: generateAddress(28005), to: generateAddress(28006) },
+      { from: generateAddress(28006), to: generateAddress(28007) },
+      { from: generateAddress(28007), to: generateAddress(28004) },
+    ],
+  },
+  {
+    name: "Parasitic Bridge",
+    description: "Attacker creates ONE truly integrated account (legit score 70+), then uses it to vouch for 50 sockpuppets.",
+    expectedBehavior: "Bridge gets heavily diluted. Each sockpuppet gets ~2% of bridge's capacity. Target scores <40.",
+    addresses: [
+      generateAddress(29000), // Parasitic bridge
+      ...Array.from({ length: 50 }, (_, i) => generateAddress(29001 + i)), // 50 sockpuppets
+    ],
+    vouches: [
+      // Legitimate integration vouches TO the bridge
+      { from: generateAddress(2000), to: generateAddress(29000) },
+      { from: generateAddress(2001), to: generateAddress(29000) },
+      { from: generateAddress(2002), to: generateAddress(29000) },
+      { from: generateAddress(1000), to: generateAddress(29000) }, // From hub
+      { from: generateAddress(8000), to: generateAddress(29000) }, // From another hub
+      // Bridge vouches for 50 sockpuppets (extreme dilution)
+      ...Array.from({ length: 50 }, (_, i) => ({
+        from: generateAddress(29000),
+        to: generateAddress(29001 + i),
+      })),
+    ],
+  },
+  {
+    name: "Reputation Laundering Chain",
+    description: "A→B→C→Target where A is legitimate, B and C are shells. Tests cascade attenuation.",
+    expectedBehavior: "Each hop should lose significant trust. Target (3 hops from legitimate) should score <30.",
+    addresses: [
+      generateAddress(30000), // Shell B
+      generateAddress(30001), // Shell C
+      generateAddress(30002), // Attack target
+    ],
+    vouches: [
+      // Legitimate source vouches for shell B
+      { from: generateAddress(2000), to: generateAddress(30000) },
+      { from: generateAddress(2001), to: generateAddress(30000) },
+      // Shell B vouches for Shell C
+      { from: generateAddress(30000), to: generateAddress(30001) },
+      // Shell C vouches for target
+      { from: generateAddress(30001), to: generateAddress(30002) },
+    ],
+  },
+  {
+    name: "Flash Mob Vouch",
+    description: "100 low-score accounts simultaneously vouch for one target. Tests capacity floor limits.",
+    expectedBehavior: "100 × 0.08 = 8.0 max flow. Should score ~50-55 (above 4.0 baseline but penalized by low-quality sources).",
+    addresses: [
+      generateAddress(31000), // Target
+      ...Array.from({ length: 100 }, (_, i) => generateAddress(31001 + i)), // 100 low-score vouchers
+    ],
+    vouches: [
+      // 100 unestablished accounts all vouch for target
+      ...Array.from({ length: 100 }, (_, i) => ({
+        from: generateAddress(31001 + i),
+        to: generateAddress(31000),
+      })),
+    ],
+  },
+  {
+    name: "Trojan Community",
+    description: "20-person fake community with internal mesh, then used as vouch factory for attack targets.",
+    expectedBehavior: "Community members stay <40 (isolated). Targets vouched by community should score <35.",
+    addresses: [
+      ...Array.from({ length: 20 }, (_, i) => generateAddress(32000 + i)), // Fake community
+      ...Array.from({ length: 5 }, (_, i) => generateAddress(32020 + i)), // Attack targets
+    ],
+    vouches: [
+      // Internal mesh (each member vouches for 3 neighbors)
+      ...Array.from({ length: 20 }, (_, i) => [
+        { from: generateAddress(32000 + i), to: generateAddress(32000 + ((i + 1) % 20)) },
+        { from: generateAddress(32000 + i), to: generateAddress(32000 + ((i + 3) % 20)) },
+        { from: generateAddress(32000 + i), to: generateAddress(32000 + ((i + 7) % 20)) },
+      ]).flat(),
+      // Community vouches for attack targets
+      { from: generateAddress(32000), to: generateAddress(32020) },
+      { from: generateAddress(32003), to: generateAddress(32020) },
+      { from: generateAddress(32007), to: generateAddress(32020) },
+      { from: generateAddress(32010), to: generateAddress(32020) },
+      { from: generateAddress(32001), to: generateAddress(32021) },
+      { from: generateAddress(32005), to: generateAddress(32021) },
+      { from: generateAddress(32008), to: generateAddress(32022) },
+      { from: generateAddress(32012), to: generateAddress(32023) },
+      { from: generateAddress(32015), to: generateAddress(32024) },
+    ],
+  },
+  {
+    name: "Dilution Sabotage",
+    description: "Attacker vouches for competitor's legitimate incoming vouchers to dilute their capacity.",
+    expectedBehavior: "Legitimate user's score may drop slightly, but attacker's sabotage vouches have minimal effect.",
+    addresses: [
+      generateAddress(33000), // Attacker
+      generateAddress(33001), // Target victim (legitimate user)
+    ],
+    vouches: [
+      // Victim has legitimate vouches
+      { from: generateAddress(2000), to: generateAddress(33001) },
+      { from: generateAddress(2001), to: generateAddress(33001) },
+      { from: generateAddress(2002), to: generateAddress(33001) },
+      { from: generateAddress(1000), to: generateAddress(33001) },
+      // Attacker (low score) tries to vouch for victim's vouchers to dilute them
+      { from: generateAddress(33000), to: generateAddress(2000) },
+      { from: generateAddress(33000), to: generateAddress(2001) },
+      { from: generateAddress(33000), to: generateAddress(2002) },
+      // Attacker also creates fake accounts to vouch for victim's vouchers
+      ...Array.from({ length: 10 }, (_, i) => ({
+        from: generateAddress(33010 + i),
+        to: generateAddress(2000),
+      })),
+    ],
+  },
+  {
+    name: "Eclipse Attack",
+    description: "Surround target with attacker accounts to isolate them from legitimate network.",
+    expectedBehavior: "If target has existing legitimate vouches, score should remain stable. Attack adds noise but not harm.",
+    addresses: [
+      generateAddress(34000), // Target
+      ...Array.from({ length: 20 }, (_, i) => generateAddress(34001 + i)), // Attacking ring
+    ],
+    vouches: [
+      // Target has some legitimate vouches
+      { from: generateAddress(2000), to: generateAddress(34000) },
+      { from: generateAddress(2001), to: generateAddress(34000) },
+      { from: generateAddress(1000), to: generateAddress(34000) },
+      // Attackers form a ring around target
+      ...Array.from({ length: 20 }, (_, i) => ({
+        from: generateAddress(34001 + i),
+        to: generateAddress(34000),
+      })),
+      // Attackers also vouch for each other
+      ...Array.from({ length: 20 }, (_, i) => ({
+        from: generateAddress(34001 + i),
+        to: generateAddress(34001 + ((i + 1) % 20)),
+      })),
+    ],
+  },
 ];
 
 export async function clearTestData(): Promise<void> {

@@ -489,6 +489,70 @@ export default function Status() {
           </CardContent>
         </Card>
 
+        <Card data-testid="card-confidence-tiers">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
+              Signal Confidence Tiers
+            </CardTitle>
+            <CardDescription>
+              Recommended thresholds for human vs bot/attack confidence
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.1)', border: '1px solid hsl(var(--score-canopy) / 0.2)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.2)', color: 'hsl(var(--score-canopy))' }}>75+</div>
+                  <div>
+                    <div className="font-semibold">High Confidence</div>
+                    <p className="text-xs text-muted-foreground">Almost certainly human with genuine network ties</p>
+                  </div>
+                </div>
+                <Badge style={{ backgroundColor: 'hsl(var(--score-canopy))', color: 'white' }}>Trusted</Badge>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.2)', color: 'hsl(var(--score-growth))' }}>65+</div>
+                  <div>
+                    <div className="font-semibold">Likely Human</div>
+                    <p className="text-xs text-muted-foreground">Reasonable confidence with organic network redundancy</p>
+                  </div>
+                </div>
+                <Badge style={{ backgroundColor: 'hsl(var(--score-growth))', color: 'white' }}>Verified</Badge>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)', border: '1px solid hsl(var(--score-transition) / 0.2)' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.2)', color: 'hsl(var(--score-transition))' }}>50-64</div>
+                  <div>
+                    <div className="font-semibold">Uncertain</div>
+                    <p className="text-xs text-muted-foreground">Could be legitimate newcomer OR sophisticated attack</p>
+                  </div>
+                </div>
+                <Badge variant="secondary">Review</Badge>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg bg-destructive/20 text-destructive">&lt;50</div>
+                  <div>
+                    <div className="font-semibold">Low Confidence</div>
+                    <p className="text-xs text-muted-foreground">Most attack patterns score in this range</p>
+                  </div>
+                </div>
+                <Badge variant="destructive">Caution</Badge>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-4 italic">
+              These tiers are derived from validated test scenarios. Attack patterns (Sybil rings, fake hubs, sockpuppet farms) 
+              cluster below 60, while legitimate integration patterns score 70+.
+            </p>
+          </CardContent>
+        </Card>
+
         <Card data-testid="card-algorithm-validation">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -567,11 +631,11 @@ export default function Status() {
                 <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
                   <div className="flex items-center gap-2 mb-1">
                     <Activity className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
-                    <span className="font-semibold text-sm">43 Scenarios Passing</span>
+                    <span className="font-semibold text-sm">51 Scenarios Validated</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    430 vouches across 285 users covering legitimate networks, attack patterns, 
-                    cross-network dynamics, and edge cases.
+                    Including 8 unexpected attack patterns: Compromised Whale, Slow-Burn Sybil, 
+                    Parasitic Bridge, Flash Mob, Trojan Community, and more.
                   </p>
                 </div>
               </div>
