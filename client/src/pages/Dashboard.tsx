@@ -65,7 +65,7 @@ export default function Dashboard() {
           Uses golden ratio proportions and organic breathing animations
           ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="w-full relative" style={{ background: 'hsl(var(--background))' }}>
-        <div className="max-w-[1800px] mx-auto px-6 py-12 relative">
+        <div className="max-w-7xl mx-auto px-6 py-12 relative">
           {/* Header with Title */}
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-10">
             <div className="flex items-center gap-5">

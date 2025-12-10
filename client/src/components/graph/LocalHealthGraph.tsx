@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
-import { ZoomIn, ZoomOut, Maximize2, Network } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize2, Network, Expand, X } from "lucide-react";
 
 interface GraphNode {
   id: string;
@@ -47,6 +47,7 @@ export function LocalHealthGraph({
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [showFullNetwork, setShowFullNetwork] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [themeVersion, setThemeVersion] = useState(0);
 
   useEffect(() => {
@@ -255,6 +256,7 @@ export function LocalHealthGraph({
     }
 
     return (
+    <>
       <Card className="overflow-hidden" data-testid="container-graph">
         <CardContent className="p-0 relative" style={{ height: heightValue }}>
           {/* Floating Controls - Top Right */}
@@ -308,6 +310,16 @@ export function LocalHealthGraph({
               className="bg-background/80 backdrop-blur-sm"
             >
               {showFullNetwork ? "Sample" : "Full Network"}
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => setIsFullscreen(true)}
+              data-testid="button-fullscreen"
+              className="bg-background/80 backdrop-blur-sm h-8 w-8"
+              title="View in fullscreen"
+            >
+              <Expand className="h-4 w-4" />
             </Button>
           </div>
 
@@ -416,6 +428,71 @@ export function LocalHealthGraph({
           />
         </CardContent>
       </Card>
+
+      {/* Fullscreen Overlay */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-50 bg-background"
+          data-testid="fullscreen-overlay"
+        >
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => setIsFullscreen(false)}
+              data-testid="button-close-fullscreen"
+              className="bg-background/80 backdrop-blur-sm"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="absolute top-4 left-4 z-10">
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-3 border">
+              <div className="flex items-center gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Nodes: </span>
+                  <span className="font-bold">{graphData.nodes.length}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Edges: </span>
+                  <span className="font-bold">{graphData.links.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ForceGraph3DWrapper
+            graphRef={graphRef}
+            graphData={graphData}
+            nodeId="id"
+            nodeLabel={(node: any) => {
+              const n = node as GraphNode;
+              return `${n.address.slice(0, 6)}...${n.address.slice(-4)}\nLocalHealth: ${n.localHealth.toFixed(1)}\nEndorsements: ${n.degree}`;
+            }}
+            nodeColor={getNodeColor}
+            nodeVal={getNodeSize}
+            linkColor={getLinkColor}
+            linkWidth={getLinkWidth}
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={0.9}
+            linkDirectionalArrowColor={getLinkColor}
+            onNodeClick={handleNodeClick}
+            onNodeHover={handleNodeHover}
+            enableNodeDrag={true}
+            cooldownTicks={100}
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.3}
+            width={undefined}
+            height={typeof window !== 'undefined' ? window.innerHeight : 800}
+            containerHeight="100vh"
+            fallbackHeight={typeof window !== 'undefined' ? window.innerHeight : 800}
+            backgroundColor="rgba(0,0,0,0)"
+            showNavInfo={false}
+          />
+        </div>
+      )}
+    </>
     );
   }
 
