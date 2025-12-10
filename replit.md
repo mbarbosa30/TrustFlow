@@ -58,6 +58,11 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
 *   **Economic Layer**: Daily USDC distribution on Celo based on STS scores using EIP-3009.
 *   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters.
 *   **API Integration**: A minimal REST API with community API keys and simplified EIP-712 signatures for third-party integration, with CORS enabled for all origins.
+*   **Hybrid API Performance (Dec 2025)**:
+    *   **Bulk Cached Endpoint**: `GET /api/v1/scores/cached` returns pre-computed scores from database (sub-second for 400+ users). Supports `min_score` and `limit` query params.
+    *   **Detailed On-Demand Endpoint**: `GET /api/v1/score/:address/details` computes full algorithm breakdown (flow/redundancy components, confidence tier) on request.
+    *   **Rate Limiting**: Public API 200/min, Admin status 10/min, Recalculation 1/5min per IP.
+*   **Admin Endpoint Security (Dec 2025)**: Rate limiting and single-flight lock protect admin endpoints. **Note**: API key authentication disabled per user request—endpoints are publicly accessible with rate limits only.
 *   **Dual Scoring Model**:
     *   **LocalHealth (Ego Score)**: Personal network quality (0-100) using max-flow/min-cut algorithms with recursive trust weighting.
         *   **Pure Option 2 (Default)**: Measures "how much the network trusts me" using an iterative PageRank-style algorithm where vouches are weighted by the voucher's LocalHealth score (up to 10 iterations). It combines a Flow Component (60%) and a Redundancy Component (40%).
