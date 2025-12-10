@@ -80,7 +80,7 @@ export default function MyNetwork() {
       });
       toast({
         title: "Score refreshed",
-        description: "Your LocalHealth score has been recalculated",
+        description: "Your Signal score has been recalculated",
       });
     } catch (error) {
       toast({
@@ -150,7 +150,7 @@ export default function MyNetwork() {
             </Button>
           </div>
           <CardDescription data-testid="text-card-description-health">
-            Your LocalHealth signal computed from incoming endorsement edges
+            Your Signal computed from incoming endorsement edges
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -164,7 +164,7 @@ export default function MyNetwork() {
                 </div>
               )}
               <p className="text-sm text-muted-foreground" data-testid="text-health-score-label">
-                LocalHealth (0-100)
+                Signal (0-100)
               </p>
             </div>
             <div className="text-right">
@@ -226,7 +226,7 @@ export default function MyNetwork() {
             <Alert className="mt-6" data-testid="alert-scoring-info">
               <Info className="h-4 w-4" />
               <AlertDescription data-testid="text-scoring-info-message">
-                Your score starts at 0. Receive endorsements from others to increase your LocalHealth signal through the recursive trust algorithm.
+                Your score starts at 0. Receive endorsements from others to increase your Signal through the tiered capacity algorithm.
               </AlertDescription>
             </Alert>
           )}
@@ -254,17 +254,17 @@ export default function MyNetwork() {
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 LocalHealth Signal</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-score">📊 Network Signal</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-score">
               Your network quality (0-100) is computed using an iterative algorithm where vouches are weighted by voucher strength.
               Strong vouchers contribute more than weak ones. Formula: 60% flow + 40% min-cut (via Dinic's algorithm), with dilution penalty for vouching {'>'}10 people.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-2" data-testid="text-section-title-capacity">🔄 Recursive Weighting</h4>
+            <h4 className="font-semibold mb-2" data-testid="text-section-title-capacity">🔄 Tiered Capacity</h4>
             <p className="text-sm text-muted-foreground" data-testid="text-section-description-capacity">
-              Vouches are weighted by the voucher's LocalHealth score (capacity = voucherScore / 100).
-              Scores converge through iteration, creating true recursive trust propagation.
+              Vouches use a tiered capacity system: score-0 vouchers get 0.08 capacity, scores 1-30 scale to 0.30, and scores 30+ scale up to 1.0.
+              This creates strong Sybil resistance while allowing legitimate networks to grow.
             </p>
           </div>
         </CardContent>

@@ -34,10 +34,10 @@ export default function FAQs() {
               MaxFlow uses a simple binary vouch system—you either vouch for someone or you don't. There are no weighted levels like "Known" vs. "Trusted."
             </p>
             <p className="mb-2">
-              <strong>Why no levels?</strong> Vouches are binary (yes/no) to keep the user action simple and avoid social friction from visible trust rankings. However, the algorithm weights these vouches by the voucher's LocalHealth score during computation.
+              <strong>Why no levels?</strong> Vouches are binary (yes/no) to keep the user action simple and avoid social friction from visible trust rankings. However, the algorithm applies tiered capacity based on voucher score: fresh accounts (score 0) have 0.08 capacity, scores 1-30 scale to 0.30, and scores 30+ scale up to 1.0.
             </p>
             <p>
-              You give a simple binary vouch, but the iterative algorithm automatically weights it by your network strength (capacity = yourLocalHealth / 100). This recursive weighting is what prevents Sybil attacks.
+              You give a simple binary vouch, but the iterative algorithm uses a <strong>tiered capacity system</strong>: fresh accounts (score 0) have minimal capacity (0.08), emerging accounts (1-30) scale to 0.30, and established accounts (30+) scale up to 1.0. This tiered weighting is what prevents Sybil attacks.
             </p>
           </AccordionContent>
         </AccordionItem>
@@ -242,18 +242,18 @@ export default function FAQs() {
           </AccordionTrigger>
           <AccordionContent className="text-muted-foreground">
             <p className="mb-2">
-              LocalHealth (0-100) uses an <strong>iterative PageRank-style algorithm</strong> where vouches are weighted by voucher's network strength. Your score depends on the quality of who vouches for you:
+              LocalHealth (0-100) uses an <strong>iterative PageRank-style algorithm</strong> with tiered capacity weighting. Voucher capacity ranges from 0.08 (fresh accounts) to 1.0 (established users). Your score depends on both the quantity and quality of vouches:
             </p>
             <div className="font-mono text-sm bg-muted/50 p-2 rounded-md my-2">
               LocalHealth = 60 × flowScore + 40 × redundancyRatio
             </div>
             <div className="p-3 rounded-lg my-3" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
               <p className="text-sm font-semibold mb-2" style={{ color: 'hsl(var(--score-growth))' }}>
-                Recursive Trust Weighting (Nov 2025):
+                Tiered Capacity System (v1.5 Dec 2025):
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 pl-4">
                 <li><strong>Iterative computation:</strong> Scores calculated in rounds until convergence (max 10 iterations)</li>
-                <li><strong>Weighted vouches:</strong> Each vouch capacity = voucherScore / 100 (0-1 range)</li>
+                <li><strong>Tiered capacity:</strong> Score-0 = 0.08, scores 1-30 linear to 0.30, scores 30+ sqrt to 1.0</li>
                 <li><strong>Recursive trust:</strong> Your vouchers' scores depend on their vouchers, creating trust propagation</li>
                 <li><strong>Average voucher strength:</strong> ResidualFlow = directFlow / voucherCount captures voucher quality</li>
               </ul>

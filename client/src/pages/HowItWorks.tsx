@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Leaf, Waves, TreePine, GitBranch } from "lucide-react";
+import { Leaf, Waves, TreePine, GitBranch, Shield } from "lucide-react";
 
 export default function HowItWorks() {
   return (
@@ -19,7 +19,7 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms with recursive trust weighting. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> computed from incoming vouches weighted by voucher strength using an iterative algorithm, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. LocalHealth uses recursive weighting where vouch capacity = voucherScore / 100, creating trust propagation through the network. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
+              We convert public vouches into verifiable network quality scores using max-flow/min-cut algorithms with recursive trust weighting. MaxFlow supports two scoring models: <strong>Personal Networks (LocalHealth 0-100)</strong> computed from incoming vouches weighted by voucher strength using an iterative algorithm, and <strong>Community Networks (STS 0-100)</strong> for community-based graph signals with community-managed seeds. LocalHealth uses a <strong>tiered capacity system</strong> for Sybil resistance: score-0 vouchers get 0.08 capacity, scores 1-30 scale linearly to 0.30, and scores 30+ use sqrt weighting up to 1.0. Everything is reproducible per epoch; all vouches are publicly visible in the Merkle transparency log.
             </p>
             <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', borderColor: 'hsl(var(--score-growth) / 0.2)', border: '1px solid' }}>
               <p className="text-sm mb-0">
@@ -45,11 +45,11 @@ export default function HowItWorks() {
           </CardHeader>
           <CardContent className="prose prose-sm max-w-none dark:prose-invert">
             <p>
-              Each vouch is a simple binary endorsement from your perspective—you either vouch for someone or you don't. No complicated trust levels. However, the iterative algorithm automatically weights these vouches based on the voucher's network strength (capacity = voucherScore / 100), creating recursive trust propagation.
+              Each vouch is a simple binary endorsement from your perspective—you either vouch for someone or you don't. No complicated trust levels. However, the iterative algorithm automatically weights these vouches using a <strong>tiered capacity system</strong>: fresh accounts (score 0) have minimal capacity (0.08), emerging accounts (scores 1-30) scale linearly to 0.30, and established accounts (30+) use sqrt weighting up to 1.0. This creates recursive trust propagation with strong Sybil resistance.
             </p>
             <div className="mt-3 p-3 rounded-lg bg-muted/30">
               <p className="text-sm mb-0">
-                <strong>Binary input, recursive weighting:</strong> You give a simple yes/no vouch, but the algorithm weights it by your LocalHealth score during computation. This keeps the user experience simple while achieving sophisticated Sybil resistance through recursive trust. Scores converge iteratively (max 10 rounds, threshold 0.5).
+                <strong>Binary input, tiered capacity:</strong> You give a simple yes/no vouch, but the algorithm applies tiered capacity based on your score: 0.08 for fresh accounts, scaling up to 1.0 for established users. This keeps the user experience simple while achieving sophisticated Sybil resistance. Scores converge iteratively (max 10 rounds, threshold 0.5).
               </p>
             </div>
           </CardContent>
@@ -158,7 +158,7 @@ export default function HowItWorks() {
                 </p>
                 <ul className="text-sm space-y-1 pl-4">
                   <li><strong>Iterative computation:</strong> Scores calculated in rounds until convergence (max 10 iterations, threshold 0.5)</li>
-                  <li><strong>Weighted vouches:</strong> Each vouch capacity = voucherScore / 100 (0-1 range)</li>
+                  <li><strong>Tiered capacity:</strong> Score-0 = 0.08, scores 1-30 linear to 0.30, scores 30+ sqrt to 1.0</li>
                   <li><strong>Recursive trust:</strong> Your vouchers' scores depend on their vouchers, creating trust propagation</li>
                   <li><strong>Average voucher strength:</strong> ResidualFlow = directFlow / voucherCount captures voucher quality</li>
                   <li><strong>Score distribution:</strong> Depends on both vouch COUNT and voucher QUALITY (strong vouchers {'>'}  weak vouchers)</li>
@@ -203,7 +203,7 @@ export default function HowItWorks() {
                   Higher min-cut = more Sybil resistance, harder to isolate you.
                 </p>
                 <div className="p-2 rounded bg-muted/50 text-xs font-mono space-y-1">
-                  <p className="font-semibold text-foreground">effectiveRedundancy computation (v1.4):</p>
+                  <p className="font-semibold text-foreground">effectiveRedundancy computation (v1.5):</p>
                   <p>• <strong>Min-cut:</strong> True min-cut via Dinic's algorithm (core Sybil resistance metric)</p>
                   <p>• <strong>Depth bonus:</strong> upstream_supporter_count × 0.1 (rewards multi-hop chains)</p>
                   <p>• <strong>VDP bonus:</strong> min(10, (vertexDisjointPaths - 1) × 2) (rewards independent paths)</p>
@@ -317,6 +317,88 @@ export default function HowItWorks() {
                   Iterative algorithm typically converges in 3-5 rounds for sparse graphs, 6-8 for dense.
                   Threshold 0.5 ensures stability without over-computing.
                   <span className="text-muted-foreground/70 italic"> Bounds proven for contractive map (spectral radius &lt; 1 via recursive weight damping).</span>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
+              v1.5 Anti-Gaming Features
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Progressive Sybil resistance mechanisms that make high scores economically infeasible to game.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Flash Mob Protection</span>
+                  <Badge variant="outline" className="text-xs">Attack Defense</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Caps total flow contribution from low-quality (score {'<'}30) vouchers to 2.0 when {'>'} 20 suspicious vouchers are detected.
+                  Prevents coordinated mass-vouching attacks where many sockpuppets vouch for one target.
+                  <strong> 100 score-0 accounts × 0.08 = 8.0 flow</strong> → capped to 2.0 → target scores ~50 instead of 99.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Quality Gates</span>
+                  <Badge variant="outline" className="text-xs">Score Caps</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  High scores (65+) require verified vouchers, not just volume. Prevents sockpuppet networks from reaching elite tiers:
+                </p>
+                <ul className="text-xs text-muted-foreground space-y-1 pl-4">
+                  <li><strong>Score 50+:</strong> Need ≥1 voucher with score ≥50, OR ≥8 vouchers (hub pattern)</li>
+                  <li><strong>Score 65+:</strong> Need ≥2 vouchers with score ≥65, OR ≥12 vouchers with ≥1 quality voucher</li>
+                  <li><strong>Score 80+:</strong> Need ≥3 vouchers with score ≥75, PLUS ≥2 vertex-disjoint paths</li>
+                </ul>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Hub Pattern Recognition</span>
+                  <Badge variant="outline" className="text-xs">Legitimate Networks</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recognizes legitimate hub-spoke patterns (community founders, event organizers) via vouch count thresholds.
+                  <strong> 8+ vouchers</strong> can unlock tier 65 even without high-score vouchers.
+                  <strong> 12+ vouchers</strong> with at least one quality voucher can unlock tier 80.
+                  Balances Sybil resistance with legitimate network growth.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm">Diminishing Returns Curve</span>
+                  <Badge variant="outline" className="text-xs">Compression</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Logarithmic compression at higher score ranges makes incremental gains harder:
+                  <strong> 30-50 raw → 30-45 output</strong> (gentle).
+                  <strong> 50-70 raw → 45-58 output</strong> (moderate).
+                  <strong> 70-90 raw → 58-70 output</strong> (strong).
+                  Reaching 80+ requires exceptional network integration.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">90-Day Vouch Validity</span>
+                  <Badge variant="outline" className="text-xs">Temporal</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Vouches expire after 90 days without voucher activity. Prevents stale networks from persisting indefinitely.
+                  Users must maintain active participation to keep their endorsements valid.
+                  Revocation is also available for immediate removal of endorsements.
                 </p>
               </div>
             </div>

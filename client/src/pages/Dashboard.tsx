@@ -81,7 +81,7 @@ export default function Dashboard() {
               <div>
                 <h1 className="text-2xl sm:text-4xl font-bold tracking-tight" data-testid="heading-dashboard">Trust Network</h1>
                 <p className="text-muted-foreground mt-1 text-base sm:text-lg">
-                  LocalHealth signals computed from graph topology
+                  Network quality signals computed from graph topology
                 </p>
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h2>Flow Analytics</h2>
-                <p>Max-flow/min-cut metrics powering LocalHealth computation</p>
+                <p>Max-flow/min-cut metrics powering Signal computation</p>
               </div>
             </div>
             

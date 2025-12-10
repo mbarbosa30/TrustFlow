@@ -670,11 +670,14 @@ export default function Whitepaper() {
               
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="mb-2">
-                  <strong className="text-sm">Direct Flow</strong> — Sum of normalized voucher scores
+                  <strong className="text-sm">Direct Flow</strong> — Sum of tiered voucher capacities (v1.5)
                 </div>
                 <div className="overflow-x-auto">
-                  <InlineFormula>{"F_i = \\sum_{j \\in \\mathcal{V}_i} \\frac{s_j}{100}"}</InlineFormula>
+                  <InlineFormula>{"F_i = \\sum_{j \\in \\mathcal{V}_i} c(s_j)"}</InlineFormula>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  <strong>Tiered capacity c(s):</strong> s=0 → 0.08, s∈[1,30] → linear 0.08-0.30, s∈[31,100] → sqrt 0.30-1.0
+                </p>
               </div>
               
               <div className="p-3 rounded-lg bg-muted/30">
@@ -702,7 +705,7 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="LocalHealth Score Formula (v1.4 — Linear Scaling)" testId="formula-localhealth">
+            <FormulaBox label="LocalHealth Score Formula (v1.5 — Tiered Capacity)" testId="formula-localhealth">
               <BlockFormula>
                 {"\\boxed{ \\mathrm{LocalHealth}_i \\;=\\; 60 \\cdot \\phi_i \\;+\\; 40 \\cdot d_i \\cdot D_i }"}
               </BlockFormula>
@@ -755,7 +758,7 @@ export default function Whitepaper() {
               </div>
             </div>
 
-            <FormulaBox label="Effective Redundancy (v1.4 — True Min-Cut)" testId="formula-redundancy">
+            <FormulaBox label="Effective Redundancy (v1.5 — True Min-Cut)" testId="formula-redundancy">
               <BlockFormula>
                 {"\\rho_i = \\text{minCut}_i + \\lambda_{\\text{depth}} \\cdot u + \\min(10, 2 \\cdot \\max(0, \\text{vdp} - 1))"}
               </BlockFormula>
