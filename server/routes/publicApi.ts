@@ -99,6 +99,84 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
+  // Bulk cached detailed scores endpoint - returns all pre-computed scores WITH algorithm breakdowns
+  // Fast: reads from cached data stored during 6-hour recalculation
+  app.get("/api/v1/scores/cached/detailed", publicRateLimit, async (req, res) => {
+    try {
+      const minScore = parseInt(req.query.min_score as string) || 0;
+      const limit = Math.min(parseInt(req.query.limit as string) || 10000, 10000);
+      
+      // Query all ego contexts with cached LocalHealth scores and breakdowns
+      const allContexts = await storage.getAllContexts();
+      
+      // Filter to ego contexts with scores, apply minScore filter
+      const egoContexts = allContexts
+        .filter(ctx => 
+          ctx.type === 'ego' && 
+          ctx.ownerAddress && 
+          ctx.localHealth !== null && 
+          ctx.localHealth >= minScore
+        )
+        .slice(0, limit);
+      
+      const scores = egoContexts.map(ctx => {
+        const localHealth = ctx.localHealth!;
+        
+        // Determine confidence tier
+        let confidenceTier: string;
+        if (localHealth >= 75) {
+          confidenceTier = "high_confidence";
+        } else if (localHealth >= 65) {
+          confidenceTier = "likely_human";
+        } else if (localHealth >= 50) {
+          confidenceTier = "uncertain";
+        } else {
+          confidenceTier = "low_confidence";
+        }
+        
+        return {
+          address: ctx.ownerAddress!.toLowerCase(),
+          local_health: localHealth,
+          confidence_tier: confidenceTier,
+          flow_component: ctx.flowComponent !== null ? Math.round(ctx.flowComponent * 100) / 100 : null,
+          redundancy_component: ctx.redundancyComponent !== null ? Math.round(ctx.redundancyComponent * 100) / 100 : null,
+          actual_min_cut: ctx.actualMinCut !== null ? Math.round(ctx.actualMinCut * 100) / 100 : null,
+          effective_redundancy: ctx.effectiveRedundancy !== null ? Math.round(ctx.effectiveRedundancy * 100) / 100 : null,
+          vertex_disjoint_paths: ctx.vertexDisjointPaths,
+          dilution_factor: ctx.dilutionFactor !== null ? Math.round(ctx.dilutionFactor * 1000) / 1000 : null,
+          incoming_active: ctx.incomingActive,
+          outgoing_total: ctx.outgoingTotal,
+          last_updated: ctx.localHealthUpdatedAt?.toISOString() || ctx.updatedAt?.toISOString() || null,
+        };
+      });
+      
+      // Get scheduler status for freshness info
+      let schedulerInfo = null;
+      try {
+        const { recalculationScheduler } = await import('../services/recalculationScheduler');
+        const status = recalculationScheduler.getStatus();
+        schedulerInfo = {
+          last_run: status.lastRunAt,
+          next_run: status.nextRunAt,
+          interval_hours: status.intervalHours,
+        };
+      } catch (e) {
+        // Scheduler may not be initialized
+      }
+      
+      res.json({
+        count: scores.length,
+        min_score_filter: minScore,
+        scores,
+        scheduler: schedulerInfo,
+        note: "Detailed scores cached from last network-wide computation (6-hour cycle). Algorithm breakdown data is included.",
+      });
+    } catch (error) {
+      console.error('Error getting cached detailed scores:', error);
+      res.status(500).json({ error: "Failed to get cached detailed scores" });
+    }
+  });
+
   // Single-user detailed metrics endpoint - computes algorithm breakdown on-demand
   // More expensive but provides full component breakdown for one user
   app.get("/api/v1/score/:address/details", publicRateLimit, async (req, res) => {
