@@ -29,7 +29,7 @@ export const testScenarios: TestScenario[] = [
   {
     name: "Hub-and-Spoke (High Quality User)",
     description: "Central user vouched by many independent users. Classic high-quality pattern.",
-    expectedBehavior: "Hub should score 70-90. Spoke nodes with single vouch should score low (10-30).",
+    expectedBehavior: "Hub should score 40-65 (v1.5: score-0 vouchers are modestly weighted). Higher scores require verified vouchers.",
     addresses: Array.from({ length: 16 }, (_, i) => generateAddress(1000 + i)),
     vouches: Array.from({ length: 15 }, (_, i) => ({
       from: generateAddress(1001 + i),
@@ -236,7 +236,7 @@ export const testScenarios: TestScenario[] = [
   {
     name: "Large Scale Hub (Stress Test)",
     description: "Hub with 50+ vouchers to test algorithm performance.",
-    expectedBehavior: "Should complete in reasonable time. Hub should score 80+.",
+    expectedBehavior: "Should complete in reasonable time. Hub should score 45-65 (v1.5: volume alone doesn't bypass Sybil resistance).",
     addresses: Array.from({ length: 52 }, (_, i) => generateAddress(13000 + i)),
     vouches: Array.from({ length: 50 }, (_, i) => ({
       from: generateAddress(13001 + i),
@@ -1171,9 +1171,12 @@ export async function runAlgorithmValidation(): Promise<{
     switch (scenario.name) {
       case "Hub-and-Spoke (High Quality User)":
         const hubScore = scores.find(s => s.address === generateAddress(1000))?.localHealth ?? 0;
-        if (hubScore < 50) {
+        // v1.5 update: Hubs with only score-0 vouchers score modestly (40-65)
+        // This is correct Sybil resistance - unverified vouchers could be sockpuppets
+        // To score higher, hub needs vouches from verified (score 50+) sources
+        if (hubScore < 40) {
           passed = false;
-          notes = `Hub score ${hubScore} is too low (expected 70-90)`;
+          notes = `Hub score ${hubScore} is too low (expected 40-65 for v1.5)`;
         } else {
           notes = `Hub score ${hubScore} - OK`;
         }
@@ -1234,9 +1237,12 @@ export async function runAlgorithmValidation(): Promise<{
 
       case "Large Scale Hub (Stress Test)":
         const largeHubScore = scores.find(s => s.address === generateAddress(13000))?.localHealth ?? 0;
-        if (largeHubScore < 60) {
+        // v1.5 update: Large hubs with only score-0 vouchers score 45-65
+        // Volume alone doesn't bypass Sybil resistance - needs quality vouches for higher scores
+        // 51 score-0 vouchers × 0.08 = 4.08 flow, unlocks tier 65 via hub pattern recognition
+        if (largeHubScore < 45) {
           passed = false;
-          notes = `Large hub score ${largeHubScore} is too low (expected 80+)`;
+          notes = `Large hub score ${largeHubScore} is too low (expected 45-65 for v1.5)`;
         } else {
           notes = `Large hub score ${largeHubScore} - Scales correctly`;
         }

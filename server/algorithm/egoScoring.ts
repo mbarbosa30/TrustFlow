@@ -92,9 +92,12 @@ function applyDiminishingReturns(rawScore: number): number {
  * when genuine high-quality network integration is demonstrated.
  * 
  * Tier thresholds (requires quality vouchers to unlock):
- * - 50+: Need at least 1 voucher with score >= 50 (emerging networks)
- * - 65+: Need at least 2 vouchers with score >= 65 (likely human threshold)
+ * - 50+: Need at least 1 voucher with score >= 50 OR 8+ vouchers (hub pattern)
+ * - 65+: Need at least 2 vouchers with score >= 65 OR 12+ vouchers (large hub)
  * - 80+: Need at least 3 vouchers with score >= 75, plus vertex-disjoint paths
+ * 
+ * The voucher count alternative recognizes legitimate hub-spoke patterns
+ * where many independent users vouch for a central hub.
  * 
  * @returns Object with: 
  *   - maxUnlockedTier: The highest tier this user can reach
@@ -119,14 +122,19 @@ function computeQualityGates(
     if (score >= 75) quality75Count++;
   }
   
+  const voucherCount = directVouchers.length;
+  
   // Determine max unlocked tier
+  // Two paths to unlock: quality vouchers OR many independent vouchers (hub pattern)
   let maxUnlockedTier = 50; // Everyone can reach up to 50
   
-  if (quality50Count >= 1) {
+  // Tier 65: quality path OR structural path (hub with many vouchers)
+  if (quality50Count >= 1 || voucherCount >= 8) {
     maxUnlockedTier = 65; // Can reach up to 65
   }
   
-  if (quality65Count >= 2) {
+  // Tier 80: quality path OR large hub path
+  if (quality65Count >= 2 || (voucherCount >= 12 && quality50Count >= 1)) {
     maxUnlockedTier = 80; // Can reach up to 80
   }
   
@@ -150,6 +158,12 @@ function computeQualityGates(
   // Additional bonus for multiple high-quality vouchers (up to +10)
   if (quality75Count >= 4) {
     qualityBonus += Math.min(10, (quality75Count - 3) * 2);
+  }
+  
+  // Hub pattern bonus: many independent vouchers show real network engagement
+  // (smaller bonus, as these are typically low-quality vouches)
+  if (voucherCount >= 10 && quality75Count < 3) {
+    qualityBonus += Math.min(5, (voucherCount - 8) * 0.5);
   }
   
   return { maxUnlockedTier, qualityBonus };
@@ -1124,13 +1138,18 @@ export class EgoScorer {
     const cutComponent = 40 * adjustedRedundancy * vouchQualityFactor;
     
     // LOW-QUALITY VOUCHER CAP: Limit contribution from <50 score vouchers to 35% of flow
-    // This prevents Sybil clusters from accumulating score through mass low-quality vouches
-    // Only applies when voucherScores are available (iterative scoring)
+    // This prevents Sybil clusters from gaming by adding fake vouches to boost an already-good score
+    // 
+    // IMPORTANT: Only applies when there's a MIX of high and low quality vouchers
+    // Pure hub-spoke patterns (all low-quality) are already penalized by tiered capacity system
+    // The cap prevents: "I have 3 good vouches, let me add 50 sockpuppets to boost my score"
+    // The cap does NOT apply to: "I'm a new hub with 15 new users vouching for me"
     let lowQualityPenalty = 0;
     const LOW_QUALITY_CONTRIBUTION_CAP = 0.35; // 35% max from low-quality sources
     if (voucherScores && directVouchers.length > 0) {
       let lowQualityContribution = 0;
       let highQualityContribution = 0;
+      let highQualityVoucherCount = 0;
       for (const voucher of directVouchers) {
         const score = voucherScores.get(voucher) ?? 0;
         const contribution = voucherCapacities.get(voucher)?.capacity ?? 1.0;
@@ -1138,13 +1157,18 @@ export class EgoScorer {
           lowQualityContribution += contribution;
         } else {
           highQualityContribution += contribution;
+          highQualityVoucherCount++;
         }
       }
       const totalContribution = lowQualityContribution + highQualityContribution;
       const lowQualityRatio = totalContribution > 0 ? lowQualityContribution / totalContribution : 0;
       
-      // If low-quality ratio exceeds cap, reduce flow component proportionally
-      if (lowQualityRatio > LOW_QUALITY_CONTRIBUTION_CAP) {
+      // Only apply cap when there ARE high-quality vouchers (mixed network scenario)
+      // This prevents gaming by adding low-quality vouches to boost an already-decent score
+      // If no high-quality vouchers exist (pure hub-spoke), tiered capacity is sufficient
+      const hasSignificantHighQuality = highQualityVoucherCount >= 2 && highQualityContribution >= 0.5;
+      
+      if (hasSignificantHighQuality && lowQualityRatio > LOW_QUALITY_CONTRIBUTION_CAP) {
         const excessRatio = lowQualityRatio - LOW_QUALITY_CONTRIBUTION_CAP;
         lowQualityPenalty = flowComponent * excessRatio * 0.5; // 50% of excess is penalized
       }
