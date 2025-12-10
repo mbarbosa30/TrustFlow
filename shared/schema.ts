@@ -81,6 +81,15 @@ export const contexts = pgTable("contexts", {
   localHealth: integer("local_health"), // Cached LocalHealth score (0-100, only for ego contexts)
   localHealthUpdatedAt: timestamp("local_health_updated_at"), // Last LocalHealth computation timestamp
   lastSignalActivityAt: timestamp("last_signal_activity_at"), // Last outgoing vouch timestamp (for vouch expiration)
+  // Algorithm breakdown fields (cached from 6-hour recalculation)
+  flowComponent: doublePrecision("flow_component"), // Flow component score (0-60)
+  redundancyComponent: doublePrecision("redundancy_component"), // Redundancy component score (0-40)
+  actualMinCut: doublePrecision("actual_min_cut"), // True min-cut via Dinic's algorithm
+  effectiveRedundancy: doublePrecision("effective_redundancy"), // Combined redundancy metric
+  vertexDisjointPaths: integer("vertex_disjoint_paths"), // Count of truly independent paths
+  dilutionFactor: doublePrecision("dilution_factor"), // Penalty multiplier (0.4-1.0)
+  incomingActive: integer("incoming_active"), // Active vouches count
+  outgoingTotal: integer("outgoing_total"), // Total outgoing vouches count
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
