@@ -750,18 +750,43 @@ export default function HowItWorks() {
                   <strong>Epoch-Lagged Capacities:</strong> Node capacities are computed from the previous epoch's accepted subgraph, preventing distance-inflation attacks where attackers manipulate their proximity to seeds within a single scoring run.
                 </li>
                 <li>
+                  <strong>Tiered Capacity Weighting:</strong> Voucher strength scales with their score: 0.08 capacity for score-0 accounts (sockpuppets), linear scaling to 0.30 for scores 1-30, and sqrt scaling to 1.0 for scores 31+.
+                </li>
+                <li>
+                  <strong>Flash Mob Protection:</strong> When {'>'} 20 low-quality (score {'<'} 30) vouchers are detected, total flow from low-quality sources is capped at 2.0, and min-cut contributions are quality-gated. This prevents coordinated mass-vouching attacks.
+                </li>
+                <li>
                   <strong>Min-Cut ≥ 2 Requirement:</strong> In medium/large networks, users must have at least 2 units of min-cut, ensuring some redundancy in trust paths.
                 </li>
                 <li>
                   <strong>Seed Coverage ≥ 2:</strong> For large networks, flow must originate from at least 2 distinct seeds, reducing single-seed blast radius.
                 </li>
                 <li>
-                  <strong>Edge-Disjoint Paths:</strong> Large networks require two edge-disjoint paths from seeds to user, providing path independence.
+                  <strong>Vertex-Disjoint Paths:</strong> We count truly independent paths with no shared intermediate nodes—much harder to fake than edge-disjoint.
                 </li>
                 <li>
                   <strong>Public Vouches:</strong> Full transparency in the Merkle log enables community detection of suspicious vouch patterns.
                 </li>
               </ul>
+            </div>
+
+            <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+              <h4 className="font-semibold text-sm mb-2" style={{ color: 'hsl(var(--score-growth))' }}>
+                Validated Against 51 Attack Scenarios
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                All attack patterns score below the 65 "likely human" threshold:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div><strong>Sybil Ring:</strong> 37</div>
+                <div><strong>Sockpuppet Farm:</strong> 55</div>
+                <div><strong>Flash Mob (100 accounts):</strong> 52</div>
+                <div><strong>Fake Mesh:</strong> 7</div>
+                <div><strong>Compromised Whale:</strong> 31</div>
+                <div><strong>Reputation Laundering:</strong> 13</div>
+                <div><strong>Trojan Community:</strong> 10-13</div>
+                <div><strong>Eclipse Attack:</strong> 5</div>
+              </div>
             </div>
 
             <div className="mt-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">

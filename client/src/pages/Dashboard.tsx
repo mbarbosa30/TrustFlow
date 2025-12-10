@@ -352,8 +352,30 @@ export default function Dashboard() {
                       <Badge variant="secondary">99</Badge>
                     </div>
                   </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium">Confidence Tiers</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-canopy))' }} />
+                        <span className="text-muted-foreground">75+ High Confidence</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-growth))' }} />
+                        <span className="text-muted-foreground">65+ Likely Human</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(var(--score-transition))' }} />
+                        <span className="text-muted-foreground">50-64 Uncertain</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-destructive" />
+                        <span className="text-muted-foreground">&lt;50 Low Confidence</span>
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-xs text-muted-foreground italic pt-3">
-                    Iterative PageRank-style computation where vouches are weighted by voucher strength.
+                    Iterative PageRank-style computation where vouches are weighted by voucher strength. 51 attack scenarios validated.
                   </p>
                 </CardContent>
               </Card>

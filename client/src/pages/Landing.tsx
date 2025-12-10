@@ -378,7 +378,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card data-testid="card-security-disjoint">
               <CardHeader className="pb-3">
                 <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
@@ -423,6 +423,46 @@ export default function Landing() {
                 </p>
               </CardContent>
             </Card>
+
+            <Card data-testid="card-security-validated">
+              <CardHeader className="pb-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.12)' }}>
+                  <CheckCircle2 className="w-5 h-5" style={{ color: 'hsl(var(--score-growth))' }} />
+                </div>
+                <CardTitle className="text-base">51 Attack Scenarios</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Validated against Sybil rings, sockpuppet farms, Flash Mobs, and 8 sophisticated attack patterns.
+                  All contained below the 65 "likely human" threshold.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-8 p-6 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', border: '1px solid hsl(var(--score-growth) / 0.2)' }}>
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold">Signal Confidence Tiers</h3>
+              <p className="text-sm text-muted-foreground">Recommended thresholds for human vs bot/attack detection</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.1)' }}>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-canopy))' }}>75+</div>
+                <div className="text-xs text-muted-foreground">High Confidence</div>
+              </div>
+              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-growth))' }}>65+</div>
+                <div className="text-xs text-muted-foreground">Likely Human</div>
+              </div>
+              <div className="text-center p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.1)' }}>
+                <div className="text-2xl font-bold" style={{ color: 'hsl(var(--score-transition))' }}>50-64</div>
+                <div className="text-xs text-muted-foreground">Uncertain</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-destructive/5">
+                <div className="text-2xl font-bold text-destructive">&lt;50</div>
+                <div className="text-xs text-muted-foreground">Low Confidence</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
