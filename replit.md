@@ -58,10 +58,12 @@ The backend is an Express.js and TypeScript (Node.js) application offering RESTf
 *   **Economic Layer**: Daily USDC distribution on Celo based on STS scores using EIP-3009.
 *   **Microcredit Lending System**: Community-opt-in USDC microlending with configurable parameters.
 *   **API Integration**: A minimal REST API with community API keys and simplified EIP-712 signatures for third-party integration, with CORS enabled for all origins.
-*   **Hybrid API Performance (Dec 2025)**:
-    *   **Bulk Cached Endpoint**: `GET /api/v1/scores/cached` returns pre-computed scores from database (sub-second for 400+ users). Supports `min_score` and `limit` query params.
-    *   **Detailed On-Demand Endpoint**: `GET /api/v1/score/:address/details` computes full algorithm breakdown (flow/redundancy components, confidence tier) on request.
+*   **Three-Tier API Performance (Dec 2025)**:
+    *   **Basic Bulk Cached**: `GET /api/v1/scores/cached` returns address + score + timestamp (sub-second, minimal payload).
+    *   **Detailed Bulk Cached**: `GET /api/v1/scores/cached/detailed` returns full algorithm breakdown from 6-hour cache (sub-second, includes flow_component, redundancy_component, actual_min_cut, effective_redundancy, vertex_disjoint_paths, dilution_factor, incoming/outgoing counts, confidence tier).
+    *   **On-Demand Single User**: `GET /api/v1/score/:address/details` computes fresh breakdown for one address (1-5s, network-wide recalc not included).
     *   **Rate Limiting**: Public API 200/min, Admin status 10/min, Recalculation 1/5min per IP.
+    *   **Algorithm Breakdown Caching**: NetworkRecalculationService persists all `AlgorithmComponents` to `contexts` table during scheduled recalculation.
 *   **Admin Endpoint Security (Dec 2025)**: Rate limiting and single-flight lock protect admin endpoints. **Note**: API key authentication disabled per user request—endpoints are publicly accessible with rate limits only.
 *   **Dual Scoring Model**:
     *   **LocalHealth (Ego Score)**: Personal network quality (0-100) using max-flow/min-cut algorithms with recursive trust weighting.
