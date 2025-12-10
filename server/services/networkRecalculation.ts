@@ -113,12 +113,28 @@ export class NetworkRecalculationService {
           if (scoreResult) {
             const roundedScore = Math.round(scoreResult.localHealth);
             
-            // Persist the score to the database
+            // Extract algorithm breakdown components if available
+            const components = scoreResult.components;
+            
+            // Count incoming/outgoing vouches for this user
+            const incomingActive = globalVouches.filter(v => v.endorsee === ownerAddress).length;
+            const outgoingTotal = globalVouches.filter(v => v.endorser === ownerAddress).length;
+            
+            // Persist the score and breakdown data to the database
             await db
               .update(contexts)
               .set({ 
                 localHealth: roundedScore,
-                localHealthUpdatedAt: new Date()
+                localHealthUpdatedAt: new Date(),
+                // Algorithm breakdown fields
+                flowComponent: components?.flowComponent ?? null,
+                redundancyComponent: components?.redundancyComponent ?? null,
+                actualMinCut: components?.actualMinCut ?? null,
+                effectiveRedundancy: components?.effectiveRedundancy ?? null,
+                vertexDisjointPaths: components?.vertexDisjointPaths ?? null,
+                dilutionFactor: components?.dilutionFactor ?? null,
+                incomingActive,
+                outgoingTotal,
               })
               .where(
                 and(
@@ -134,7 +150,7 @@ export class NetworkRecalculationService {
             });
 
             console.log(
-              `Recalculated and saved ${ownerAddress}: LocalHealth = ${roundedScore}`
+              `Recalculated and saved ${ownerAddress}: LocalHealth = ${roundedScore}, flow=${components?.flowComponent?.toFixed(1) ?? 'N/A'}, redundancy=${components?.redundancyComponent?.toFixed(1) ?? 'N/A'}`
             );
           } else {
             result.errors++;
