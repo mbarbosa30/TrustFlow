@@ -37,7 +37,7 @@ export default function Whitepaper() {
           <FileText className="w-8 h-8 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
-            <p className="text-sm text-muted-foreground">Version 1.2 — December 2025</p>
+            <p className="text-sm text-muted-foreground">Version 1.4 — December 2025</p>
           </div>
         </div>
         <h2 className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
@@ -1214,9 +1214,9 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">Convergence Guarantee</div>
                 <p className="text-sm text-muted-foreground">
-                  With damping factor <InlineFormula>{"\\alpha < 1"}</InlineFormula>, the iterative update 
-                  is a contraction mapping. Scores converge to a unique fixed point regardless of initialization, 
-                  with error decreasing geometrically at rate <InlineFormula>{"(1-\\alpha)"}</InlineFormula> per iteration.
+                  With bounded vouch weights (0-1) and tiered capacity weighting, the iterative update 
+                  converges to a unique fixed point regardless of initialization. Empirical testing shows 
+                  stable convergence in 4-6 iterations with max change &lt;0.5 at termination.
                 </p>
               </div>
             </div>
@@ -1282,7 +1282,7 @@ export default function Whitepaper() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm sm:text-base leading-relaxed">
-              The algorithm has been validated against <strong>43 test scenarios</strong> covering legitimate networks, 
+              The algorithm has been validated against <strong>51 test scenarios</strong> covering legitimate networks, 
               attack patterns, cross-network dynamics, and edge cases. Key empirical results:
             </p>
 
@@ -1599,12 +1599,12 @@ export default function Whitepaper() {
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="font-semibold text-sm mb-1">Parameter Sensitivity</div>
                 <p className="text-sm text-muted-foreground">
-                  Baseline values (<InlineFormula>{"F_0 = 5"}</InlineFormula>, <InlineFormula>{"R_0 = 20"}</InlineFormula>) 
+                  Baseline values (<InlineFormula>{"F_0 = 4.0"}</InlineFormula>, <InlineFormula>{"R_0 = 18.0"}</InlineFormula>) 
                   affect score distributions. Different network densities may need different parameters.
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  <strong>Mitigation:</strong> Future adaptive baselines could auto-tune based on network 
-                  percentiles.
+                  <strong>Mitigation:</strong> Adaptive baselines now auto-tune based on 75th percentile of 
+                  network vouch counts, clamped to [4, 15].
                 </p>
               </div>
             </div>
@@ -1684,15 +1684,19 @@ export default function Whitepaper() {
             <div className="space-y-2">
               <div className="p-3 rounded-lg bg-muted/30">
                 <strong>LocalHealth:</strong> Per-round update is <InlineFormula>{"O(|E|)"}</InlineFormula>; 
-                ≤10 rounds with damping; trivially parallel per node
+                ≤10 rounds without damping; trivially parallel per node
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
                 <strong>STS:</strong> Reusable residual graphs; Push-Relabel with global relabeling 
                 for efficient multi-flow computation
               </div>
               <div className="p-3 rounded-lg bg-muted/30">
-                <strong>Caching:</strong> LocalHealth cached with timestamps; recomputed on vouch events 
-                or on demand with freshness hints
+                <strong>Scheduled Recalculation:</strong> Network-wide batch computation every 6 hours 
+                via RecalculationScheduler. Scores cached in database with algorithm breakdown.
+              </div>
+              <div className="p-3 rounded-lg bg-muted/30">
+                <strong>Caching:</strong> Three-tier API: basic cached (sub-second), detailed cached 
+                (sub-second with breakdown), on-demand single-user (1-5s fresh computation)
               </div>
             </div>
           </CardContent>
@@ -1705,16 +1709,24 @@ export default function Whitepaper() {
           <CardContent>
             <div className="space-y-2 font-mono text-xs sm:text-sm">
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/ego/:addr/score</div>
-                <div className="text-muted-foreground mt-1">→ localHealth, voucherCount, redundancy, dilution</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/v1/scores/cached</div>
+                <div className="text-muted-foreground mt-1">→ Basic bulk: address, score, timestamp (sub-second)</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
-                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/ego/:addr/explain</div>
-                <div className="text-muted-foreground mt-1">→ minCut, seedPaths, componentBreakdown</div>
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/v1/scores/cached/detailed</div>
+                <div className="text-muted-foreground mt-1">→ Detailed bulk: full algorithm breakdown from 6-hour cache</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-growth))' }}>GET /api/v1/score/:address/details</div>
+                <div className="text-muted-foreground mt-1">→ On-demand: fresh computation for single address (1-5s)</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
                 <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-transition))' }}>POST /api/vouch</div>
-                <div className="text-muted-foreground mt-1">→ endorsee, signature (triggers recompute)</div>
+                <div className="text-muted-foreground mt-1">→ endorsee, signature (vouch recorded, batch recompute)</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
+                <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-transition))' }}>POST /api/vouch/revoke</div>
+                <div className="text-muted-foreground mt-1">→ endorsee, signature (revoke existing vouch)</div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 overflow-x-auto">
                 <div className="whitespace-nowrap" style={{ color: 'hsl(var(--score-dormant))' }}>GET /api/community/:id/sts/:addr</div>
@@ -1741,7 +1753,7 @@ export default function Whitepaper() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
                 <div className="font-semibold mb-1">Vertex-Disjoint Paths</div>
                 <p className="text-muted-foreground text-xs">
@@ -1758,6 +1770,24 @@ export default function Whitepaper() {
                 <div className="font-semibold mb-1">Adaptive Baselines</div>
                 <p className="text-muted-foreground text-xs">
                   Dynamic "healthy" thresholds computed from 75th percentile of network. Algorithm adapts as network grows.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Vouch Expiration</div>
+                <p className="text-muted-foreground text-xs">
+                  90-day validity window. Vouches remain valid if recipient is active (vouched recently). Prevents "set and forget" sockpuppet farms.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Vouch Revocation</div>
+                <p className="text-muted-foreground text-xs">
+                  EIP-712 signed revocation messages. Endorsers can revoke vouches at any time. Stored in endorsementTombstones table.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.1)' }}>
+                <div className="font-semibold mb-1">Flash Mob Protection</div>
+                <p className="text-muted-foreground text-xs">
+                  Detects coordinated mass-vouching ({'>'}20 low-score vouchers). Caps low-quality flow at 2.0. Flash mob targets score 52 instead of 99.
                 </p>
               </div>
             </div>
@@ -1806,7 +1836,7 @@ export default function Whitepaper() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               <ul className="space-y-1">
-                <li>• Vouch revocation/expiry</li>
+                <li className="line-through opacity-50">• Vouch revocation/expiry ✓</li>
                 <li>• Typed vouches (skill/credit)</li>
                 <li>• Cross-community portability</li>
               </ul>
@@ -1912,7 +1942,7 @@ export default function Whitepaper() {
         <h2 className="text-xl sm:text-2xl font-bold">Version History</h2>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Version 1.2 (December 2025)</CardTitle>
+            <CardTitle className="text-lg">Version 1.4 (December 2025)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="p-3 rounded-lg bg-muted/30">
@@ -1944,17 +1974,48 @@ export default function Whitepaper() {
               </p>
             </div>
             <div className="p-3 rounded-lg bg-muted/30">
-              <strong className="text-sm">Linear Scaling (v1.4)</strong>
+              <strong className="text-sm">Linear Scaling</strong>
               <p className="text-sm text-muted-foreground mt-1">
                 Replaced squared formula with linear 60/40 weighting. Tiered capacity: 0.08 floor for sockpuppets, 
                 0.08-0.30 linear for scores 1-30, 0.30-1.0 sqrt for scores 31+.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Vouch Expiration & Revocation</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                90-day validity window with activity-based retention. EIP-712 signed revocation support. 
+                Expired/revoked vouches excluded from scoring.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Flash Mob Protection</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Threshold-based detection ({'>'}20 low-quality vouchers). Capped flow from sockpuppets (max 2.0). 
+                Quality-gated min-cut calculation.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-muted/30">
+              <strong className="text-sm">Three-Tier API</strong>
+              <p className="text-sm text-muted-foreground mt-1">
+                Basic cached, detailed cached, and on-demand endpoints. 6-hour scheduled batch recalculation 
+                with algorithm breakdown caching.
               </p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg text-muted-foreground">Version 1.1 (November 2025)</CardTitle>
+            <CardTitle className="text-lg text-muted-foreground">Version 1.2 (November 2025)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Adaptive baselines, iteration without damping, piecewise dilution curves, vertex-disjoint path bonus.
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg text-muted-foreground">Version 1.1 (October 2025)</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
