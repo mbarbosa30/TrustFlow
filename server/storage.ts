@@ -223,16 +223,11 @@ export class MemStorage implements IStorage {
   }
 
   async createEndorsement(endorsement: InsertPublicEndorsement): Promise<PublicEndorsement> {
-    // Normalize addresses to lowercase for consistent storage
-    const normalizedEndorsement = {
-      ...endorsement,
-      endorser: endorsement.endorser.toLowerCase(),
-      endorsee: endorsement.endorsee.toLowerCase(),
-    };
-    
+    // Trust that addresses are already normalized by caller
+    // EVM (eip155) addresses should be lowercased; non-EVM addresses preserve case
     const [dbEndorsement] = await db
       .insert(publicEndorsements)
-      .values(normalizedEndorsement)
+      .values(endorsement)
       .returning();
     
     return dbEndorsement;
@@ -250,10 +245,12 @@ export class MemStorage implements IStorage {
     
     const conditions = [];
     if (filters?.endorser) {
-      conditions.push(eq(publicEndorsements.endorser, filters.endorser.toLowerCase()));
+      // Use case-insensitive comparison for multi-chain support
+      conditions.push(sql`LOWER(${publicEndorsements.endorser}) = LOWER(${filters.endorser})`);
     }
     if (filters?.endorsee) {
-      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee.toLowerCase()));
+      // Use case-insensitive comparison for multi-chain support
+      conditions.push(sql`LOWER(${publicEndorsements.endorsee}) = LOWER(${filters.endorsee})`);
     }
     if (filters?.epoch !== undefined) {
       conditions.push(eq(publicEndorsements.epoch, filters.epoch));
@@ -278,10 +275,12 @@ export class MemStorage implements IStorage {
   async countEndorsements(filters: { endorser?: string; endorsee?: string; communityId?: number }): Promise<number> {
     const conditions = [];
     if (filters.endorser) {
-      conditions.push(eq(publicEndorsements.endorser, filters.endorser.toLowerCase()));
+      // Use case-insensitive comparison for multi-chain support
+      conditions.push(sql`LOWER(${publicEndorsements.endorser}) = LOWER(${filters.endorser})`);
     }
     if (filters.endorsee) {
-      conditions.push(eq(publicEndorsements.endorsee, filters.endorsee.toLowerCase()));
+      // Use case-insensitive comparison for multi-chain support
+      conditions.push(sql`LOWER(${publicEndorsements.endorsee}) = LOWER(${filters.endorsee})`);
     }
     if (filters.communityId !== undefined) {
       conditions.push(eq(publicEndorsements.communityId, filters.communityId));
@@ -298,13 +297,13 @@ export class MemStorage implements IStorage {
   }
 
   async getMaxNonce(endorser: string, epoch: number, communityId: number = 0): Promise<number> {
-    const normalizedEndorser = endorser.toLowerCase();
+    // Use case-insensitive comparison for multi-chain support
     const lastEndorsement = await db
       .select({ nonce: publicEndorsements.nonce })
       .from(publicEndorsements)
       .where(
         and(
-          eq(publicEndorsements.endorser, normalizedEndorser),
+          sql`LOWER(${publicEndorsements.endorser}) = LOWER(${endorser})`,
           eq(publicEndorsements.epoch, epoch),
           eq(publicEndorsements.communityId, communityId)
         )
