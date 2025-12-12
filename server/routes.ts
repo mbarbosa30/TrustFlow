@@ -24,8 +24,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = req.body;
 
       // Validate required fields exist
-      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce || !body.sig) {
-        return res.status(400).json({ error: "Missing required fields" });
+      // For non-EVM chains with externallyVerified=true, sig can be a placeholder
+      const chainNamespace = body.chainNamespace || "eip155";
+      const externallyVerified = body.externallyVerified === true;
+      
+      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce) {
+        return res.status(400).json({ error: "Missing required fields: endorser, endorsee, epoch, nonce" });
+      }
+      
+      // Signature required for EVM chains or when not externally verified
+      if (!externallyVerified && !body.sig) {
+        return res.status(400).json({ error: "Missing required field: sig (or set externallyVerified=true for non-EVM chains)" });
       }
 
       // Parse and validate communityId (defaults to 0 for global network)
@@ -68,7 +77,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid numeric field format" });
       }
 
-      const fieldValidation = validateEndorsementFields(endorsement);
+      const fieldValidation = validateEndorsementFields({
+        ...endorsement,
+        chainNamespace,
+      });
       if (!fieldValidation.valid) {
         return res.status(400).json({ error: fieldValidation.error });
       }
@@ -93,9 +105,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const signatureValid = await verifyEndorsementSignature(endorsement);
-      if (!signatureValid) {
-        return res.status(400).json({ error: "Invalid signature" });
+      // Skip EIP-712 signature verification for externally verified non-EVM chains
+      if (!externallyVerified) {
+        const signatureValid = await verifyEndorsementSignature(endorsement);
+        if (!signatureValid) {
+          return res.status(400).json({ error: "Invalid signature" });
+        }
+      } else {
+        console.log(`[Multi-Chain] Skipping EIP-712 verification for ${chainNamespace} chain (externallyVerified=true)`);
       }
 
       const leafHash = computeLeafHash({
@@ -106,29 +123,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sig: endorsement.sig,
       });
 
+      // Normalize addresses: lowercase only for EVM chains, preserve case for others
+      const normalizeAddress = (addr: string) => chainNamespace === "eip155" ? addr.toLowerCase() : addr;
+      
       const insertData = insertPublicEndorsementSchema.parse({
-        endorser: endorsement.endorser.toLowerCase(),
-        endorsee: endorsement.endorsee.toLowerCase(),
+        endorser: normalizeAddress(endorsement.endorser),
+        endorsee: normalizeAddress(endorsement.endorsee),
         epoch: Number(endorsement.epoch),
         nonce: Number(endorsement.nonce),
-        sig: endorsement.sig,
+        sig: endorsement.sig || "externally_verified",
         leafHash,
         note: body.note || null,
         communityId,
         promptHash: expectedPromptHash,
+        chainNamespace,
+        externallyVerified,
       });
 
       const created = await storage.createEndorsement(insertData);
       
       // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
-      await storage.getOrCreateEgoContext(endorsement.endorser.toLowerCase());
-      await storage.updateLastSignalActivity(endorsement.endorser.toLowerCase());
+      const normalizedEndorser = normalizeAddress(endorsement.endorser);
+      await storage.getOrCreateEgoContext(normalizedEndorser);
+      await storage.updateLastSignalActivity(normalizedEndorser);
 
       // Auto-recalculate endorsee's LocalHealth score so API calls immediately return updated score
       // This runs network-wide computation for accuracy (tiered capacity requires iterative algorithm)
       let endorseeLocalHealth: number | null = null;
       try {
-        endorseeLocalHealth = await localHealthService.recalculateLocalHealth(endorsement.endorsee.toLowerCase());
+        endorseeLocalHealth = await localHealthService.recalculateLocalHealth(normalizeAddress(endorsement.endorsee));
         console.log(`[Auto-Score] Recalculated LocalHealth for ${endorsement.endorsee.toLowerCase()}: ${endorseeLocalHealth}`);
       } catch (scoreError) {
         console.error(`[Auto-Score] Failed to recalculate for ${endorsement.endorsee.toLowerCase()}:`, scoreError);

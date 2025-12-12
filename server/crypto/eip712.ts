@@ -80,6 +80,7 @@ export function validateEndorsementFields(endorsement: {
   endorsee: string;
   epoch: bigint;
   nonce: bigint;
+  chainNamespace?: string;
 }): { valid: boolean; error?: string } {
   if (endorsement.endorser === endorsement.endorsee) {
     return { valid: false, error: "Cannot endorse yourself" };
@@ -93,12 +94,25 @@ export function validateEndorsementFields(endorsement: {
     return { valid: false, error: "Invalid nonce" };
   }
 
-  if (!endorsement.endorser.match(/^0x[a-fA-F0-9]{40}$/)) {
-    return { valid: false, error: "Invalid endorser address" };
-  }
-
-  if (!endorsement.endorsee.match(/^0x[a-fA-F0-9]{40}$/)) {
-    return { valid: false, error: "Invalid endorsee address" };
+  // Chain-specific address validation
+  const chainNamespace = endorsement.chainNamespace || "eip155";
+  
+  if (chainNamespace === "eip155") {
+    // EVM chains: require 0x-prefixed 40-hex address
+    if (!endorsement.endorser.match(/^0x[a-fA-F0-9]{40}$/)) {
+      return { valid: false, error: "Invalid endorser address (EVM format required: 0x + 40 hex chars)" };
+    }
+    if (!endorsement.endorsee.match(/^0x[a-fA-F0-9]{40}$/)) {
+      return { valid: false, error: "Invalid endorsee address (EVM format required: 0x + 40 hex chars)" };
+    }
+  } else {
+    // Non-EVM chains: basic validation - non-empty strings, reasonable length
+    if (!endorsement.endorser || endorsement.endorser.length < 10 || endorsement.endorser.length > 256) {
+      return { valid: false, error: "Invalid endorser address (must be 10-256 characters)" };
+    }
+    if (!endorsement.endorsee || endorsement.endorsee.length < 10 || endorsement.endorsee.length > 256) {
+      return { valid: false, error: "Invalid endorsee address (must be 10-256 characters)" };
+    }
   }
 
   return { valid: true };

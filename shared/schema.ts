@@ -218,6 +218,8 @@ export const publicEndorsements = pgTable("public_endorsements", {
   leafHash: text("leaf_hash").notNull(),
   promptHash: text("prompt_hash"), // keccak256(prompt_text) for verification (only for community scope)
   note: text("note"),
+  chainNamespace: text("chain_namespace").notNull().default("eip155"), // CAIP-2 chain namespace: 'eip155' (EVM), 'solana', 'cosmos', etc.
+  externallyVerified: boolean("externally_verified").notNull().default(false), // True if signature was verified externally (for non-EVM chains)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
