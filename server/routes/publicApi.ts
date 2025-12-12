@@ -362,22 +362,46 @@ export function registerPublicApiRoutes(app: Express) {
 
   app.post("/api/v1/vouch", publicRateLimit, async (req, res) => {
     try {
-      const { endorser, endorsee, sig, epoch, nonce, chainId } = req.body;
+      const { endorser, endorsee, sig, epoch, nonce, chainId, chainNamespace, externallyVerified } = req.body;
       
-      if (!endorser || !endorsee || !sig || epoch === undefined || nonce === undefined) {
+      // Multi-chain support: chainNamespace defaults to "eip155" (EVM), externallyVerified defaults to false
+      const chain = chainNamespace || "eip155";
+      const isExternallyVerified = externallyVerified === true;
+      
+      // For EVM chains, sig is required; for non-EVM with externallyVerified, sig can be placeholder
+      if (!endorser || !endorsee || epoch === undefined || nonce === undefined) {
         return res.status(400).json({ 
-          error: "Missing required fields: endorser, endorsee, sig, epoch, nonce" 
+          error: "Missing required fields: endorser, endorsee, epoch, nonce" 
         });
       }
       
-      const normalizedEndorser = endorser.toLowerCase();
-      const normalizedEndorsee = endorsee.toLowerCase();
-      
-      if (!normalizedEndorser.startsWith('0x') || normalizedEndorser.length !== 42) {
-        return res.status(400).json({ error: "Invalid endorser address" });
+      if (!isExternallyVerified && !sig) {
+        return res.status(400).json({ 
+          error: "Missing required field: sig (or set externallyVerified=true for non-EVM chains)" 
+        });
       }
-      if (!normalizedEndorsee.startsWith('0x') || normalizedEndorsee.length !== 42) {
-        return res.status(400).json({ error: "Invalid endorsee address" });
+      
+      // Address normalization: lowercase only for EVM chains, preserve case for others
+      const normalizedEndorser = chain === "eip155" ? endorser.toLowerCase() : endorser;
+      const normalizedEndorsee = chain === "eip155" ? endorsee.toLowerCase() : endorsee;
+      
+      // Chain-specific address validation
+      if (chain === "eip155") {
+        // EVM: require 0x-prefixed 40-hex address
+        if (!normalizedEndorser.startsWith('0x') || normalizedEndorser.length !== 42) {
+          return res.status(400).json({ error: "Invalid endorser address (EVM format: 0x + 40 hex chars)" });
+        }
+        if (!normalizedEndorsee.startsWith('0x') || normalizedEndorsee.length !== 42) {
+          return res.status(400).json({ error: "Invalid endorsee address (EVM format: 0x + 40 hex chars)" });
+        }
+      } else {
+        // Non-EVM: basic length validation (10-256 chars)
+        if (!endorser || endorser.length < 10 || endorser.length > 256) {
+          return res.status(400).json({ error: "Invalid endorser address (must be 10-256 characters)" });
+        }
+        if (!endorsee || endorsee.length < 10 || endorsee.length > 256) {
+          return res.status(400).json({ error: "Invalid endorsee address (must be 10-256 characters)" });
+        }
       }
       
       const epochBigInt = BigInt(epoch);
@@ -426,25 +450,31 @@ export function registerPublicApiRoutes(app: Express) {
         endorsee: normalizedEndorsee as Address,
         epoch: epochBigInt,
         nonce: nonceBigInt,
+        chainNamespace: chain,
       });
       
       if (!fieldValidation.valid) {
         return res.status(400).json({ error: fieldValidation.error });
       }
       
-      const signedEndorsement = {
-        endorser: normalizedEndorser as Address,
-        endorsee: normalizedEndorsee as Address,
-        epoch: epochBigInt,
-        nonce: nonceBigInt,
-        sig,
-        chainId: chainId || 1,
-      };
-      
-      const isValid = await verifyEndorsementSignature(signedEndorsement);
-      
-      if (!isValid) {
-        return res.status(400).json({ error: "Invalid signature - signature must be from endorser wallet" });
+      // Skip EIP-712 signature verification for externally verified non-EVM chains
+      if (!isExternallyVerified) {
+        const signedEndorsement = {
+          endorser: normalizedEndorser as Address,
+          endorsee: normalizedEndorsee as Address,
+          epoch: epochBigInt,
+          nonce: nonceBigInt,
+          sig,
+          chainId: chainId || 1,
+        };
+        
+        const isValid = await verifyEndorsementSignature(signedEndorsement);
+        
+        if (!isValid) {
+          return res.status(400).json({ error: "Invalid signature - signature must be from endorser wallet" });
+        }
+      } else {
+        console.log(`[Multi-Chain] Skipping EIP-712 verification for ${chain} chain (externallyVerified=true)`);
       }
       
       const leafHash = computeLeafHash({
@@ -452,7 +482,7 @@ export function registerPublicApiRoutes(app: Express) {
         endorsee: normalizedEndorsee,
         epoch: epochBigInt,
         nonce: nonceBigInt,
-        sig
+        sig: sig || "externally_verified"
       });
       
       try {
@@ -462,9 +492,11 @@ export function registerPublicApiRoutes(app: Express) {
           endorsee: normalizedEndorsee,
           epoch: Number(epochBigInt),
           nonce: Number(nonceBigInt),
-          sig,
+          sig: sig || "externally_verified",
           leafHash,
           promptHash: null,
+          chainNamespace: chain,
+          externallyVerified: isExternallyVerified,
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.message.includes('duplicate key')) {
