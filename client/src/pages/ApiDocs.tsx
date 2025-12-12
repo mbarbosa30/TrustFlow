@@ -413,23 +413,68 @@ curl "${baseUrl}/api/v1/scores/cached/detailed?limit=50"`}</code></pre>
 
       <section>
         <h3>POST /api/v1/vouch</h3>
-        <p>Submit a vouch using EIP-712 wallet signature.</p>
+        <p>Submit a vouch using wallet signature. Supports EVM chains (Ethereum, Celo, Polygon) and non-EVM chains (Solana, Cosmos, Stellar).</p>
         
-        <h4>Request Body</h4>
+        <h4>Request Body - EVM Chains (default)</h4>
         <pre><code>{`{
   "endorser": "0x742d35Cc...",
   "endorsee": "0x1234567...",
   "epoch": "0",
   "nonce": "1",
   "sig": "0xabcd...",
-  "chainId": 1
+  "chainId": 42220
 }`}</code></pre>
 
-        <h4>EIP-712 Message Types</h4>
+        <h4>Request Body - Non-EVM Chains (Solana, Cosmos, etc.)</h4>
+        <pre><code>{`{
+  "endorser": "7EcDhSYGxXyscszYEp35KHN8vvw3svAuLKTzXwCFLtV",
+  "endorsee": "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+  "epoch": "0",
+  "nonce": "1",
+  "sig": "externally_verified",
+  "chainNamespace": "solana",
+  "externallyVerified": true
+}`}</code></pre>
+
+        <h4>Parameters</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Required</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>endorser</td><td>Yes</td><td>-</td><td>Address of vouching party</td></tr>
+            <tr><td>endorsee</td><td>Yes</td><td>-</td><td>Address being vouched for</td></tr>
+            <tr><td>epoch</td><td>Yes</td><td>-</td><td>Current epoch</td></tr>
+            <tr><td>nonce</td><td>Yes</td><td>-</td><td>Next nonce for endorser</td></tr>
+            <tr><td>sig</td><td>Yes*</td><td>-</td><td>EIP-712 signature (EVM) or "externally_verified" (non-EVM)</td></tr>
+            <tr><td>chainId</td><td>No</td><td>1</td><td>EVM chain ID (e.g., 42220 for Celo)</td></tr>
+            <tr><td>chainNamespace</td><td>No</td><td>"eip155"</td><td>Chain ecosystem: "eip155", "solana", "cosmos", "stellar"</td></tr>
+            <tr><td>externallyVerified</td><td>No</td><td>false</td><td>Set true for non-EVM chains to skip EIP-712 verification</td></tr>
+          </tbody>
+        </table>
+        <p><em>*For non-EVM chains with externallyVerified=true, sig can be "externally_verified"</em></p>
+
+        <h4>Chain Namespaces</h4>
+        <ul>
+          <li><strong>eip155</strong> (default): EVM chains - addresses lowercased, EIP-712 signature required</li>
+          <li><strong>solana</strong>: Solana - case-sensitive Base58 addresses</li>
+          <li><strong>cosmos</strong>: Cosmos ecosystem - case-sensitive Bech32 addresses</li>
+          <li><strong>stellar</strong>: Stellar - case-sensitive Ed25519 public keys</li>
+        </ul>
+
+        <h4>Backward Compatibility</h4>
+        <p><strong>Existing EVM integrations require NO changes.</strong> The new parameters default to EVM-compatible values.</p>
+
+        <h4>EIP-712 Message Types (EVM only)</h4>
         <pre><code>{`const domain = {
   name: 'MaxFlow',
   version: '1',
-  chainId: 1,
+  chainId: 42220,  // Your EVM chain ID
 };
 
 const types = {
@@ -458,8 +503,11 @@ const message = {
 // Duplicate vouch
 { "error": "Vouch already exists for this endorser->endorsee pair" }
 
-// Invalid signature
+// Invalid signature (EVM only)
 { "error": "Invalid signature - signature must be from endorser wallet" }
+
+// Missing signature for EVM
+{ "error": "Missing required field: sig (or set externallyVerified=true for non-EVM chains)" }
 
 // Race condition (409 status)
 { "error": "Nonce already used - please get a new nonce" }`}</code></pre>
@@ -775,14 +823,18 @@ const message = {
         <p>If you get "Invalid nonce" or 409 errors, fetch a fresh nonce and retry.</p>
         
         <h3>Address Handling</h3>
-        <p>All addresses are normalized to lowercase server-side. Both checksummed and lowercase addresses are accepted.</p>
+        <ul>
+          <li><strong>EVM chains (eip155)</strong>: Addresses are normalized to lowercase. Both checksummed and lowercase addresses are accepted.</li>
+          <li><strong>Non-EVM chains</strong>: Address case is preserved exactly as submitted. Lookups are case-insensitive.</li>
+        </ul>
         
         <h3>Epoch/Nonce Types</h3>
         <p>Both strings and numbers are accepted for epoch and nonce values (e.g., "1" or 1).</p>
         
         <h3>Security</h3>
         <ul>
-          <li>All write operations require EIP-712 wallet signatures - no API keys needed</li>
+          <li><strong>EVM chains</strong>: All write operations require EIP-712 wallet signatures - no API keys needed</li>
+          <li><strong>Non-EVM chains</strong>: Use externallyVerified=true when your app has verified the signature through chain-native methods</li>
           <li>Read operations are fully public and can be called from client-side JavaScript</li>
           <li>Use HTTPS in production for all requests</li>
           <li>Verify signature addresses match expected wallets before trusting responses</li>
