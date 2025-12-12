@@ -13,6 +13,10 @@ import { sql, eq } from "drizzle-orm";
 import { verifyMessage } from "viem";
 import type { Address, Hex } from "viem";
 import { epochComputation } from "./algorithm/compute";
+import { LocalHealthService } from "./services/localHealthService";
+
+// Singleton instance for score calculations
+const localHealthService = new LocalHealthService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
@@ -120,9 +124,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.getOrCreateEgoContext(endorsement.endorser.toLowerCase());
       await storage.updateLastSignalActivity(endorsement.endorser.toLowerCase());
 
+      // Auto-recalculate endorsee's LocalHealth score so API calls immediately return updated score
+      // This runs network-wide computation for accuracy (tiered capacity requires iterative algorithm)
+      let endorseeLocalHealth: number | null = null;
+      try {
+        endorseeLocalHealth = await localHealthService.recalculateLocalHealth(endorsement.endorsee.toLowerCase());
+        console.log(`[Auto-Score] Recalculated LocalHealth for ${endorsement.endorsee.toLowerCase()}: ${endorseeLocalHealth}`);
+      } catch (scoreError) {
+        console.error(`[Auto-Score] Failed to recalculate for ${endorsement.endorsee.toLowerCase()}:`, scoreError);
+        // Non-fatal: score will be calculated on next batch run or API request
+      }
+
       return res.status(201).json({
         endorsement: created,
         leafHash,
+        endorseeLocalHealth,
       });
     } catch (error) {
       console.error("Error creating endorsement:", error);
