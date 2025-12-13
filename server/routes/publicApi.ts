@@ -181,10 +181,17 @@ export function registerPublicApiRoutes(app: Express) {
   // More expensive but provides full component breakdown for one user
   app.get("/api/v1/score/:address/details", publicRateLimit, async (req, res) => {
     try {
-      const address = req.params.address.toLowerCase();
+      const chainNamespace = (req.query.chainNamespace as string) || "eip155";
+      const address = chainNamespace === "eip155" ? req.params.address.toLowerCase() : req.params.address;
       
-      if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: "Invalid address format" });
+      if (chainNamespace === "eip155") {
+        if (!address.startsWith('0x') || address.length !== 42) {
+          return res.status(400).json({ error: "Invalid address format (EVM: 0x + 40 hex chars)" });
+        }
+      } else {
+        if (!address || address.length < 10 || address.length > 256) {
+          return res.status(400).json({ error: "Invalid address format (10-256 chars required)" });
+        }
       }
       
       const { localHealthService } = await import('../services/localHealthService');
@@ -278,10 +285,17 @@ export function registerPublicApiRoutes(app: Express) {
 
   app.get("/api/v1/score/:address", publicRateLimit, async (req, res) => {
     try {
-      const address = req.params.address.toLowerCase();
+      const chainNamespace = (req.query.chainNamespace as string) || "eip155";
+      const address = chainNamespace === "eip155" ? req.params.address.toLowerCase() : req.params.address;
       
-      if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: "Invalid address format" });
+      if (chainNamespace === "eip155") {
+        if (!address.startsWith('0x') || address.length !== 42) {
+          return res.status(400).json({ error: "Invalid address format (EVM: 0x + 40 hex chars)" });
+        }
+      } else {
+        if (!address || address.length < 10 || address.length > 256) {
+          return res.status(400).json({ error: "Invalid address format (10-256 chars required)" });
+        }
       }
       
       const forceRefresh = req.query.force_refresh === 'true';
@@ -305,10 +319,17 @@ export function registerPublicApiRoutes(app: Express) {
 
   app.post("/api/v1/score/:address/refresh", refreshRateLimit, async (req, res) => {
     try {
-      const address = req.params.address.toLowerCase();
+      const chainNamespace = (req.query.chainNamespace as string) || (req.body?.chainNamespace as string) || "eip155";
+      const address = chainNamespace === "eip155" ? req.params.address.toLowerCase() : req.params.address;
       
-      if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: "Invalid address format" });
+      if (chainNamespace === "eip155") {
+        if (!address.startsWith('0x') || address.length !== 42) {
+          return res.status(400).json({ error: "Invalid address format (EVM: 0x + 40 hex chars)" });
+        }
+      } else {
+        if (!address || address.length < 10 || address.length > 256) {
+          return res.status(400).json({ error: "Invalid address format (10-256 chars required)" });
+        }
       }
       
       const { localHealthService } = await import('../services/localHealthService');
@@ -328,10 +349,17 @@ export function registerPublicApiRoutes(app: Express) {
 
   app.get("/api/v1/vouch/nonce/:address", publicRateLimit, async (req, res) => {
     try {
-      const address = req.params.address.toLowerCase();
+      const chainNamespace = (req.query.chainNamespace as string) || "eip155";
+      const address = chainNamespace === "eip155" ? req.params.address.toLowerCase() : req.params.address;
       
-      if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: "Invalid address format" });
+      if (chainNamespace === "eip155") {
+        if (!address.startsWith('0x') || address.length !== 42) {
+          return res.status(400).json({ error: "Invalid address format (EVM: 0x + 40 hex chars)" });
+        }
+      } else {
+        if (!address || address.length < 10 || address.length > 256) {
+          return res.status(400).json({ error: "Invalid address format (10-256 chars required)" });
+        }
       }
       
       let currentEpoch = await storage.getCurrentEpoch(0);
