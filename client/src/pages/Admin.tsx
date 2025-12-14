@@ -57,6 +57,31 @@ interface NetworkReport {
   chainDistribution: Array<{ chainNamespace: string; count: number; percentage: number }>;
   outliers: Array<{ address: string; localHealth: number; incomingVouches: number; outgoingVouches: number; anomalyType: string }>;
   outlierCount: number;
+  reciprocityAnalysis?: {
+    mutualVouchCount: number;
+    triangleCount: number;
+    reciprocityRate: number;
+    mutualVouches: Array<{ userA: string; userB: string }>;
+    triangles: Array<{ a: string; b: string; c: string }>;
+  };
+  pathRedundancyAnalysis?: {
+    avgMinCutForHighScores: number;
+    avgMinCutForLowScores: number;
+    pathRedundancyRatio: number;
+    highScoreLowPathsCount: number;
+    highScoreLowPaths: Array<{ address: string; localHealth: number; minCut: number; incoming: number }>;
+  };
+  cohortSegmentation?: {
+    byTenure: Array<{ cohort: string; count: number; avgLocalHealth: number; medianLocalHealth: number }>;
+    byChainAndScore: Array<{ chainNamespace: string; avgLocalHealth: number; count: number }>;
+  };
+  networkStructureMetrics?: {
+    clusteringCoefficient: number;
+    avgDegree: number;
+    maxDegree: number;
+    isolatedNodes: number;
+    hubNodes: Array<{ address: string; degree: number; localHealth: number }>;
+  };
 }
 
 export default function Admin() {
@@ -398,6 +423,219 @@ export default function Admin() {
                           </tbody>
                         </table>
                       </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {networkReportQuery.data.reciprocityAnalysis && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Reciprocity Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-mutual-vouches">
+                            {networkReportQuery.data.reciprocityAnalysis.mutualVouchCount}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Mutual Vouches (A↔B)</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-triangles">
+                            {networkReportQuery.data.reciprocityAnalysis.triangleCount}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Vouch Triangles</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-reciprocity-rate">
+                            {(networkReportQuery.data.reciprocityAnalysis.reciprocityRate * 100).toFixed(1)}%
+                          </div>
+                          <p className="text-xs text-muted-foreground">Reciprocity Rate</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {networkReportQuery.data.pathRedundancyAnalysis && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Path Redundancy Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-avg-mincut-high">
+                            {networkReportQuery.data.pathRedundancyAnalysis.avgMinCutForHighScores.toFixed(2)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Avg Min-Cut (High Signal)</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-avg-mincut-low">
+                            {networkReportQuery.data.pathRedundancyAnalysis.avgMinCutForLowScores.toFixed(2)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Avg Min-Cut (Low Signal)</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-redundancy-ratio">
+                            {networkReportQuery.data.pathRedundancyAnalysis.pathRedundancyRatio.toFixed(2)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Redundancy Ratio</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold text-amber-600" data-testid="text-high-score-low-paths">
+                            {networkReportQuery.data.pathRedundancyAnalysis.highScoreLowPathsCount}
+                          </div>
+                          <p className="text-xs text-muted-foreground">High Signal / Low Paths</p>
+                        </div>
+                      </div>
+                      {networkReportQuery.data.pathRedundancyAnalysis.highScoreLowPaths.length > 0 && (
+                        <div className="max-h-40 overflow-y-auto mt-2">
+                          <table className="w-full text-sm">
+                            <thead className="border-b">
+                              <tr>
+                                <th className="text-left py-1">Address</th>
+                                <th className="text-right py-1">Signal</th>
+                                <th className="text-right py-1">Min-Cut</th>
+                                <th className="text-right py-1">Incoming</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {networkReportQuery.data.pathRedundancyAnalysis.highScoreLowPaths.slice(0, 10).map((item, idx) => (
+                                <tr key={idx} className="border-b last:border-0">
+                                  <td className="py-1 font-mono text-xs">
+                                    {item.address.slice(0, 6)}...{item.address.slice(-4)}
+                                  </td>
+                                  <td className="text-right font-semibold">{item.localHealth.toFixed(1)}</td>
+                                  <td className="text-right">{item.minCut}</td>
+                                  <td className="text-right">{item.incoming}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {networkReportQuery.data.cohortSegmentation && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Cohort Segmentation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="text-sm font-medium mb-2">By Tenure</h4>
+                          <table className="w-full text-sm">
+                            <thead className="border-b">
+                              <tr>
+                                <th className="text-left py-1">Cohort</th>
+                                <th className="text-right py-1">Count</th>
+                                <th className="text-right py-1">Avg Signal</th>
+                                <th className="text-right py-1">Median Signal</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {networkReportQuery.data.cohortSegmentation.byTenure.map((cohort, idx) => (
+                                <tr key={idx} className="border-b last:border-0">
+                                  <td className="py-1 capitalize">{cohort.cohort}</td>
+                                  <td className="text-right">{cohort.count}</td>
+                                  <td className="text-right font-semibold">{cohort.avgLocalHealth.toFixed(1)}</td>
+                                  <td className="text-right">{cohort.medianLocalHealth.toFixed(1)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {networkReportQuery.data.cohortSegmentation.byChainAndScore.length > 1 && (
+                          <div>
+                            <h4 className="text-sm font-medium mb-2">By Chain</h4>
+                            <table className="w-full text-sm">
+                              <thead className="border-b">
+                                <tr>
+                                  <th className="text-left py-1">Chain</th>
+                                  <th className="text-right py-1">Count</th>
+                                  <th className="text-right py-1">Avg Signal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {networkReportQuery.data.cohortSegmentation.byChainAndScore.map((chain, idx) => (
+                                  <tr key={idx} className="border-b last:border-0">
+                                    <td className="py-1 font-mono text-xs">{chain.chainNamespace}</td>
+                                    <td className="text-right">{chain.count}</td>
+                                    <td className="text-right font-semibold">{chain.avgLocalHealth.toFixed(1)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {networkReportQuery.data.networkStructureMetrics && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Network Structure Metrics</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-clustering-coefficient">
+                            {networkReportQuery.data.networkStructureMetrics.clusteringCoefficient.toFixed(3)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Clustering Coefficient</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-avg-degree">
+                            {networkReportQuery.data.networkStructureMetrics.avgDegree.toFixed(2)}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Average Degree</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-max-degree">
+                            {networkReportQuery.data.networkStructureMetrics.maxDegree}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Max Degree</p>
+                        </div>
+                        <div>
+                          <div className="text-xl font-bold" data-testid="text-isolated-nodes">
+                            {networkReportQuery.data.networkStructureMetrics.isolatedNodes}
+                          </div>
+                          <p className="text-xs text-muted-foreground">Isolated Nodes</p>
+                        </div>
+                      </div>
+                      {networkReportQuery.data.networkStructureMetrics.hubNodes.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-2">Hub Nodes (Top 10 by Degree)</h4>
+                          <div className="max-h-40 overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="border-b">
+                                <tr>
+                                  <th className="text-left py-1">Address</th>
+                                  <th className="text-right py-1">Degree</th>
+                                  <th className="text-right py-1">Signal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {networkReportQuery.data.networkStructureMetrics.hubNodes.map((hub, idx) => (
+                                  <tr key={idx} className="border-b last:border-0">
+                                    <td className="py-1 font-mono text-xs">
+                                      {hub.address.slice(0, 6)}...{hub.address.slice(-4)}
+                                    </td>
+                                    <td className="text-right">{hub.degree}</td>
+                                    <td className="text-right font-semibold">{hub.localHealth.toFixed(1)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 )}
