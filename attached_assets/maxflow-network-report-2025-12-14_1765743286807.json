@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2025-12-14T20:14:12.748Z",
+  "networkSummary": {
+    "totalUsers": 783,
+    "usersWithScores": 659,
+    "totalVouches": 1489,
+    "totalParticipants": 615,
+    "graphDensity": 0.0039,
+    "avgLocalHealth": 32.94,
+    "medianLocalHealth": 51,
+    "minLocalHealth": 0,
+    "maxLocalHealth": 80,
+    "stdDevLocalHealth": 27.26
+  },
+  "scoreDistribution": [
+    {
+      "bucket": "0-10",
+      "count": 248,
+      "percentage": 37.63
+    },
+    {
+      "bucket": "10-20",
+      "count": 29,
+      "percentage": 4.4
+    },
+    {
+      "bucket": "20-30",
+      "count": 8,
+      "percentage": 1.21
+    },
+    {
+      "bucket": "30-40",
+      "count": 2,
+      "percentage": 0.3
+    },
+    {
+      "bucket": "40-50",
+      "count": 4,
+      "percentage": 0.61
+    },
+    {
+      "bucket": "50-60",
+      "count": 287,
+      "percentage": 43.55
+    },
+    {
+      "bucket": "60-70",
+      "count": 57,
+      "percentage": 8.65
+    },
+    {
+      "bucket": "70-80",
+      "count": 7,
+      "percentage": 1.06
+    },
+    {
+      "bucket": "80-90",
+      "count": 17,
+      "percentage": 2.58
+    },
+    {
+      "bucket": "90-100",
+      "count": 0,
+      "percentage": 0
+    }
+  ],
+  "componentBreakdown": {
+    "flowComponent": {
+      "avg": 19.07,
+      "median": 12.5,
+      "min": 1.2,
+      "max": 60,
+      "stdDev": 13.6,
+      "count": 442
+    },
+    "redundancyComponent": {
+      "avg": 34.37,
+      "median": 40,
+      "min": 0.67,
+      "max": 40,
+      "stdDev": 12.56,
+      "count": 442
+    },
+    "actualMinCut": {
+      "avg": 2.39,
+      "median": 1,
+      "min": 0,
+      "max": 70.56,
+      "stdDev": 4.04,
+      "count": 442
+    },
+    "dilutionFactor": {
+      "avg": 0.992,
+      "median": 1,
+      "min": 0.4,
+      "max": 1,
+      "stdDev": 0.062,
+      "count": 442
+    },
+    "incomingActive": {
+      "avg": 1.76,
+      "median": 1,
+      "min": 0,
+      "max": 118,
+      "stdDev": 5.58,
+      "count": 659
+    },
+    "outgoingTotal": {
+      "avg": 1.91,
+      "median": 0,
+      "min": 0,
+      "max": 392,
+      "stdDev": 17.14,
+      "count": 659
+    }
+  },
+  "vouchGraphStats": {
+    "avgVouchesGiven": 4.55,
+    "medianVouchesGiven": 1,
+    "maxVouchesGiven": 467,
+    "avgVouchesReceived": 2.58,
+    "medianVouchesReceived": 2,
+    "maxVouchesReceived": 142,
+    "usersWhoVouched": 327,
+    "usersWhoReceivedVouches": 577
+  },
+  "chainDistribution": [
+    {
+      "chainNamespace": "eip155",
+      "count": 1487,
+      "percentage": 99.87
+    },
+    {
+      "chainNamespace": "stellar",
+      "count": 2,
+      "percentage": 0.13
+    }
+  ],
+  "outliers": [
+    {
+      "address": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+      "localHealth": 71,
+      "incomingVouches": 66,
+      "outgoingVouches": 114,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x46e460dff6a03f36fdd5ac88689ceddbaa7103a7",
+      "localHealth": 29,
+      "incomingVouches": 1,
+      "outgoingVouches": 116,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0xdc430169539b0b44b11562813c8f3fb63d9129ab",
+      "localHealth": 71,
+      "incomingVouches": 118,
+      "outgoingVouches": 392,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x96fa7c06aa7d21c85f48695c860c5d7e47c51889",
+      "localHealth": 30,
+      "incomingVouches": 2,
+      "outgoingVouches": 110,
+      "anomalyType": "extreme_dilution"
+    }
+  ],
+  "outlierCount": 4
+}

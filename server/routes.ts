@@ -625,7 +625,327 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // 6. Network Summary
+      // 6. Reciprocity Detection (mutual vouches and cycles - Sybil indicators)
+      const reciprocityAnalysis = {
+        mutualVouches: [] as { userA: string; userB: string }[],
+        triangles: [] as { a: string; b: string; c: string }[],
+        mutualVouchCount: 0,
+        triangleCount: 0,
+        reciprocityRate: 0,
+      };
+
+      // Build adjacency set and adjacency list for fast lookup
+      const vouchSet = new Set<string>();
+      const adjacencyList = new Map<string, Set<string>>();
+      
+      for (const e of allEndorsements) {
+        const from = e.endorser.toLowerCase();
+        const to = e.endorsee.toLowerCase();
+        vouchSet.add(`${from}->${to}`);
+        
+        if (!adjacencyList.has(from)) {
+          adjacencyList.set(from, new Set());
+        }
+        adjacencyList.get(from)!.add(to);
+      }
+
+      // Find mutual vouches (A->B and B->A)
+      const checkedPairs = new Set<string>();
+      for (const e of allEndorsements) {
+        const a = e.endorser.toLowerCase();
+        const b = e.endorsee.toLowerCase();
+        const pairKey = [a, b].sort().join('|');
+        if (!checkedPairs.has(pairKey)) {
+          checkedPairs.add(pairKey);
+          if (vouchSet.has(`${a}->${b}`) && vouchSet.has(`${b}->${a}`)) {
+            reciprocityAnalysis.mutualVouches.push({ userA: a, userB: b });
+          }
+        }
+      }
+      reciprocityAnalysis.mutualVouchCount = reciprocityAnalysis.mutualVouches.length;
+      
+      // Calculate reciprocity rate (what % of vouches are reciprocated)
+      const totalPairs = checkedPairs.size;
+      reciprocityAnalysis.reciprocityRate = totalPairs > 0 
+        ? Math.round((reciprocityAnalysis.mutualVouchCount / totalPairs) * 10000) / 100 
+        : 0;
+
+      // Find triangles (A->B->C->A cycles) - strong Sybil indicator
+      const triangleSet = new Set<string>();
+      const adjacencyEntries = Array.from(adjacencyList.entries());
+      for (const [a, neighborsOfA] of adjacencyEntries) {
+        const neighborsOfAArray = Array.from(neighborsOfA);
+        for (const b of neighborsOfAArray) {
+          const neighborsOfB = adjacencyList.get(b);
+          if (neighborsOfB) {
+            const neighborsOfBArray = Array.from(neighborsOfB);
+            for (const c of neighborsOfBArray) {
+              if (c !== a && c !== b && vouchSet.has(`${c}->${a}`)) {
+                // Found triangle: A->B->C->A
+                const sortedTriangle = [a, b, c].sort().join('|');
+                if (!triangleSet.has(sortedTriangle)) {
+                  triangleSet.add(sortedTriangle);
+                  reciprocityAnalysis.triangles.push({ a, b, c });
+                }
+              }
+            }
+          }
+        }
+      }
+      reciprocityAnalysis.triangleCount = reciprocityAnalysis.triangles.length;
+
+      // Add users involved in mutual vouches to outliers if they have high scores
+      const usersInMutualVouches = new Set<string>();
+      for (const mv of reciprocityAnalysis.mutualVouches) {
+        usersInMutualVouches.add(mv.userA);
+        usersInMutualVouches.add(mv.userB);
+      }
+      
+      for (const ctx of validScores) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        const score = ctx.localHealth!;
+        const incoming = ctx.incomingActive || 0;
+        const outgoing = ctx.outgoingTotal || 0;
+        
+        // High score user involved in mutual vouching
+        if (score > 60 && usersInMutualVouches.has(addr)) {
+          // Check if not already flagged
+          if (!outliers.some(o => o.address === addr)) {
+            outliers.push({ 
+              address: addr, 
+              localHealth: score, 
+              incomingVouches: incoming, 
+              outgoingVouches: outgoing, 
+              anomalyType: 'mutual_vouch_high_score' 
+            });
+          }
+        }
+      }
+
+      // Add users involved in triangles to outliers
+      const usersInTriangles = new Set<string>();
+      for (const tri of reciprocityAnalysis.triangles) {
+        usersInTriangles.add(tri.a);
+        usersInTriangles.add(tri.b);
+        usersInTriangles.add(tri.c);
+      }
+      
+      for (const ctx of validScores) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        const score = ctx.localHealth!;
+        const incoming = ctx.incomingActive || 0;
+        const outgoing = ctx.outgoingTotal || 0;
+        
+        // User involved in vouch triangle/cycle
+        if (usersInTriangles.has(addr)) {
+          if (!outliers.some(o => o.address === addr && o.anomalyType === 'vouch_triangle')) {
+            outliers.push({ 
+              address: addr, 
+              localHealth: score, 
+              incomingVouches: incoming, 
+              outgoingVouches: outgoing, 
+              anomalyType: 'vouch_triangle' 
+            });
+          }
+        }
+      }
+
+      // 7. Path Redundancy Analysis (flag high scores with low vertex-disjoint paths)
+      const pathRedundancyAnalysis = {
+        highScoreLowPaths: [] as { address: string; localHealth: number; minCut: number; incoming: number }[],
+        avgMinCutForHighScores: 0,
+        avgMinCutForLowScores: 0,
+        pathRedundancyRatio: 0,
+      };
+
+      const highScoreUsers = validScores.filter(c => c.localHealth! >= 50);
+      const lowScoreUsers = validScores.filter(c => c.localHealth! < 50);
+      
+      const highScoreMinCuts = highScoreUsers
+        .filter(c => c.actualMinCut !== null && c.actualMinCut !== undefined)
+        .map(c => c.actualMinCut!);
+      const lowScoreMinCuts = lowScoreUsers
+        .filter(c => c.actualMinCut !== null && c.actualMinCut !== undefined)
+        .map(c => c.actualMinCut!);
+
+      pathRedundancyAnalysis.avgMinCutForHighScores = highScoreMinCuts.length > 0 
+        ? Math.round(avg(highScoreMinCuts) * 100) / 100 
+        : 0;
+      pathRedundancyAnalysis.avgMinCutForLowScores = lowScoreMinCuts.length > 0 
+        ? Math.round(avg(lowScoreMinCuts) * 100) / 100 
+        : 0;
+
+      // Path redundancy ratio: high score avg / low score avg (should be > 1 for healthy network)
+      if (pathRedundancyAnalysis.avgMinCutForLowScores > 0) {
+        pathRedundancyAnalysis.pathRedundancyRatio = Math.round(
+          (pathRedundancyAnalysis.avgMinCutForHighScores / pathRedundancyAnalysis.avgMinCutForLowScores) * 100
+        ) / 100;
+      }
+
+      // Flag users with high score but low min-cut (suspicious: score > 60 but minCut <= 1)
+      for (const ctx of validScores) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        const score = ctx.localHealth!;
+        const minCut = ctx.actualMinCut ?? 0;
+        const incoming = ctx.incomingActive || 0;
+        const outgoing = ctx.outgoingTotal || 0;
+        
+        // High score with low path redundancy
+        if (score >= 60 && minCut <= 1 && incoming > 0) {
+          pathRedundancyAnalysis.highScoreLowPaths.push({
+            address: addr,
+            localHealth: score,
+            minCut,
+            incoming,
+          });
+          
+          // Add to outliers if not already flagged
+          if (!outliers.some(o => o.address === addr && o.anomalyType === 'high_score_low_paths')) {
+            outliers.push({
+              address: addr,
+              localHealth: score,
+              incomingVouches: incoming,
+              outgoingVouches: outgoing,
+              anomalyType: 'high_score_low_paths',
+            });
+          }
+        }
+      }
+
+      // 8. Cohort Segmentation (by tenure and chain)
+      const cohortSegmentation = {
+        byTenure: [] as { cohort: string; count: number; avgLocalHealth: number; medianLocalHealth: number }[],
+        byChainAndScore: [] as { chainNamespace: string; avgLocalHealth: number; count: number }[],
+      };
+
+      // Tenure cohorts based on context creation date
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const threeMonthsAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+
+      const tenureCohorts = {
+        'new (< 1 week)': validScores.filter(c => c.createdAt && new Date(c.createdAt) > oneWeekAgo),
+        'recent (1-4 weeks)': validScores.filter(c => c.createdAt && new Date(c.createdAt) <= oneWeekAgo && new Date(c.createdAt) > oneMonthAgo),
+        'established (1-3 months)': validScores.filter(c => c.createdAt && new Date(c.createdAt) <= oneMonthAgo && new Date(c.createdAt) > threeMonthsAgo),
+        'veteran (> 3 months)': validScores.filter(c => c.createdAt && new Date(c.createdAt) <= threeMonthsAgo),
+      };
+
+      for (const [cohort, users] of Object.entries(tenureCohorts)) {
+        const scores = users.map(c => c.localHealth!);
+        cohortSegmentation.byTenure.push({
+          cohort,
+          count: users.length,
+          avgLocalHealth: scores.length > 0 ? Math.round(avg(scores) * 100) / 100 : 0,
+          medianLocalHealth: scores.length > 0 ? Math.round(median(scores) * 100) / 100 : 0,
+        });
+      }
+
+      // Chain-based score averages (using endorsement chain data)
+      const chainScoreMap = new Map<string, number[]>();
+      for (const ctx of validScores) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        
+        // Find endorsements for this user to determine their chain
+        const userEndorsements = allEndorsements.filter(e => e.endorsee.toLowerCase() === addr);
+        if (userEndorsements.length > 0) {
+          const chain = userEndorsements[0].chainNamespace || 'eip155';
+          if (!chainScoreMap.has(chain)) {
+            chainScoreMap.set(chain, []);
+          }
+          chainScoreMap.get(chain)!.push(ctx.localHealth!);
+        }
+      }
+
+      const chainScoreEntries = Array.from(chainScoreMap.entries());
+      for (const [chain, scores] of chainScoreEntries) {
+        cohortSegmentation.byChainAndScore.push({
+          chainNamespace: chain,
+          avgLocalHealth: Math.round(avg(scores) * 100) / 100,
+          count: scores.length,
+        });
+      }
+      cohortSegmentation.byChainAndScore.sort((a, b) => b.count - a.count);
+
+      // 9. Network Structure Metrics (clustering coefficient, articulation points approximation)
+      const networkStructureMetrics = {
+        clusteringCoefficient: 0,
+        avgDegree: 0,
+        maxDegree: 0,
+        isolatedNodes: 0,
+        hubNodes: [] as { address: string; degree: number; localHealth: number }[],
+      };
+
+      // Calculate degree for each node (in + out edges)
+      const nodeDegreesMap = new Map<string, number>();
+      for (const e of allEndorsements) {
+        const from = e.endorser.toLowerCase();
+        const to = e.endorsee.toLowerCase();
+        nodeDegreesMap.set(from, (nodeDegreesMap.get(from) || 0) + 1);
+        nodeDegreesMap.set(to, (nodeDegreesMap.get(to) || 0) + 1);
+      }
+
+      const nodeDegrees = Array.from(nodeDegreesMap.values());
+      networkStructureMetrics.avgDegree = nodeDegrees.length > 0 ? Math.round(avg(nodeDegrees) * 100) / 100 : 0;
+      networkStructureMetrics.maxDegree = nodeDegrees.length > 0 ? max(nodeDegrees) : 0;
+
+      // Isolated nodes (users with no connections)
+      networkStructureMetrics.isolatedNodes = allContexts.length - nodeDegreesMap.size;
+
+      // Hub nodes (top 10 by degree)
+      const nodeDegreeEntries = Array.from(nodeDegreesMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      
+      for (const [addr, degree] of nodeDegreeEntries) {
+        const ctx = validScores.find(c => c.ownerAddress?.toLowerCase() === addr);
+        networkStructureMetrics.hubNodes.push({
+          address: addr,
+          degree,
+          localHealth: ctx?.localHealth ?? 0,
+        });
+      }
+
+      // Approximate local clustering coefficient
+      // For each node with degree >= 2, count how many of its neighbors are connected to each other
+      let totalClusteringCoeff = 0;
+      let nodesWithEnoughDegree = 0;
+      
+      const adjacencyListEntries = Array.from(adjacencyList.entries());
+      for (const [node, neighbors] of adjacencyListEntries) {
+        const neighborArray = Array.from(neighbors);
+        if (neighborArray.length < 2) continue;
+        
+        nodesWithEnoughDegree++;
+        let connectedNeighborPairs = 0;
+        const possiblePairs = neighborArray.length * (neighborArray.length - 1);
+        
+        // Check how many neighbor pairs are connected (in either direction)
+        for (let i = 0; i < neighborArray.length; i++) {
+          for (let j = 0; j < neighborArray.length; j++) {
+            if (i !== j) {
+              const ni = neighborArray[i];
+              const nj = neighborArray[j];
+              if (vouchSet.has(`${ni}->${nj}`)) {
+                connectedNeighborPairs++;
+              }
+            }
+          }
+        }
+        
+        if (possiblePairs > 0) {
+          totalClusteringCoeff += connectedNeighborPairs / possiblePairs;
+        }
+      }
+      
+      networkStructureMetrics.clusteringCoefficient = nodesWithEnoughDegree > 0 
+        ? Math.round((totalClusteringCoeff / nodesWithEnoughDegree) * 1000) / 1000 
+        : 0;
+
+      // 10. Network Summary
       const localHealthScores = validScores.map(c => c.localHealth!);
       
       const report = {
@@ -655,6 +975,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           usersWhoReceivedVouches: uniqueEndorsees.size,
         },
         chainDistribution,
+        reciprocityAnalysis: {
+          mutualVouchCount: reciprocityAnalysis.mutualVouchCount,
+          triangleCount: reciprocityAnalysis.triangleCount,
+          reciprocityRate: reciprocityAnalysis.reciprocityRate,
+          mutualVouches: reciprocityAnalysis.mutualVouches.slice(0, 20), // Limit to 20 pairs
+          triangles: reciprocityAnalysis.triangles.slice(0, 20), // Limit to 20 triangles
+        },
+        pathRedundancyAnalysis: {
+          avgMinCutForHighScores: pathRedundancyAnalysis.avgMinCutForHighScores,
+          avgMinCutForLowScores: pathRedundancyAnalysis.avgMinCutForLowScores,
+          pathRedundancyRatio: pathRedundancyAnalysis.pathRedundancyRatio,
+          highScoreLowPathsCount: pathRedundancyAnalysis.highScoreLowPaths.length,
+          highScoreLowPaths: pathRedundancyAnalysis.highScoreLowPaths.slice(0, 20), // Limit to 20
+        },
+        cohortSegmentation,
+        networkStructureMetrics,
         outliers: outliers.slice(0, 50), // Limit to top 50 outliers
         outlierCount: outliers.length,
       };
