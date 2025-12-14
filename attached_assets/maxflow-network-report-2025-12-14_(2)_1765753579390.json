@@ -1,0 +1,786 @@
+{
+  "generatedAt": "2025-12-14T23:06:09.311Z",
+  "networkSummary": {
+    "totalUsers": 800,
+    "usersWithScores": 800,
+    "totalVouches": 1566,
+    "totalParticipants": 615,
+    "graphDensity": 0.0041,
+    "avgLocalHealth": 25.79,
+    "medianLocalHealth": 43,
+    "minLocalHealth": 0,
+    "maxLocalHealth": 50,
+    "stdDevLocalHealth": 21.27
+  },
+  "scoreDistribution": [
+    {
+      "bucket": "0-10",
+      "count": 311,
+      "percentage": 38.88
+    },
+    {
+      "bucket": "10-20",
+      "count": 37,
+      "percentage": 4.63
+    },
+    {
+      "bucket": "20-30",
+      "count": 2,
+      "percentage": 0.25
+    },
+    {
+      "bucket": "30-40",
+      "count": 1,
+      "percentage": 0.13
+    },
+    {
+      "bucket": "40-50",
+      "count": 392,
+      "percentage": 49
+    },
+    {
+      "bucket": "50-60",
+      "count": 57,
+      "percentage": 7.12
+    },
+    {
+      "bucket": "60-70",
+      "count": 0,
+      "percentage": 0
+    },
+    {
+      "bucket": "70-80",
+      "count": 0,
+      "percentage": 0
+    },
+    {
+      "bucket": "80-90",
+      "count": 0,
+      "percentage": 0
+    },
+    {
+      "bucket": "90-100",
+      "count": 0,
+      "percentage": 0
+    }
+  ],
+  "componentBreakdown": {
+    "flowComponent": {
+      "avg": 7.69,
+      "median": 4.5,
+      "min": 1.2,
+      "max": 60,
+      "stdDev": 11.23,
+      "count": 520
+    },
+    "redundancyComponent": {
+      "avg": 35.21,
+      "median": 40,
+      "min": 0.67,
+      "max": 40,
+      "stdDev": 11.75,
+      "count": 520
+    },
+    "actualMinCut": {
+      "avg": 2.48,
+      "median": 2,
+      "min": 0,
+      "max": 71.17,
+      "stdDev": 3.77,
+      "count": 520
+    },
+    "dilutionFactor": {
+      "avg": 0.992,
+      "median": 1,
+      "min": 0.4,
+      "max": 1,
+      "stdDev": 0.063,
+      "count": 520
+    },
+    "incomingActive": {
+      "avg": 1.84,
+      "median": 1,
+      "min": 0,
+      "max": 142,
+      "stdDev": 6.74,
+      "count": 800
+    },
+    "outgoingTotal": {
+      "avg": 1.95,
+      "median": 0,
+      "min": 0,
+      "max": 467,
+      "stdDev": 18.97,
+      "count": 800
+    }
+  },
+  "vouchGraphStats": {
+    "avgVouchesGiven": 4.79,
+    "medianVouchesGiven": 1,
+    "maxVouchesGiven": 467,
+    "avgVouchesReceived": 2.71,
+    "medianVouchesReceived": 2,
+    "maxVouchesReceived": 142,
+    "usersWhoVouched": 327,
+    "usersWhoReceivedVouches": 577
+  },
+  "chainDistribution": [
+    {
+      "chainNamespace": "eip155",
+      "count": 1564,
+      "percentage": 99.87
+    },
+    {
+      "chainNamespace": "stellar",
+      "count": 2,
+      "percentage": 0.13
+    }
+  ],
+  "reciprocityAnalysis": {
+    "mutualVouchCount": 154,
+    "triangleCount": 176,
+    "reciprocityRate": 11.22,
+    "mutualVouches": [
+      {
+        "userA": "0x3e8adc9be68133cc2218c4243f2033dfb10e2a37",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x16603e7e449e90e3ec729c04160116dd3ee15455",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x98cf435faa0797b44023523ab3c5a1a3c597af48",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x182be67676e102ad613671214124f4ab1badc677",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x7ef633390b475561a69bb3f2434d2f143ba85108",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x4a342ecdf948863541b6640a1a8eb26db7539182",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x3bf271d89e3392b11774938cb3793c5dbc3eea34",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0xd5d408d98200aa393feb81bb34fa4fc38298f98f",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x5610833591b651b0cbb26993873725dde4314087",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0xb35a285cf9feffc43a26efc7a7d2f20322693efc",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x148c90b0f13b387877724acd436b59ffea788056",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x7f3fe69918cc496d33e7d07d76763348783c5a09",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x9e8ab28e54a6426f8dcc2a0eb1367e89a6eadab6",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0xd3d04bab16f2726f66891763df36b876d8e3a6a1",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0xd4a9f814199ae0f9914f6f0f9b7ba1ba1c61e42f",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0xfabfc326f334109e416e873ca5879de499467b57",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "userB": "0x0818dba7af9a3b68517c4fae70066572ebc2256b"
+      },
+      {
+        "userA": "0x4ea1776b0fcd769140767aedec3a2e1e5f329fea",
+        "userB": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548"
+      },
+      {
+        "userA": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "userB": "0x860dcf46bb76b643deed060beeb6d7c7798db0dd"
+      },
+      {
+        "userA": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "userB": "0x07ef21a441e0c12445e7f4ecd6bc226537def5e5"
+      }
+    ],
+    "triangles": [
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x786856a8ae11b330815e2d63e91402552d3bb265",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x57d29fbd2cc865304b0109cb2ae2cf3051926ed9",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x43da9add5d543b9dee8c45c4ca684edf4667d3b5",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x4397f08b671d8ef6210d02730143539a25b10fed",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xcd4ba14d5d196059c8ab91e33407fcfadb5df535",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x9fbfb5762c1d75bdc4a31abe1dc6314a75d0cc5d",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xdd3de307b3010ba939667c51abd9a91eae231fe7",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x5aa5746b0853f08799211ad4c28df6a0f506454a",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xe36643fb7b645bdaebf543655699326f061d9878",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xa9d1c79e74f424366020fd3f284c84e10316526d",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xe490265e04a6390bd6c7256db66c547795318b1f",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x8428996d8507b0580dbfbb432ceb42d8d745d910",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x9256f8c65bfab417eba311ff92b2e2a320f9854f",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x6c7aac193f600cda5fa5f679b9da2a6a8aa87fdf",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xd41373b707b2c4290411570be8b208b6b80d1354",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xe8281a1da2fd9d207d30785464a876687b457c9c",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xe8f094323008c1d9e3f3f285cb56625db9fc2d40",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0x89120ce4fe9fb801330f2fdc17f5ca18be67a892",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xfe8ef0a9387ff5cf9735cf03fcd5682ad282041c",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      },
+      {
+        "a": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "b": "0xa581702c38dd76d252a8b35c671666b5afcaff42",
+        "c": "0xdc430169539b0b44b11562813c8f3fb63d9129ab"
+      }
+    ]
+  },
+  "pathRedundancyAnalysis": {
+    "avgMinCutForHighScores": 7.53,
+    "avgMinCutForLowScores": 1.86,
+    "pathRedundancyRatio": 4.05,
+    "highScoreLowPathsCount": 0,
+    "highScoreLowPaths": []
+  },
+  "cohortSegmentation": {
+    "byTenure": [
+      {
+        "cohort": "new (< 1 week)",
+        "count": 592,
+        "avgLocalHealth": 29.65,
+        "medianLocalHealth": 43
+      },
+      {
+        "cohort": "recent (1-4 weeks)",
+        "count": 130,
+        "avgLocalHealth": 20.68,
+        "medianLocalHealth": 11
+      },
+      {
+        "cohort": "established (1-3 months)",
+        "count": 78,
+        "avgLocalHealth": 5.01,
+        "medianLocalHealth": 0
+      },
+      {
+        "cohort": "veteran (> 3 months)",
+        "count": 0,
+        "avgLocalHealth": 0,
+        "medianLocalHealth": 0
+      }
+    ],
+    "byChainAndScore": [
+      {
+        "chainNamespace": "eip155",
+        "avgLocalHealth": 39.74,
+        "count": 519
+      },
+      {
+        "chainNamespace": "stellar",
+        "avgLocalHealth": 8,
+        "count": 1
+      }
+    ]
+  },
+  "networkStructureMetrics": {
+    "clusteringCoefficient": 0.31,
+    "avgDegree": 5.09,
+    "maxDegree": 585,
+    "isolatedNodes": 185,
+    "hubNodes": [
+      {
+        "address": "0xdc430169539b0b44b11562813c8f3fb63d9129ab",
+        "degree": 585,
+        "localHealth": 50
+      },
+      {
+        "address": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+        "degree": 331,
+        "localHealth": 50
+      },
+      {
+        "address": "0x46e460dff6a03f36fdd5ac88689ceddbaa7103a7",
+        "degree": 117,
+        "localHealth": 19
+      },
+      {
+        "address": "0x96fa7c06aa7d21c85f48695c860c5d7e47c51889",
+        "degree": 112,
+        "localHealth": 20
+      },
+      {
+        "address": "0x7b16f7b3614784492023d28c20a780df44c25e44",
+        "degree": 91,
+        "localHealth": 19
+      },
+      {
+        "address": "0xa4acd2eccf852f463304fe75aea01e2280f095a1",
+        "degree": 38,
+        "localHealth": 28
+      },
+      {
+        "address": "0x1fb4b65409ac9b4dad90d51bebf4f0c84dd84100",
+        "degree": 24,
+        "localHealth": 50
+      },
+      {
+        "address": "0xa313de740152b98184146e3b811931dfa9256d02",
+        "degree": 24,
+        "localHealth": 50
+      },
+      {
+        "address": "0x85f892c47451e287640e22dc9c123bd2f52076a6",
+        "degree": 22,
+        "localHealth": 50
+      },
+      {
+        "address": "0x0bb32dfbd39e29f83a5c408d3e94702e8ef95095",
+        "degree": 22,
+        "localHealth": 50
+      }
+    ]
+  },
+  "outliers": [
+    {
+      "address": "0xa4acd2eccf852f463304fe75aea01e2280f095a1",
+      "localHealth": 28,
+      "incomingVouches": 11,
+      "outgoingVouches": 27,
+      "anomalyType": "low_score_many_vouches"
+    },
+    {
+      "address": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+      "localHealth": 50,
+      "incomingVouches": 142,
+      "outgoingVouches": 189,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x46e460dff6a03f36fdd5ac88689ceddbaa7103a7",
+      "localHealth": 19,
+      "incomingVouches": 1,
+      "outgoingVouches": 116,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x7b16f7b3614784492023d28c20a780df44c25e44",
+      "localHealth": 19,
+      "incomingVouches": 2,
+      "outgoingVouches": 89,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0xdc430169539b0b44b11562813c8f3fb63d9129ab",
+      "localHealth": 50,
+      "incomingVouches": 118,
+      "outgoingVouches": 467,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x96fa7c06aa7d21c85f48695c860c5d7e47c51889",
+      "localHealth": 20,
+      "incomingVouches": 2,
+      "outgoingVouches": 110,
+      "anomalyType": "extreme_dilution"
+    },
+    {
+      "address": "0x1116e33f241a3ff3d05276e8b0c895361aa669b3",
+      "localHealth": 15,
+      "incomingVouches": 4,
+      "outgoingVouches": 15,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xd4984eac28798b8740050c4409afb9f831020129",
+      "localHealth": 19,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xc93784ccd945a0eff3a2fe2978511ec87e3bdf00",
+      "localHealth": 12,
+      "incomingVouches": 2,
+      "outgoingVouches": 12,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x1c9f765c579f94f6502acd9fc356171d85a1f8d0",
+      "localHealth": 17,
+      "incomingVouches": 4,
+      "outgoingVouches": 4,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x49fc88d0e7972e8a470ec21d42d44f751c3b7d47",
+      "localHealth": 10,
+      "incomingVouches": 4,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xd9bd3459365865af11c857452403dcd6079e30e9",
+      "localHealth": 13,
+      "incomingVouches": 3,
+      "outgoingVouches": 3,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x0724f31daf956970f2c7f82e4bf9473d03e41f9c",
+      "localHealth": 14,
+      "incomingVouches": 2,
+      "outgoingVouches": 9,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xe34bc22e58873a988977bacc9048ac6491c214e4",
+      "localHealth": 8,
+      "incomingVouches": 1,
+      "outgoingVouches": 3,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xa4acd2eccf852f463304fe75aea01e2280f095a1",
+      "localHealth": 28,
+      "incomingVouches": 11,
+      "outgoingVouches": 27,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x863d8a93860cc2c1f51e127f8244fe9554cf6548",
+      "localHealth": 50,
+      "incomingVouches": 142,
+      "outgoingVouches": 189,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xd0b1d6ec8e8dbeb24a5705b4a0b19d5b5e2de5f9",
+      "localHealth": 43,
+      "incomingVouches": 1,
+      "outgoingVouches": 9,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xc9fdb885dfb1430d5ecb3550c9934b1021b05fb7",
+      "localHealth": 43,
+      "incomingVouches": 2,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x46e460dff6a03f36fdd5ac88689ceddbaa7103a7",
+      "localHealth": 19,
+      "incomingVouches": 1,
+      "outgoingVouches": 116,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xdc430169539b0b44b11562813c8f3fb63d9129ab",
+      "localHealth": 50,
+      "incomingVouches": 118,
+      "outgoingVouches": 467,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x0f859f6cbeb0c683c664c03c75a137b1c3960d5a",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x9b676e024f6755dcb1d0a4e488e0cf977861f1e1",
+      "localHealth": 42,
+      "incomingVouches": 1,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x55ce6ba4e20f59fe68c343b692933666c472a9b9",
+      "localHealth": 42,
+      "incomingVouches": 1,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xe8f094323008c1d9e3f3f285cb56625db9fc2d40",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x89120ce4fe9fb801330f2fdc17f5ca18be67a892",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xa581702c38dd76d252a8b35c671666b5afcaff42",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xe8281a1da2fd9d207d30785464a876687b457c9c",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xdc994e9731f479df4385e2f2ab80a75ec15399ec",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xd1179d833fd00ab7f0b81c4db1217eb6675850f0",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x7b2d7bf919adf3434e4477bbc3b21e0bc82d2788",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xf56cc2127e9c0ac24457f9e09da7771f84adb3e6",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xee12ac4ec8b6d52b90166e8aa1b9056112999b34",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x4b5b3ddb8fb99bfabf63d659ec9a6a66cac37f46",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x3b9962e080303d282ffa14409428b7609ebb3cb1",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x2e061c777a1c8cbb3e69724c4c565f89b36aa83c",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x218f744d52fc5835580aa873a1db6374999fcfbe",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x235b3fc0cbcb277a326d5fdf8b768a7cf16e17c8",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x7b47674552900df971bcbf0b54ee95310addc92e",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x9037956281b75a2a67beb7eaa3c09e7a45ea8e97",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xe9eccee753426866baa4607a0d5d657ab5f5ac8b",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x605fbed10caec3cf28793178987bb0f55b7d288e",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x96fa7c06aa7d21c85f48695c860c5d7e47c51889",
+      "localHealth": 20,
+      "incomingVouches": 2,
+      "outgoingVouches": 110,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xb7838622512830e3699532a606bad2fa58e62f23",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x2c696e742e07d92d9ae574865267c54b13930363",
+      "localHealth": 13,
+      "incomingVouches": 2,
+      "outgoingVouches": 10,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x0d494305d61ddda80b1dda093113e3e83d0a2a14",
+      "localHealth": 50,
+      "incomingVouches": 4,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x478d4c1bfacea491c0fc48a8835cd0d71decb00b",
+      "localHealth": 50,
+      "incomingVouches": 5,
+      "outgoingVouches": 2,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xee8e1dfa8860ed2db6d5f2d7fd2eeb928431eaf7",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x659d56cbdbc83f5adeb342bf43706c9e71d1bf3e",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0x497cc8113be66b1cab9b42aa4dd6590d773b9952",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    },
+    {
+      "address": "0xa244e7d47e321d2515d612dd9161b5b8e0ee49af",
+      "localHealth": 44,
+      "incomingVouches": 4,
+      "outgoingVouches": 1,
+      "anomalyType": "vouch_triangle"
+    }
+  ],
+  "outlierCount": 84
+}
