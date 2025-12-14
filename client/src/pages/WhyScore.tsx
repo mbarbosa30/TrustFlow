@@ -120,37 +120,43 @@ export default function WhyScore() {
                 <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-4">
                   <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
                     <Leaf className="w-4 h-4" />
-                    Your score is influenced by who YOU vouch for
+                    Four-Layer Sybil Protection (v1.6)
                   </p>
-                  <p className="text-xs text-muted-foreground mb-1">
-                    This two-way accountability is the core anti-Sybil mechanism. Vouching for {'>'}10 people applies a penalty to your min-cut component (40% of total score), creating economic cost to spam.
-                  </p>
-                  <p className="text-[0.65rem] text-amber-700/70 dark:text-amber-300/70 mb-3 italic">
-                    Like ecosystems: organisms that take without contributing get naturally pruned from symbiotic networks.
+                  <p className="text-xs text-muted-foreground mb-3">
+                    The algorithm uses multiple mechanisms to make gaming prohibitively expensive:
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
                       <p className="text-xs text-muted-foreground">
-                        <strong>Penalty grows linearly:</strong> 10% per vouch beyond 10, capped at 50% on redundancy
+                        <strong>Tenure-Gated Scoring:</strong> New accounts capped: week 1 ≤20, week 2 ≤30, weeks 3-4 ≤50, month 1+ uncapped
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
                       <p className="text-xs text-muted-foreground">
-                        <strong>Impact varies by redundancy:</strong> ~10-15% typical score reduction, up to ~20% for high-redundancy networks with 50% penalty
+                        <strong>Hub Saturation:</strong> Users giving 50+ vouches have reduced weight (linear decay to 0.5 at 100, floor at 0.3)
                       </p>
                     </div>
                     <div className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
                       <p className="text-xs text-muted-foreground">
-                        <strong>Result:</strong> Users vouch selectively to preserve their redundancy score → reliable graph signals
+                        <strong>Reciprocity Dampening:</strong> Mutual vouches (A↔B) receive only 50% weight to prevent collusion rings
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-400 mt-1.5 flex-shrink-0" />
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Path Redundancy Gates:</strong> Scores above 50 require 2+ independent paths; above 70 require 3+ paths
                       </p>
                     </div>
                   </div>
+                  <p className="text-[0.65rem] text-amber-700/70 dark:text-amber-300/70 mt-3 italic">
+                    Like ecosystems: newcomers must establish roots, over-connected hubs lose influence, and reciprocal relationships are scrutinized.
+                  </p>
                 </div>
 
-                <h3 className="font-semibold mb-2 text-sm">Additional Anti-Gaming Mechanisms</h3>
+                <h3 className="font-semibold mb-2 text-sm">Core Anti-Gaming Mechanisms</h3>
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg bg-muted/30">
                     <h4 className="font-semibold text-xs mb-1">Tiered Capacity</h4>

@@ -272,15 +272,13 @@ export default function FAQs() {
             </p>
             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 my-3">
               <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 mb-2">
-                Vouch Accountability (Core Anti-Sybil Mechanism):
-              </p>
-              <p className="text-xs text-muted-foreground mb-2">
-                Vouching for {'>'}10 people applies a penalty to your min-cut component (40% of total score), creating economic cost to spam.
+                Four-Layer Sybil Protection (v1.6):
               </p>
               <ul className="text-xs text-muted-foreground space-y-1 pl-4">
-                <li><strong>Formula (LocalHealth):</strong> 40 × redundancyRatio × dilutionFactor</li>
-                <li><strong>Impact:</strong> 10-15% typical score reduction, up to ~20% for high-redundancy networks</li>
-                <li><strong>Why it works:</strong> Can't spam vouches without reducing your own min-cut score → selective endorsements</li>
+                <li><strong>Tenure-Gated Scoring:</strong> New accounts capped: week 1 ≤20, week 2 ≤30, weeks 3-4 ≤50, month 1+ uncapped</li>
+                <li><strong>Hub Saturation:</strong> Users giving 50+ vouches have reduced weight (decay to 0.5 at 100, floor at 0.3)</li>
+                <li><strong>Reciprocity Dampening:</strong> Mutual vouches (A↔B) get 50% weight to prevent collusion rings</li>
+                <li><strong>Path Redundancy Gates:</strong> Scores above 50 require 2+ independent paths; above 70 require 3+</li>
               </ul>
             </div>
             <p className="text-sm">
@@ -299,26 +297,26 @@ export default function FAQs() {
             </p>
             
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 mb-3">
-              <p className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">The Dilution Penalty</p>
+              <p className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">Hub Saturation (v1.6)</p>
               <p className="text-sm text-muted-foreground mb-2">
-                Vouching for {'>'}10 people applies a multiplicative penalty to your min-cut component (40% of total score). The penalty uses a piecewise curve for smooth decay.
+                Users giving excessive outgoing vouches have diminishing vouch weight, preventing hub-based attacks:
               </p>
               <div className="space-y-1 text-xs text-muted-foreground">
                 <div className="flex justify-between">
-                  <span>≤10 vouches:</span>
-                  <span className="font-mono">No penalty (factor = 1.0)</span>
+                  <span>1-50 vouches:</span>
+                  <span className="font-mono">Full weight (1.0)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>12 vouches (20% penalty):</span>
-                  <span className="font-mono">~3-8% total score loss</span>
+                  <span>51-100 vouches:</span>
+                  <span className="font-mono">Linear decay to 0.5</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>15 vouches (50% penalty, capped):</span>
-                  <span className="font-mono">~10-20% total score loss</span>
+                  <span>100+ vouches:</span>
+                  <span className="font-mono">Floor at 0.3</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                <strong>Worked example (LocalHealth):</strong> User with 5 direct vouchers, min-cut 0.7, gives 15 total vouches → min-cut component drops due to dilution, ~10-15% total score reduction
+                <strong>Combined with:</strong> Reciprocity dampening (mutual vouches = 50% weight), tenure caps (new accounts limited), and path redundancy gates (high scores need multiple paths).
               </p>
             </div>
 

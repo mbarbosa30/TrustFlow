@@ -4,7 +4,8 @@ import { Separator } from "@/components/ui/separator";
 import { 
   FileText, BookOpen, Shield, Cpu, FlaskConical, Lightbulb, 
   AlertTriangle, BarChart3, Zap, Target, Scale, GitBranch,
-  CheckCircle2, XCircle, ArrowRight, TrendingUp, Leaf, TreePine, Waves
+  CheckCircle2, XCircle, ArrowRight, TrendingUp, Leaf, TreePine, Waves,
+  Clock, Users, ArrowLeftRight
 } from "lucide-react";
 import { BlockFormula, InlineFormula } from "@/components/Math";
 
@@ -37,7 +38,7 @@ export default function Whitepaper() {
           <FileText className="w-8 h-8 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
-            <p className="text-sm text-muted-foreground">Version 1.5 — December 2025</p>
+            <p className="text-sm text-muted-foreground">Version 1.6 — December 2025</p>
           </div>
         </div>
         <h2 className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
@@ -694,14 +695,16 @@ export default function Whitepaper() {
               
               <div className="p-3 rounded-lg bg-muted/30">
                 <div className="mb-2">
-                  <strong className="text-sm">Dilution Factor (Piecewise Curve)</strong> — Smooth penalty for over-vouching
+                  <strong className="text-sm">Hub Saturation (v1.6)</strong> — Diminishing returns for excessive vouching
                 </div>
                 <div className="overflow-x-auto space-y-1">
-                  <div className="text-xs text-muted-foreground">1-10 vouches: <InlineFormula>{"D = 1.0"}</InlineFormula> (no penalty)</div>
-                  <div className="text-xs text-muted-foreground">11-15 vouches: <InlineFormula>{"D = 1.0 - 0.03(v-10)"}</InlineFormula> → 0.85</div>
-                  <div className="text-xs text-muted-foreground">16-25 vouches: <InlineFormula>{"D = 0.85 - 0.30\\cdot((v-15)/10)^2"}</InlineFormula> → 0.55</div>
-                  <div className="text-xs text-muted-foreground">25+ vouches: asymptotic to 0.4</div>
+                  <div className="text-xs text-muted-foreground">1-50 vouches: <InlineFormula>{"W = 1.0"}</InlineFormula> (full weight)</div>
+                  <div className="text-xs text-muted-foreground">51-100 vouches: <InlineFormula>{"W = 1.0 - 0.5 \\cdot ((v-50)/50)"}</InlineFormula> (linear decay to 0.5)</div>
+                  <div className="text-xs text-muted-foreground">100+ vouches: <InlineFormula>{"W = 0.3"}</InlineFormula> (floor)</div>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Users giving excessive vouches have their outgoing vouch weight reduced, preventing hub-based gaming.
+                </p>
               </div>
             </div>
 
@@ -907,6 +910,119 @@ export default function Whitepaper() {
               </div>
               <p className="text-sm text-muted-foreground text-center mt-2">
                 Alice has a solid network. More vouchers from high-score users would increase her flow component further.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="w-5 h-5" style={{ color: 'hsl(var(--score-dormant))' }} />
+              Advanced Sybil Protections (v1.6)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm sm:text-base">
+            <p className="leading-relaxed">
+              Beyond the core recursive trust mechanism, LocalHealth v1.6 introduces four additional protections 
+              that make sophisticated Sybil attacks economically unviable:
+            </p>
+            
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.05)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Clock className="w-4 h-4" style={{ color: 'hsl(var(--score-river))' }} />
+                  1. Tenure-Gated Scoring
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  New accounts have capped maximum scores based on account age, preventing flash mob attacks 
+                  where many new accounts vouch simultaneously:
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2 rounded bg-muted/30">Week 1: ≤20</div>
+                  <div className="p-2 rounded bg-muted/30">Week 2: ≤30</div>
+                  <div className="p-2 rounded bg-muted/30">Weeks 3-4: ≤50</div>
+                  <div className="p-2 rounded bg-muted/30">Month 1+: uncapped</div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Like ecosystems: new species need time to establish before they can dominate.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4" style={{ color: 'hsl(var(--score-growth))' }} />
+                  2. Hub Saturation Cap
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Users giving excessive outgoing vouches have diminishing vouch weight, preventing 
+                  hub-based attacks where one account tries to bootstrap many Sybils:
+                </p>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>1-50 vouches:</span>
+                    <span className="font-mono">Weight = 1.0 (full)</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>51-100 vouches:</span>
+                    <span className="font-mono">Linear decay to 0.5</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>100+ vouches:</span>
+                    <span className="font-mono">Floor at 0.3</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.05)', borderColor: 'hsl(var(--score-canopy) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <ArrowLeftRight className="w-4 h-4" style={{ color: 'hsl(var(--score-canopy))' }} />
+                  3. Reciprocity Dampening
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Mutual vouches (A vouches for B AND B vouches for A) receive reduced weight:
+                </p>
+                <div className="p-2 rounded bg-muted/30 text-xs">
+                  <InlineFormula>{"\\text{mutualWeight} = 0.5 \\times \\text{normalWeight}"}</InlineFormula>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  This prevents collusion rings where small groups exchange vouches to inflate scores. 
+                  Genuine trust networks rarely have high reciprocity rates.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-dormant) / 0.05)', borderColor: 'hsl(var(--score-dormant) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+                <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <GitBranch className="w-4 h-4" style={{ color: 'hsl(var(--score-dormant))' }} />
+                  4. Path Redundancy Gates
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  High scores require multiple independent paths to seed nodes (vertex-disjoint paths), 
+                  preventing single-bridge attacks:
+                </p>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>Scores above 50:</span>
+                    <span className="font-mono">Require 2+ vertex-disjoint paths</span>
+                  </div>
+                  <div className="flex justify-between p-2 rounded bg-muted/30">
+                    <span>Scores above 70:</span>
+                    <span className="font-mono">Require 3+ vertex-disjoint paths</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 italic">
+                  Like mycorrhizal networks: organisms with only one connection path are vulnerable; 
+                  robust participants have multiple independent pathways.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-transition) / 0.05)', borderColor: 'hsl(var(--score-transition) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <p className="font-semibold text-sm mb-2">Combined Effect</p>
+              <p className="text-sm text-muted-foreground">
+                These four mechanisms work together: a Sybil attacker faces tenure delays, hub limits, 
+                reciprocity penalties, AND path redundancy requirements. Achieving a high score through 
+                fake accounts becomes prohibitively expensive in both time and resources.
               </p>
             </div>
           </CardContent>
