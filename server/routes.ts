@@ -441,6 +441,231 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Comprehensive network analytics report for algorithm improvement
+  app.get("/api/admin/network-report", adminRateLimit, async (req, res) => {
+    try {
+      const allContexts = await db
+        .select()
+        .from(contexts)
+        .where(eq(contexts.type, 'ego'));
+
+      const allEndorsements = await storage.getEndorsements({
+        communityId: 0,
+        limit: 1000000
+      });
+
+      const now = new Date();
+      const generatedAt = now.toISOString();
+
+      // 1. Score Distribution Analysis (histogram buckets 0-10, 10-20, ..., 90-100)
+      const scoreDistribution: { bucket: string; count: number; percentage: number }[] = [];
+      const buckets = [
+        { min: 0, max: 10, label: "0-10" },
+        { min: 10, max: 20, label: "10-20" },
+        { min: 20, max: 30, label: "20-30" },
+        { min: 30, max: 40, label: "30-40" },
+        { min: 40, max: 50, label: "40-50" },
+        { min: 50, max: 60, label: "50-60" },
+        { min: 60, max: 70, label: "60-70" },
+        { min: 70, max: 80, label: "70-80" },
+        { min: 80, max: 90, label: "80-90" },
+        { min: 90, max: 100, label: "90-100" },
+      ];
+
+      const validScores = allContexts.filter(c => c.localHealth !== null && c.localHealth !== undefined);
+      const totalWithScores = validScores.length;
+
+      for (const bucket of buckets) {
+        const count = validScores.filter(c => {
+          const score = c.localHealth!;
+          return score >= bucket.min && (bucket.max === 100 ? score <= bucket.max : score < bucket.max);
+        }).length;
+        scoreDistribution.push({
+          bucket: bucket.label,
+          count,
+          percentage: totalWithScores > 0 ? Math.round((count / totalWithScores) * 10000) / 100 : 0,
+        });
+      }
+
+      // 2. Algorithm Component Breakdown Stats
+      const flowComponents = validScores.filter(c => c.flowComponent !== null).map(c => c.flowComponent!);
+      const redundancyComponents = validScores.filter(c => c.redundancyComponent !== null).map(c => c.redundancyComponent!);
+      const actualMinCuts = validScores.filter(c => c.actualMinCut !== null).map(c => c.actualMinCut!);
+      const dilutionFactors = validScores.filter(c => c.dilutionFactor !== null).map(c => c.dilutionFactor!);
+      const incomingActives = validScores.filter(c => c.incomingActive !== null).map(c => c.incomingActive!);
+      const outgoingTotals = validScores.filter(c => c.outgoingTotal !== null).map(c => c.outgoingTotal!);
+
+      const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+      const median = (arr: number[]) => {
+        if (arr.length === 0) return 0;
+        const sorted = [...arr].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      };
+      const min = (arr: number[]) => arr.length > 0 ? Math.min(...arr) : 0;
+      const max = (arr: number[]) => arr.length > 0 ? Math.max(...arr) : 0;
+      const stdDev = (arr: number[]) => {
+        if (arr.length === 0) return 0;
+        const mean = avg(arr);
+        const squaredDiffs = arr.map(v => Math.pow(v - mean, 2));
+        return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / arr.length);
+      };
+
+      const componentBreakdown = {
+        flowComponent: {
+          avg: Math.round(avg(flowComponents) * 100) / 100,
+          median: Math.round(median(flowComponents) * 100) / 100,
+          min: Math.round(min(flowComponents) * 100) / 100,
+          max: Math.round(max(flowComponents) * 100) / 100,
+          stdDev: Math.round(stdDev(flowComponents) * 100) / 100,
+          count: flowComponents.length,
+        },
+        redundancyComponent: {
+          avg: Math.round(avg(redundancyComponents) * 100) / 100,
+          median: Math.round(median(redundancyComponents) * 100) / 100,
+          min: Math.round(min(redundancyComponents) * 100) / 100,
+          max: Math.round(max(redundancyComponents) * 100) / 100,
+          stdDev: Math.round(stdDev(redundancyComponents) * 100) / 100,
+          count: redundancyComponents.length,
+        },
+        actualMinCut: {
+          avg: Math.round(avg(actualMinCuts) * 100) / 100,
+          median: Math.round(median(actualMinCuts) * 100) / 100,
+          min: Math.round(min(actualMinCuts) * 100) / 100,
+          max: Math.round(max(actualMinCuts) * 100) / 100,
+          stdDev: Math.round(stdDev(actualMinCuts) * 100) / 100,
+          count: actualMinCuts.length,
+        },
+        dilutionFactor: {
+          avg: Math.round(avg(dilutionFactors) * 1000) / 1000,
+          median: Math.round(median(dilutionFactors) * 1000) / 1000,
+          min: Math.round(min(dilutionFactors) * 1000) / 1000,
+          max: Math.round(max(dilutionFactors) * 1000) / 1000,
+          stdDev: Math.round(stdDev(dilutionFactors) * 1000) / 1000,
+          count: dilutionFactors.length,
+        },
+        incomingActive: {
+          avg: Math.round(avg(incomingActives) * 100) / 100,
+          median: median(incomingActives),
+          min: min(incomingActives),
+          max: max(incomingActives),
+          stdDev: Math.round(stdDev(incomingActives) * 100) / 100,
+          count: incomingActives.length,
+        },
+        outgoingTotal: {
+          avg: Math.round(avg(outgoingTotals) * 100) / 100,
+          median: median(outgoingTotals),
+          min: min(outgoingTotals),
+          max: max(outgoingTotals),
+          stdDev: Math.round(stdDev(outgoingTotals) * 100) / 100,
+          count: outgoingTotals.length,
+        },
+      };
+
+      // 3. Vouch Graph Statistics
+      const uniqueEndorsers = new Set(allEndorsements.map(e => e.endorser));
+      const uniqueEndorsees = new Set(allEndorsements.map(e => e.endorsee));
+      const uniqueParticipants = new Set(Array.from(uniqueEndorsers).concat(Array.from(uniqueEndorsees)));
+      
+      const totalVouches = allEndorsements.length;
+      const totalParticipants = uniqueParticipants.size;
+      
+      // Graph density = edges / (nodes * (nodes - 1)) for directed graph
+      // Guard against zero/one participant to avoid NaN/Infinity
+      let graphDensity = 0;
+      if (totalParticipants > 1 && totalVouches > 0) {
+        graphDensity = totalVouches / (totalParticipants * (totalParticipants - 1));
+      }
+
+      // Vouch distribution by user
+      const vouchesGiven = new Map<string, number>();
+      const vouchesReceived = new Map<string, number>();
+      
+      for (const e of allEndorsements) {
+        vouchesGiven.set(e.endorser, (vouchesGiven.get(e.endorser) || 0) + 1);
+        vouchesReceived.set(e.endorsee, (vouchesReceived.get(e.endorsee) || 0) + 1);
+      }
+
+      const givenCounts = Array.from(vouchesGiven.values());
+      const receivedCounts = Array.from(vouchesReceived.values());
+
+      // 4. Chain Distribution
+      const chainCounts = new Map<string, number>();
+      for (const e of allEndorsements) {
+        const chain = e.chainNamespace || 'eip155';
+        chainCounts.set(chain, (chainCounts.get(chain) || 0) + 1);
+      }
+      const chainDistribution = Array.from(chainCounts.entries()).map(([chain, count]) => ({
+        chainNamespace: chain,
+        count,
+        percentage: totalVouches > 0 ? Math.round((count / totalVouches) * 10000) / 100 : 0,
+      })).sort((a, b) => b.count - a.count);
+
+      // 5. Outlier Detection (users with unexpected scores)
+      const outliers: { address: string; localHealth: number; incomingVouches: number; outgoingVouches: number; anomalyType: string }[] = [];
+      
+      for (const ctx of validScores) {
+        if (!ctx.ownerAddress) continue;
+        const addr = ctx.ownerAddress.toLowerCase();
+        const score = ctx.localHealth!;
+        const incoming = ctx.incomingActive || 0;
+        const outgoing = ctx.outgoingTotal || 0;
+        
+        // High score with few vouches (potential gaming)
+        if (score > 70 && incoming <= 1) {
+          outliers.push({ address: addr, localHealth: score, incomingVouches: incoming, outgoingVouches: outgoing, anomalyType: 'high_score_few_vouches' });
+        }
+        // Low score with many vouches (potential quality issue)
+        if (score < 30 && incoming >= 5) {
+          outliers.push({ address: addr, localHealth: score, incomingVouches: incoming, outgoingVouches: outgoing, anomalyType: 'low_score_many_vouches' });
+        }
+        // Extreme dilution (too many outgoing)
+        if (outgoing > 20 && (ctx.dilutionFactor || 1) < 0.5) {
+          outliers.push({ address: addr, localHealth: score, incomingVouches: incoming, outgoingVouches: outgoing, anomalyType: 'extreme_dilution' });
+        }
+      }
+
+      // 6. Network Summary
+      const localHealthScores = validScores.map(c => c.localHealth!);
+      
+      const report = {
+        generatedAt,
+        networkSummary: {
+          totalUsers: allContexts.length,
+          usersWithScores: totalWithScores,
+          totalVouches,
+          totalParticipants,
+          graphDensity: Math.round(graphDensity * 10000) / 10000,
+          avgLocalHealth: Math.round(avg(localHealthScores) * 100) / 100,
+          medianLocalHealth: Math.round(median(localHealthScores) * 100) / 100,
+          minLocalHealth: min(localHealthScores),
+          maxLocalHealth: max(localHealthScores),
+          stdDevLocalHealth: Math.round(stdDev(localHealthScores) * 100) / 100,
+        },
+        scoreDistribution,
+        componentBreakdown,
+        vouchGraphStats: {
+          avgVouchesGiven: Math.round(avg(givenCounts) * 100) / 100,
+          medianVouchesGiven: median(givenCounts),
+          maxVouchesGiven: max(givenCounts),
+          avgVouchesReceived: Math.round(avg(receivedCounts) * 100) / 100,
+          medianVouchesReceived: median(receivedCounts),
+          maxVouchesReceived: max(receivedCounts),
+          usersWhoVouched: uniqueEndorsers.size,
+          usersWhoReceivedVouches: uniqueEndorsees.size,
+        },
+        chainDistribution,
+        outliers: outliers.slice(0, 50), // Limit to top 50 outliers
+        outlierCount: outliers.length,
+      };
+
+      return res.status(200).json(report);
+    } catch (error) {
+      console.error("Error generating network report:", error);
+      return res.status(500).json({ error: "Failed to generate network report" });
+    }
+  });
+
   app.get("/api/epoch/:id/health", async (req, res) => {
     try {
       const epochId = parseInt(req.params.id);
