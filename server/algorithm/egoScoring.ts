@@ -220,6 +220,119 @@ function computePiecewiseDilutionPenalty(vouchCount: number): number {
 }
 
 /**
+ * Algorithm Enhancement: Hub Saturation Factor
+ * 
+ * Reduces the EFFECTIVENESS of vouches given by mega-hubs (users who vouch for many people).
+ * Different from dilution penalty which applies to the hub's OWN score.
+ * This applies when computing how much weight a voucher's endorsement carries.
+ * 
+ * Rationale: A user who vouches for 200 people can't possibly know them all well.
+ * Their vouches should carry less weight than someone who vouches for 5 people.
+ * 
+ * @param outgoingVouchCount - Number of vouches the voucher has given
+ * @returns Factor 0.3-1.0 to multiply voucher capacity by
+ */
+function computeHubSaturationFactor(outgoingVouchCount: number): number {
+  const FULL_WEIGHT_THRESHOLD = 50;   // No penalty up to 50 vouches
+  const DECAY_THRESHOLD = 100;         // Linear decay up to 100 vouches
+  const MIN_FACTOR = 0.3;              // Floor at 30% for mega-hubs
+  
+  if (outgoingVouchCount <= FULL_WEIGHT_THRESHOLD) {
+    return 1.0;
+  }
+  
+  if (outgoingVouchCount <= DECAY_THRESHOLD) {
+    // Linear decay from 1.0 to 0.5 over 50-100 vouches
+    const progress = (outgoingVouchCount - FULL_WEIGHT_THRESHOLD) / (DECAY_THRESHOLD - FULL_WEIGHT_THRESHOLD);
+    return 1.0 - (0.5 * progress);
+  }
+  
+  // Asymptotic approach to MIN_FACTOR for 100+ vouches
+  const excess = outgoingVouchCount - DECAY_THRESHOLD;
+  const remainingRange = 0.5 - MIN_FACTOR;
+  const decayRate = 0.02;
+  const decay = remainingRange * (1 - Math.exp(-decayRate * excess));
+  return 0.5 - decay;
+}
+
+/**
+ * Algorithm Enhancement: Reciprocity Dampening Factor
+ * 
+ * Reduces the value of mutual vouches (A vouches for B AND B vouches for A).
+ * Mutual vouches are easy to create with minimal effort and represent a form of gaming.
+ * 
+ * @param isMutual - Whether this vouch is reciprocal
+ * @returns Factor 0.5-1.0 to multiply capacity by
+ */
+function computeReciprocityDampeningFactor(isMutual: boolean): number {
+  return isMutual ? 0.5 : 1.0;
+}
+
+/**
+ * Algorithm Enhancement: Tenure-Gated Scoring
+ * 
+ * Caps scores for new accounts until they meet time AND redundancy thresholds.
+ * Prevents flash-mob attacks where many new accounts vouch for each other quickly.
+ * 
+ * @param accountAgeDays - Days since account creation
+ * @param vertexDisjointPaths - Number of independent trust paths
+ * @returns Maximum score cap (or 100 if no cap applies)
+ */
+function computeTenureScoreCap(accountAgeDays: number, vertexDisjointPaths: number): number {
+  // Week 1: Maximum score of 20 regardless of network structure
+  // This prevents instant high scores from coordinated attacks
+  if (accountAgeDays < 7) {
+    return 20;
+  }
+  
+  // Week 1-2: Maximum score of 30 unless user has 2+ independent paths
+  // This rewards users who build genuine diverse connections
+  if (accountAgeDays < 14) {
+    if (vertexDisjointPaths >= 2) {
+      return 50; // Elevated cap for users with redundant trust
+    }
+    return 30;
+  }
+  
+  // Week 2-4: Maximum score of 50 unless user has 2+ independent paths
+  if (accountAgeDays < 28) {
+    if (vertexDisjointPaths >= 2) {
+      return 70;
+    }
+    return 50;
+  }
+  
+  // Month 1+: No tenure cap
+  return 100;
+}
+
+/**
+ * Algorithm Enhancement: Minimum Path Redundancy Gate
+ * 
+ * Requires 2+ vertex-disjoint paths for scores above 50.
+ * This ensures high scores require genuine diverse trust sources.
+ * A single path (even to high-quality vouchers) caps at 50.
+ * 
+ * @param score - The computed score before this gate
+ * @param vertexDisjointPaths - Number of independent trust paths
+ * @returns Capped score
+ */
+function applyPathRedundancyGate(score: number, vertexDisjointPaths: number): number {
+  // Scores above 50 require at least 2 independent paths
+  // This prevents Sybil attacks where a single compromised path vouches for targets
+  if (score > 50 && vertexDisjointPaths < 2) {
+    return 50;
+  }
+  
+  // Scores above 70 require at least 3 independent paths
+  if (score > 70 && vertexDisjointPaths < 3) {
+    return 70;
+  }
+  
+  return score;
+}
+
+/**
  * Algorithm Enhancement: Compute Vertex-Disjoint Path Count
  * 
  * Uses max-flow with node splitting to count truly independent paths.
@@ -438,13 +551,15 @@ export class EgoScorer {
    * @param globalVouches - All endorsements in the network
    * @param maxIterations - Maximum number of iterations (default 10)
    * @param convergenceThreshold - Stop when max score change < this value (default 0.5)
+   * @param tenureData - Optional map of address to account age in days (for tenure-gated scoring)
    * @returns Map of address to EgoScoreResult
    */
   computeLocalHealthIterative(
     addresses: Address[],
     globalVouches: EgoEndorsement[],
     maxIterations: number = 10,
-    convergenceThreshold: number = 0.5
+    convergenceThreshold: number = 0.5,
+    tenureData?: Map<string, number>
   ): Map<string, EgoScoreResult> {
     // Step 0: Compute adaptive baselines if enabled (before scoring)
     // This allows the algorithm to adapt to network size and density
@@ -452,6 +567,29 @@ export class EgoScorer {
       this.cachedBaselines = computeAdaptiveBaselines(globalVouches);
       console.log(`Adaptive baselines: vouch=${this.cachedBaselines.healthyVouchCount.toFixed(1)}, redundancy=${this.cachedBaselines.healthyRedundancy.toFixed(1)}`);
     }
+    
+    // Precompute outgoing vouch counts for hub saturation (once, not per iteration)
+    const outgoingVouchCounts = new Map<string, number>();
+    for (const v of globalVouches) {
+      const endorserLower = v.endorser.toLowerCase();
+      outgoingVouchCounts.set(endorserLower, (outgoingVouchCounts.get(endorserLower) || 0) + 1);
+    }
+    console.log(`Precomputed outgoing vouch counts for ${outgoingVouchCounts.size} endorsers`);
+    
+    // Precompute mutual vouches for reciprocity dampening (A→B AND B→A)
+    const vouchSet = new Set<string>();
+    const mutualVouches = new Set<string>();
+    for (const v of globalVouches) {
+      const key = `${v.endorser.toLowerCase()}->${v.endorsee.toLowerCase()}`;
+      const reverseKey = `${v.endorsee.toLowerCase()}->${v.endorser.toLowerCase()}`;
+      vouchSet.add(key);
+      if (vouchSet.has(reverseKey)) {
+        // Both directions exist - mark as mutual
+        mutualVouches.add(key);
+        mutualVouches.add(reverseKey);
+      }
+    }
+    console.log(`Found ${mutualVouches.size / 2} mutual vouch pairs (reciprocity dampening applies)`);
     
     // Step 1: Initialize scores based on incoming vouch count (simple baseline)
     const currentScores = new Map<string, number>();
@@ -474,8 +612,16 @@ export class EgoScorer {
 
       // Recalculate everyone's score based on current voucher scores
       for (const addr of addresses) {
-        const result = this.computePureOption2Score(addr, globalVouches, currentScores);
         const addrLower = addr.toLowerCase();
+        const accountAgeDays = tenureData?.get(addrLower) ?? 365; // Default to 1 year if unknown
+        const result = this.computePureOption2Score(
+          addr, 
+          globalVouches, 
+          currentScores,
+          outgoingVouchCounts,
+          mutualVouches,
+          accountAgeDays
+        );
         newScores.set(addrLower, result.localHealth);
         
         const oldScore = currentScores.get(addrLower) || 0;
@@ -502,8 +648,17 @@ export class EgoScorer {
     // Step 3: Final pass to get complete results with final scores
     const results = new Map<string, EgoScoreResult>();
     for (const addr of addresses) {
-      const result = this.computePureOption2Score(addr, globalVouches, currentScores);
-      results.set(addr.toLowerCase(), result);
+      const addrLower = addr.toLowerCase();
+      const accountAgeDays = tenureData?.get(addrLower) ?? 365;
+      const result = this.computePureOption2Score(
+        addr, 
+        globalVouches, 
+        currentScores,
+        outgoingVouchCounts,
+        mutualVouches,
+        accountAgeDays
+      );
+      results.set(addrLower, result);
     }
 
     return results;
@@ -835,12 +990,24 @@ export class EgoScorer {
    * - Flow component (60%): Incoming trust saturation (weighted by voucher strength)
    * - Cut component (40%): Effective redundancy (multi-hop path diversity)
    * 
+   * Algorithm Enhancements (Dec 2025):
+   * - Hub saturation: Reduces weight of vouches from users who vouch for 50+ people
+   * - Reciprocity dampening: Reduces weight of mutual vouches (A→B AND B→A)
+   * - Tenure gates: Caps scores for new accounts (< 4 weeks old)
+   * - Path redundancy gates: Requires 2+ independent paths for scores > 50
+   * 
    * @param voucherScores - Optional map of current LocalHealth scores for weighting vouches
+   * @param outgoingVouchCounts - Map of address to number of outgoing vouches (for hub saturation)
+   * @param mutualVouches - Set of mutual vouch keys "A->B" (for reciprocity dampening)
+   * @param accountAgeDays - Account age in days (for tenure gating)
    */
   private computePureOption2Score(
     ownerAddress: Address,
     globalVouches: EgoEndorsement[],
-    voucherScores?: Map<string, number>
+    voucherScores?: Map<string, number>,
+    outgoingVouchCounts?: Map<string, number>,
+    mutualVouches?: Set<string>,
+    accountAgeDays: number = 365
   ): EgoScoreResult {
     // CRITICAL: Normalize ownerAddress to lowercase for consistent graph construction
     // This prevents case mismatches between FlowGraph sink and edge destinations
@@ -914,6 +1081,10 @@ export class EgoScorer {
     // - Zero-score vouchers (fresh accounts, sockpuppets): 0.08 capacity floor
     // - Low-score vouchers (1-30): linear interpolation to 0.30
     // - Normal vouchers (30+): sqrt weighting from 0.30 to 1.0
+    // 
+    // ADDITIONAL FACTORS (Dec 2025):
+    // - Hub saturation: Vouches from mega-hubs (50+ outgoing) carry less weight
+    // - Reciprocity dampening: Mutual vouches (A→B AND B→A) carry 50% weight
     for (const voucher of directVouchers) {
       let capacity = 1.0;
       let isLowQuality = false;
@@ -941,6 +1112,23 @@ export class EgoScorer {
           // score=100→1.0, score=70→0.73, score=50→0.54
           capacity = 0.30 + 0.70 * Math.sqrt((voucherScore - 30) / 70);
           isLowQuality = false;
+        }
+        
+        // HUB SATURATION: Reduce weight of vouches from mega-hubs
+        // Users who vouch for 50+ people have less meaningful endorsements
+        if (outgoingVouchCounts) {
+          const voucherOutgoingCount = outgoingVouchCounts.get(voucher) ?? 0;
+          const hubSaturationFactor = computeHubSaturationFactor(voucherOutgoingCount);
+          capacity *= hubSaturationFactor;
+        }
+        
+        // RECIPROCITY DAMPENING: Reduce weight of mutual vouches
+        // If A→B AND B→A both exist, this vouch is discounted by 50%
+        if (mutualVouches) {
+          const vouchKey = `${voucher}->${normalizedOwner}`;
+          const isMutual = mutualVouches.has(vouchKey);
+          const reciprocityFactor = computeReciprocityDampeningFactor(isMutual);
+          capacity *= reciprocityFactor;
         }
         
         // Track totals for cap calculation
@@ -1205,6 +1393,15 @@ export class EgoScorer {
       finalScore = Math.min(maxUnlockedTier, finalScore + qualityBonus);
     }
     
+    // PATH REDUNDANCY GATES: Require 2+ independent paths for scores > 50
+    // This ensures high scores require genuine diverse trust sources
+    finalScore = applyPathRedundancyGate(finalScore, disjointPathCount);
+    
+    // TENURE GATES: Cap scores for new accounts (< 4 weeks old)
+    // This prevents flash-mob attacks where many new accounts vouch quickly
+    const tenureScoreCap = computeTenureScoreCap(accountAgeDays, disjointPathCount);
+    finalScore = Math.min(finalScore, tenureScoreCap);
+    
     // Apply score ceiling: subtract epsilon so 100 is mathematically rare
     // Only exceptional networks with >8 quality vouchers AND >35 redundancy points approach 99
     const SCORE_CEILING_EPSILON = 1.0;
@@ -1247,6 +1444,10 @@ export class EgoScorer {
         maxUnlockedTier,
         qualityBonus: Math.round(qualityBonus * 100) / 100,
         lowQualityPenalty: Math.round(lowQualityPenalty * 100) / 100,
+        // Dec 2025 algorithm enhancement tracking
+        accountAgeDays: Math.round(accountAgeDays),
+        tenureScoreCap,
+        pathRedundancyGateCap: applyPathRedundancyGate(100, disjointPathCount),
       },
     };
   }

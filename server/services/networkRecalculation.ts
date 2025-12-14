@@ -94,12 +94,70 @@ export class NetworkRecalculationService {
 
       console.log(`Starting iterative LocalHealth calculation for ${addresses.length} participants (${egoContexts.length} with ego contexts)...`);
 
+      // Build tenure data map (address -> account age in days)
+      // For tenure gating to work correctly, we need to distinguish truly new accounts
+      // from existing network participants who may have recently created contexts
+      // 
+      // Strategy:
+      // 1. If account has endorsed or been endorsed, they're an established participant → 365 days
+      // 2. If context.createdAt is > 28 days old, use actual age
+      // 3. Otherwise, treat as established account (365 days) to avoid false capping
+      // 
+      // This ensures tenure gates only apply to genuinely new accounts, not seeded data
+      const tenureData = new Map<string, number>();
+      const now = new Date();
+      const MATURE_AGE_DAYS = 365;
+      const TENURE_THRESHOLD_DAYS = 28;
+      
+      // Build set of all addresses that have participated in endorsements
+      const participatedAddresses = new Set<string>();
+      for (const v of globalVouches) {
+        participatedAddresses.add(v.endorser);
+        participatedAddresses.add(v.endorsee);
+      }
+      
+      let matureCount = 0;
+      let ageBasedCount = 0;
+      
+      for (const ctx of egoContexts) {
+        if (ctx.ownerAddress) {
+          const addrLower = ctx.ownerAddress.toLowerCase();
+          
+          // If address has participated in endorsements, treat as established
+          if (participatedAddresses.has(addrLower)) {
+            tenureData.set(addrLower, MATURE_AGE_DAYS);
+            matureCount++;
+            continue;
+          }
+          
+          // For non-participants, use actual context age if > threshold
+          if (ctx.createdAt) {
+            const ageMs = now.getTime() - new Date(ctx.createdAt).getTime();
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+            if (ageDays >= TENURE_THRESHOLD_DAYS) {
+              tenureData.set(addrLower, ageDays);
+              ageBasedCount++;
+            } else {
+              // Recent context but no endorsements yet - apply tenure cap
+              tenureData.set(addrLower, ageDays);
+              ageBasedCount++;
+            }
+          } else {
+            // No createdAt - treat as established
+            tenureData.set(addrLower, MATURE_AGE_DAYS);
+            matureCount++;
+          }
+        }
+      }
+      console.log(`Built tenure data for ${tenureData.size} contexts (${matureCount} mature, ${ageBasedCount} age-based)`);
+
       // Compute all scores iteratively (this properly weights vouches by voucher strength)
       const scoreResults = this.egoScorer.computeLocalHealthIterative(
         addresses,
         globalVouches,
         10, // maxIterations
-        0.5 // convergenceThreshold
+        0.5, // convergenceThreshold
+        tenureData // tenure data for tenure-gated scoring
       );
 
       // Process results
