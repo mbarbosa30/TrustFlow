@@ -5,7 +5,7 @@ import {
   FileText, BookOpen, Shield, Cpu, FlaskConical, Lightbulb, 
   AlertTriangle, BarChart3, Zap, Target, Scale, GitBranch,
   CheckCircle2, XCircle, ArrowRight, TrendingUp, Leaf, TreePine, Waves,
-  Clock, Users, ArrowLeftRight
+  Clock, Users, ArrowLeftRight, Fingerprint
 } from "lucide-react";
 import { BlockFormula, InlineFormula } from "@/components/Math";
 
@@ -38,7 +38,7 @@ export default function Whitepaper() {
           <FileText className="w-8 h-8 shrink-0" style={{ color: 'hsl(var(--score-transition))' }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-whitepaper-title">MaxFlow Whitepaper</h1>
-            <p className="text-sm text-muted-foreground">Version 1.6 — December 2025</p>
+            <p className="text-sm text-muted-foreground">Version 1.7 — December 2025</p>
           </div>
         </div>
         <h2 className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
@@ -1023,6 +1023,91 @@ export default function Whitepaper() {
                 These four mechanisms work together: a Sybil attacker faces tenure delays, hub limits, 
                 reciprocity penalties, AND path redundancy requirements. Achieving a high score through 
                 fake accounts becomes prohibitively expensive in both time and resources.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Fingerprint className="w-5 h-5" style={{ color: 'hsl(var(--score-river))' }} />
+              External Sybil Integration (v1.7)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm sm:text-base">
+            <p className="leading-relaxed">
+              Version 1.7 adds a fifth layer of protection: <strong>external device fingerprinting</strong>. 
+              Graph-based detection excels at catching network manipulation, but some attacks use fresh wallets 
+              from the same physical device. External Sybil detection complements our graph analysis by identifying 
+              device-cluster patterns.
+            </p>
+            
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-river) / 0.05)', borderColor: 'hsl(var(--score-river) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <div className="font-semibold text-sm mb-2 flex items-center gap-2">
+                <Fingerprint className="w-4 h-4" style={{ color: 'hsl(var(--score-river))' }} />
+                Device Fingerprint Signals
+              </div>
+              <p className="text-sm text-muted-foreground mb-3">
+                The external API scores wallets based on shared device characteristics. Scores of 3+ trigger 
+                capacity penalties during vouch weighting:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>IP Address</span>
+                  <span className="font-mono">2 pts</span>
+                </div>
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>Browser Token</span>
+                  <span className="font-mono">2 pts</span>
+                </div>
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>User Agent</span>
+                  <span className="font-mono">2 pts</span>
+                </div>
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>Screen Size</span>
+                  <span className="font-mono">1 pt</span>
+                </div>
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>Hardware Config</span>
+                  <span className="font-mono">1 pt</span>
+                </div>
+                <div className="p-2 rounded bg-muted/30 flex justify-between">
+                  <span>Timezone</span>
+                  <span className="font-mono">0.5 pts</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-growth) / 0.05)', borderColor: 'hsl(var(--score-growth) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <div className="font-semibold text-sm mb-2">Penalty Application</div>
+              <p className="text-sm text-muted-foreground mb-2">
+                External Sybil penalties are applied during vouch capacity calculation, after hub saturation 
+                and reciprocity dampening:
+              </p>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between p-2 rounded bg-muted/30">
+                  <span>Score 3-4.5:</span>
+                  <span className="font-mono">50% capacity (moderate suspicion)</span>
+                </div>
+                <div className="flex justify-between p-2 rounded bg-muted/30">
+                  <span>Score 4.5-6:</span>
+                  <span className="font-mono">40% capacity (high suspicion)</span>
+                </div>
+                <div className="flex justify-between p-2 rounded bg-muted/30">
+                  <span>Score 6+:</span>
+                  <span className="font-mono">30% capacity (very high suspicion)</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: 'hsl(var(--score-canopy) / 0.05)', borderColor: 'hsl(var(--score-canopy) / 0.2)', borderWidth: '1px', borderStyle: 'solid' }}>
+              <p className="font-semibold text-sm mb-2">Two-Way Enrichment</p>
+              <p className="text-sm text-muted-foreground">
+                This integration works bidirectionally: MaxFlow queries external services for device-cluster flags, 
+                while external services can query MaxFlow for low-confidence accounts. Together, they catch both 
+                network manipulation (graph-based) and same-device multi-accounting (fingerprint-based).
               </p>
             </div>
           </CardContent>
