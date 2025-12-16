@@ -1,0 +1,67 @@
+How Wallets Get Flagged
+Here's the detailed breakdown you can share with your MaxFlow API agent:
+
+Data Collection (Client Side)
+When a user interacts with the wallet, we collect a fingerprint containing:
+
+Storage Token: A persistent UUID stored in IndexedDB - survives across sessions until the user clears browser data
+User Agent: Full browser/OS string (e.g., "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)")
+Screen: Resolution + pixel ratio (e.g., "390x844@3")
+Hardware: CPU cores + device memory (e.g., "8 cores / 8GB RAM")
+Timezone: UTC offset (e.g., "UTC-5")
+Language: Browser language (e.g., "en-US")
+Platform: OS identifier (e.g., "iPhone")
+Data Collection (Server Side)
+IP Address: Hashed with a static salt for privacy (we store sha256(ip + salt), not raw IPs)
+Scoring System
+When we detect multiple wallets sharing the same signals, we assign weighted points:
+
+Signal Type	Points	Rationale
+Same IP	2 pts	Strong indicator - same network
+Same Storage Token	2 pts	Strong indicator - same browser installation
+Same User-Agent	2 pts	Strong indicator - exact browser fingerprint
+Same Screen	1 pt	Medium - could be common device model
+Same Hardware	1 pt	Medium - could be common specs
+Same Timezone	0.5 pts	Weak - millions share timezones
+Same Language	0.5 pts	Weak - common across regions
+Same Platform	0.5 pts	Weak - just OS type
+Flagging Threshold
+A wallet is flagged when its combined score ≥ 3 points.
+
+This requires at least:
+
+1 strong signal (2 pts) + 2 weak signals (1 pt), OR
+3 medium signals (3 pts), OR
+Multiple overlapping patterns
+Why This Works
+Shared networks (cafes, offices) alone won't flag users - they'd need matching devices too
+Same device across multiple wallets is definitive evidence of sybil behavior
+Cascading detection: if Wallet A shares signals with B, and B shares with C, all three get elevated scores
+Proposed Public API for MaxFlow
+I can build a public endpoint that MaxFlow can query:
+
+GET /api/public/v1/flagged-wallets
+
+Returns:
+
+{
+  "flagged": [
+    {
+      "address": "0x123...",
+      "score": 4.5,
+      "signals": ["shared_ip", "shared_storage_token", "shared_screen"],
+      "flaggedAt": "2025-12-16T10:30:00Z"
+    }
+  ],
+  "total": 42,
+  "threshold": 3,
+  "generatedAt": "2025-12-16T12:00:00Z"
+}
+
+Security features:
+
+API key authentication (or signed MaxFlow token)
+Rate limited to 60 requests/minute
+Cached results (updated hourly)
+No raw fingerprint data exposed - just signal categories
+Would you like me to build this API?
