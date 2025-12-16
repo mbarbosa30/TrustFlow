@@ -272,25 +272,25 @@ function computeReciprocityDampeningFactor(isMutual: boolean): number {
  * EXTERNAL SYBIL PENALTY: Apply penalty for device-fingerprint flagged vouchers
  * Integrates with NanoPay wallet Sybil detection API
  * 
- * Penalty curve (threshold = 4 points to be flagged):
- * - Score < 4: No penalty (not flagged)
- * - Score 4-5: 50% penalty (moderate suspicion)
- * - Score 5-6: 40% factor (high suspicion)  
- * - Score 6+: 30% factor (very high suspicion)
+ * Penalty curve (threshold = 5 points to be flagged):
+ * - Score < 5: No penalty (not flagged)
+ * - Score 5-6: 50% penalty (moderate suspicion)
+ * - Score 6-7: 40% factor (high suspicion)  
+ * - Score 7+: 30% factor (very high suspicion)
  * 
- * @param sybilScore - External Sybil score (4+ = flagged)
+ * @param sybilScore - External Sybil score (5+ = flagged)
  * @returns Penalty factor (0.3-1.0)
  */
 function computeExternalSybilPenalty(sybilScore: number | undefined): number {
-  if (sybilScore === undefined || sybilScore < 4) {
+  if (sybilScore === undefined || sybilScore < 5) {
     return 1.0; // No penalty
   }
   
-  if (sybilScore >= 6) {
+  if (sybilScore >= 7) {
     return 0.30; // Very high suspicion - 70% penalty
   }
   
-  if (sybilScore >= 5) {
+  if (sybilScore >= 6) {
     return 0.40; // High suspicion - 60% penalty
   }
   

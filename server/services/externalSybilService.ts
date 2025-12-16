@@ -125,15 +125,15 @@ export class ExternalSybilService {
 export const externalSybilService = new ExternalSybilService();
 
 export function computeExternalFlagPenalty(sybilScore: number | null | undefined): number {
-  if (sybilScore === null || sybilScore === undefined || sybilScore < 4) {
-    return 1.0; // Not flagged (threshold = 4)
+  if (sybilScore === null || sybilScore === undefined || sybilScore < 5) {
+    return 1.0; // Not flagged (threshold = 5)
   }
   
-  if (sybilScore >= 6) {
+  if (sybilScore >= 7) {
     return 0.30; // Very high suspicion
   }
   
-  if (sybilScore >= 5) {
+  if (sybilScore >= 6) {
     return 0.40; // High suspicion
   }
   
