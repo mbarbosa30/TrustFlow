@@ -90,6 +90,10 @@ export const contexts = pgTable("contexts", {
   dilutionFactor: doublePrecision("dilution_factor"), // Penalty multiplier (0.4-1.0)
   incomingActive: integer("incoming_active"), // Active vouches count
   outgoingTotal: integer("outgoing_total"), // Total outgoing vouches count
+  // External Sybil detection (from NanoPay wallet fingerprinting)
+  externalSybilScore: doublePrecision("external_sybil_score"), // NanoPay score (3+ = flagged)
+  externalSybilSignals: text("external_sybil_signals").array(), // Signal codes: IP, Token, UA, Screen, HW, TZ, Lang, Plat
+  externalSybilFlaggedAt: timestamp("external_sybil_flagged_at"), // When the address was flagged
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
