@@ -293,7 +293,7 @@ export function registerPublicApiRoutes(app: Express) {
             Lang: "Same language (0.5 pts)",
             Plat: "Same OS platform (0.5 pts)",
           },
-          penalty_applied: externalFlag.score >= 6 ? 0.30 : externalFlag.score >= 4.5 ? 0.40 : 0.50,
+          penalty_applied: externalFlag.score >= 6 ? 0.30 : externalFlag.score >= 5 ? 0.40 : 0.50,
           source: "NanoPay wallet device fingerprinting",
         } : {
           flagged: false,

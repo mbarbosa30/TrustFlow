@@ -1049,8 +1049,8 @@ export default function Whitepaper() {
                 Device Fingerprint Signals
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                The external API scores wallets based on shared device characteristics. Scores of 3+ trigger 
-                capacity penalties during vouch weighting:
+                The external API scores wallets based on shared device characteristics. Scores of 4+ trigger 
+                capacity penalties during vouch weighting (requires 2 strong signals OR 1 strong + 2 medium):
               </p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2 rounded bg-muted/30 flex justify-between">
@@ -1088,11 +1088,11 @@ export default function Whitepaper() {
               </p>
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between p-2 rounded bg-muted/30">
-                  <span>Score 3-4.5:</span>
+                  <span>Score 4-5:</span>
                   <span className="font-mono">50% capacity (moderate suspicion)</span>
                 </div>
                 <div className="flex justify-between p-2 rounded bg-muted/30">
-                  <span>Score 4.5-6:</span>
+                  <span>Score 5-6:</span>
                   <span className="font-mono">40% capacity (high suspicion)</span>
                 </div>
                 <div className="flex justify-between p-2 rounded bg-muted/30">
