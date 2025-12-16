@@ -269,6 +269,35 @@ function computeReciprocityDampeningFactor(isMutual: boolean): number {
 }
 
 /**
+ * EXTERNAL SYBIL PENALTY: Apply penalty for device-fingerprint flagged vouchers
+ * Integrates with NanoPay wallet Sybil detection API
+ * 
+ * Penalty curve:
+ * - Score < 3: No penalty (not flagged)
+ * - Score 3-4.5: 50% penalty (moderate suspicion)
+ * - Score 4.5-6: 40% factor (high suspicion)  
+ * - Score 6+: 30% factor (very high suspicion)
+ * 
+ * @param sybilScore - External Sybil score (3+ = flagged)
+ * @returns Penalty factor (0.3-1.0)
+ */
+function computeExternalSybilPenalty(sybilScore: number | undefined): number {
+  if (sybilScore === undefined || sybilScore < 3) {
+    return 1.0; // No penalty
+  }
+  
+  if (sybilScore >= 6) {
+    return 0.30; // Very high suspicion - 70% penalty
+  }
+  
+  if (sybilScore >= 4.5) {
+    return 0.40; // High suspicion - 60% penalty
+  }
+  
+  return 0.50; // Moderate suspicion - 50% penalty
+}
+
+/**
  * Algorithm Enhancement: Tenure-Gated Scoring
  * 
  * Caps scores for new accounts until they meet time AND redundancy thresholds.
@@ -552,6 +581,7 @@ export class EgoScorer {
    * @param maxIterations - Maximum number of iterations (default 10)
    * @param convergenceThreshold - Stop when max score change < this value (default 0.5)
    * @param tenureData - Optional map of address to account age in days (for tenure-gated scoring)
+   * @param externalSybilFlags - Optional map of address to external Sybil score (for device fingerprint integration)
    * @returns Map of address to EgoScoreResult
    */
   computeLocalHealthIterative(
@@ -559,7 +589,8 @@ export class EgoScorer {
     globalVouches: EgoEndorsement[],
     maxIterations: number = 10,
     convergenceThreshold: number = 0.5,
-    tenureData?: Map<string, number>
+    tenureData?: Map<string, number>,
+    externalSybilFlags?: Map<string, number>
   ): Map<string, EgoScoreResult> {
     // Step 0: Compute adaptive baselines if enabled (before scoring)
     // This allows the algorithm to adapt to network size and density
@@ -620,7 +651,8 @@ export class EgoScorer {
           currentScores,
           outgoingVouchCounts,
           mutualVouches,
-          accountAgeDays
+          accountAgeDays,
+          externalSybilFlags
         );
         newScores.set(addrLower, result.localHealth);
         
@@ -656,7 +688,8 @@ export class EgoScorer {
         currentScores,
         outgoingVouchCounts,
         mutualVouches,
-        accountAgeDays
+        accountAgeDays,
+        externalSybilFlags
       );
       results.set(addrLower, result);
     }
@@ -1000,6 +1033,7 @@ export class EgoScorer {
    * @param outgoingVouchCounts - Map of address to number of outgoing vouches (for hub saturation)
    * @param mutualVouches - Set of mutual vouch keys "A->B" (for reciprocity dampening)
    * @param accountAgeDays - Account age in days (for tenure gating)
+   * @param externalSybilFlags - Optional map of address to external Sybil score (for device fingerprint penalty)
    */
   private computePureOption2Score(
     ownerAddress: Address,
@@ -1007,7 +1041,8 @@ export class EgoScorer {
     voucherScores?: Map<string, number>,
     outgoingVouchCounts?: Map<string, number>,
     mutualVouches?: Set<string>,
-    accountAgeDays: number = 365
+    accountAgeDays: number = 365,
+    externalSybilFlags?: Map<string, number>
   ): EgoScoreResult {
     // CRITICAL: Normalize ownerAddress to lowercase for consistent graph construction
     // This prevents case mismatches between FlowGraph sink and edge destinations
@@ -1129,6 +1164,15 @@ export class EgoScorer {
           const isMutual = mutualVouches.has(vouchKey);
           const reciprocityFactor = computeReciprocityDampeningFactor(isMutual);
           capacity *= reciprocityFactor;
+        }
+        
+        // EXTERNAL SYBIL FLAGS: Reduce weight of vouches from device-fingerprint flagged addresses
+        // Integrates with NanoPay wallet Sybil detection (score 3+ = flagged)
+        // Score 3-4.5: 50% penalty, 4.5-6: 60% penalty, 6+: 70% penalty
+        if (externalSybilFlags) {
+          const sybilScore = externalSybilFlags.get(voucher);
+          const externalPenalty = computeExternalSybilPenalty(sybilScore);
+          capacity *= externalPenalty;
         }
         
         // Track totals for cap calculation

@@ -195,10 +195,14 @@ export function registerPublicApiRoutes(app: Express) {
       }
       
       const { localHealthService } = await import('../services/localHealthService');
+      const { externalSybilService } = await import('../services/externalSybilService');
       
       // Get cached score and compute detailed breakdown
       const egoContext = await storage.getOrCreateEgoContext(address);
       const algorithmBreakdown = await localHealthService.computeAlgorithmBreakdown(address);
+      
+      // Get external Sybil flag if available
+      const externalFlag = externalSybilService.getFlag(address);
       
       // Get vouch counts
       const [incomingTotal, outgoingTotal, incomingEndorsements] = await Promise.all([
@@ -275,7 +279,31 @@ export function registerPublicApiRoutes(app: Express) {
           },
         } : null,
         
-        note: "Algorithm breakdown is computed on-demand from the current network state.",
+        external_sybil: externalFlag ? {
+          flagged: true,
+          score: externalFlag.score,
+          signals: externalFlag.signals,
+          signal_details: {
+            IP: "Same network (2 pts)",
+            Token: "Same browser storage ID (2 pts)",
+            UA: "Same browser fingerprint (2 pts)",
+            Screen: "Same screen resolution (1 pt)",
+            HW: "Same CPU/RAM config (1 pt)",
+            TZ: "Same timezone (0.5 pts)",
+            Lang: "Same language (0.5 pts)",
+            Plat: "Same OS platform (0.5 pts)",
+          },
+          penalty_applied: externalFlag.score >= 6 ? 0.30 : externalFlag.score >= 4.5 ? 0.40 : 0.50,
+          source: "NanoPay wallet device fingerprinting",
+        } : {
+          flagged: false,
+          score: null,
+          signals: [],
+          penalty_applied: 1.0,
+          source: "NanoPay wallet device fingerprinting",
+        },
+        
+        note: "Algorithm breakdown is computed on-demand from the current network state. External Sybil detection from NanoPay wallet fingerprinting.",
       });
     } catch (error) {
       console.error('Error getting score details:', error);

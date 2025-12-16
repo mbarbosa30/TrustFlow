@@ -75,7 +75,8 @@ export class ExternalSybilService {
     const flags = await this.fetchFlaggedWallets();
     let updated = 0;
     
-    for (const [address, flag] of flags) {
+    for (const entry of Array.from(flags.entries())) {
+      const [address, flag] = entry;
       try {
         const existing = await db
           .select()

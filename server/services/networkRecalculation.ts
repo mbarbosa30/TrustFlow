@@ -4,6 +4,7 @@ import { eq, isNull, or, and } from "drizzle-orm";
 import { EgoScorer, type EgoEndorsement } from "../algorithm/egoScoring";
 import type { Address } from "viem";
 import { filterValidEndorsements } from "./vouchExpiration";
+import { externalSybilService } from "./externalSybilService";
 
 export interface RecalculationResult {
   totalProcessed: number;
@@ -151,13 +152,23 @@ export class NetworkRecalculationService {
       }
       console.log(`Built tenure data for ${tenureData.size} contexts (${matureCount} mature, ${ageBasedCount} age-based)`);
 
+      // Fetch external Sybil flags from NanoPay wallet API
+      const externalFlags = await externalSybilService.fetchFlaggedWallets();
+      const externalSybilScores = new Map<string, number>();
+      for (const entry of Array.from(externalFlags.entries())) {
+        const [addr, flag] = entry;
+        externalSybilScores.set(addr, flag.score);
+      }
+      console.log(`Loaded ${externalSybilScores.size} external Sybil flags from NanoPay`);
+
       // Compute all scores iteratively (this properly weights vouches by voucher strength)
       const scoreResults = this.egoScorer.computeLocalHealthIterative(
         addresses,
         globalVouches,
         10, // maxIterations
         0.5, // convergenceThreshold
-        tenureData // tenure data for tenure-gated scoring
+        tenureData, // tenure data for tenure-gated scoring
+        externalSybilScores // external Sybil flags for device fingerprint penalty
       );
 
       // Process results
