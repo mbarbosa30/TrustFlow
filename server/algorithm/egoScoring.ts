@@ -1241,6 +1241,18 @@ export class EgoScorer {
       }
     }
     
+    // CRITICAL FIX: Also connect SOURCE to ALL direct vouchers
+    // Direct vouchers are the trust boundary - they vouch for the owner
+    // Even if they have incoming edges within the ego subgraph (mutual vouches),
+    // they must receive flow from SOURCE to properly measure min-cut
+    // Without this, circular vouch patterns would cause min-cut = 0
+    for (const voucher of directVouchers) {
+      // Only add if not already connected as a root node (avoid duplicate edges)
+      if (hasIncomingEdge.has(voucher)) {
+        multiHopGraph.addEdge(MINCUT_SOURCE, voucher, 1.0);
+      }
+    }
+    
     // Add all edges within ego subgraph with unit capacity
     let egoEdgeCount = 0;
     for (const { endorser, endorsee } of globalVouches) {
