@@ -18,6 +18,17 @@ import { LocalHealthService } from "./services/localHealthService";
 // Singleton instance for score calculations
 const localHealthService = new LocalHealthService();
 
+// Cache for network-traction endpoint (5 minute TTL)
+interface NetworkTractionCache {
+  data: object | null;
+  timestamp: number;
+}
+const networkTractionCache: NetworkTractionCache = {
+  data: null,
+  timestamp: 0,
+};
+const NETWORK_TRACTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
     try {
@@ -1461,8 +1472,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Network Traction - aggregated metrics for landing page
+  // Network Traction - aggregated metrics for landing page (cached for 5 minutes)
   app.get("/api/stats/network-traction", async (req, res) => {
+    const now = Date.now();
+    
+    // Return cached data if fresh (within TTL)
+    if (networkTractionCache.data && (now - networkTractionCache.timestamp) < NETWORK_TRACTION_CACHE_TTL) {
+      return res.status(200).json(networkTractionCache.data);
+    }
+    
     try {
       // Get basic vouch stats - LocalHealth focused only
       const totalEndorsements = await db
@@ -1531,7 +1549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Average vouches received per scored user
       const avgVouchesReceived = contextsWithScores.length > 0 ? actualEdges / contextsWithScores.length : 0;
       
-      return res.status(200).json({
+      const responseData = {
         // Core LocalHealth metrics
         totalVouchers,
         totalVouches: actualEdges,
@@ -1554,9 +1572,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           critical: criticalZone,
           qualityPercent,
         },
-      });
+      };
+      
+      // Update cache
+      networkTractionCache.data = responseData;
+      networkTractionCache.timestamp = now;
+      
+      return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching network traction:", error);
+      // Return stale cache on error if available
+      if (networkTractionCache.data) {
+        console.log("Returning stale cache due to error");
+        return res.status(200).json(networkTractionCache.data);
+      }
       return res.status(500).json({ error: "Internal server error" });
     }
   });
