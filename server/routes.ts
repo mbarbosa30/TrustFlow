@@ -18,16 +18,17 @@ import { LocalHealthService } from "./services/localHealthService";
 // Singleton instance for score calculations
 const localHealthService = new LocalHealthService();
 
-// Cache for network-traction endpoint (5 minute TTL)
-interface NetworkTractionCache {
+// Cache for expensive stats endpoints (5 minute TTL)
+interface StatsCache {
   data: object | null;
   timestamp: number;
 }
-const networkTractionCache: NetworkTractionCache = {
-  data: null,
-  timestamp: 0,
-};
-const NETWORK_TRACTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const STATS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const networkTractionCache: StatsCache = { data: null, timestamp: 0 };
+const localHealthStatsCache: StatsCache = { data: null, timestamp: 0 };
+const generalStatsCache: StatsCache = { data: null, timestamp: 0 };
+const graphLocalHealthCache: StatsCache = { data: null, timestamp: 0 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/endorse", async (req, res) => {
@@ -1169,8 +1170,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // LocalHealth statistics endpoint
+  // LocalHealth statistics endpoint (cached for 5 minutes)
   app.get("/api/stats/local-health", async (req, res) => {
+    const now = Date.now();
+    
+    // Return cached data if fresh (within TTL)
+    if (localHealthStatsCache.data && (now - localHealthStatsCache.timestamp) < STATS_CACHE_TTL) {
+      return res.status(200).json(localHealthStatsCache.data);
+    }
+    
     try {
       // Get all ego contexts
       const allContexts = await db
@@ -1248,23 +1256,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         count,
       }));
 
-      return res.status(200).json({
+      const responseData = {
         totalUsers: scores.length,
         avgLocalHealth: Math.round(avgLocalHealth * 100) / 100,
         distribution,
-      });
+      };
+      
+      // Cache the response
+      localHealthStatsCache.data = responseData;
+      localHealthStatsCache.timestamp = now;
+      
+      return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching LocalHealth stats:", error);
+      // Return stale cache on error if available
+      if (localHealthStatsCache.data) {
+        return res.status(200).json(localHealthStatsCache.data);
+      }
       return res.status(500).json({ error: "Internal server error" });
     }
   });
 
-  // Graph data endpoint for LocalHealth network visualization
+  // Graph data endpoint for LocalHealth network visualization (cached for 5 minutes)
   app.get("/api/graph/local-health", async (req, res) => {
+    const now = Date.now();
+    
+    // Return cached data if fresh (within TTL) - only for default params
+    const limit = parseInt(req.query.limit as string) || 100;
+    const communityId = parseInt(req.query.communityId as string) || 0;
+    
+    // For default params (100, 0), use cache
+    if (limit === 100 && communityId === 0 && graphLocalHealthCache.data && (now - graphLocalHealthCache.timestamp) < STATS_CACHE_TTL) {
+      return res.status(200).json(graphLocalHealthCache.data);
+    }
+    
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
-      const communityId = parseInt(req.query.communityId as string) || 0;
-
       // Get endorsements for the network
       const endorsements = await storage.getEndorsements({
         communityId,
@@ -1333,17 +1359,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return true;
         });
 
-      return res.status(200).json({
-        nodes,
-        links
-      });
+      const responseData = { nodes, links };
+      
+      // Cache for default params only
+      if (limit === 100 && communityId === 0) {
+        graphLocalHealthCache.data = responseData;
+        graphLocalHealthCache.timestamp = now;
+      }
+      
+      return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching graph data:", error);
+      // Return stale cache on error only for matching default params
+      if (limit === 100 && communityId === 0 && graphLocalHealthCache.data) {
+        return res.status(200).json(graphLocalHealthCache.data);
+      }
       return res.status(500).json({ error: "Internal server error" });
     }
   });
 
+  // General stats endpoint (cached for 5 minutes)
   app.get("/api/stats", async (req, res) => {
+    const now = Date.now();
+    
+    // Return cached data if fresh (within TTL)
+    if (generalStatsCache.data && (now - generalStatsCache.timestamp) < STATS_CACHE_TTL) {
+      return res.status(200).json(generalStatsCache.data);
+    }
+    
     try {
       // Platform-wide aggregates
       const totalEndorsements = await db
@@ -1453,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      return res.status(200).json({
+      const responseData = {
         // Platform-wide aggregates
         totalUsers: allParticipants.size,
         totalEndorsements: totalEndorsements[0]?.count || 0,
@@ -1465,9 +1508,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalCommunities: allCommunities.length,
         // Per-community breakdown
         communities: communityStats,
-      });
+      };
+      
+      // Cache the response
+      generalStatsCache.data = responseData;
+      generalStatsCache.timestamp = now;
+      
+      return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching stats:", error);
+      // Return stale cache on error if available
+      if (generalStatsCache.data) {
+        return res.status(200).json(generalStatsCache.data);
+      }
       return res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1477,7 +1530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const now = Date.now();
     
     // Return cached data if fresh (within TTL)
-    if (networkTractionCache.data && (now - networkTractionCache.timestamp) < NETWORK_TRACTION_CACHE_TTL) {
+    if (networkTractionCache.data && (now - networkTractionCache.timestamp) < STATS_CACHE_TTL) {
       return res.status(200).json(networkTractionCache.data);
     }
     
