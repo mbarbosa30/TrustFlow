@@ -1,0 +1,136 @@
+2026-01-04 18:32:10.38
+0e85173d
+User
+detail: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+line: '3289',
+2026-01-04 18:32:10.38
+0e85173d
+User
+internalQuery: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+position: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+2026-01-04 18:32:10.38
+0e85173d
+User
+at async MemStorage.getRevokedEndorsementIds (file:///home/runner/workspace/dist/index.js:800:28)
+2026-01-04 18:32:10.38
+0e85173d
+User
+routine: 'ProcessInterrupts'
+2026-01-04 18:32:10.38
+0e85173d
+User
+file: 'postgres.c',
+2026-01-04 18:32:10.38
+0e85173d
+User
+where: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+hint: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+column: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+dataType: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+at async LocalHealthService.getExtendedScoreMetrics (file:///home/runner/workspace/dist/index.js:5377:24)
+2026-01-04 18:32:10.38
+0e85173d
+User
+}
+2026-01-04 18:32:10.38
+0e85173d
+User
+schema: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+Error getting score: error: terminating connection due to administrator command
+2026-01-04 18:32:10.38
+0e85173d
+User
+length: 116,
+2026-01-04 18:32:10.38
+0e85173d
+User
+constraint: undefined,
+2026-01-04 18:32:10.38
+0e85173d
+User
+at async buildVouchFilter (file:///home/runner/workspace/dist/index.js:1931:30)
+2026-01-04 18:32:11.37
+0e85173d
+User
+Adaptive baselines: vouch=4.0, redundancy=18.0
+2026-01-04 18:32:11.37
+0e85173d
+User
+Precomputed outgoing vouch counts for 613 endorsers
+2026-01-04 18:32:11.37
+0e85173d
+User
+Found 203 mutual vouch pairs (reciprocity dampening applies)
+2026-01-04 18:32:26.39
+0e85173d
+User
+LocalHealth converged after 5 iterations (max change: 0.11)
+2026-01-04 18:32:29.43
+0e85173d
+User
+Adaptive baselines: vouch=4.0, redundancy=18.0
+2026-01-04 18:32:29.43
+0e85173d
+User
+Precomputed outgoing vouch counts for 613 endorsers
+2026-01-04 18:32:29.43
+0e85173d
+User
+Found 203 mutual vouch pairs (reciprocity dampening applies)
+2026-01-04 18:32:44.99
+0e85173d
+User
+LocalHealth converged after 5 iterations (max change: 0.11)
+2026-01-04 18:32:48.05
+0e85173d
+User
+Adaptive baselines: vouch=4.0, redundancy=18.0
+2026-01-04 18:32:48.05
+0e85173d
+User
+Precomputed outgoing vouch counts for 613 endorsers
+2026-01-04 18:32:48.05
+0e85173d
+User
+Found 203 mutual vouch pairs (reciprocity dampening applies)
+2026-01-04 18:33:03.14
+0e85173d
+User
+LocalHealth converged after 5 iterations (max change: 0.11)
+2026-01-04 18:33:06.50
+0e85173d
+User
+Adaptive baselines: vouch=4.0, redundancy=18.0
+2026-01-04 18:33:06.50
+0e85173d
+User
+Precomputed outgoing vouch counts for 613 endorsers
+2026-01-04 18:33:06.50
+0e85173d
+User
+Found 203 mutual vouch pairs (reciprocity dampening applies)
