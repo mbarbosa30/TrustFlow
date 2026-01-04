@@ -1,27 +1,34 @@
+import { lazy, Suspense } from "react";
 import { GlobalStats } from "@/components/GlobalStats";
 import { LocalHealthHistogram } from "@/components/LocalHealthHistogram";
-import { LocalHealthGraph } from "@/components/graph/LocalHealthGraph";
-import { ConvergenceChart } from "@/components/analytics/ConvergenceChart";
-import { VouchTimelineChart } from "@/components/analytics/VouchTimelineChart";
-import { FlowRedundancyScatter } from "@/components/analytics/FlowRedundancyScatter";
-import { VoucherStrengthHistogram } from "@/components/analytics/VoucherStrengthHistogram";
-import { FlowSaturationCurve } from "@/components/analytics/FlowSaturationCurve";
-import { GrowthCohortChart } from "@/components/analytics/GrowthCohortChart";
-import { VoucherInfluenceChart } from "@/components/analytics/VoucherInfluenceChart";
-import { RedundancyDepthChart } from "@/components/analytics/RedundancyDepthChart";
-import { EdgeFragilityChart } from "@/components/analytics/EdgeFragilityChart";
-import { DilutionPressureChart } from "@/components/analytics/DilutionPressureChart";
-import { SybilRiskChart } from "@/components/analytics/SybilRiskChart";
-import { ConvergenceSensitivityChart } from "@/components/analytics/ConvergenceSensitivityChart";
-import { DilutionZonesChart } from "@/components/analytics/DilutionZonesChart";
-import { NetworkResilienceChart } from "@/components/analytics/NetworkResilienceChart";
-import { AdaptiveBaselineMonitor } from "@/components/analytics/AdaptiveBaselineMonitor";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Heart, Network, Activity, Shield, Zap, GitBranch, Gauge, TrendingUp, Target, Layers, BarChart3, AlertTriangle, Crown, Scale } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+
+const LocalHealthGraph = lazy(() => import("@/components/graph/LocalHealthGraph").then(m => ({ default: m.LocalHealthGraph })));
+const ConvergenceChart = lazy(() => import("@/components/analytics/ConvergenceChart").then(m => ({ default: m.ConvergenceChart })));
+const VouchTimelineChart = lazy(() => import("@/components/analytics/VouchTimelineChart").then(m => ({ default: m.VouchTimelineChart })));
+const FlowRedundancyScatter = lazy(() => import("@/components/analytics/FlowRedundancyScatter").then(m => ({ default: m.FlowRedundancyScatter })));
+const VoucherStrengthHistogram = lazy(() => import("@/components/analytics/VoucherStrengthHistogram").then(m => ({ default: m.VoucherStrengthHistogram })));
+const FlowSaturationCurve = lazy(() => import("@/components/analytics/FlowSaturationCurve").then(m => ({ default: m.FlowSaturationCurve })));
+const GrowthCohortChart = lazy(() => import("@/components/analytics/GrowthCohortChart").then(m => ({ default: m.GrowthCohortChart })));
+const VoucherInfluenceChart = lazy(() => import("@/components/analytics/VoucherInfluenceChart").then(m => ({ default: m.VoucherInfluenceChart })));
+const RedundancyDepthChart = lazy(() => import("@/components/analytics/RedundancyDepthChart").then(m => ({ default: m.RedundancyDepthChart })));
+const EdgeFragilityChart = lazy(() => import("@/components/analytics/EdgeFragilityChart").then(m => ({ default: m.EdgeFragilityChart })));
+const DilutionPressureChart = lazy(() => import("@/components/analytics/DilutionPressureChart").then(m => ({ default: m.DilutionPressureChart })));
+const SybilRiskChart = lazy(() => import("@/components/analytics/SybilRiskChart").then(m => ({ default: m.SybilRiskChart })));
+const ConvergenceSensitivityChart = lazy(() => import("@/components/analytics/ConvergenceSensitivityChart").then(m => ({ default: m.ConvergenceSensitivityChart })));
+const DilutionZonesChart = lazy(() => import("@/components/analytics/DilutionZonesChart").then(m => ({ default: m.DilutionZonesChart })));
+const NetworkResilienceChart = lazy(() => import("@/components/analytics/NetworkResilienceChart").then(m => ({ default: m.NetworkResilienceChart })));
+const AdaptiveBaselineMonitor = lazy(() => import("@/components/analytics/AdaptiveBaselineMonitor").then(m => ({ default: m.AdaptiveBaselineMonitor })));
+
+function ChartSkeleton({ height = "h-64" }: { height?: string }) {
+  return <Skeleton className={`w-full ${height} rounded-lg`} />;
+}
 
 export default function Dashboard() {
   const { data: localHealthData, isLoading: isLoadingLocalHealth } = useQuery<{
@@ -139,7 +146,9 @@ export default function Dashboard() {
 
           {/* Full-Width Graph - Hero Element */}
           <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <LocalHealthGraph limit={100} communityId={0} height="65vh" heroMode={true} />
+            <Suspense fallback={<ChartSkeleton height="h-[65vh]" />}>
+              <LocalHealthGraph limit={100} communityId={0} height="65vh" heroMode={true} />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -401,18 +410,20 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-5">
-              <ConvergenceChart />
-              <FlowSaturationCurve />
-              <div className="grid lg:grid-cols-2 gap-5">
-                <FlowRedundancyScatter />
-                <VoucherStrengthHistogram />
+            <Suspense fallback={<div className="space-y-5"><ChartSkeleton /><ChartSkeleton /><div className="grid lg:grid-cols-2 gap-5"><ChartSkeleton /><ChartSkeleton /></div></div>}>
+              <div className="space-y-5">
+                <ConvergenceChart />
+                <FlowSaturationCurve />
+                <div className="grid lg:grid-cols-2 gap-5">
+                  <FlowRedundancyScatter />
+                  <VoucherStrengthHistogram />
+                </div>
+                <div className="grid lg:grid-cols-2 gap-5">
+                  <ConvergenceSensitivityChart />
+                  <RedundancyDepthChart />
+                </div>
               </div>
-              <div className="grid lg:grid-cols-2 gap-5">
-                <ConvergenceSensitivityChart />
-                <RedundancyDepthChart />
-              </div>
-            </div>
+            </Suspense>
           </section>
 
           {/* Network Timeline */}
@@ -430,10 +441,12 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-5">
-              <VouchTimelineChart />
-              <GrowthCohortChart />
-            </div>
+            <Suspense fallback={<div className="space-y-5"><ChartSkeleton /><ChartSkeleton /></div>}>
+              <div className="space-y-5">
+                <VouchTimelineChart />
+                <GrowthCohortChart />
+              </div>
+            </Suspense>
           </section>
 
           {/* Algorithm Enhancements Section */}
@@ -451,13 +464,15 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-5">
-              <AdaptiveBaselineMonitor />
-              <div className="grid lg:grid-cols-2 gap-5">
-                <NetworkResilienceChart />
-                <DilutionZonesChart />
+            <Suspense fallback={<div className="space-y-5"><ChartSkeleton /><div className="grid lg:grid-cols-2 gap-5"><ChartSkeleton /><ChartSkeleton /></div></div>}>
+              <div className="space-y-5">
+                <AdaptiveBaselineMonitor />
+                <div className="grid lg:grid-cols-2 gap-5">
+                  <NetworkResilienceChart />
+                  <DilutionZonesChart />
+                </div>
               </div>
-            </div>
+            </Suspense>
           </section>
 
           {/* Network Health & Risk Section */}
@@ -475,16 +490,18 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="space-y-5">
-              <div className="grid lg:grid-cols-2 gap-5">
-                <VoucherInfluenceChart />
-                <SybilRiskChart />
+            <Suspense fallback={<div className="space-y-5"><div className="grid lg:grid-cols-2 gap-5"><ChartSkeleton /><ChartSkeleton /></div></div>}>
+              <div className="space-y-5">
+                <div className="grid lg:grid-cols-2 gap-5">
+                  <VoucherInfluenceChart />
+                  <SybilRiskChart />
+                </div>
+                <div className="grid lg:grid-cols-2 gap-5">
+                  <EdgeFragilityChart />
+                  <DilutionPressureChart />
+                </div>
               </div>
-              <div className="grid lg:grid-cols-2 gap-5">
-                <EdgeFragilityChart />
-                <DilutionPressureChart />
-              </div>
-            </div>
+            </Suspense>
           </section>
 
           <Separator className="my-8" />
