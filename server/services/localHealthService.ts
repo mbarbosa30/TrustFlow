@@ -309,11 +309,13 @@ export class LocalHealthService {
     // Always use cached score (computed network-wide for accuracy)
     localHealth = Math.round(egoContext.localHealth ?? 0);
     
+    // Only compute algorithm breakdown on forceRefresh to avoid expensive network-wide computation
+    // on every request. Normal requests return null for breakdown (score is still accurate from cache).
     const [incomingTotal, outgoingTotal, incomingEndorsements, algorithmBreakdown] = await Promise.all([
       storage.countEndorsements({ endorsee: normalizedAddress, communityId: 0 }),
       storage.countEndorsements({ endorser: normalizedAddress, communityId: 0 }),
       storage.getEndorsements({ endorsee: normalizedAddress, communityId: 0, limit: 1000 }),
-      this.computeAlgorithmBreakdown(normalizedAddress),
+      forceRefresh ? this.computeAlgorithmBreakdown(normalizedAddress) : Promise.resolve(null),
     ]);
     
     const filter = await buildVouchFilter();
