@@ -1,0 +1,42 @@
+The frontend is calling /api/maxflow/nonce/ but that's a proxy route. I need to check what that proxy does and update it to call the correct endpoint.
+
+I see the issue now. The backend proxy at /api/maxflow/nonce/:address is calling ${MAXFLOW_API_BASE}/vouch/nonce/${address}. Let me check what MAXFLOW_API_BASE is set to:
+
+The configuration looks correct! The backend proxy is already calling https://maxflow.one/api/v1/vouch/nonce/${address}. The error in the logs says "Error fetching nonce: DOMException [AbortError]: This operation was aborted" - this is a timeout issue, not a path issue.
+
+Let me check the timeout settings for the fetchMaxFlow function:
+
+Looking at the logs again:
+
+4:43:11 PM [express] GET /api/maxflow/nonce/0xe34bc22e58873a988977bacc9048ac6491c214e4 500 in 15002ms
+The request is timing out at exactly 15 seconds (15002ms). This means the external MaxFlow API at https://maxflow.one/api/v1/vouch/nonce/ is either:
+
+Not responding
+The endpoint doesn't exist on maxflow.one
+There's a network/DNS issue
+Let me check if the endpoint path is correct - the external MaxFlow API may need /api/v1/vouch/nonce not just /vouch/nonce:
+
+The code looks correct - it's calling ${MAXFLOW_API_BASE}/vouch/nonce/${address} which expands to https://maxflow.one/api/v1/vouch/nonce/${address}. That's exactly the path you specified.
+
+The problem is that the external MaxFlow API at maxflow.one is timing out (15 seconds with no response). This could mean:
+
+The /api/v1/vouch/nonce/:address endpoint doesn't exist on the maxflow.one server yet
+The maxflow.one server is down or experiencing issues
+There's a network connectivity problem
+This isn't something I can fix on the nanoPay side - the backend is correctly proxying the request to the right URL. The MaxFlow server needs to have this endpoint deployed and responding.
+
+Let me update the task list:
+
+Change web address for getting codes
+The code is actually correct. The backend is already proxying /api/maxflow/nonce/:address to https://maxflow.one/api/v1/vouch/nonce/:address - exactly the path you specified.
+
+The issue is that the external MaxFlow API is timing out after 15 seconds without responding. Looking at the logs:
+
+4:43:11 PM [express] GET /api/maxflow/nonce/... 500 in 15002ms
+Error fetching nonce: DOMException [AbortError]: This operation was aborted
+This means the MaxFlow server at maxflow.one isn't responding to requests to /api/v1/vouch/nonce/:address. Either:
+
+That endpoint isn't deployed on maxflow.one yet
+The maxflow.one server is having issues
+There's a network problem between the servers
+The nanoPay code is correct - it's calling the right URL. The fix needs to happen on the MaxFlow side to ensure that endpoint exists and responds.
