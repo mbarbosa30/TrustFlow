@@ -1507,6 +1507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Network Traction - aggregated metrics for landing page (cached for 5 minutes)
+  // Optimized: parallel queries for fast response
   app.get("/api/stats/network-traction", async (req, res) => {
     const now = Date.now();
     
@@ -1516,41 +1517,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Get basic vouch stats - LocalHealth focused only
-      const totalEndorsements = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(publicEndorsements);
-      
-      // Count unique vouchers (endorsers) and endorsees
-      const uniqueVouchersResult = await db
-        .select({ address: publicEndorsements.endorser })
-        .from(publicEndorsements)
-        .groupBy(publicEndorsements.endorser);
+      // Run all queries in parallel for speed
+      const [
+        totalEndorsementsResult,
+        uniqueVouchersResult,
+        allParticipantsResult,
+        allContexts,
+        endorserCounts,
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)::int` }).from(publicEndorsements),
+        db.select({ address: publicEndorsements.endorser }).from(publicEndorsements).groupBy(publicEndorsements.endorser),
+        db.select({ address: sql<string>`endorser` }).from(publicEndorsements)
+          .union(db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)),
+        storage.getAllContexts(),
+        db.select({ endorser: publicEndorsements.endorser, count: sql<number>`count(*)::int` })
+          .from(publicEndorsements).groupBy(publicEndorsements.endorser),
+      ]);
+
       const totalVouchers = uniqueVouchersResult.length;
-      
-      const uniqueEndorseesResult = await db
-        .select({ address: publicEndorsements.endorsee })
-        .from(publicEndorsements)
-        .groupBy(publicEndorsements.endorsee);
-      const totalEndorsees = uniqueEndorseesResult.length;
-      
-      // All participants in the graph
-      const allParticipantsResult = await db
-        .select({ address: sql<string>`endorser` })
-        .from(publicEndorsements)
-        .union(
-          db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)
-        );
       const totalParticipants = new Set(allParticipantsResult.map(r => r.address.toLowerCase())).size;
-      
-      // Get LocalHealth stats from contexts
-      const allContexts = await storage.getAllContexts();
+      const actualEdges = totalEndorsementsResult[0]?.count || 0;
+
+      // Process contexts (fast in-memory)
       const contextsWithScores = allContexts.filter((c: Context) => c.localHealth !== null && c.localHealth > 0);
       const avgLocalHealth = contextsWithScores.length > 0
         ? contextsWithScores.reduce((sum: number, c: Context) => sum + (c.localHealth || 0), 0) / contextsWithScores.length
         : 0;
       
-      // LocalHealth distribution with better buckets
       const healthDistribution = {
         critical: contextsWithScores.filter((c: Context) => (c.localHealth || 0) < 40).length,
         warning: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 40 && (c.localHealth || 0) < 60).length,
@@ -1558,47 +1551,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quality: contextsWithScores.filter((c: Context) => (c.localHealth || 0) >= 80).length,
       };
       
-      // Calculate graph density (edges / max possible edges among scored users)
-      const actualEdges = totalEndorsements[0]?.count || 0;
       const maxPossibleEdges = totalParticipants * (totalParticipants - 1);
       const graphDensity = maxPossibleEdges > 0 ? (actualEdges / maxPossibleEdges) * 100 : 0;
       
-      // Get dilution zones from vouches given (outgoing vouch behavior)
-      const endorserCounts = await db
-        .select({
-          endorser: publicEndorsements.endorser,
-          count: sql<number>`count(*)::int`
-        })
-        .from(publicEndorsements)
-        .groupBy(publicEndorsements.endorser);
-      
+      // Dilution zones (fast in-memory)
       const qualityZone = endorserCounts.filter(e => e.count <= 10).length;
       const warningZone = endorserCounts.filter(e => e.count > 10 && e.count <= 15).length;
       const penaltyZone = endorserCounts.filter(e => e.count > 15 && e.count <= 25).length;
       const criticalZone = endorserCounts.filter(e => e.count > 25).length;
-      const totalEndorsersCount = endorserCounts.length;
+      const qualityPercent = endorserCounts.length > 0 ? Math.round((qualityZone / endorserCounts.length) * 100) : 0;
       
-      const qualityPercent = totalEndorsersCount > 0 ? Math.round((qualityZone / totalEndorsersCount) * 100) : 0;
-      
-      // Average vouches received per scored user
       const avgVouchesReceived = contextsWithScores.length > 0 ? actualEdges / contextsWithScores.length : 0;
       
       const responseData = {
-        // Core LocalHealth metrics
         totalVouchers,
         totalVouches: actualEdges,
         scoredUsers: contextsWithScores.length,
         avgLocalHealth: Math.round(avgLocalHealth * 10) / 10,
-        
-        // Graph health indicators
         graphDensity: Math.round(graphDensity * 100) / 100,
         avgVouchesPerUser: Math.round(avgVouchesReceived * 10) / 10,
         totalParticipants,
-        
-        // LocalHealth score distribution
         healthDistribution,
-        
-        // Dilution zones (outgoing vouch behavior)
         dilutionZones: {
           quality: qualityZone,
           warning: warningZone,
@@ -1615,9 +1588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching network traction:", error);
-      // Return stale cache on error if available
       if (networkTractionCache.data) {
-        console.log("Returning stale cache due to error");
         return res.status(200).json(networkTractionCache.data);
       }
       return res.status(500).json({ error: "Internal server error" });
