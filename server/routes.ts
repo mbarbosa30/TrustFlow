@@ -157,12 +157,12 @@ async function handleEndorse(req: any, res: any): Promise<any> {
 
     // LocalHealth scores are recalculated every 6 hours by the background scheduler
     // Removed synchronous per-vouch recalculation to prevent resource spikes during traffic bursts
-    // Use GET /api/v1/score/:address/refresh to force immediate recalculation if needed
+    // Clients can use POST /api/v1/score/:address/refresh for immediate recalculation if needed
 
     return res.status(201).json({
       endorsement: created,
       leafHash,
-      note: "LocalHealth score will update within 6 hours. Use POST /api/v1/score/:address/refresh for immediate update.",
+      endorseeLocalHealth: null,
     });
   } catch (error) {
     console.error("Error creating endorsement:", error);
