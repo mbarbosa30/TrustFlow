@@ -30,156 +30,161 @@ const localHealthStatsCache: StatsCache = { data: null, timestamp: 0 };
 const generalStatsCache: StatsCache = { data: null, timestamp: 0 };
 const graphLocalHealthCache: StatsCache = { data: null, timestamp: 0 };
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  app.post("/api/endorse", async (req, res) => {
-    try {
-      const body = req.body;
+// Shared handler for endorsement creation (used by both /api/endorse and /api/v1/vouch)
+async function handleEndorse(req: any, res: any): Promise<any> {
+  try {
+    const body = req.body;
 
-      // Validate required fields exist
-      // For non-EVM chains with externallyVerified=true, sig can be a placeholder
-      const chainNamespace = body.chainNamespace || "eip155";
-      const externallyVerified = body.externallyVerified === true;
-      
-      if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce) {
-        return res.status(400).json({ error: "Missing required fields: endorser, endorsee, epoch, nonce" });
-      }
-      
-      // Signature required for EVM chains or when not externally verified
-      if (!externallyVerified && !body.sig) {
-        return res.status(400).json({ error: "Missing required field: sig (or set externallyVerified=true for non-EVM chains)" });
-      }
-
-      // Parse and validate communityId (defaults to 0 for global network)
-      const communityId = body.communityId !== undefined ? parseInt(body.communityId, 10) : 0;
-      if (isNaN(communityId) || communityId < 0) {
-        return res.status(400).json({ error: "Invalid community ID" });
-      }
-
-      // Verify community exists and get its policy
-      const community = await storage.getCommunity(communityId);
-      if (!community) {
-        return res.status(404).json({ error: `Community ${communityId} not found` });
-      }
-
-      // Verify promptHash matches community's expected hash
-      const expectedPromptHash = community.promptHash;
-      const providedPromptHash = body.promptHash;
-      
-      if (providedPromptHash && providedPromptHash !== expectedPromptHash) {
-        return res.status(400).json({ 
-          error: "Prompt hash mismatch",
-          message: "The endorsement was signed with a different prompt than the community's current prompt",
-          expected: expectedPromptHash,
-          provided: providedPromptHash
-        });
-      }
-
-      // Safely parse BigInt fields with error handling
-      let endorsement: SignedEndorsement;
-      try {
-        endorsement = {
-          endorser: body.endorser as Address,
-          endorsee: body.endorsee as Address,
-          epoch: BigInt(body.epoch),
-          nonce: BigInt(body.nonce),
-          sig: body.sig as Hex,
-          chainId: body.chainId ? Number(body.chainId) : undefined,
-        };
-      } catch (error) {
-        return res.status(400).json({ error: "Invalid numeric field format" });
-      }
-
-      const fieldValidation = validateEndorsementFields({
-        ...endorsement,
-        chainNamespace,
-      });
-      if (!fieldValidation.valid) {
-        return res.status(400).json({ error: fieldValidation.error });
-      }
-
-      // Check that the epoch being endorsed for is active
-      const targetEpoch = await storage.getEpoch(Number(endorsement.epoch));
-      if (targetEpoch && targetEpoch.status === "closed") {
-        return res.status(400).json({ 
-          error: `Cannot create endorsements for closed Epoch ${endorsement.epoch}. Please use the current active epoch.` 
-        });
-      }
-
-      const nonceValidation = await validateNonce(
-        endorsement.endorser,
-        Number(endorsement.epoch),
-        endorsement.nonce
-      );
-      if (!nonceValidation.valid) {
-        return res.status(400).json({ 
-          error: nonceValidation.error,
-          expectedNonce: nonceValidation.expectedNonce?.toString()
-        });
-      }
-
-      // Skip EIP-712 signature verification for externally verified non-EVM chains
-      if (!externallyVerified) {
-        const signatureValid = await verifyEndorsementSignature(endorsement);
-        if (!signatureValid) {
-          return res.status(400).json({ error: "Invalid signature" });
-        }
-      } else {
-        console.log(`[Multi-Chain] Skipping EIP-712 verification for ${chainNamespace} chain (externallyVerified=true)`);
-      }
-
-      const leafHash = computeLeafHash({
-        endorser: endorsement.endorser,
-        endorsee: endorsement.endorsee,
-        epoch: endorsement.epoch,
-        nonce: endorsement.nonce,
-        sig: endorsement.sig,
-      });
-
-      // Normalize addresses: lowercase only for EVM chains, preserve case for others
-      const normalizeAddress = (addr: string) => chainNamespace === "eip155" ? addr.toLowerCase() : addr;
-      
-      const insertData = insertPublicEndorsementSchema.parse({
-        endorser: normalizeAddress(endorsement.endorser),
-        endorsee: normalizeAddress(endorsement.endorsee),
-        epoch: Number(endorsement.epoch),
-        nonce: Number(endorsement.nonce),
-        sig: endorsement.sig || "externally_verified",
-        leafHash,
-        note: body.note || null,
-        communityId,
-        promptHash: expectedPromptHash,
-        chainNamespace,
-        externallyVerified,
-      });
-
-      const created = await storage.createEndorsement(insertData);
-      
-      // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
-      const normalizedEndorser = normalizeAddress(endorsement.endorser);
-      await storage.getOrCreateEgoContext(normalizedEndorser);
-      await storage.updateLastSignalActivity(normalizedEndorser);
-
-      // Auto-recalculate endorsee's LocalHealth score so API calls immediately return updated score
-      // This runs network-wide computation for accuracy (tiered capacity requires iterative algorithm)
-      let endorseeLocalHealth: number | null = null;
-      try {
-        endorseeLocalHealth = await localHealthService.recalculateLocalHealth(normalizeAddress(endorsement.endorsee));
-        console.log(`[Auto-Score] Recalculated LocalHealth for ${endorsement.endorsee.toLowerCase()}: ${endorseeLocalHealth}`);
-      } catch (scoreError) {
-        console.error(`[Auto-Score] Failed to recalculate for ${endorsement.endorsee.toLowerCase()}:`, scoreError);
-        // Non-fatal: score will be calculated on next batch run or API request
-      }
-
-      return res.status(201).json({
-        endorsement: created,
-        leafHash,
-        endorseeLocalHealth,
-      });
-    } catch (error) {
-      console.error("Error creating endorsement:", error);
-      return res.status(500).json({ error: "Internal server error" });
+    // Validate required fields exist
+    // For non-EVM chains with externallyVerified=true, sig can be a placeholder
+    const chainNamespace = body.chainNamespace || "eip155";
+    const externallyVerified = body.externallyVerified === true;
+    
+    if (!body.endorser || !body.endorsee || !body.epoch || !body.nonce) {
+      return res.status(400).json({ error: "Missing required fields: endorser, endorsee, epoch, nonce" });
     }
-  });
+    
+    // Signature required for EVM chains or when not externally verified
+    if (!externallyVerified && !body.sig) {
+      return res.status(400).json({ error: "Missing required field: sig (or set externallyVerified=true for non-EVM chains)" });
+    }
+
+    // Parse and validate communityId (defaults to 0 for global network)
+    const communityId = body.communityId !== undefined ? parseInt(body.communityId, 10) : 0;
+    if (isNaN(communityId) || communityId < 0) {
+      return res.status(400).json({ error: "Invalid community ID" });
+    }
+
+    // Verify community exists and get its policy
+    const community = await storage.getCommunity(communityId);
+    if (!community) {
+      return res.status(404).json({ error: `Community ${communityId} not found` });
+    }
+
+    // Verify promptHash matches community's expected hash
+    const expectedPromptHash = community.promptHash;
+    const providedPromptHash = body.promptHash;
+    
+    if (providedPromptHash && providedPromptHash !== expectedPromptHash) {
+      return res.status(400).json({ 
+        error: "Prompt hash mismatch",
+        message: "The endorsement was signed with a different prompt than the community's current prompt",
+        expected: expectedPromptHash,
+        provided: providedPromptHash
+      });
+    }
+
+    // Safely parse BigInt fields with error handling
+    let endorsement: SignedEndorsement;
+    try {
+      endorsement = {
+        endorser: body.endorser as Address,
+        endorsee: body.endorsee as Address,
+        epoch: BigInt(body.epoch),
+        nonce: BigInt(body.nonce),
+        sig: body.sig as Hex,
+        chainId: body.chainId ? Number(body.chainId) : undefined,
+      };
+    } catch (error) {
+      return res.status(400).json({ error: "Invalid numeric field format" });
+    }
+
+    const fieldValidation = validateEndorsementFields({
+      ...endorsement,
+      chainNamespace,
+    });
+    if (!fieldValidation.valid) {
+      return res.status(400).json({ error: fieldValidation.error });
+    }
+
+    // Check that the epoch being endorsed for is active
+    const targetEpoch = await storage.getEpoch(Number(endorsement.epoch));
+    if (targetEpoch && targetEpoch.status === "closed") {
+      return res.status(400).json({ 
+        error: `Cannot create endorsements for closed Epoch ${endorsement.epoch}. Please use the current active epoch.` 
+      });
+    }
+
+    const nonceValidation = await validateNonce(
+      endorsement.endorser,
+      Number(endorsement.epoch),
+      endorsement.nonce
+    );
+    if (!nonceValidation.valid) {
+      return res.status(400).json({ 
+        error: nonceValidation.error,
+        expectedNonce: nonceValidation.expectedNonce?.toString()
+      });
+    }
+
+    // Skip EIP-712 signature verification for externally verified non-EVM chains
+    if (!externallyVerified) {
+      const signatureValid = await verifyEndorsementSignature(endorsement);
+      if (!signatureValid) {
+        return res.status(400).json({ error: "Invalid signature" });
+      }
+    } else {
+      console.log(`[Multi-Chain] Skipping EIP-712 verification for ${chainNamespace} chain (externallyVerified=true)`);
+    }
+
+    const leafHash = computeLeafHash({
+      endorser: endorsement.endorser,
+      endorsee: endorsement.endorsee,
+      epoch: endorsement.epoch,
+      nonce: endorsement.nonce,
+      sig: endorsement.sig,
+    });
+
+    // Normalize addresses: lowercase only for EVM chains, preserve case for others
+    const normalizeAddress = (addr: string) => chainNamespace === "eip155" ? addr.toLowerCase() : addr;
+    
+    const insertData = insertPublicEndorsementSchema.parse({
+      endorser: normalizeAddress(endorsement.endorser),
+      endorsee: normalizeAddress(endorsement.endorsee),
+      epoch: Number(endorsement.epoch),
+      nonce: Number(endorsement.nonce),
+      sig: endorsement.sig || "externally_verified",
+      leafHash,
+      note: body.note || null,
+      communityId,
+      promptHash: expectedPromptHash,
+      chainNamespace,
+      externallyVerified,
+    });
+
+    const created = await storage.createEndorsement(insertData);
+    
+    // Update endorser's lastSignalActivityAt (vouch activity keeps incoming vouches alive)
+    const normalizedEndorser = normalizeAddress(endorsement.endorser);
+    await storage.getOrCreateEgoContext(normalizedEndorser);
+    await storage.updateLastSignalActivity(normalizedEndorser);
+
+    // Auto-recalculate endorsee's LocalHealth score so API calls immediately return updated score
+    // This runs network-wide computation for accuracy (tiered capacity requires iterative algorithm)
+    let endorseeLocalHealth: number | null = null;
+    try {
+      endorseeLocalHealth = await localHealthService.recalculateLocalHealth(normalizeAddress(endorsement.endorsee));
+      console.log(`[Auto-Score] Recalculated LocalHealth for ${endorsement.endorsee.toLowerCase()}: ${endorseeLocalHealth}`);
+    } catch (scoreError) {
+      console.error(`[Auto-Score] Failed to recalculate for ${endorsement.endorsee.toLowerCase()}:`, scoreError);
+      // Non-fatal: score will be calculated on next batch run or API request
+    }
+
+    return res.status(201).json({
+      endorsement: created,
+      leafHash,
+      endorseeLocalHealth,
+    });
+  } catch (error) {
+    console.error("Error creating endorsement:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Register both /api/endorse and /api/v1/vouch to use the same handler
+  app.post("/api/endorse", handleEndorse);
+  app.post("/api/v1/vouch", handleEndorse);
 
   app.get("/api/endorsements", async (req, res) => {
     try {
@@ -281,6 +286,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching nonce:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // V1 API: Get epoch and nonce for vouch signature (documented endpoint)
+  // Supports optional chainNamespace and communityId query params
+  app.get("/api/v1/vouch/nonce/:address", async (req, res) => {
+    try {
+      const chainNamespace = (req.query.chainNamespace as string) || "eip155";
+      const communityId = parseInt(req.query.communityId as string) || 0;
+      
+      // Only lowercase for EVM chains, preserve case for non-EVM
+      const address = chainNamespace === "eip155" 
+        ? req.params.address.toLowerCase() 
+        : req.params.address;
+      
+      // Get current epoch for the specified community
+      let currentEpoch = await storage.getCurrentEpoch(communityId);
+      if (!currentEpoch) {
+        currentEpoch = await storage.createEpoch({
+          id: 0,
+          status: "active",
+          graphRoot: null,
+          seedRoot: null,
+          paramsHash: null,
+          scoresHash: null,
+          signature: null,
+          closedAt: null,
+        });
+      }
+      
+      const epoch = Number(currentEpoch.id);
+      const maxNonce = await storage.getMaxNonce(address, epoch);
+      
+      // Prevent browser caching
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      return res.status(200).json({ 
+        epoch,
+        nonce: maxNonce + 1 
+      });
+    } catch (error) {
+      console.error("Error fetching v1 nonce:", error);
       return res.status(500).json({ error: "Internal server error" });
     }
   });
