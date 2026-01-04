@@ -1210,6 +1210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // LocalHealth statistics endpoint (cached for 5 minutes)
+  // Uses pre-computed scores from 6-hour scheduler instead of recomputing on the fly
   app.get("/api/stats/local-health", async (req, res) => {
     const now = Date.now();
     
@@ -1219,13 +1220,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Get all ego contexts
+      // Use cached LocalHealth scores from contexts table (populated by 6-hour scheduler)
+      // This is a fast database query instead of expensive algorithm recomputation
       const allContexts = await db
         .select()
         .from(contexts)
         .where(eq(contexts.type, 'ego'));
 
-      if (allContexts.length === 0) {
+      // Extract cached scores (filter out nulls)
+      const scores: number[] = allContexts
+        .map(c => c.localHealth)
+        .filter((s): s is number => s !== null && s > 0);
+
+      if (scores.length === 0) {
         return res.status(200).json({
           totalUsers: 0,
           avgLocalHealth: 0,
@@ -1233,55 +1240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get global endorsements once (no limit for accurate statistics)
-      const globalEndorsements = await storage.getEndorsements({
-        communityId: 0,
-        limit: 1000000
-      });
-
-      const formattedVouches = globalEndorsements.map(e => ({
-        endorser: e.endorser.toLowerCase() as `0x${string}`,
-        endorsee: e.endorsee.toLowerCase() as `0x${string}`,
-      }));
-
-      const { EgoScorer } = await import("./algorithm/egoScoring");
-      const scorer = new EgoScorer();
-
-      // Batch fetch all co-seeds for all contexts
-      const coSeedsByContext = new Map<number, string[]>();
-      await Promise.all(
-        allContexts.map(async (context) => {
-          try {
-            const coSeedsData = await storage.getCoSeeds(context.id);
-            const seedAddresses = coSeedsData.map(cs => cs.address.toLowerCase());
-            coSeedsByContext.set(context.id, seedAddresses);
-          } catch (error) {
-            console.error(`Error fetching co-seeds for context ${context.id}:`, error);
-            coSeedsByContext.set(context.id, []);
-          }
-        })
-      );
-
-      // Compute LocalHealth for all users at once using iterative algorithm
-      const allAddresses = allContexts
-        .map(c => c.ownerAddress?.toLowerCase())
-        .filter((addr): addr is string => !!addr) as `0x${string}`[];
-      
-      const results = scorer.computeLocalHealthIterative(allAddresses, formattedVouches);
-      
-      // Extract scores from results
-      const scores: number[] = [];
-      for (const addr of allAddresses) {
-        const result = results.get(addr);
-        if (result) {
-          scores.push(result.localHealth);
-        }
-      }
-
-      // Calculate statistics
-      const avgLocalHealth = scores.length > 0
-        ? scores.reduce((sum, s) => sum + s, 0) / scores.length
-        : 0;
+      // Calculate statistics from cached scores
+      const avgLocalHealth = scores.reduce((sum, s) => sum + s, 0) / scores.length;
 
       // Create distribution bins (0-10, 10-20, ..., 90-100)
       const bins = Array(10).fill(0);
@@ -1418,6 +1378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // General stats endpoint (cached for 5 minutes)
+  // Optimized: parallel queries and simplified logic for fast response
   app.get("/api/stats", async (req, res) => {
     const now = Date.now();
     
@@ -1427,37 +1388,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // Platform-wide aggregates
-      const totalEndorsements = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(publicEndorsements);
+      // Run all independent queries in parallel for speed
+      const [
+        totalEndorsementsResult,
+        uniqueEndorsersResult,
+        uniqueEndorseesResult,
+        allParticipantsResult,
+        allCommunities,
+        allScoresResult,
+      ] = await Promise.all([
+        db.select({ count: sql<number>`count(*)::int` }).from(publicEndorsements),
+        db.select({ count: sql<number>`count(distinct endorser)::int` }).from(publicEndorsements),
+        db.select({ count: sql<number>`count(distinct endorsee)::int` }).from(publicEndorsements),
+        db.select({ address: sql<string>`endorser` }).from(publicEndorsements)
+          .union(db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)),
+        storage.listCommunities(),
+        db.select().from(scores),
+      ]);
 
-      const uniqueEndorsers = await db
-        .select({ count: sql<number>`count(distinct endorser)::int` })
-        .from(publicEndorsements);
-
-      const uniqueEndorsees = await db
-        .select({ count: sql<number>`count(distinct endorsee)::int` })
-        .from(publicEndorsements);
-
-      // Count unique participants across all communities using SQL (no limit)
-      const allParticipantsResult = await db
-        .select({ address: sql<string>`endorser` })
-        .from(publicEndorsements)
-        .union(
-          db.select({ address: sql<string>`endorsee` }).from(publicEndorsements)
-        );
       const allParticipants = new Set(allParticipantsResult.map(r => r.address.toLowerCase()));
 
-      // Get all communities (no "active" status flag exists - we count all)
-      const allCommunities = await storage.listCommunities();
-
-      // Calculate platform-wide trusted users using LATEST epoch score per user (across all communities)
-      const allScoresResult = await db
-        .select()
-        .from(scores);
-
-      // Group scores by LOWERCASE user address to handle case-insensitive deduplication
+      // Group scores by user address (fast in-memory operation)
       const latestScoresByUser = new Map<string, typeof allScoresResult[0]>();
       allScoresResult.forEach(score => {
         const normalizedAddress = score.address.toLowerCase();
@@ -1467,57 +1418,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Count unique trusted users (those with isAccepted in their latest epoch, any community)
       const latestScores = Array.from(latestScoresByUser.values());
       const trustedUsers = latestScores.filter(s => s.isAccepted).length;
-      
-      // Calculate average STS using only latest epoch scores
-      let avgScore = 0;
       const acceptedLatestScores = latestScores.filter(s => s.isAccepted);
-      if (acceptedLatestScores.length > 0) {
-        const totalSts = acceptedLatestScores.reduce((sum, s) => sum + s.sts, 0);
-        avgScore = totalSts / acceptedLatestScores.length;
-      }
+      const avgScore = acceptedLatestScores.length > 0
+        ? acceptedLatestScores.reduce((sum, s) => sum + s.sts, 0) / acceptedLatestScores.length
+        : 0;
 
-      // Per-community breakdown
+      // Per-community breakdown - run all community queries in parallel
       const communityStats = await Promise.all(
         allCommunities.map(async (community: Community) => {
-          // Use SQL count queries instead of fetching all endorsements to avoid data truncation
-          const endorsementCount = await db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(publicEndorsements)
-            .where(sql`community_id = ${community.id}`);
-          
-          // Count unique participants using UNION to avoid double-counting
-          const participantsResult = await db
-            .select({ address: sql<string>`endorser` })
-            .from(publicEndorsements)
-            .where(sql`community_id = ${community.id}`)
-            .union(
-              db.select({ address: sql<string>`endorsee` })
-                .from(publicEndorsements)
-                .where(sql`community_id = ${community.id}`)
-            );
+          // Run community-specific queries in parallel
+          const [endorsementCount, participantsResult, currentEpoch] = await Promise.all([
+            db.select({ count: sql<number>`count(*)::int` })
+              .from(publicEndorsements)
+              .where(sql`community_id = ${community.id}`),
+            db.select({ address: sql<string>`endorser` })
+              .from(publicEndorsements)
+              .where(sql`community_id = ${community.id}`)
+              .union(
+                db.select({ address: sql<string>`endorsee` })
+                  .from(publicEndorsements)
+                  .where(sql`community_id = ${community.id}`)
+              ),
+            storage.getCurrentEpoch(community.id),
+          ]);
+
           const uniqueParticipantsCount = new Set(participantsResult.map(r => r.address.toLowerCase())).size;
 
-          // Get latest epoch for this community
-          const currentEpoch = await storage.getCurrentEpoch(community.id);
           let communityTrusted = 0;
           let communityAvgSTS = 0;
           let communityGHI = 0;
 
           if (currentEpoch) {
-            const communityScores = await storage.getScoresByEpoch(currentEpoch.id, community.id);
+            const [communityScores, health] = await Promise.all([
+              storage.getScoresByEpoch(currentEpoch.id, community.id),
+              storage.getEpochHealth(currentEpoch.id, community.id),
+            ]);
+            
             const accepted = communityScores.filter((s: Score) => s.isAccepted);
             communityTrusted = accepted.length;
             
             if (accepted.length > 0) {
-              const totalSts = accepted.reduce((sum: number, s: Score) => sum + s.sts, 0);
-              communityAvgSTS = totalSts / accepted.length;
+              communityAvgSTS = accepted.reduce((sum: number, s: Score) => sum + s.sts, 0) / accepted.length;
             }
 
-            // Get health metrics
-            const health = await storage.getEpochHealth(currentEpoch.id, community.id);
             if (health) {
               communityGHI = health.ghi;
             }
@@ -1536,16 +1481,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const responseData = {
-        // Platform-wide aggregates
         totalUsers: allParticipants.size,
-        totalEndorsements: totalEndorsements[0]?.count || 0,
-        totalEndorsers: uniqueEndorsers[0]?.count || 0,
-        totalEndorsees: uniqueEndorsees[0]?.count || 0,
+        totalEndorsements: totalEndorsementsResult[0]?.count || 0,
+        totalEndorsers: uniqueEndorsersResult[0]?.count || 0,
+        totalEndorsees: uniqueEndorseesResult[0]?.count || 0,
         trustedUsers,
         avgScore: Math.round(avgScore * 100) / 100,
         avgSTS: Math.round(avgScore * 100) / 100,
         totalCommunities: allCommunities.length,
-        // Per-community breakdown
         communities: communityStats,
       };
       
@@ -1556,7 +1499,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json(responseData);
     } catch (error) {
       console.error("Error fetching stats:", error);
-      // Return stale cache on error if available
       if (generalStatsCache.data) {
         return res.status(200).json(generalStatsCache.data);
       }
