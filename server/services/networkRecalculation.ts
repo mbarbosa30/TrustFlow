@@ -171,25 +171,51 @@ export class NetworkRecalculationService {
         externalSybilScores // external Sybil flags for device fingerprint penalty
       );
 
-      // Process results
-      for (const context of egoContexts) {
+      // Build set of existing context addresses for quick lookup
+      const existingContextAddresses = new Set<string>();
+      for (const ctx of egoContexts) {
+        if (ctx.ownerAddress) {
+          existingContextAddresses.add(ctx.ownerAddress.toLowerCase());
+        }
+      }
+
+      // Process ALL score results (not just existing contexts)
+      // This ensures newly vouched users get their scores persisted
+      for (const [ownerAddress, scoreResult] of Array.from(scoreResults.entries())) {
         result.totalProcessed++;
-        const ownerAddress = context.ownerAddress!.toLowerCase();
 
         try {
-          const scoreResult = scoreResults.get(ownerAddress);
+          const roundedScore = Math.round(scoreResult.localHealth);
           
-          if (scoreResult) {
-            const roundedScore = Math.round(scoreResult.localHealth);
-            
-            // Extract algorithm breakdown components if available
-            const components = scoreResult.components;
-            
-            // Count incoming/outgoing vouches for this user
-            const incomingActive = globalVouches.filter(v => v.endorsee === ownerAddress).length;
-            const outgoingTotal = globalVouches.filter(v => v.endorser === ownerAddress).length;
-            
-            // Persist the score and breakdown data to the database
+          // Extract algorithm breakdown components if available
+          const components = scoreResult.components;
+          
+          // Count incoming/outgoing vouches for this user
+          const incomingActive = globalVouches.filter(v => v.endorsee === ownerAddress).length;
+          const outgoingTotal = globalVouches.filter(v => v.endorser === ownerAddress).length;
+          
+          // Check if context exists, create if not
+          if (!existingContextAddresses.has(ownerAddress)) {
+            // Create ego context for this address
+            await db.insert(contexts).values({
+              ownerAddress: ownerAddress,
+              type: 'ego',
+              communityId: null,
+              localHealth: roundedScore,
+              localHealthUpdatedAt: new Date(),
+              flowComponent: components?.flowComponent ?? null,
+              redundancyComponent: components?.redundancyComponent ?? null,
+              actualMinCut: components?.actualMinCut ?? null,
+              effectiveRedundancy: components?.effectiveRedundancy ?? null,
+              vertexDisjointPaths: components?.vertexDisjointPaths ?? null,
+              dilutionFactor: components?.dilutionFactor ?? null,
+              incomingActive,
+              outgoingTotal,
+              createdAt: new Date(),
+            });
+            console.log(`Created new context for ${ownerAddress}: LocalHealth = ${roundedScore}`);
+          } else {
+            // Update existing context
             await db
               .update(contexts)
               .set({ 
@@ -211,24 +237,17 @@ export class NetworkRecalculationService {
                   eq(contexts.type, 'ego')
                 )
               );
-            
-            result.scoresUpdated++;
-            result.details.push({
-              address: ownerAddress,
-              localHealth: roundedScore,
-            });
-
-            console.log(
-              `Recalculated and saved ${ownerAddress}: LocalHealth = ${roundedScore}, flow=${components?.flowComponent?.toFixed(1) ?? 'N/A'}, redundancy=${components?.redundancyComponent?.toFixed(1) ?? 'N/A'}`
-            );
-          } else {
-            result.errors++;
-            result.details.push({
-              address: ownerAddress,
-              localHealth: 0,
-              error: 'Score not computed in iterative algorithm',
-            });
           }
+          
+          result.scoresUpdated++;
+          result.details.push({
+            address: ownerAddress,
+            localHealth: roundedScore,
+          });
+
+          console.log(
+            `Recalculated and saved ${ownerAddress}: LocalHealth = ${roundedScore}, flow=${components?.flowComponent?.toFixed(1) ?? 'N/A'}, redundancy=${components?.redundancyComponent?.toFixed(1) ?? 'N/A'}`
+          );
         } catch (error) {
           result.errors++;
           result.details.push({
