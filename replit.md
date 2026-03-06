@@ -40,6 +40,16 @@ Key features include:
 *   **Network Traction API**: Endpoint providing aggregated LocalHealth-focused metrics.
 *   **Signal-Focused Pages**: Public-facing pages use "Signal" in user-facing copy.
 
+### API Route Architecture
+*   **`/api/endorse`** (routes.ts): Internal frontend endpoint for community-aware endorsements, used by the app's EndorseForm component.
+*   **`/api/v1/vouch`** (publicApi.ts): External v1 API endpoint for global vouches with rate limiting, duplicate vouch check, and EIP-712 verification. Used by nanopay.live integration.
+*   **`/api/v1/vouch/nonce/:address`** (publicApi.ts): External nonce endpoint with rate limiting and no-cache headers.
+*   **`/api/v1/score/:address/details`** (publicApi.ts): On-demand detailed algorithm breakdown with strict rate limiting (10/min) due to expensive network-wide computation.
+*   **Route Ownership**: v1 routes are owned by publicApi.ts. routes.ts must NOT register duplicate `/api/v1/*` routes or they will shadow publicApi.ts handlers (Express first-match wins).
+
+### Database Constraints
+*   **Unique vouch constraint**: `idx_unique_vouch` on `public_endorsements(LOWER(endorser), LOWER(endorsee), community_id)` prevents duplicate vouches at the DB level, guarding against race conditions.
+
 ### System Design Choices
 *   **TypeScript Everywhere**: For code quality.
 *   **Component-First UI**: For reusability.

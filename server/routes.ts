@@ -93,6 +93,18 @@ async function handleEndorse(req: any, res: any): Promise<any> {
       return res.status(400).json({ error: fieldValidation.error });
     }
 
+    // Check for duplicate vouch (same endorser->endorsee pair in same community)
+    const normalizeAddr = (addr: string) => chainNamespace === "eip155" ? addr.toLowerCase() : addr;
+    const existingVouch = await storage.getEndorsements({
+      endorser: normalizeAddr(endorsement.endorser),
+      endorsee: normalizeAddr(endorsement.endorsee),
+      communityId,
+      limit: 1,
+    });
+    if (existingVouch.length > 0) {
+      return res.status(400).json({ error: "Vouch already exists for this endorser->endorsee pair" });
+    }
+
     // Check that the epoch being endorsed for is active
     const targetEpoch = await storage.getEpoch(Number(endorsement.epoch));
     if (targetEpoch && targetEpoch.status === "closed") {
@@ -171,9 +183,9 @@ async function handleEndorse(req: any, res: any): Promise<any> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register both /api/endorse and /api/v1/vouch to use the same handler
+  // Internal frontend endpoint for community-aware endorsements
   app.post("/api/endorse", handleEndorse);
-  app.post("/api/v1/vouch", handleEndorse);
+  // NOTE: /api/v1/vouch is registered in publicApi.ts with rate limiting + duplicate check
 
   app.get("/api/endorsements", async (req, res) => {
     try {
@@ -279,50 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // V1 API: Get epoch and nonce for vouch signature (documented endpoint)
-  // Supports optional chainNamespace and communityId query params
-  app.get("/api/v1/vouch/nonce/:address", async (req, res) => {
-    try {
-      const chainNamespace = (req.query.chainNamespace as string) || "eip155";
-      const communityId = parseInt(req.query.communityId as string) || 0;
-      
-      // Only lowercase for EVM chains, preserve case for non-EVM
-      const address = chainNamespace === "eip155" 
-        ? req.params.address.toLowerCase() 
-        : req.params.address;
-      
-      // Get current epoch for the specified community
-      let currentEpoch = await storage.getCurrentEpoch(communityId);
-      if (!currentEpoch) {
-        currentEpoch = await storage.createEpoch({
-          id: 0,
-          status: "active",
-          graphRoot: null,
-          seedRoot: null,
-          paramsHash: null,
-          scoresHash: null,
-          signature: null,
-          closedAt: null,
-        });
-      }
-      
-      const epoch = Number(currentEpoch.id);
-      const maxNonce = await storage.getMaxNonce(address, epoch);
-      
-      // Prevent browser caching
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      
-      return res.status(200).json({ 
-        epoch,
-        nonce: maxNonce + 1 
-      });
-    } catch (error) {
-      console.error("Error fetching v1 nonce:", error);
-      return res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // NOTE: /api/v1/vouch/nonce/:address is registered in publicApi.ts with rate limiting
 
   app.get("/api/epoch/current", async (req, res) => {
     try {

@@ -177,9 +177,15 @@ export function registerPublicApiRoutes(app: Express) {
     }
   });
 
+  const detailsRateLimit = rateLimit({
+    windowMs: 60000,
+    max: 10,
+    keyGenerator: (req) => req.ip || 'unknown'
+  });
+
   // Single-user detailed metrics endpoint - computes algorithm breakdown on-demand
   // More expensive but provides full component breakdown for one user
-  app.get("/api/v1/score/:address/details", publicRateLimit, async (req, res) => {
+  app.get("/api/v1/score/:address/details", detailsRateLimit, async (req, res) => {
     try {
       const chainNamespace = (req.query.chainNamespace as string) || "eip155";
       const address = chainNamespace === "eip155" ? req.params.address.toLowerCase() : req.params.address;
@@ -409,6 +415,10 @@ export function registerPublicApiRoutes(app: Express) {
       const maxNonce = await storage.getMaxNonce(address, epoch, 0);
       const nextNonce = maxNonce + 1;
       
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.json({ epoch, nonce: nextNonce });
     } catch (error) {
       console.error('Error getting nonce:', error);
@@ -556,7 +566,7 @@ export function registerPublicApiRoutes(app: Express) {
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.message.includes('duplicate key')) {
-          return res.status(409).json({ error: "Nonce already used - please get a new nonce" });
+          return res.status(409).json({ error: "Vouch already exists or nonce conflict - please retry" });
         }
         throw err;
       }
